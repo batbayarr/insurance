@@ -1,0 +1,1461 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Журналын бичилт - {{ document.DocumentNo }} - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="space-y-0">
+    <!-- Header -->
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журналын бичилт</h1>
+            <p class="text-xs text-gray-600">Баримтын №: {{ document.DocumentNo }} - {{ document.Description|truncatechars:100 }}</p>
+        </div>
+    </div>
+
+    <!-- Main Form -->
+    <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+        <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+
+            </div>
+        </div>
+        <div class="p-4" id="main-form">
+            {% csrf_token %}
+            
+            <!-- Details Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 border border-gray-200" style="table-layout: auto;">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДУГААР</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХАРИЛЦАГЧ *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ВАЛЮТ *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХАНШ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ВАЛЮТЫН ДҮН *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДЕБИТ ЭСЭХ *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДЕБИТ ДҮН *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">КРЕДИТ ДҮН *</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">МӨНГӨН ГҮЙЛГЭЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ГЭРЭЭНИЙ №</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЭЛ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="details-tbody" class="bg-white divide-y divide-gray-200">
+                        {% for detail in document_details %}
+                        <tr class="hover:bg-gray-50 existing-row" data-detail-id="{{ detail.DocumentDetailId }}">
+                            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ detail.DocumentDetailId }}
+                            </td>
+                            <td class="px-2 py-1">
+                                <div class="relative">
+                                    <input type="hidden" name="account_id_{{ detail.DocumentDetailId }}" 
+                                           value="{% if detail.AccountId %}{{ detail.AccountId.AccountId }}{% endif %}" 
+                                           class="account-id-input" required>
+                                    <input type="text" 
+                                           value="{% if detail.AccountId %}{{ detail.AccountId.AccountCode }}{% endif %}" 
+                                           class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                                           placeholder="Click to select account" 
+                                           readonly 
+                                           onclick="openAccountPopup(this, '{{ detail.DocumentDetailId }}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for cash transactions' })"
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-2 py-1">
+                                <div class="relative">
+                                    <input type="hidden" name="client_id_{{ detail.DocumentDetailId }}" 
+                                           value="{% if detail.ClientId %}{{ detail.ClientId.ClientId }}{% endif %}" 
+                                           class="client-id-input" required>
+                                    <input type="text" 
+                                           value="{% if detail.ClientId %}{{ detail.ClientId.ClientCode }} - {{ detail.ClientId.ClientName }}{% endif %}" 
+                                           class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                                           placeholder="Click to select client" 
+                                           readonly 
+                                           onclick="openClientPopup(this, '{{ detail.DocumentDetailId }}')">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-2 py-1">
+                                <select name="currency_id_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Currency</option>
+                                    {% for currency in currencies %}
+                                    <option value="{{ currency.CurrencyId }}" {% if detail.CurrencyId and currency.CurrencyId == detail.CurrencyId.CurrencyId %}selected{% endif %}>
+                                        {{ currency.CurrencyId }} - {{ currency.Currency_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-2 py-1">
+                                <input type="number" name="currency_exchange_{{ detail.DocumentDetailId }}" step="0.000001" min="0" 
+                                       value="{% if detail.CurrencyExchange %}{{ detail.CurrencyExchange|floatformat:4 }}{% else %}{{ document.CurrencyExchange|floatformat:4|default:'1.0000' }}{% endif %}"
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="1.0000">
+                            </td>
+                            <td class="px-2 py-1">
+                                <input type="number" name="currency_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0" required
+                                       value="{% if detail.CurrencyAmount %}{{ detail.CurrencyAmount|floatformat:2 }}{% endif %}"
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.00">
+                            </td>
+                            <td class="px-2 py-1">
+                                <select name="is_debit_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Type</option>
+                                    <option value="true" {% if detail.IsDebit %}selected{% endif %}>Debit</option>
+                                    <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Credit</option>
+                                </select>
+                            </td>
+                            <td class="px-2 py-1">
+                                <input type="number" name="debit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
+                                       value="{% if detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.00">
+                            </td>
+                            <td class="px-2 py-1">
+                                <input type="number" name="credit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
+                                       value="{% if not detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.00">
+                            </td>
+                            <td class="px-2 py-1">
+                                <select name="cashflow_id_{{ detail.DocumentDetailId }}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Cash Flow</option>
+                                    {% for cash_flow in cash_flows %}
+                                    <option value="{{ cash_flow.CashFlowId }}" {% if detail.CashFlowId and cash_flow.CashFlowId == detail.CashFlowId.CashFlowId %}selected{% endif %}>
+                                        {{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-2 py-1">
+                                <select name="contract_id_{{ detail.DocumentDetailId }}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Contract</option>
+                                    {% for contract in contracts %}
+                                    <option value="{{ contract.ContractId }}" {% if detail.ContractId and contract.ContractId == detail.ContractId.ContractId %}selected{% endif %}>
+                                        {{ contract.ContractCode }} - {{ contract.Description }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <button type="button" onclick="removeRow(this)" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Summary and Actions -->
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
+                <div class="text-xs text-gray-600">
+                    <div class="flex items-center space-x-3 lg:space-x-6">
+                        <span class="text-xs"><span id="row-counter">{{ document_details|length }}</span> rows ready to save</span>
+                        <div class="flex items-center space-x-2 lg:space-x-3">
+                            <span class="text-gray-500 text-xs">Баланс:</span>
+                            <span class="text-gray-500 text-xs">Дебит:</span>
+                            <span id="total-debit" class="font-medium text-red-600 text-xs">0.00</span>
+                            <span class="text-gray-400">|</span>
+                            <span class="text-gray-500 text-xs">Кредит:</span>
+                            <span id="total-credit" class="font-medium text-green-600 text-xs">0.00</span>
+                            <span id="balance-status" class="ml-2 lg:ml-3 px-2 py-1 lg:px-3 text-xs rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-2 lg:space-x-4">
+                    <button type="button" id="add-new-row-btn" 
+                            class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>НЭМЭХ</span>
+                    </button>
+                    <a href="{% url 'core:cashdocument_master_detail' %}?selected_document={{ document.DocumentId }}" 
+                       class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        БУЦАХ
+                    </a>
+                    <button type="button" id="save-details" 
+                            class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onclick="submitViaAPI();">
+                        ХАДГАЛАХ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- No Details Message -->
+    {% if not document_details %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-16 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <h3 class="mt-4 text-xs font-medium text-gray-900">No details found</h3>
+        <p class="mt-2 text-xs text-gray-500">Click "Add New Row" to create your first detail record.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include generic FillAccountingDetails function for cash documents -->
+<script src="{% static 'js/fill-accounting-details-cash.js' %}?v={{ timestamp|default:'20240118' }}"></script>
+
+<!-- Document data for FillAccountingDetails -->
+<script id="document-data" type="application/json">
+{
+    "DocumentId": {{ document.DocumentId }},
+    "DocumentTypeId": {{ document.DocumentTypeId.DocumentTypeId }},
+    "AccountId": {{ document.AccountId.AccountId }},
+    "AccountCode": "{{ document.AccountId.AccountCode|escapejs }}",
+    "AccountName": "{{ document.AccountId.AccountName|escapejs }}",
+    "ClientId": {{ document.ClientId.ClientId|default:'null' }},
+    "ClientCode": {% if document.ClientId %}"{{ document.ClientId.ClientCode|escapejs }}"{% else %}null{% endif %},
+    "ClientName": {% if document.ClientId %}"{{ document.ClientId.ClientName|escapejs }}"{% else %}null{% endif %},
+    "TemplateId": {% if document.TemplateId %}{{ document.TemplateId.TemplateId }}{% else %}null{% endif %},
+    "IsVat": {{ document.IsVat|yesno:"true,false" }},
+    "VatAccountId": {% if document.VatAccountId %}{{ document.VatAccountId.AccountId }}{% else %}null{% endif %},
+    "VatPercent": {{ vat_percent|default:'0' }},
+    "VatAmount": {{ vat_amount|default:'0' }},
+    "DebugInfo": {
+        "CurrencyAmount": {{ document.CurrencyAmount|default:'0' }},
+        "CurrencyExchange": {{ document.CurrencyExchange|default:'1.0' }},
+        "VatPercentFromView": {{ vat_percent|default:'0' }},
+        "VatAmountFromView": {{ vat_amount|default:'0' }}
+    },
+    "CurrencyId": {{ document.CurrencyId.CurrencyId }},
+    "CurrencyExchange": {{ document.CurrencyExchange|default:'1.0' }},
+    "CurrencyAmount": {{ document.CurrencyAmount|default:'0' }},
+    "CashFlowId": {% if document.TemplateId and document.TemplateId.CashFlowId %}{{ document.TemplateId.CashFlowId.CashFlowId }}{% else %}null{% endif %},
+    "template_details": [
+        {% for detail in template_details %}
+        {
+            "TemplateDetailId": {{ detail.TemplateDetailId }},
+            "AccountId": {{ detail.AccountId.AccountId }},
+            "AccountCode": "{{ detail.AccountId.AccountCode|escapejs }}",
+            "AccountName": "{{ detail.AccountId.AccountName|escapejs }}",
+            "IsDebit": {{ detail.IsDebit|yesno:"true,false" }},
+            "CashFlowId": {% if detail.CashFlowId %}{{ detail.CashFlowId.CashFlowId }}{% else %}null{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+
+<script>
+    // Local FillAccountingDetails wrapper function for cash documents
+    window.FillAccountingDetails = function() {
+        console.log('FillAccountingDetails wrapper called');
+        window.fillAccountingDetailsHasRun = true; // Set flag to prevent fixIncorrectDebitCreditLogic from running
+        
+        // Temporarily disable event listeners to prevent override
+        window.disableEventListeners = true;
+    // Configuration for cash documents
+    const config = {
+        documentDataId: 'document-data',
+        firstTableId: 'details-tbody',
+        secondTableId: 'details-tbody', // Cash documents use the same table for both
+        documentTypes: [1, 2, 3, 4], // Cash document types that support VAT
+        debugPrefix: 'Cash FillAccountingDetails',
+        addDetailRowFunction: addNewDetailRowForCash,
+        updateBalanceDisplayFunction: updateBalanceDisplay
+    };
+    
+    console.log('Calling FillAccountingDetailsCashGeneric with config:', config);
+    
+    // Call the cash-specific generic function
+    if (typeof window.FillAccountingDetailsCashGeneric === 'function') {
+        window.FillAccountingDetailsCashGeneric(config);
+    } else {
+        console.error('FillAccountingDetailsCashGeneric function not found');
+    }
+    
+    // Re-enable event listeners after FillAccountingDetails completes
+    window.disableEventListeners = false;
+};
+
+// Helper function to add new detail row for cash documents
+function addNewDetailRowForCash(rowData) {
+    console.log('addNewDetailRowForCash called with data:', rowData);
+    console.log('CashFlowId being passed:', rowData.cashFlowId, 'Type:', typeof rowData.cashFlowId);
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) {
+        console.error('addNewDetailRowForCash: tbody not found');
+        return;
+    }
+    
+    // Use global counter for consistent indexing
+    const newRowCounter = window.globalNewRowCounter++;
+    
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-row';
+    
+    // Use the currencyAmount directly from FillAccountingDetails (already calculated)
+    const currencyAmount = parseFloat(rowData.currencyAmount) || 0;
+    const currencyExchange = parseFloat(rowData.currencyExchange) || 1.0;
+    // Don't recalculate - use the amount as provided by FillAccountingDetails
+    const calculatedAmount = currencyAmount.toFixed(2);
+    
+    console.log('addNewDetailRowForCash - Setting currency amount:', {
+        originalCurrencyAmount: rowData.currencyAmount,
+        parsedCurrencyAmount: currencyAmount,
+        currencyExchange: currencyExchange,
+        calculatedAmount: calculatedAmount,
+        isDebit: rowData.isDebit
+    });
+    
+    const debitAmount = rowData.isDebit ? calculatedAmount : '0.00';
+    const creditAmount = !rowData.isDebit ? calculatedAmount : '0.00';
+    const isDebitValue = rowData.isDebit ? 'true' : 'false';
+    
+    row.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            <span class="text-green-600 font-medium">NEW</span>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" value="${rowData.accountId}" required>
+                <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       value="${rowData.accountDisplay}"
+                       placeholder="Click to select account" 
+                       readonly 
+                       onclick="openAccountPopup(this, 'new_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for cash transactions' })">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_client_id_${newRowCounter}" class="client-id-input" value="${rowData.clientId || ''}" required>
+                <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                       value="${rowData.clientDisplay || ''}"
+                       placeholder="Click to select client" 
+                       readonly 
+                       onclick="openClientPopup(this, 'new_${newRowCounter}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Currency</option>
+                {% for currency in currencies %}
+                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyExchange).toFixed(4)}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="1.0000">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Type</option>
+                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Debit</option>
+                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Credit</option>
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Cash Flow</option>
+                {% for cash_flow in cash_flows %}
+                <option value="{{ cash_flow.CashFlowId }}" ${rowData.cashFlowId && rowData.cashFlowId == '{{ cash_flow.CashFlowId }}' ? 'selected' : ''}>{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Contract</option>
+                {% for contract in contracts %}
+                <option value="{{ contract.ContractId }}">{{ contract.ContractCode }} - {{ contract.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    addEventListenersToRow(row);
+    ensureDebitCreditRule(row);
+    
+    // Force update the balance display after adding the row
+    setTimeout(() => {
+        updateBalanceDisplay();
+    }, 100);
+}
+
+// Document data from master document for auto-population
+const documentData = {
+    documentTypeId: {{ document.DocumentTypeId.DocumentTypeId }},
+    accountId: {{ document.AccountId.AccountId }},
+    accountCode: '{{ document.AccountId.AccountCode|escapejs }}',
+    accountName: '{{ document.AccountId.AccountName|escapejs }}',
+    clientId: {{ document.ClientId.ClientId|default:'null' }},
+    clientCode: {% if document.ClientId %}'{{ document.ClientId.ClientCode|escapejs }}'{% else %}null{% endif %},
+    clientName: {% if document.ClientId %}'{{ document.ClientId.ClientName|escapejs }}'{% else %}null{% endif %},
+    currencyId: {{ document.CurrencyId.CurrencyId }},
+    currencyExchange: {{ document.CurrencyExchange|default:'1.0' }},
+    currencyAmount: {{ document.CurrencyAmount|default:'0' }},
+    vatAccountId: {% if document.VatAccountId %}{{ document.VatAccountId.AccountId }}{% else %}null{% endif %},
+    vatAccountCode: {% if document.VatAccountId %}'{{ document.VatAccountId.AccountCode|escapejs }}'{% else %}null{% endif %},
+    vatAmount: {{ document.VatAmount|default:'0' }}
+};
+
+// Create lookup maps for accounts and clients
+const accountLookup = {
+    {% for account in accounts %}
+    {{ account.AccountId }}: { code: '{{ account.AccountCode|escapejs }}', name: '{{ account.AccountName|escapejs }}' }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+const clientLookup = {
+    {% for client in clients %}
+    {{ client.ClientId }}: { code: '{{ client.ClientCode|escapejs }}', name: '{{ client.ClientName|escapejs }}' }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addNewRowBtn = document.getElementById('add-new-row-btn');
+    
+    // Initialize global new row counter
+    window.globalNewRowCounter = 0;
+    
+    // Add new row when button is clicked
+    if (addNewRowBtn) {
+        addNewRowBtn.addEventListener('click', function() {
+            addNewRow();
+        });
+    }
+    
+    // API submission function
+    window.submitViaAPI = function() {
+        try {
+            // Calculate new row count FIRST
+            const tbody = document.getElementById('details-tbody');
+            const newRowCount = tbody ? tbody.querySelectorAll('tr.new-row').length : 0;
+            
+            // Manual balance validation
+            const totalDebit = calculateTotalDebit();
+            const totalCredit = calculateTotalCredit();
+            const balanceDifference = Math.abs(totalDebit - totalCredit);
+            
+            // Check if both debit and credit totals are zero
+            if (totalDebit === 0 && totalCredit === 0) {
+                const errorMsg = 'Гүлйгээний дүн тэнцэхгүй байна';
+                Silicon4Message.error(errorMsg);
+                return;
+            }
+            
+            // Check if not balanced
+            if (balanceDifference >= 0.01) {
+                const errorMsg = `Document is not balanced. Debit: ${totalDebit.toFixed(2)}, Credit: ${totalCredit.toFixed(2)}, Difference: ${balanceDifference.toFixed(2)}`;
+                Silicon4Message.error(errorMsg);
+                return;
+            }
+            
+            
+            // Show loading state
+            const submitButton = document.getElementById('save-details');
+            if (submitButton) {
+                // Store original button state
+                submitButton.dataset.originalText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = `
+                    <span class="loading-spinner">
+                        <svg class="spinner-icon animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                    </span>
+                `;
+            }
+            
+            // Collect accounting details data (using inventory approach)
+            const details = [];
+            const detailRows = document.querySelectorAll('#details-tbody tr');
+            
+            detailRows.forEach((row, index) => {
+                // Look for both existing and new row patterns
+                const accountId = row.querySelector('input[name*="account_id"]')?.value || row.querySelector('input[name*="new_account_id"]')?.value;
+                const clientId = row.querySelector('input[name*="client_id"]')?.value || row.querySelector('input[name*="new_client_id"]')?.value;
+                const currencyId = row.querySelector('select[name*="currency_id"]')?.value || row.querySelector('select[name*="new_currency_id"]')?.value;
+                const currencyExchange = row.querySelector('input[name*="currency_exchange"]')?.value || row.querySelector('input[name*="new_currency_exchange"]')?.value;
+                const currencyAmount = row.querySelector('input[name*="currency_amount"]')?.value || row.querySelector('input[name*="new_currency_amount"]')?.value;
+                const isDebit = row.querySelector('select[name*="is_debit"]')?.value || row.querySelector('select[name*="new_is_debit"]')?.value;
+                const cashflowId = row.querySelector('select[name*="cashflow_id"]')?.value || row.querySelector('select[name*="new_cashflow_id"]')?.value;
+                const contractId = row.querySelector('select[name*="contract_id"]')?.value || row.querySelector('select[name*="new_contract_id"]')?.value;
+                
+                
+                if (accountId && currencyAmount && isDebit) {
+                    details.push({
+                        account_id: accountId,
+                        client_id: clientId,
+                        currency_id: currencyId,
+                        currency_exchange: currencyExchange || '1.0',
+                        currency_amount: currencyAmount,
+                        is_debit: isDebit,
+                        cashflow_id: cashflowId || null,
+                        contract_id: contractId || null
+                    });
+                }
+            });
+            
+            if (details.length === 0) {
+                alert(`Please fill in all required fields for at least one row`);
+                return;
+            }
+            
+            // Submit to API
+            const documentId = "{{ document.DocumentId }}";
+            const apiUrl = `/core/api/cashdocuments/${documentId}/bulk-manage-details/`;
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ 
+                    details: details 
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Reset button state
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = submitButton.dataset.originalText || 'ХАДГАЛАХ';
+                }
+                
+                if (data.success) {
+                    // Redirect to master detail page
+                    window.location.href = `/core/cashdocuments/?selected_document=${documentId}`;
+                } else {
+                    alert(`Error: ${data.error || data.message}`);
+                }
+            })
+            .catch(error => {
+                // Reset button state
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = submitButton.dataset.originalText || 'ХАДГАЛАХ';
+                }
+                alert(`API Error: ${error.message}`);
+            });
+                
+        } catch (error) {
+            // Reset button state
+            const submitButton = document.getElementById('save-details');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = submitButton.dataset.originalText || 'ХАДГАЛАХ';
+            }
+            alert(`Error: ${error.message}`);
+        }
+    };
+    
+    // Add event listeners to existing inputs
+    initializeEventListeners();
+    
+    // Set up FillAccountingDetailsCash event listeners
+    setupFillAccountingDetailsCashListeners({
+        firstTableId: 'details-tbody',
+        debugPrefix: 'Cash FillAccountingDetails'
+    });
+    
+    // Force recalculate all existing amounts on page load
+    forceRecalculateAllAmounts();
+    
+    // Fix incorrect debit/credit logic for existing rows (only if FillAccountingDetails hasn't run)
+    if (!window.fillAccountingDetailsHasRun) {
+        fixIncorrectDebitCreditLogic();
+    }
+    
+    // Initialize balance display
+    updateBalanceDisplay();
+    
+    // Auto-populate rows if table is empty
+    const tbody = document.getElementById('details-tbody');
+    if (tbody) {
+        const visibleRows = tbody.querySelectorAll('tr:not(.deleted-row)');
+        const visibleCount = visibleRows.length;
+        
+        // Check if we have template data and should use FillAccountingDetails
+        const documentDataElement = document.getElementById('document-data');
+        if (documentDataElement) {
+            const docData = JSON.parse(documentDataElement.textContent);
+            console.log('Document data debug:', {
+                TemplateId: docData.TemplateId,
+                template_details_count: docData.template_details ? docData.template_details.length : 0,
+                template_details: docData.template_details,
+                visibleRowsCount: visibleCount
+            });
+            
+            if (docData.TemplateId && docData.template_details && docData.template_details.length > 0) {
+                // Use FillAccountingDetails for template-based population
+                console.log('Auto-triggering FillAccountingDetails for template data');
+                console.log('Template details before FillAccountingDetails:', docData.template_details);
+                window.FillAccountingDetails();
+            } else if (visibleCount === 0) {
+                console.log('No template data found, using legacy auto-population');
+                // Use legacy auto-population only if no template data and no existing rows
+                autoPopulateRows();
+            }
+        } else if (visibleCount === 0) {
+            console.log('No document data element found, using legacy auto-population');
+            // Use legacy auto-population only if no document data and no existing rows
+            autoPopulateRows();
+        }
+    }
+});
+
+// Auto-populate rows based on document type and VAT status
+function autoPopulateRows() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    // Prevent multiple auto-population calls
+    if (window.autoPopulateExecuted) {
+        return;
+    }
+    window.autoPopulateExecuted = true;
+    
+    // Check if VAT is enabled (vatAccountId exists and vatAmount > 0)
+    const hasVat = documentData.vatAccountId && parseFloat(documentData.vatAmount) > 0;
+    const calculatedAmount = documentData.currencyAmount * documentData.currencyExchange;
+    
+    // Document Type 1 or 3 (Income documents)
+    if (documentData.documentTypeId === 1 || documentData.documentTypeId === 3) {
+        if (hasVat) {
+            // Create 2 rows: Debit for cash account, Credit for VAT account
+            createPrePopulatedRow({
+                accountId: documentData.accountId,
+                accountCode: documentData.accountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: documentData.currencyExchange,
+                currencyAmount: documentData.currencyAmount,
+                isDebit: true
+            });
+            
+            createPrePopulatedRow({
+                accountId: documentData.vatAccountId,
+                accountCode: documentData.vatAccountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: 1.0,
+                currencyAmount: documentData.vatAmount,
+                isDebit: false
+            });
+        } else {
+            // Create 1 row: Debit for cash account
+            createPrePopulatedRow({
+                accountId: documentData.accountId,
+                accountCode: documentData.accountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: documentData.currencyExchange,
+                currencyAmount: documentData.currencyAmount,
+                isDebit: true
+            });
+        }
+    }
+    
+    // Document Type 2 or 4 (Expense documents)
+    if (documentData.documentTypeId === 2 || documentData.documentTypeId === 4) {
+        
+        if (hasVat) {
+            // Create 2 rows: Credit for cash account, Debit for VAT account
+            createPrePopulatedRow({
+                accountId: documentData.accountId,
+                accountCode: documentData.accountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: documentData.currencyExchange,
+                currencyAmount: documentData.currencyAmount,
+                isDebit: false
+            });
+            
+            createPrePopulatedRow({
+                accountId: documentData.vatAccountId,
+                accountCode: documentData.vatAccountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: documentData.currencyExchange,
+                currencyAmount: documentData.vatAmount,
+                isDebit: true
+            });
+        } else {
+            // Create 1 row: Credit for cash account
+            createPrePopulatedRow({
+                accountId: documentData.accountId,
+                accountCode: documentData.accountCode,
+                clientId: documentData.clientId,
+                clientCode: documentData.clientCode,
+                clientName: documentData.clientName,
+                currencyId: documentData.currencyId,
+                currencyExchange: documentData.currencyExchange,
+                currencyAmount: documentData.currencyAmount,
+                isDebit: false
+            });
+        }
+    }
+    
+    // Update balance display after auto-population
+    updateBalanceDisplay();
+    updateRowCounter();
+}
+
+// Create a pre-populated row with specified data
+function createPrePopulatedRow(rowData) {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    // Use global counter for consistent indexing
+    const newRowCounter = window.globalNewRowCounter++;
+    
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-row';
+    
+    // Calculate debit and credit amounts based on isDebit flag
+    
+    // Ensure we have valid numeric values
+    const currencyAmount = parseFloat(rowData.currencyAmount) || 0;
+    const currencyExchange = parseFloat(rowData.currencyExchange) || 1.0;
+    
+    // Calculate the total amount (currency amount * exchange rate)
+    const calculatedAmount = (currencyAmount * currencyExchange).toFixed(2);
+    
+    // Set debit/credit amounts based on isDebit flag
+    const debitAmount = rowData.isDebit ? calculatedAmount : '0.00';
+    const creditAmount = !rowData.isDebit ? calculatedAmount : '0.00';
+    const isDebitValue = rowData.isDebit ? 'true' : 'false';
+    
+    row.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            <span class="text-green-600 font-medium">NEW</span>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" value="${rowData.accountId}" required>
+                <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       value="${accountLookup[rowData.accountId] ? accountLookup[rowData.accountId].code : ''}"
+                       placeholder="Click to select account" 
+                       readonly 
+                       onclick="openAccountPopup(this, 'new_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for cash transactions' })">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_client_id_${newRowCounter}" class="client-id-input" value="${rowData.clientId || ''}" required>
+                <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                       value="${rowData.clientId && clientLookup[rowData.clientId] ? clientLookup[rowData.clientId].code + ' - ' + clientLookup[rowData.clientId].name : ''}"
+                       placeholder="Click to select client" 
+                       readonly 
+                       onclick="openClientPopup(this, 'new_${newRowCounter}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Currency</option>
+                {% for currency in currencies %}
+                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyExchange).toFixed(4)}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="1.0000">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Type</option>
+                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Debit</option>
+                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Credit</option>
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Cash Flow</option>
+                {% for cash_flow in cash_flows %}
+                <option value="{{ cash_flow.CashFlowId }}">{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Contract</option>
+                {% for contract in contracts %}
+                <option value="{{ contract.ContractId }}">{{ contract.ContractCode }} - {{ contract.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    addEventListenersToRow(row);
+    ensureDebitCreditRule(row);
+    
+    // Force update the balance display after adding the row
+    setTimeout(() => {
+        updateBalanceDisplay();
+    }, 100);
+}
+
+// Function to add a new row
+window.addNewRow = function() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) {
+        return;
+    }
+    
+    // Use global counter for consistent indexing
+    const newRowCounter = window.globalNewRowCounter++;
+    
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-row';
+    row.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            <span class="text-green-600 font-medium">NEW</span>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" required>
+                <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       placeholder="Click to select account" 
+                       readonly 
+                       onclick="openAccountPopup(this, 'new_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for cash transactions' })">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <div class="relative">
+                <input type="hidden" name="new_client_id_${newRowCounter}" class="client-id-input" required>
+                <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                       placeholder="Click to select client" 
+                       readonly 
+                       onclick="openClientPopup(this, 'new_${newRowCounter}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Currency</option>
+                {% for currency in currencies %}
+                                        <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="{{ document.CurrencyExchange|floatformat:4|default:'1.0000' }}"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="1.0000">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" required
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Type</option>
+                <option value="true">Debit</option>
+                <option value="false">Credit</option>
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Cash Flow</option>
+                {% for cash_flow in cash_flows %}
+                <option value="{{ cash_flow.CashFlowId }}">{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1">
+            <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Contract</option>
+                {% for contract in contracts %}
+                <option value="{{ contract.ContractId }}">{{ contract.ContractCode }} - {{ contract.Description }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(row);
+    addEventListenersToRow(row);
+    ensureDebitCreditRule(row);
+    updateRowCounter();
+    updateBalanceDisplay();
+}
+// Function to remove a new row
+window.removeNewRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        row.remove();
+        updateRowCounter();
+        updateBalanceDisplay();
+    }
+}
+// Function to remove an existing row (mark as deleted instead of removing)
+window.removeRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        // Mark row as deleted and hide it instead of removing from DOM
+        row.classList.add('deleted-row');
+        row.style.display = 'none';
+        
+        // Clear the values to prevent them from being included in calculations
+        const debitInput = row.querySelector('input[name*="debit_amount"]');
+        const creditInput = row.querySelector('input[name*="credit_amount"]');
+        if (debitInput) debitInput.value = '0.00';
+        if (creditInput) creditInput.value = '0.00';
+        
+        updateRowCounter();
+        updateBalanceDisplay();
+    }
+}
+// Function to update row counter
+function updateRowCounter() {
+    const tbody = document.getElementById('details-tbody');
+    const counter = document.getElementById('row-counter');
+    
+    if (tbody && counter) {
+        // Count only visible rows (exclude hidden/deleted rows)
+        const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"]):not(.deleted-row)');
+        counter.textContent = visibleRows.length;
+    }
+}
+// Function to update balance display
+function updateBalanceDisplay() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    let totalDebit = 0;
+    let totalCredit = 0;
+    
+    // Calculate totals from VISIBLE rows only (exclude hidden/deleted rows)
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    
+    visibleRows.forEach(row => {
+        // Skip rows that are marked as deleted or hidden
+        if (row.style.display === 'none' || row.classList.contains('deleted-row')) {
+            return;
+        }
+        
+        // Check for existing row debit/credit amounts
+        const existingDebitInput = row.querySelector('input[name*="debit_amount"]');
+        const existingCreditInput = row.querySelector('input[name*="credit_amount"]');
+        
+        // Check for new row debit/credit amounts
+        const newDebitInput = row.querySelector('input[name*="new_debit_amount"]');
+        const newCreditInput = row.querySelector('input[name*="new_credit_amount"]');
+        
+        // Add existing row amounts (only if not new row)
+        if (existingDebitInput && !newDebitInput) {
+            totalDebit += parseFloat(existingDebitInput.value) || 0;
+        }
+        if (existingCreditInput && !newCreditInput) {
+            totalCredit += parseFloat(existingCreditInput.value) || 0;
+        }
+        
+        // Add new row amounts (only if new row)
+        if (newDebitInput) {
+            totalDebit += parseFloat(newDebitInput.value) || 0;
+        }
+        if (newCreditInput) {
+            totalCredit += parseFloat(newCreditInput.value) || 0;
+        }
+    });
+    
+    // Update display elements
+    const totalDebitElement = document.getElementById('total-debit');
+    const totalCreditElement = document.getElementById('total-credit');
+    const balanceStatusElement = document.getElementById('balance-status');
+    
+    if (totalDebitElement) {
+        totalDebitElement.textContent = totalDebit.toFixed(2);
+    }
+    if (totalCreditElement) {
+        totalCreditElement.textContent = totalCredit.toFixed(2);
+    }
+    
+    // Update balance status
+    if (balanceStatusElement) {
+        const difference = Math.abs(totalDebit - totalCredit);
+        const tolerance = 0.01;
+        const isBalanced = difference <= tolerance;
+        
+        if (isBalanced) {
+            balanceStatusElement.textContent = 'balanced ✓';
+            balanceStatusElement.className = 'text-green-600 font-bold';
+        } else {
+            balanceStatusElement.textContent = `not balanced (${difference.toFixed(2)})`;
+            balanceStatusElement.className = 'text-red-600 font-bold';
+        }
+    }
+}
+
+// Auto-populate debit/credit amounts based on currency amount, exchange rate and IsDebit selection
+// This function handles manual user input after FillAccountingDetails has run
+function updateDebitCreditAmounts(currencyAmountInput) {
+    // Skip if event listeners are disabled (during FillAccountingDetails)
+    if (window.disableEventListeners) {
+        console.log('updateDebitCreditAmounts skipped - event listeners disabled');
+        return;
+    }
+    
+    const row = currencyAmountInput.closest('tr');
+    const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
+    const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
+    const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : 1.0;
+    const isDebitSelect = row.querySelector('select[name*="is_debit"]');
+    const debitInput = row.querySelector('input[name*="debit_amount"]');
+    const creditInput = row.querySelector('input[name*="credit_amount"]');
+    
+    // Only log in debug mode to reduce console noise
+    if (window.debugMode) {
+        console.log('updateDebitCreditAmounts called:', {
+            currencyAmount: currencyAmount,
+            currencyExchange: currencyExchange,
+            isDebitValue: isDebitSelect ? isDebitSelect.value : 'not found',
+            debitInput: debitInput ? 'found' : 'not found',
+            creditInput: creditInput ? 'found' : 'not found'
+        });
+    }
+    
+    if (debitInput && creditInput && isDebitSelect) {
+        // Clear both fields first
+        debitInput.value = '0.00';
+        creditInput.value = '0.00';
+        
+        // If there's a currency amount and IsDebit is selected, calculate amounts
+        if (currencyAmount > 0 && isDebitSelect.value !== '') {
+            const calculatedAmount = (currencyExchange * currencyAmount).toFixed(2);
+            
+            // Only update debit/credit amounts, not the currency amount
+            if (isDebitSelect.value === 'true') {
+                debitInput.value = calculatedAmount;
+                creditInput.value = '0.00';
+            } else if (isDebitSelect.value === 'false') {
+                debitInput.value = '0.00';
+                creditInput.value = calculatedAmount;
+            }
+        }
+    }
+    
+    // Update balance display
+    updateBalanceDisplay();
+}
+// Auto-populate debit/credit amounts when IsDebit selection changes
+function updateAmountsFromIsDebit(isDebitSelect) {
+    const row = isDebitSelect.closest('tr');
+    const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+    const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
+    const debitInput = row.querySelector('input[name*="debit_amount"]');
+    const creditInput = row.querySelector('input[name*="credit_amount"]');
+    
+    if (currencyAmountInput && debitInput && creditInput) {
+        const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
+        const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : 1.0;
+        
+        // Clear both fields first
+        debitInput.value = '0.00';
+        creditInput.value = '0.00';
+        
+        // Auto-populate based on IsDebit selection with exchange rate calculation
+        if (currencyAmount > 0 && isDebitSelect.value !== '') {
+            const calculatedAmount = (currencyExchange * currencyAmount).toFixed(2);
+            
+            // Only update debit/credit amounts, not the currency amount
+            if (isDebitSelect.value === 'true') {
+                debitInput.value = calculatedAmount;
+                creditInput.value = '0.00';
+            } else if (isDebitSelect.value === 'false') {
+                debitInput.value = '0.00';
+                creditInput.value = calculatedAmount;
+            }
+        }
+    }
+    
+    // Update balance display
+    updateBalanceDisplay();
+}
+    // Initialize event listeners for existing rows
+function initializeEventListeners() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    tbody.querySelectorAll('tr.existing-row').forEach(row => {
+        addEventListenersToRow(row);
+        // Ensure initial values follow the debit/credit rule
+        ensureDebitCreditRule(row);
+    });
+}
+
+// Function to ensure debit/credit rule is followed
+function ensureDebitCreditRule(row) {
+    const debitInput = row.querySelector('input[name*="debit_amount"]');
+    const creditInput = row.querySelector('input[name*="credit_amount"]');
+    
+    if (debitInput && creditInput) {
+        const debitValue = parseFloat(debitInput.value) || 0;
+        const creditValue = parseFloat(creditInput.value) || 0;
+        
+        // If both have values, keep the larger one and set the other to 0
+        if (debitValue > 0 && creditValue > 0) {
+            if (debitValue >= creditValue) {
+                creditInput.value = '0.00';
+            } else {
+                debitInput.value = '0.00';
+            }
+        }
+    }
+}
+// Add event listeners to a row (works for both existing and new rows)
+function addEventListenersToRow(row) {
+    const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+    if (currencyAmountInput) {
+        currencyAmountInput.addEventListener('input', function() {
+            updateDebitCreditAmounts(this);
+        });
+    }
+    
+    // Add event listener to currency exchange input
+    const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
+    if (currencyExchangeInput) {
+        currencyExchangeInput.addEventListener('input', function() {
+            // Recalculate amounts when exchange rate changes
+            const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+            if (currencyAmountInput) {
+                updateDebitCreditAmounts(currencyAmountInput);
+            }
+        });
+    }
+    
+    // Skip initial updateDebitCreditAmounts call if event listeners are disabled
+    if (!window.disableEventListeners) {
+        // Initial call to updateDebitCreditAmounts for the new row
+        if (currencyAmountInput) {
+            updateDebitCreditAmounts(currencyAmountInput);
+        }
+    }
+    
+    // Add event listener to IsDebit select
+    const isDebitSelect = row.querySelector('select[name*="is_debit"]');
+    if (isDebitSelect) {
+        isDebitSelect.addEventListener('change', function() {
+            updateAmountsFromIsDebit(this);
+        });
+    }
+    
+    // Add validation for debit/credit amounts
+    const debitInput = row.querySelector('input[name*="debit_amount"]');
+    const creditInput = row.querySelector('input[name*="credit_amount"]');
+    
+    if (debitInput && creditInput) {
+        // When debit amount is entered, clear credit amount
+        debitInput.addEventListener('input', function() {
+            const debitValue = parseFloat(this.value) || 0;
+            if (debitValue > 0) {
+                creditInput.value = '0.00';
+            }
+            updateBalanceDisplay();
+        });
+        
+        // When credit amount is entered, clear debit amount
+        creditInput.addEventListener('input', function() {
+            const creditValue = parseFloat(this.value) || 0;
+            if (creditValue > 0) {
+                debitInput.value = '0.00';
+            }
+            updateBalanceDisplay();
+        });
+    }
+}
+
+
+// Calculate total debit amount
+function calculateTotalDebit() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return 0;
+    
+    let total = 0;
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    
+    visibleRows.forEach(row => {
+        // Skip rows that are marked as deleted or hidden
+        if (row.style.display === 'none' || row.classList.contains('deleted-row')) {
+            return;
+        }
+        
+        // Check for existing row debit amounts
+        const existingDebitInput = row.querySelector('input[name*="debit_amount"]');
+        // Check for new row debit amounts
+        const newDebitInput = row.querySelector('input[name*="new_debit_amount"]');
+        
+        // Add existing row amounts (only if not new row)
+        if (existingDebitInput && !newDebitInput) {
+            total += parseFloat(existingDebitInput.value) || 0;
+        }
+        // Add new row amounts (only if new row)
+        if (newDebitInput) {
+            total += parseFloat(newDebitInput.value) || 0;
+        }
+    });
+    
+    return total;
+}
+
+// Calculate total credit amount
+function calculateTotalCredit() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return 0;
+    
+    let total = 0;
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    
+    visibleRows.forEach(row => {
+        // Skip rows that are marked as deleted or hidden
+        if (row.style.display === 'none' || row.classList.contains('deleted-row')) {
+            return;
+        }
+        
+        // Check for existing row credit amounts
+        const existingCreditInput = row.querySelector('input[name*="credit_amount"]');
+        // Check for new row credit amounts
+        const newCreditInput = row.querySelector('input[name*="new_credit_amount"]');
+        
+        // Add existing row amounts (only if not new row)
+        if (existingCreditInput && !newCreditInput) {
+            total += parseFloat(existingCreditInput.value) || 0;
+        }
+        // Add new row amounts (only if new row)
+        if (newCreditInput) {
+            total += parseFloat(newCreditInput.value) || 0;
+        }
+    });
+    
+    return total;
+}
+
+// Fix incorrect debit/credit logic for existing rows
+function fixIncorrectDebitCreditLogic() {
+    console.log('fixIncorrectDebitCreditLogic called for document type:', documentData.documentTypeId);
+    
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    
+    visibleRows.forEach((row, index) => {
+        const isDebitSelect = row.querySelector('select[name*="is_debit"]');
+        const debitInput = row.querySelector('input[name*="debit_amount"]');
+        const creditInput = row.querySelector('input[name*="credit_amount"]');
+        const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+        const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
+        
+        if (isDebitSelect && debitInput && creditInput && currencyAmountInput) {
+            const currentIsDebit = isDebitSelect.value;
+            const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
+            const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) || 1.0 : 1.0;
+            const calculatedAmount = (currencyAmount * currencyExchange).toFixed(2);
+            
+            
+            // For document type 2 or 4 (expense documents)
+            if (documentData.documentTypeId === 2 || documentData.documentTypeId === 4) {
+                // Check if this is a cash account (main account) or VAT account
+                const accountIdInput = row.querySelector('input[name*="account_id"]');
+                const isCashAccount = accountIdInput && accountIdInput.value == documentData.accountId;
+                const isVatAccount = accountIdInput && documentData.vatAccountId && accountIdInput.value == documentData.vatAccountId;
+                
+                console.log('fixIncorrectDebitCreditLogic - Row', index, ':', {
+                    accountId: accountIdInput ? accountIdInput.value : 'not found',
+                    isCashAccount: isCashAccount,
+                    isVatAccount: isVatAccount,
+                    currencyAmount: currencyAmount,
+                    calculatedAmount: calculatedAmount
+                });
+                
+                if (isCashAccount) {
+                    // Cash account should be CREDIT for expense documents
+                    if (currentIsDebit === 'true') {
+                        isDebitSelect.value = 'false';
+                        debitInput.value = '0.00';
+                        creditInput.value = calculatedAmount;
+                    }
+                } else if (isVatAccount) {
+                    // VAT account should be DEBIT for expense documents
+                    if (currentIsDebit === 'false') {
+                        isDebitSelect.value = 'true';
+                        debitInput.value = calculatedAmount;
+                        creditInput.value = '0.00';
+                    }
+                }
+            }
+        }
+    });
+    
+}
+
+// Force recalculate all amounts on page load
+function forceRecalculateAllAmounts() {
+    const rows = document.querySelectorAll('#details-tbody tr');
+    
+    rows.forEach((row, index) => {
+        
+        const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+        const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
+        const isDebitSelect = row.querySelector('select[name*="is_debit"]');
+        const debitInput = row.querySelector('input[name*="debit_amount"]');
+        const creditInput = row.querySelector('input[name*="credit_amount"]');
+        
+        if (currencyAmountInput && currencyExchangeInput && isDebitSelect && debitInput && creditInput) {
+            const originalCurrencyAmount = parseFloat(currencyAmountInput.value) || 0;
+            const currencyExchange = parseFloat(currencyExchangeInput.value) || 1.0;
+            
+            if (originalCurrencyAmount > 0 && isDebitSelect.value !== '') {
+                const calculatedAmount = (currencyExchange * originalCurrencyAmount).toFixed(2);
+                
+                // Only update debit/credit values, not the currency amount
+                if (isDebitSelect.value === 'true') {
+                    debitInput.value = calculatedAmount;
+                    creditInput.value = '0.00';
+                } else if (isDebitSelect.value === 'false') {
+                    debitInput.value = '0.00';
+                    creditInput.value = calculatedAmount;
+                }
+            }
+        }
+    });
+}
+</script>
+
+<!-- Include Account Selection Modal Component -->
+{% include 'core/components/account_selection_modal.html' %}
+
+<!-- Include Client Selection Modal Component -->
+{% include 'core/components/client_selection_modal.html' %}
+{% endblock %}

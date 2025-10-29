@@ -1,0 +1,1414 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if item %}Мөнгөн хөрөнгийн баримт шинэчлэх{% else %}Мөнгөн хөрөнгийн баримт үүсгэх{% endif %} - Silicon4 Accounting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/shared-components.js' %}?v={{ timestamp|default:'20240116' }}"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-3">
+        <div class="mb-3">
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">{% if item %}Мөнгөн хөрөнгийн баримт шинэчлэх{% else %}Мөнгөн хөрөнгийн баримт үүсгэх{% endif %}</h1>
+        </div>
+        <p class="text-xs text-gray-600">{% if item %}Одоо байгаа мөнгөн хөрөнгийн баримт   шинэчлэх{% else %}Шинэ мөнгөн хөрөнгийн баримт үүсгэх{% endif %}</p>
+    </div>
+    
+    <!-- Form -->
+    <div class="bg-white shadow rounded border p-2 max-w-2xl">
+        <form id="cash-document-form" method="post" action="{% if item %}{% url 'core:cashdocument_update' item.DocumentId %}{% else %}{% url 'core:cashdocument_create' %}{% endif %}">
+            {% csrf_token %}
+            
+            <div class="border border-gray-300">
+                <!-- Document Date -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentDate.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ОГНОО: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentDate }}
+                        </div>
+                        {% if form.DocumentDate.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentDate.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Document Type ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentTypeId.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            БАРИМТЫН ТӨРӨЛ: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentTypeId }}
+                        </div>
+                        {% if form.DocumentTypeId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentTypeId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Document Number -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentNo.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            БАРИМТЫН ДУГААР: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentNo }}
+                        </div>
+                        <div id="document-no-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.DocumentNo.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentNo.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Account ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="AccountIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            ДАНС: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative w-full">
+                            <input type="text" 
+                                   id="AccountIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.AccountId %}{{ item.AccountId.AccountCode }} - {{ item.AccountId.AccountName }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-gray-50"
+                                   placeholder="Click to select account"
+                                   onclick="handleAccountSelection(this)">
+                            <input type="hidden" 
+                                   name="AccountId" 
+                                   id="AccountId" 
+                                   value="{% if item and item.AccountId %}{{ item.AccountId.AccountId }}{% endif %}"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="account-id-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.AccountId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.AccountId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Template -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="TemplateId" class="text-xs text-gray-700 font-normal uppercase">
+                            ТЕМПЛЭТ:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative w-full">
+                            <select id="TemplateId" 
+                                    name="TemplateId" 
+                                    class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white appearance-none"
+                                    onchange="handleTemplateSelection(this)">
+                                <option value="">Template сонгоно уу?</option>
+                                <!-- Templates will be populated dynamically -->
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="template-id-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.TemplateId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.TemplateId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Client -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="ClientIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            ХАРИЛЦАГЧ <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative w-full">
+                            <input type="text" 
+                                   id="ClientIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.ClientId %}{{ item.ClientId.ClientCode }} - {{ item.ClientId.ClientName }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-gray-50"
+                                   placeholder="Click to select client"
+                                   onclick="openClientPopup(this)">
+                            <input type="hidden" 
+                                   name="ClientId" 
+                                   id="ClientId" 
+                                   value="{% if item and item.ClientId %}{{ item.ClientId.ClientId }}{% endif %}"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        {% if form.ClientId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.ClientId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Client Bank Account -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.ClientBankId.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ХАРИЛЦАГЧИЙН ДАНС:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.ClientBankId }}
+                        </div>
+                        {% if form.ClientBankId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.ClientBankId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Currency -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="CurrencyIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            ВАЛЮТ: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative" style="width: 60px; max-width: 60px;">
+                            <input type="text" 
+                                   id="CurrencyIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.CurrencyId %}{{ item.CurrencyId.Currency_name|truncatechars:3 }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                   placeholder="Currency will be auto-filled from account">
+                            <input type="hidden" 
+                                   name="CurrencyId" 
+                                   id="CurrencyId" 
+                                   value="{% if item and item.CurrencyId %}{{ item.CurrencyId.CurrencyId }}{% endif %}"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="currency-id-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.CurrencyId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.CurrencyId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Currency Amount -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.CurrencyAmount.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ВАЛЮТЫН ДҮН: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <input type="number" 
+                               id="{{ form.CurrencyAmount.id_for_label }}" 
+                               name="{{ form.CurrencyAmount.html_name }}" 
+                               value="{{ form.CurrencyAmount.value|default:'' }}"
+                               class="w-32 rounded-md border border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue px-2 py-1 text-xs"
+                               step="0.000001"
+                               placeholder="Enter currency amount"
+                               required>
+                        <div id="CurrencyAmount-validation" class="mt-1 text-xs hidden"></div>
+                        {% if form.CurrencyAmount.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.CurrencyAmount.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Currency Exchange Rate -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.CurrencyExchange.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ВАЛЮТЫН ХАНШ: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-32 [&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.CurrencyExchange }}
+                        </div>
+                        {% if form.CurrencyExchange.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.CurrencyExchange.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Currency MNT Amount -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.CurrencyMNT.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ТӨГРӨГИЙН ДҮН:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-32 [&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.CurrencyMNT }}
+                        </div>
+                        {% if form.CurrencyMNT.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.CurrencyMNT.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.Description.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ГҮЙЛГЭЭНИЙ УТГА: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-full">
+                            <input type="text" 
+                                   id="{{ form.Description.id_for_label }}" 
+                                   name="{{ form.Description.html_name }}" 
+                                   value="{{ form.Description.value|default:'' }}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter description"
+                               maxlength="200"
+                               required>
+                            <div id="Description-validation" class="mt-1 text-xs hidden"></div>
+                            {% if form.Description.errors %}
+                            <div class="mt-1 text-xs text-red-600">
+                                {% for error in form.Description.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Is VAT -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="customIsVat" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ (тай эсэх) :
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   id="customIsVat" 
+                                   name="IsVat" 
+                                   value="true"
+                                   {% if item and item.IsVat %}checked{% endif %}
+                                   class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                            <label for="customIsVat" class="ml-3 text-xs text-gray-700 cursor-pointer">
+                                НӨАТ идэвхжүүлэх
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- VAT Percent -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="customVatPercent" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ %:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <input type="number" 
+                               id="customVatPercent" 
+                               name="VatPercent" 
+                               value="{{ VAT_RATE_PERCENT }}"
+                               readonly
+                               class="w-20 border border-gray-300 rounded-md px-2 py-1 text-xs bg-gray-100"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="%">
+                    </div>
+                </div>
+                
+                <!-- VAT Account ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="VatAccountIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ-ЫН ДАНС:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-full">
+                            <input type="text" 
+                                   id="VatAccountIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.VatAccountId %}{{ item.VatAccountId.AccountCode }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs bg-gray-100 text-gray-600"
+                               placeholder="VAT account will be auto-selected based on document type">
+                            <input type="hidden" 
+                                   name="VatAccountId" 
+                                   id="VatAccountId" 
+                                   value="{% if item and item.VatAccountId %}{{ item.VatAccountId.AccountId }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- VAT Amount -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="customVatAmount" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ-ЫН ДҮН:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <input type="number" 
+                               id="customVatAmount" 
+                               name="VatAmount" 
+                               value=""
+                               class="w-32 border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                               step="0.01"
+                               min="0"
+                               placeholder="VAT amount will be calculated"
+                               readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t">
+                <div class="min-w-24"></div>
+                <div class="flex gap-2">
+                    <a href="{% url 'core:cashdocument_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Цуцлах
+                    </a>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {% if item %}
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Шинэчлэх
+                        {% else %}
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Үүсгэх
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Auto-fill current date if creating new document
+    const dateField = document.getElementById('id_DocumentDate');
+    if (dateField && !dateField.value) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateField.value = `${year}-${month}-${day}`;
+    }
+    
+    // Form submission handling
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            
+            // Check if form is valid
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                Silicon4Message.error('required-fields');
+                return false;
+            }
+            
+            // Additional validation for AccountId
+            const accountIdField = document.getElementById('AccountId');
+            if (!accountIdField || !accountIdField.value) {
+                event.preventDefault();
+                Silicon4Message.error('account-required');
+                const accountErrorDiv = document.getElementById('account-id-error');
+                if (accountErrorDiv) {
+                    accountErrorDiv.textContent = 'Account selection is required.';
+                }
+                return false;
+            }
+            
+            // Additional validation for CurrencyId
+            const currencyIdField = document.getElementById('CurrencyId');
+            if (!currencyIdField || !currencyIdField.value) {
+                event.preventDefault();
+                Silicon4Message.error('currency-required');
+                const currencyErrorDiv = document.getElementById('currency-id-error');
+                if (currencyErrorDiv) {
+                    currencyErrorDiv.textContent = 'Currency is required. Please select an account first.';
+                }
+                return false;
+            }
+            
+            // Additional validation for Description field
+            const descriptionField = document.getElementById('id_Description') || 
+                                   document.getElementById('id_description') ||
+                                   document.querySelector('textarea[name="Description"]') ||
+                                   document.querySelector('input[name="Description"]');
+            if (descriptionField) {
+                const value = descriptionField.value.trim();
+                if (!value) {
+                    event.preventDefault();
+                    Silicon4Message.error('validation-failed');
+                    // Show error styling for form submission
+                    descriptionField.classList.remove('border-gray-300', 'border-green-500', 'border-yellow-500');
+                    descriptionField.classList.add('border-red-500');
+                    return false;
+                } else if (!validateDescriptionField(descriptionField)) {
+                    event.preventDefault();
+                    Silicon4Message.error('validation-failed');
+                    return false;
+                }
+            }
+            
+            // Additional validation for Currency Amount field
+            const currencyAmountField = document.getElementById('id_CurrencyAmount');
+            if (currencyAmountField && !validateCurrencyAmountField(currencyAmountField)) {
+                event.preventDefault();
+                Silicon4Message.error('validation-failed');
+                return false;
+            }
+            
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                Silicon4Form.showLoading(submitButton, 'Processing...');
+            }
+        });
+    }
+    
+    // Client Bank Account filtering based on selected client
+    const clientHiddenInput = document.getElementById('ClientId');
+    const bankAccountSelect = document.getElementById('id_ClientBankId');
+    
+    if (clientHiddenInput && bankAccountSelect) {
+        // Listen for changes to the hidden client input (when modal selection changes)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    const selectedClientId = clientHiddenInput.value;
+                    
+                    if (selectedClientId) {
+                        // Filter bank accounts based on selected client
+                        const options = bankAccountSelect.querySelectorAll('option');
+                        options.forEach(option => {
+                            if (option.value === '' || option.dataset.clientId === selectedClientId) {
+                                option.style.display = 'block';
+                            } else {
+                                option.style.display = 'none';
+                            }
+                        });
+                        
+                        // Reset bank account selection if current selection is not valid for the new client
+                        if (bankAccountSelect.value && bankAccountSelect.selectedOptions[0].dataset.clientId !== selectedClientId) {
+                            bankAccountSelect.value = '';
+                        }
+                    } else {
+                        // Show all bank accounts if no client is selected
+                        const options = bankAccountSelect.querySelectorAll('option');
+                        options.forEach(option => {
+                            option.style.display = 'block';
+                        });
+                    }
+                }
+            });
+        });
+        observer.observe(clientHiddenInput, { attributes: true });
+    }
+    
+    // Document type change handler - clear account and currency selection when document type changes
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    const accountDisplayInput = document.getElementById('AccountIdDisplay');
+    const accountHiddenInput = document.getElementById('AccountId');
+    const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+    const currencyHiddenInput = document.getElementById('CurrencyId');
+    
+    if (documentTypeSelect) {
+        documentTypeSelect.addEventListener('change', function() {
+            // Clear current account selection when document type changes
+            if (accountDisplayInput) {
+                accountDisplayInput.value = '';
+            }
+            if (accountHiddenInput) {
+                accountHiddenInput.value = '';
+            }
+            
+            // Clear current currency selection when document type changes
+            if (currencyDisplayInput) {
+                currencyDisplayInput.value = '';
+            }
+            if (currencyHiddenInput) {
+                currencyHiddenInput.value = '';
+            }
+            
+            // Clear any error messages
+            const accountErrorDiv = document.getElementById('account-id-error');
+            if (accountErrorDiv) {
+                accountErrorDiv.textContent = '';
+            }
+            
+            const currencyErrorDiv = document.getElementById('currency-id-error');
+            if (currencyErrorDiv) {
+                currencyErrorDiv.textContent = '';
+            }
+            
+            // Reset border colors
+            this.style.borderColor = '';
+            if (currencyDisplayInput) {
+                currencyDisplayInput.style.borderColor = '';
+                currencyDisplayInput.style.backgroundColor = '';
+            }
+            
+            // Always update VAT account when document type changes (if VAT is enabled)
+            if (vatCheckbox && vatCheckbox.checked && this.value) {
+                setVatAccountForDocumentType(this.value);
+            }
+            
+            // Update templates when document type changes
+            updateTemplateDropdown();
+        });
+    }
+    
+    // MNT amount calculation - with robust field detection
+    const currencyAmountInput = document.getElementById('id_CurrencyAmount') || 
+                               document.querySelector('input[name="CurrencyAmount"]');
+    const currencyExchangeInput = document.getElementById('{{ form.CurrencyExchange.id_for_label }}') || 
+                                 document.querySelector('input[name="CurrencyExchange"]');
+    const currencyMNTInput = document.getElementById('id_CurrencyMNT') || 
+                            document.querySelector('input[name="CurrencyMNT"]');
+    
+    
+    // Only proceed with MNT calculation if all fields are found
+    if (currencyAmountInput && currencyExchangeInput && currencyMNTInput) {
+        function calculateMNTAmount() {
+            try {
+                const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
+                const currencyExchange = parseFloat(currencyExchangeInput.value) || 1;
+                
+                // Only calculate if we have a valid currency amount
+                if (currencyAmount > 0 && currencyExchange > 0) {
+                    const mntAmount = currencyAmount * currencyExchange;
+                    currencyMNTInput.value = mntAmount.toFixed(6);
+                    
+                    // Trigger VAT calculation when MNT amount changes
+                    if (window.Silicon4VAT && window.Silicon4VAT.calculateVAT) {
+                        window.Silicon4VAT.calculateVAT();
+                    }
+                } else if (currencyAmount === 0) {
+                    // Clear MNT amount if currency amount is 0
+                    currencyMNTInput.value = '';
+                    
+                    // Trigger VAT calculation when MNT amount is cleared
+                    if (window.Silicon4VAT && window.Silicon4VAT.calculateVAT) {
+                        window.Silicon4VAT.calculateVAT();
+                    }
+                }
+                // If currency amount is empty, don't change MNT amount
+            } catch (error) {
+                console.error('Error in calculateMNTAmount:', error);
+            }
+        }
+        
+        // Add event listeners to both inputs
+        currencyAmountInput.addEventListener('input', calculateMNTAmount);
+        currencyAmountInput.addEventListener('blur', calculateMNTAmount);
+        currencyExchangeInput.addEventListener('input', calculateMNTAmount);
+        currencyExchangeInput.addEventListener('blur', calculateMNTAmount);
+        
+        // Only calculate on page load if we have a valid currency amount
+        const initialCurrencyAmount = parseFloat(currencyAmountInput.value) || 0;
+        if (initialCurrencyAmount > 0) {
+            calculateMNTAmount();
+        }
+    }
+    
+    // Initialize hybrid validation for Description field
+    try {
+        // Try multiple possible field IDs and selectors
+        let descriptionField = null;
+        const possibleSelectors = [
+            'id_Description',
+            'id_description', 
+            'textarea[name="Description"]',
+            'input[name="Description"]',
+            'textarea[name="description"]',
+            'input[name="description"]'
+        ];
+        
+        for (const selector of possibleSelectors) {
+            if (selector.startsWith('id_')) {
+                descriptionField = document.getElementById(selector);
+            } else {
+                descriptionField = document.querySelector(selector);
+            }
+            if (descriptionField) {
+                break;
+            }
+        }
+        
+        if (descriptionField) {
+            // Real-time validation on input
+            descriptionField.addEventListener('input', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Validation on blur
+            descriptionField.addEventListener('blur', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Validation on change
+            descriptionField.addEventListener('change', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Initial validation if there's a value
+            if (descriptionField.value) {
+                validateDescriptionField(descriptionField);
+            }
+            
+            // Force trigger validation on page load only if field has content
+            setTimeout(() => {
+                if (descriptionField.value.trim()) {
+                    validateDescriptionField(descriptionField);
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Error initializing Description validation:', error);
+    }
+    
+    // Initialize hybrid validation for Currency Amount field
+    try {
+        const currencyAmountField = document.getElementById('id_CurrencyAmount');
+        if (currencyAmountField) {
+            // Real-time validation on input
+            currencyAmountField.addEventListener('input', function() {
+                validateCurrencyAmountField(this);
+            });
+            
+            // Validation on blur
+            currencyAmountField.addEventListener('blur', function() {
+                validateCurrencyAmountField(this);
+            });
+            
+            // Initial validation if there's a value
+            if (currencyAmountField.value) {
+                validateCurrencyAmountField(currencyAmountField);
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing Currency Amount validation:', error);
+    }
+    
+    // Description field validation function
+    function validateDescriptionField(field) {
+        const value = field.value.trim();
+        const validationDiv = document.getElementById('Description-validation');
+        
+        // Clear previous validation
+        if (validationDiv) {
+            validationDiv.classList.add('hidden');
+        }
+        field.classList.remove('border-red-500', 'border-green-500', 'border-yellow-500');
+        field.classList.add('border-gray-300');
+        
+        let isValid = true;
+        let message = '';
+        let type = 'success';
+        
+        // Validation rules
+        if (!value) {
+            isValid = false;
+            message = 'Description is required';
+            type = 'error';
+        } else if (value.length < 3) {
+            isValid = false;
+            message = 'Description must be at least 3 characters long';
+            type = 'error';
+        } else if (value.length > 200) {
+            // Auto-truncate if too long
+            field.value = value.substring(0, 200);
+            message = 'Description truncated to 200 characters';
+            type = 'warning';
+        } else if (value.length > 150) {
+            message = `${value.length}/200 characters - Consider shortening`;
+            type = 'warning';
+        } else {
+            message = `✓ Valid (${value.length}/200 characters)`;
+            type = 'success';
+        }
+        
+        // Apply visual feedback
+        field.classList.add('border-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-500');
+        
+        // Show validation message
+        if (validationDiv) {
+            validationDiv.textContent = message;
+            validationDiv.classList.remove('hidden', 'text-red-600', 'text-yellow-600', 'text-green-600');
+            validationDiv.classList.add('text-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-600');
+        }
+        
+        return isValid;
+    }
+    
+    // Currency Amount field validation function
+    function validateCurrencyAmountField(field) {
+        const value = field.value.trim();
+        const validationDiv = document.getElementById('CurrencyAmount-validation');
+        
+        // Clear previous validation
+        if (validationDiv) {
+            validationDiv.classList.add('hidden');
+        }
+        field.classList.remove('border-red-500', 'border-green-500', 'border-yellow-500');
+        field.classList.add('border-gray-300');
+        
+        let isValid = true;
+        let message = '';
+        let type = 'success';
+        
+        // Validation rules
+        if (!value) {
+            isValid = false;
+            message = 'Currency amount is required';
+            type = 'error';
+        } else {
+            const numericValue = parseFloat(value);
+            if (isNaN(numericValue)) {
+                isValid = false;
+                message = 'Please enter a valid number';
+                type = 'error';
+            } else if (numericValue <= 0) {
+                isValid = false;
+                message = 'Currency amount must be greater than 0';
+                type = 'error';
+            } else if (numericValue > 999999999999999999999.999999) {
+                isValid = false;
+                message = 'Currency amount cannot exceed 999,999,999,999,999,999,999.999999';
+                type = 'error';
+            } else if (numericValue < 0.01) {
+                message = 'Very small amount - please verify';
+                type = 'warning';
+            } else {
+                // Format the number for display
+                const formattedValue = numericValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6
+                });
+                message = `✓ Valid: ${formattedValue}`;
+                type = 'success';
+            }
+        }
+        
+        // Apply visual feedback
+        field.classList.add('border-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-500');
+        
+        // Show validation message
+        if (validationDiv) {
+            validationDiv.textContent = message;
+            validationDiv.classList.remove('hidden', 'text-red-600', 'text-yellow-600', 'text-green-600');
+            validationDiv.classList.add('text-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-600');
+        }
+        
+        return isValid;
+    }
+    
+    // Initialize Document Number Generator for Cash Documents
+    DocumentNumberGenerator.initDocumentTypeHandler('{{ form.DocumentTypeId.id_for_label }}', '{{ form.DocumentNo.id_for_label }}');
+    
+    // Initialize VAT functionality
+    Silicon4VAT.init({
+        isVatCheckboxId: 'customIsVat',
+        vatRateFieldId: 'customVatPercent',
+        amountFieldId: 'id_CurrencyMNT',
+        vatAmountFieldId: 'customVatAmount',
+        totalAmountFieldId: 'id_CurrencyMNT',
+        vatRate: {{ VAT_RATE_PERCENT }}
+    });
+    
+    // Auto-populate VAT account when VAT is enabled
+    const vatCheckbox = document.getElementById('customIsVat');
+    const vatAccountDisplay = document.getElementById('VatAccountIdDisplay');
+    const vatAccountHidden = document.getElementById('VatAccountId');
+    
+    // VAT account mapping based on document type (using database constants)
+    const vatAccountMapping = {
+        1: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Receipt (Орлого) - VAT Account 9 (Payable)
+        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Payment (Зарлага) - VAT Account 9 (Payable)
+        3: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Transfer (Шилжүүлэг) - VAT Account 9 (Payable)
+        4: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Adjustment (Тохируулга) - VAT Account 9 (Payable)
+    };
+    
+    // Function to set VAT account based on document type
+    function setVatAccountForDocumentType(documentTypeId) {
+        if (!documentTypeId || !vatAccountDisplay || !vatAccountHidden) return;
+        
+        const vatAccount = vatAccountMapping[parseInt(documentTypeId)];
+        
+        
+        if (vatAccount) {
+            vatAccountDisplay.value = vatAccount.display;
+            vatAccountHidden.value = vatAccount.id;
+        } else {
+            // Fallback to default VAT account
+            vatAccountDisplay.value = '{{ vat_accounts.vat_account_2_display }}';
+            vatAccountHidden.value = '{{ vat_accounts.vat_account_2_id }}';
+        }
+    }
+    
+    if (vatCheckbox && vatAccountDisplay && vatAccountHidden) {
+        // Initialize VAT account on page load if VAT is already enabled
+        if (vatCheckbox.checked) {
+            const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+            if (documentTypeSelect && documentTypeSelect.value) {
+                setVatAccountForDocumentType(documentTypeSelect.value);
+            }
+        }
+        
+        vatCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Get current document type and set appropriate VAT account
+                const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+                if (documentTypeSelect && documentTypeSelect.value) {
+                    setVatAccountForDocumentType(documentTypeSelect.value);
+                } else {
+                    // Show message that document type must be selected first
+                    vatAccountDisplay.value = 'Please select document type first';
+                    vatAccountHidden.value = '';
+                }
+            } else {
+                // Clear VAT account when VAT is disabled
+                vatAccountDisplay.value = '';
+                vatAccountHidden.value = '';
+            }
+        });
+    }
+    
+    // Add click event to account display inputs (existing functionality)
+    const mainAccountDisplayInput = document.getElementById('AccountIdDisplay');
+    if (mainAccountDisplayInput) {
+        mainAccountDisplayInput.addEventListener('click', function() {
+            handleAccountSelection(document.getElementById('AccountIdDisplay'));
+        });
+    }
+    
+    // Listen for account selection changes to update templates
+    const accountIdField = document.getElementById('AccountId');
+    if (accountIdField) {
+        // Use a MutationObserver to detect when the hidden AccountId field value changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    updateTemplateDropdown();
+                }
+            });
+        });
+        observer.observe(accountIdField, { attributes: true, attributeFilter: ['value'] });
+        
+        // Also listen for direct value changes
+        accountIdField.addEventListener('change', updateTemplateDropdown);
+    }
+});
+
+// Function to handle account selection with document type validation
+function handleAccountSelection(accountDisplayInput) {
+    // Check if document type is selected first
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    if (!documentTypeSelect || !documentTypeSelect.value) {
+        // Show error message
+        Silicon4Message.error('document-type-required');
+        
+        // Highlight the document type field
+        if (documentTypeSelect) {
+            documentTypeSelect.focus();
+            documentTypeSelect.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                documentTypeSelect.style.borderColor = '';
+            }, 3000);
+        }
+        
+        // Show error in account field
+        const accountErrorDiv = document.getElementById('account-id-error');
+        if (accountErrorDiv) {
+            accountErrorDiv.textContent = 'Please select document type first.';
+            accountErrorDiv.style.color = '#ef4444';
+        }
+        
+        return false;
+    }
+    
+    // Clear any previous error messages
+    const accountErrorDiv = document.getElementById('account-id-error');
+    if (accountErrorDiv) {
+        accountErrorDiv.textContent = '';
+    }
+    
+    // If document type is selected, proceed with account selection
+    const docTypeSelect = document.getElementById('id_DocumentTypeId');
+    const selectedDocumentType = docTypeSelect ? docTypeSelect.value : null;
+    
+    openAccountPopup(accountDisplayInput, null, { 
+        extraQueryParams: `&document_type_id=${encodeURIComponent(selectedDocumentType)}`,
+        modalTitle: 'Select Cash Account', 
+        modalSubtitle: 'Choose an account for cash transactions' 
+    });
+}
+
+// Function to update template dropdown based on selected AccountId and DocumentTypeId
+function updateTemplateDropdown() {
+    const accountIdField = document.getElementById('AccountId');
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    const templateSelect = document.getElementById('TemplateId');
+    
+    if (!templateSelect) return;
+    
+    // Clear existing options except the first one
+    templateSelect.innerHTML = '<option value="">Template сонгоно уу?</option>';
+    
+    // Check if both AccountId and DocumentTypeId are selected
+    if (!accountIdField || !accountIdField.value || !documentTypeSelect || !documentTypeSelect.value) {
+        return;
+    }
+    
+    // Fetch templates via AJAX
+    fetch(`/core/api/templates/?account_id=${accountIdField.value}&document_type_id=${documentTypeSelect.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.templates) {
+                data.templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.TemplateId;
+                    option.textContent = template.TemplateName + (template.IsVat ? ' (VAT)' : '');
+                    option.setAttribute('data-isvat', template.IsVat);
+                    templateSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading templates:', error);
+        });
+}
+
+// Function to handle template selection
+function handleTemplateSelection(templateSelect) {
+    if (!templateSelect.value) return;
+    
+    // Get the selected option to check if we have IsVat data
+    const selectedOption = templateSelect.options[templateSelect.selectedIndex];
+    const isVatFromDropdown = selectedOption.getAttribute('data-isvat');
+    
+    // If we have IsVat data from dropdown, use it immediately
+    if (isVatFromDropdown !== null) {
+        const vatCheckbox = document.getElementById('customIsVat');
+        if (vatCheckbox) {
+            vatCheckbox.checked = isVatFromDropdown === 'true';
+            // Trigger change event to update VAT-related fields
+            vatCheckbox.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    
+    // Load template details for additional information
+    loadTemplateDetails(templateSelect.value);
+}
+
+// Function to load template details and populate form fields
+function loadTemplateDetails(templateId) {
+    fetch(`/core/api/templates/${templateId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.template) {
+                // Populate IsVat checkbox based on template's IsVat value
+                const vatCheckbox = document.getElementById('customIsVat');
+                if (vatCheckbox) {
+                    vatCheckbox.checked = data.template.IsVat;
+                    
+                    // Trigger change event to update VAT-related fields
+                    vatCheckbox.dispatchEvent(new Event('change'));
+                }
+                
+                // Handle CashFlowId if available
+                if (data.template.CashFlowId) {
+                    // You can add logic here to populate cash flow related fields
+                    // For example, if you have a cash flow dropdown or display field:
+                    // const cashFlowDisplay = document.getElementById('CashFlowIdDisplay');
+                    // if (cashFlowDisplay) {
+                    //     cashFlowDisplay.value = data.template.CashFlowDescription;
+                    // }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading template details:', error);
+        });
+}
+</script>
+
+<script>
+// Period Lock Validation Functions (Inline to ensure availability)
+
+function getCSRFToken() {
+    // Try meta tag first
+    const token = document.querySelector('meta[name="csrf-token"]');
+    if (token) {
+        return token.getAttribute('content');
+    }
+    
+    // Fallback to cookie
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrftoken') {
+            return value;
+        }
+    }
+    
+    // Last resort - try to get from form
+    const form = document.querySelector('form');
+    if (form) {
+        const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+    }
+    
+    console.warn('CSRF token not found');
+    return '';
+}
+
+// Inline Message Modal Function (to ensure it's always available)
+function showMessageModal(message, type = 'error', title = null) {
+    
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to alert if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to alert');
+        alert(message);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Update icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Update message
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Update button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on OK button for accessibility
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 100);
+    }
+}
+
+function validatePeriodLock(dateValue, callback) {
+    if (!dateValue) {
+        callback(false, ''); // No date, proceed
+        return;
+    }
+    
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+        callback(false, '');
+    }, 5000); // 5 second timeout
+    
+    fetch(`/core/api/check-period-lock/?date=${dateValue}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            callback(data.is_locked, data.message);
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            callback(false, ''); // On error, allow submission
+        });
+}
+
+function attachPeriodLockValidation(formSelector, dateInputSelector) {
+    const form = document.querySelector(formSelector);
+    const dateInput = document.querySelector(dateInputSelector);
+    
+    if (!form || !dateInput) {
+        return;
+    }
+    
+    // Add hidden flag to form
+    let validationFlag = document.createElement('input');
+    validationFlag.type = 'hidden';
+    validationFlag.name = 'period_validation_passed';
+    validationFlag.value = 'false';
+    form.appendChild(validationFlag);
+    
+    let apiFailureCount = 0; // Track API failures
+    
+    form.addEventListener('submit', function(e) {
+        // Check if validation already passed
+        if (validationFlag.value === 'true') {
+            return true; // Allow submission
+        }
+        
+        // If API failed too many times, skip validation
+        if (apiFailureCount >= 3) {
+            return true;
+        }
+        
+        e.preventDefault(); // Stop submission
+        e.stopPropagation();
+        
+        const dateValue = dateInput.value;
+        
+        // Reset button state before validation
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = submitBtn.innerHTML.replace('Processing...', 'Хадгалах');
+        }
+        
+        validatePeriodLock(dateValue, function(isLocked, message) {
+            if (isLocked) {
+                // Try modal first, fallback to alert
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(message);
+                }
+                dateInput.focus();
+                validationFlag.value = 'false'; // Reset flag
+            } else {
+                // Not locked, submit form via AJAX
+                validationFlag.value = 'true';
+                
+                // Submit form via AJAX to handle JSON responses
+                const formData = new FormData(form);
+                formData.append('csrfmiddlewaretoken', getCSRFToken());
+                
+                fetch(form.action || window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.headers.get('content-type')?.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        // Regular HTML response - redirect to it
+                        window.location.href = response.url || window.location.href;
+                        return null;
+                    }
+                })
+                .then(data => {
+                    if (data) {
+                        if (data.success === false && data.error) {
+                            // Server-side validation error
+                            if (typeof showMessageModal === 'function') {
+                                showMessageModal(data.error, 'error', 'Тухайн сар цоожлогдсон байна.');
+                            } else {
+                                alert(data.error);
+                            }
+                            validationFlag.value = 'false';
+                        } else if (data.success === true || data.success) {
+                            // Success - redirect
+                            window.location.href = data.redirect_url || '/core/cashdocuments/';
+                        } else {
+                            // Fallback: if response exists but doesn't match, try redirect anyway
+                            if (data.redirect_url) {
+                                window.location.href = data.redirect_url;
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                    // Fallback to regular form submission
+                    form.submit();
+                });
+            }
+        });
+    });
+    
+    // Track API failures
+    const originalValidatePeriodLock = validatePeriodLock;
+    validatePeriodLock = function(dateValue, callback) {
+        originalValidatePeriodLock(dateValue, function(isLocked, message) {
+            if (message === '' && !isLocked) {
+                // This might be a timeout/error case
+                apiFailureCount++;
+            }
+            callback(isLocked, message);
+        });
+    };
+}
+
+// Attach period lock validation
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        attachPeriodLockValidation('form', '#id_DocumentDate');
+    } catch (error) {
+        console.error('Error in attachPeriodLockValidation:', error);
+    }
+});
+</script>
+
+<!-- Include Client Selection Modal Component -->
+{% include 'core/components/client_selection_modal.html' %}
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
+<!-- Include Account Selection Modal Component -->
+{% include 'core/components/account_selection_modal.html' %}
+</body>
+</html>

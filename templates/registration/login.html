@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Sign in to your account
+            </h2>
+        </div>
+        <form class="mt-8 space-y-6" method="post">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label for="company_code" class="block text-sm font-medium text-gray-700 mb-1">Company Code</label>
+                    <input id="company_code" 
+                           name="company_code" 
+                           type="text" 
+                           required 
+                           value="{{ request.POST.company_code }}"
+                           class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                           placeholder="Enter company code">
+                    <div id="company_code_error" class="mt-1 text-sm text-red-600 hidden"></div>
+                </div>
+                <div>
+                    <label for="database" class="block text-sm font-medium text-gray-700 mb-1">Database</label>
+                    <select id="database" 
+                            name="database" 
+                            required 
+                            disabled
+                            class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm">
+                        <option value="">Select Database</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input id="id_username" 
+                           name="username" 
+                           type="text" 
+                           required 
+                           value="{{ request.POST.username }}"
+                           class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                           placeholder="Enter your username">
+                </div>
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input id="id_password" 
+                           name="password" 
+                           type="password" 
+                           required 
+                           class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                           placeholder="Enter your password">
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">
+                            Login failed
+                        </h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>Please check your username and password.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Sign in
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const companyCodeInput = document.getElementById('company_code');
+    const databaseSelect = document.getElementById('database');
+    const companyCodeError = document.getElementById('company_code_error');
+    let debounceTimer;
+
+    // Debounced AJAX call
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Function to fetch databases for company code
+    function fetchDatabases(companyCode) {
+        if (!companyCode.trim()) {
+            databaseSelect.disabled = true;
+            databaseSelect.innerHTML = '<option value="">Select Database</option>';
+            return;
+        }
+
+        fetch(`/core/api/get-databases/?company_code=${encodeURIComponent(companyCode)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    // Show error message
+                    companyCodeError.textContent = data.error;
+                    companyCodeError.classList.remove('hidden');
+                    databaseSelect.disabled = true;
+                    databaseSelect.innerHTML = '<option value="">Select Database</option>';
+                } else {
+                    // Hide error and populate dropdown
+                    companyCodeError.classList.add('hidden');
+                    databaseSelect.disabled = false;
+                    databaseSelect.innerHTML = '<option value="">Select Database</option>';
+                    
+                    data.databases.forEach(db => {
+                        const option = document.createElement('option');
+                        option.value = db.value;
+                        option.textContent = db.label;
+                        databaseSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching databases:', error);
+                companyCodeError.textContent = 'Error loading databases';
+                companyCodeError.classList.remove('hidden');
+                databaseSelect.disabled = true;
+                databaseSelect.innerHTML = '<option value="">Select Database</option>';
+            });
+    }
+
+    // Debounced version of fetchDatabases
+    const debouncedFetchDatabases = debounce(fetchDatabases, 500);
+
+    // Event listener for company code input
+    companyCodeInput.addEventListener('input', function() {
+        const companyCode = this.value.trim();
+        debouncedFetchDatabases(companyCode);
+    });
+
+    // If company code is pre-filled (from form errors), fetch databases
+    if (companyCodeInput.value.trim()) {
+        fetchDatabases(companyCodeInput.value.trim());
+    }
+});
+</script>
+{% endblock %} 

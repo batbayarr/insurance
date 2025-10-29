@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if item %}Edit{% else %}Create{% endif %} Client - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="space-y-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {% if item %}Edit{% else %}Create{% endif %} Client
+            </h1>
+            <p class="text-gray-600">
+                {% if item %}Update the client information{% else %}Add a new client to your system{% endif %}
+            </p>
+        </div>
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.ClientCode.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.ClientCode.label }} <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                {{ form.ClientCode }}
+                                {% if form.ClientCode.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.ClientCode.errors %}
+                                    <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <p class="mt-1 text-sm text-gray-500">Enter a unique client code (max 5 characters)</p>
+                                <div id="client-code-validation" class="mt-1 text-sm hidden"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="{{ form.ClientName.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.ClientName.label }} <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                {{ form.ClientName }}
+                                {% if form.ClientName.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.ClientName.errors %}
+                                    <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <p class="mt-1 text-sm text-gray-500">Enter the client name (max 100 characters)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.ClientType.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.ClientType.label }} <span class="text-red-500">*</span>
+                            </label>
+                            <div class="mt-1">
+                                {{ form.ClientType }}
+                                {% if form.ClientType.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.ClientType.errors %}
+                                    <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <p class="mt-1 text-sm text-gray-500">Select the client type</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="{{ form.ClientRegister.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.ClientRegister.label }}
+                            </label>
+                            <div class="mt-1">
+                                {{ form.ClientRegister }}
+                                {% if form.ClientRegister.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.ClientRegister.errors %}
+                                    <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <p class="mt-1 text-sm text-gray-500">Enter client registration number (optional)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>{{ form.IsDelete.label_tag }}{{ form.IsDelete }}</div>
+                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                        <a href="{% url 'core:refclient_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Cancel</a>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">{% if item %}Update{% else %}Create{% endif %} Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="text-center">
+            <a href="{% url 'core:refclient_list' %}" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Clients</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation using the generic system
+    Silicon4Form.initFormValidation('form', {
+        'ClientCode': {
+            required: { message: 'Client code is required' },
+            minLength: { value: 2, message: 'Client code should be at least 2 characters' },
+            maxLength: { value: 5, message: 'Client code cannot exceed 5 characters' }
+        },
+        'ClientName': {
+            required: { message: 'Client name is required' },
+            minLength: { value: 2, message: 'Client name should be at least 2 characters' },
+            maxLength: { value: 100, message: 'Client name cannot exceed 100 characters' }
+        },
+        'ClientType': {
+            required: { message: 'Please select a client type' }
+        }
+    });
+});
+</script>
+{% endblock %} 

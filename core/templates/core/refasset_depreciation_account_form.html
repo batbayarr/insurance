@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+                    <p class="text-gray-600">
+                        {% if is_edit %}
+                            Update the asset depreciation account mapping
+                        {% else %}
+                            Create a new asset depreciation account mapping
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'core:ref_asset_depreciation_account_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <form method="post" class="px-6 py-6">
+            {% csrf_token %}
+            
+            <!-- Display form errors -->
+            {% if form.errors %}
+                <div class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc list-inside space-y-1">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Asset Account -->
+                <div>
+                    <label for="{{ form.AssetAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.AssetAccountId.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.AssetAccountId }}
+                    {% if form.AssetAccountId.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.AssetAccountId.help_text }}</p>
+                    {% endif %}
+                    {% if form.AssetAccountId.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.AssetAccountId.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Depreciation Account -->
+                <div>
+                    <label for="{{ form.DepreciationAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.DepreciationAccountId.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.DepreciationAccountId }}
+                    {% if form.DepreciationAccountId.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.DepreciationAccountId.help_text }}</p>
+                    {% endif %}
+                    {% if form.DepreciationAccountId.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.DepreciationAccountId.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Expense Account -->
+                <div>
+                    <label for="{{ form.ExpenseAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.ExpenseAccountId.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.ExpenseAccountId }}
+                    {% if form.ExpenseAccountId.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.ExpenseAccountId.help_text }}</p>
+                    {% endif %}
+                    {% if form.ExpenseAccountId.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.ExpenseAccountId.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Is Delete -->
+                <div class="flex items-center">
+                    <div class="flex items-center">
+                        {{ form.IsDelete }}
+                        <label for="{{ form.IsDelete.id_for_label }}" class="ml-2 block text-sm text-gray-900">
+                            {{ form.IsDelete.label }}
+                        </label>
+                    </div>
+                    {% if form.IsDelete.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.IsDelete.help_text }}</p>
+                    {% endif %}
+                    {% if form.IsDelete.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.IsDelete.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Account Information Display -->
+            {% if depreciation_account %}
+            <div class="mt-8 bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700">Asset Account</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.AssetAccountId.AccountCode }} - {{ depreciation_account.AssetAccountId.AccountName }}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700">Depreciation Account</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.DepreciationAccountId.AccountCode }} - {{ depreciation_account.DepreciationAccountId.AccountName }}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700">Expense Account</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.ExpenseAccountId.AccountCode }} - {{ depreciation_account.ExpenseAccountId.AccountName }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700">Created</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.CreatedDate|date:"M d, Y" }} by {{ depreciation_account.CreatedBy.username }}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700">Last Modified</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.ModifiedDate|date:"M d, Y" }} by {{ depreciation_account.ModifiedBy.username }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Form Actions -->
+            <div class="mt-8 flex justify-end space-x-3">
+                <a href="{% url 'core:ref_asset_depreciation_account_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    {% if is_edit %}
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Update Depreciation Account
+                    {% else %}
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create Depreciation Account
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

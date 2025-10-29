@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Calculate Depreciation - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Calculate Depreciation Expenses</h1>
+                    <p class="text-gray-600 mt-1">Calculate depreciation for assets based on period and daily expense rates</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-6">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-6">
+                    <label for="period_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Select Period
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <select name="period_id" id="period_id" 
+                            required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm">
+                        <option value="">-- Select a period --</option>
+                        {% for period in periods %}
+                            <option value="{{ period.PeriodId }}">
+                                {{ period.PeriodName }} ({{ period.BeginDate|date:"Y-m-d" }} to {{ period.EndDate|date:"Y-m-d" }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Depreciation will be calculated for all active assets (with ending quantity > 0) that have a DailyExpense value set.
+                    </p>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800">Calculation Details</h3>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Uses <code class="bg-blue-100 px-1 rounded">calculate_ast_balance</code> to check asset ending quantities</li>
+                                    <li>Only processes assets with ending quantity > 0</li>
+                                    <li>ExpenseAmount = ExpenseDay × DailyExpense (from asset card)</li>
+                                    <li>Deletes unposted records (DocumentId IS NULL) for the selected period</li>
+                                    <li>Maps accounts using ref_asset_depreciation_account table</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{% url 'core:home' %}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Calculate Depreciation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

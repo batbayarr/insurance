@@ -1,0 +1,25 @@
+[Unit]
+Description=Gunicorn daemon for Silicon4 Accounting Django Application
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/silicon4_accounting
+Environment="PATH=/var/www/silicon4_accounting/venv/bin"
+EnvironmentFile=/var/www/silicon4_accounting/.env
+ExecStart=/var/www/silicon4_accounting/venv/bin/gunicorn \
+          --workers 3 \
+          --bind unix:/var/www/silicon4_accounting/gunicorn.sock \
+          --access-logfile /var/www/silicon4_accounting/logs/gunicorn-access.log \
+          --error-logfile /var/www/silicon4_accounting/logs/gunicorn-error.log \
+          --log-level info \
+          config.wsgi:application
+
+# Restart policy
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+

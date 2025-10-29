@@ -1,0 +1,639 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if item %}Хөрөнгийн баримт шинэчлэх{% else %}Хөрөнгийн баримт үүсгэх{% endif %} - Silicon4 Accounting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/shared-components.js' %}"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-3">
+        <div class="mb-3">
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">{% if item %}Хөрөнгийн баримт шинэчлэх{% else %}Хөрөнгийн баримт үүсгэх{% endif %}</h1>
+        </div>
+        <p class="text-xs text-gray-600">{% if item %}Одоо байгаа хөрөнгийн баримт шинэчлэх{% else %}Шинэ хөрөнгийн баримт үүсгэх{% endif %}</p>
+    </div>
+    
+    <!-- Form -->
+    <div class="bg-white shadow rounded p-2 max-w-2xl">
+        <form id="asset-document-form" method="post" action="{% if item %}{% url 'core:astdocument_update' item.DocumentId %}{% else %}{% url 'core:astdocument_create' %}{% endif %}">
+            {% csrf_token %}
+            
+            <div class="border-gray-300 border">
+                <!-- Document Date -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentDate.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ОГНОО: <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentDate }}
+                        </div>
+                        {% if form.DocumentDate.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentDate.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Document Type ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentTypeId.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            БАРИМТЫН ТӨРӨЛ: <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                        {{ form.DocumentTypeId }}
+                        </div>
+                        {% if form.DocumentTypeId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentTypeId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Document Number -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentNo.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            БАРИМТЫН ДУГААР: <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentNo }}
+                        </div>
+                        <div id="document-no-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.DocumentNo.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentNo.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                
+                <!-- Account ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="AccountIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            ДАНС: <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative w-full">
+                            <input type="text" 
+                                   id="AccountIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.AccountId %}{{ item.AccountId.AccountCode }} - {{ item.AccountId.AccountName }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-gray-50"
+                                   placeholder="Click to select account"
+                                   onclick="handleAccountSelection(this)">
+                            <input type="hidden" 
+                                   name="AccountId" 
+                                   id="AccountId" 
+                                   value="{% if item and item.AccountId %}{{ item.AccountId.AccountId }}{% endif %}"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="account-id-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.AccountId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.AccountId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Client -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="ClientIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            ХАРИЛЦАГЧ <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="relative w-full">
+                            <input type="text" 
+                                   id="ClientIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.ClientId %}{{ item.ClientId.ClientCode }} - {{ item.ClientId.ClientName }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-gray-50"
+                                   placeholder="Click to select client"
+                                   onclick="openClientPopup(this)">
+                            <input type="hidden" 
+                                   name="ClientId" 
+                                   id="ClientId" 
+                                   value="{% if item and item.ClientId %}{{ item.ClientId.ClientId }}{% endif %}"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        {% if form.ClientId.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.ClientId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Is VAT -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.IsVat.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ (тай эсэх) :
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   id="{{ form.IsVat.id_for_label }}" 
+                                   name="{{ form.IsVat.html_name }}" 
+                                   value="true"
+                                   {% if form.IsVat.value %}checked{% endif %}
+                                   class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                            <label for="{{ form.IsVat.id_for_label }}" class="ml-3 text-xs text-gray-700 cursor-pointer">
+                                НӨАТ идэвхжүүлэх
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- VAT Percent -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="customVatPercent" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ %:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <input type="number" 
+                               id="customVatPercent" 
+                               name="VatPercent" 
+                               value="{{ VAT_RATE_PERCENT }}"
+                               readonly
+                               class="w-20 border border-gray-300 rounded-md px-2 py-1 text-xs bg-gray-100"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="%">
+                    </div>
+                </div>
+                
+                <!-- VAT Account ID -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="VatAccountIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
+                            НӨОАТ-ЫН ДАНС:
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-full">
+                            <input type="text" 
+                                   id="VatAccountIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.VatAccountId %}{{ item.VatAccountId.AccountCode }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs bg-gray-100"
+                               placeholder="VAT account will be auto-selected based on document type">
+                            <input type="hidden" 
+                                   name="VatAccountId" 
+                                   id="VatAccountId" 
+                                   value="{% if item and item.VatAccountId %}{{ item.VatAccountId.AccountId }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Is Lock - Hidden -->
+                <div style="display: none;">
+                    {{ form.IsLock }}
+                </div>
+                
+                <!-- Cost Amount -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.CostAmount.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ӨРТӨГИЙН ДҮН:
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-32 [&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                        {{ form.CostAmount }}
+                        </div>
+                        {% if form.CostAmount.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.CostAmount.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Price Amount -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.PriceAmount.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ҮНИЙН ДҮН:
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-32 [&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                        {{ form.PriceAmount }}
+                        </div>
+                        {% if form.PriceAmount.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.PriceAmount.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.Description.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            ГҮЙЛГЭЭНИЙ УТГА: <span class="text-red-500">*</span>
+                    </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="w-full">
+                            <input type="text" 
+                                   id="{{ form.Description.id_for_label }}" 
+                                   name="{{ form.Description.html_name }}" 
+                                   value="{{ form.Description.value|default:'' }}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Enter description"
+                               maxlength="200"
+                               required>
+                            <div id="Description-validation" class="mt-1 text-xs hidden"></div>
+                        {% if form.Description.errors %}
+                            <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.Description.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t">
+                <div class="flex gap-2">
+                    <a href="{% url 'core:astdocument_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Цуцлах
+                    </a>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% if item %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                        Шинэчлэх
+                    {% else %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                        Үүсгэх
+                    {% endif %}
+                </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Auto-fill current date if creating new document
+    const dateField = document.getElementById('id_DocumentDate');
+    if (dateField && !dateField.value) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateField.value = `${year}-${month}-${day}`;
+    }
+    
+    // Form submission handling
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // Check if form is valid
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                Silicon4Message.error('required-fields');
+                return false;
+            }
+            
+            // Additional validation for AccountId
+            const accountIdField = document.getElementById('AccountId');
+            if (!accountIdField || !accountIdField.value) {
+                event.preventDefault();
+                Silicon4Message.error('account-required');
+                const accountErrorDiv = document.getElementById('account-id-error');
+                if (accountErrorDiv) {
+                    accountErrorDiv.textContent = 'Account selection is required.';
+                }
+                return false;
+            }
+            
+            // Additional validation for Description field
+            const descriptionField = document.getElementById('id_Description');
+            if (descriptionField) {
+                const value = descriptionField.value.trim();
+                if (!value) {
+                    event.preventDefault();
+                    Silicon4Message.error('validation-failed');
+                    // Show error styling for form submission
+                    descriptionField.classList.remove('border-gray-300', 'border-green-500', 'border-yellow-500');
+                    descriptionField.classList.add('border-red-500');
+                    return false;
+                } else if (!validateDescriptionField(descriptionField)) {
+                    event.preventDefault();
+                    Silicon4Message.error('validation-failed');
+                    return false;
+                }
+            }
+            
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                Silicon4Form.showLoading(submitButton, 'Processing...');
+            }
+        });
+    }
+    
+    // Initialize Document Number Generator for Asset Documents
+    DocumentNumberGenerator.initDocumentTypeHandler('{{ form.DocumentTypeId.id_for_label }}', '{{ form.DocumentNo.id_for_label }}');
+    
+    // Document type change handler - update VAT account when document type changes
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    const vatCheckbox = document.getElementById('{{ form.IsVat.id_for_label }}');
+    if (documentTypeSelect) {
+        documentTypeSelect.addEventListener('change', function() {
+            // Update VAT account if VAT is enabled
+            if (vatCheckbox && vatCheckbox.checked && this.value) {
+                setVatAccountForDocumentType(this.value);
+            }
+        });
+    }
+    
+    // Add click event to account display inputs
+    const accountDisplayInput = document.getElementById('AccountIdDisplay');
+    if (accountDisplayInput) {
+        accountDisplayInput.addEventListener('click', function() {
+            handleAccountSelection(document.getElementById('AccountIdDisplay'));
+        });
+    }
+    
+    // Initialize VAT functionality
+    Silicon4VAT.init({
+        isVatCheckboxId: '{{ form.IsVat.id_for_label }}',
+        vatRateFieldId: 'customVatPercent',
+        amountFieldId: 'id_CostAmount',
+        vatAmountFieldId: 'id_PriceAmount',
+        totalAmountFieldId: 'id_PriceAmount',
+        vatRate: {{ VAT_RATE_PERCENT }}
+    });
+    
+    // Auto-populate VAT account when VAT is enabled
+    const vatAccountDisplay = document.getElementById('VatAccountIdDisplay');
+    const vatAccountHidden = document.getElementById('VatAccountId');
+    
+    
+    // VAT account mapping based on document type (using database constants)
+    const vatAccountMapping = {
+        10: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Asset Receipt - VAT Account 9
+        11: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Asset Issue - VAT Account 8
+    };
+    
+    // Function to set VAT account based on document type
+    function setVatAccountForDocumentType(documentTypeId) {
+        if (!documentTypeId || !vatAccountDisplay || !vatAccountHidden) return;
+        
+        const vatAccount = vatAccountMapping[parseInt(documentTypeId)];
+        
+        if (vatAccount) {
+            vatAccountDisplay.value = vatAccount.display;
+            vatAccountHidden.value = vatAccount.id;
+        } else {
+            // Fallback to default VAT account
+            vatAccountDisplay.value = '{{ vat_accounts.vat_account_1_display }}';
+            vatAccountHidden.value = '9';
+        }
+    }
+    
+    if (vatCheckbox && vatAccountDisplay && vatAccountHidden) {
+        // Add a small delay to ensure DOM is fully loaded
+        setTimeout(() => {
+            // Initialize VAT account on page load if VAT is already enabled
+            if (vatCheckbox.checked) {
+                // If there's already a VAT account value from the database, keep it
+                if (vatAccountHidden.value && vatAccountDisplay.value) {
+                    // Keep existing VAT account from database
+                } else {
+                    // Otherwise, set based on document type
+                    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+                    if (documentTypeSelect && documentTypeSelect.value) {
+                        setVatAccountForDocumentType(documentTypeSelect.value);
+                    }
+                }
+            } else {
+                vatAccountDisplay.value = '';
+                vatAccountHidden.value = '';
+            }
+        }, 100);
+        
+        vatCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Get current document type and set appropriate VAT account
+                const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+                if (documentTypeSelect && documentTypeSelect.value) {
+                    setVatAccountForDocumentType(documentTypeSelect.value);
+                } else {
+                    // Show message that document type must be selected first
+                    vatAccountDisplay.value = 'Please select document type first';
+                    vatAccountHidden.value = '';
+                }
+            } else {
+                // Clear VAT account when VAT is disabled
+                vatAccountDisplay.value = '';
+                vatAccountHidden.value = '';
+            }
+        });
+    }
+    
+    
+    // Initialize hybrid validation for Description field
+    try {
+        // Get description field
+        const descriptionField = document.getElementById('id_Description');
+        
+        if (descriptionField) {
+            // Real-time validation on input
+            descriptionField.addEventListener('input', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Validation on blur
+            descriptionField.addEventListener('blur', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Validation on change
+            descriptionField.addEventListener('change', function() {
+                validateDescriptionField(this);
+            });
+            
+            // Initial validation if there's a value
+            if (descriptionField.value) {
+                validateDescriptionField(descriptionField);
+            }
+            
+            // Force trigger validation on page load only if field has content
+            setTimeout(() => {
+                if (descriptionField.value.trim()) {
+                    validateDescriptionField(descriptionField);
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Error initializing Description validation:', error);
+    }
+});
+
+// Function to handle account selection with document type validation
+function handleAccountSelection(accountDisplayInput) {
+    // Check if document type is selected first
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    if (!documentTypeSelect || !documentTypeSelect.value) {
+        // Show error message
+        Silicon4Message.error('document-type-required');
+        
+        // Highlight the document type field
+        if (documentTypeSelect) {
+            documentTypeSelect.focus();
+            documentTypeSelect.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                documentTypeSelect.style.borderColor = '';
+            }, 3000);
+        }
+        
+        // Show error in account field
+        const accountErrorDiv = document.getElementById('account-id-error');
+        if (accountErrorDiv) {
+            accountErrorDiv.textContent = 'Please select document type first.';
+            accountErrorDiv.style.color = '#ef4444';
+        }
+        
+        return false;
+    }
+    
+    // Clear any previous error messages
+    const accountErrorDiv = document.getElementById('account-id-error');
+    if (accountErrorDiv) {
+        accountErrorDiv.textContent = '';
+    }
+    
+    // If document type is selected, proceed with account selection
+    const docTypeSelect = document.getElementById('id_DocumentTypeId');
+    const selectedDocumentType = docTypeSelect ? docTypeSelect.value : null;
+    
+    openAccountPopup(accountDisplayInput, null, { 
+        extraQueryParams: `&document_type_id=${encodeURIComponent(selectedDocumentType)}&account_type=15,18,21,24,27,30,34`,
+        modalTitle: 'Select Account', 
+        modalSubtitle: 'Choose an account for asset transactions' 
+    });
+}
+
+// Description field validation function
+function validateDescriptionField(field) {
+    const value = field.value.trim();
+    const validationDiv = document.getElementById('Description-validation');
+    
+    // Clear previous validation
+    if (validationDiv) {
+        validationDiv.classList.add('hidden');
+    }
+    field.classList.remove('border-red-500', 'border-green-500', 'border-yellow-500');
+    field.classList.add('border-gray-300');
+    
+    let isValid = true;
+    let message = '';
+    let type = 'success';
+    
+    // Validation rules
+    if (!value) {
+        isValid = false;
+        message = 'Description is required';
+        type = 'error';
+    } else if (value.length < 3) {
+        isValid = false;
+        message = 'Description must be at least 3 characters long';
+        type = 'error';
+    } else if (value.length > 200) {
+        // Auto-truncate if too long
+        field.value = value.substring(0, 200);
+        message = 'Description truncated to 200 characters';
+        type = 'warning';
+    } else if (value.length > 199) {
+        message = `${value.length}/200 characters - Consider shortening`;
+        type = 'warning';
+    } else {
+        message = `✓ Valid (${value.length}/200 characters)`;
+        type = 'success';
+    }
+    
+    // Apply visual feedback
+    field.classList.add('border-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-500');
+    
+    // Show validation message
+    if (validationDiv) {
+        validationDiv.textContent = message;
+        validationDiv.classList.remove('hidden', 'text-red-600', 'text-yellow-600', 'text-green-600');
+        validationDiv.classList.add('text-' + (type === 'error' ? 'red' : type === 'warning' ? 'yellow' : 'green') + '-600');
+    }
+    
+    return isValid;
+}
+</script>
+
+<!-- Include Client Selection Modal Component -->
+{% include 'core/components/client_selection_modal.html' %}
+
+<!-- Include Account Selection Modal Component -->
+{% include 'core/components/account_selection_modal.html' %}
+</body>
+</html>

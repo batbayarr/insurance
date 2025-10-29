@@ -1,0 +1,1434 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Inventory Document Items - {{ document.DocumentNo }} - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<style>
+/* Hide step controllers (spinner arrows) for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+</style>
+<div data-exchange-rate="1.0">
+    <!-- Header -->
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Бараа материалын бичилт</h1>
+            <p class="text-xs text-gray-600">Баримтын №: {{ document.DocumentNo }} - {{ document.Description|truncatechars:100 }}</p>
+        </div>
+    </div>
+
+    <!-- Document Data for JavaScript -->
+    <script id="document-data" type="application/json">
+    {
+        "DocumentId": {{ document.DocumentId }},
+        "DocumentTypeId": {{ document.DocumentTypeId.DocumentTypeId }},
+        "AccountId": {% if document.AccountId %}{{ document.AccountId.AccountId }}{% else %}null{% endif %},
+        "TemplateId": {% if document.TemplateId %}{{ document.TemplateId.TemplateId }}{% else %}null{% endif %},
+        "IsVat": {% if document.IsVat %}true{% else %}false{% endif %},
+        "ClientId": {{ document.ClientId.ClientId }},
+        "VatAccountId": {% if document.VatAccountId %}{{ document.VatAccountId.AccountId }}{% else %}null{% endif %},
+        "VatPercent": {{ VAT_RATE_PERCENT }},
+        "template_details": [
+            {% for td in template_details %}
+            {
+                "AccountId": {{ td.AccountId.AccountId }},
+                "AccountCode": "{{ td.AccountId.AccountCode }}",
+                "AccountName": "{{ td.AccountId.AccountName }}",
+                "AccountTypeId": {{ td.AccountId.AccountTypeId.AccountTypeId }},
+                "IsDebit": {% if td.IsDebit %}true{% else %}false{% endif %}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        "ClientCode": "{{ document.ClientId.ClientCode }}",
+        "ClientName": "{{ document.ClientId.ClientName }}"
+    }
+    </script>
+
+    <!-- Main Form -->
+    <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+        <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Бараа материалын бичилт</h3>
+                </div>
+                <button type="button" id="add-new-inventory-row-btn" 
+                        class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Add New Row</span>
+                </button>
+            </div>
+        </div>
+        <div class="p-4">
+            {% csrf_token %}
+            
+            <!-- Details Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бараа материал *</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Тоо хэмжээ *</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн өртөг *</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн үнэ *</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нийт өртөг</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нийт үнэ</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="details-tbody" class="bg-white divide-y divide-gray-200">
+                        {% for item in document_items %}
+                        <tr class="hover:bg-gray-50 existing-row" data-item-id="{{ item.DocumentItemId }}">
+                            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ item.DocumentItemId }}
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <div class="relative">
+                                    <input type="hidden" name="inventory_id_{{ item.DocumentItemId }}" 
+                                           value="{% if item.InventoryId %}{{ item.InventoryId.InventoryId }}{% endif %}" 
+                                           required>
+                                    <input type="text" 
+                                           value="{% if item.InventoryId %}{% if item.InventoryId.InventoryCode %}{{ item.InventoryId.InventoryCode }} - {% endif %}{{ item.InventoryId.InventoryName }}{% endif %}" 
+                                           class="inventory-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
+                                           placeholder="Click to select inventory" 
+                                           readonly 
+                                           onclick="openInventoryPopup(this, '{{ item.DocumentItemId }}')">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="quantity_{{ item.DocumentItemId }}" min="0" required
+                                       value="{{ item.Quantity }}"
+                                       class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.000000">
+                            </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="unit_cost_{{ item.DocumentItemId }}" min="0" required
+                                       value="{{ item.UnitCost }}"
+                                       class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.000000">
+                            </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="unit_price_{{ item.DocumentItemId }}" min="0" required
+                                       value="{{ item.UnitPrice }}"
+                                       class="unit-price-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="0.000000">
+                            </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="total_cost_{{ item.DocumentItemId }}" min="0" readonly
+                                       value="{% widthratio item.Quantity 1 item.UnitCost %}"
+                                       class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
+                                       placeholder="0.000000">
+                            </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="total_price_{{ item.DocumentItemId }}" min="0" readonly
+                                       value="{% widthratio item.Quantity 1 item.UnitPrice %}"
+                                       class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
+                                       placeholder="0.000000">
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <button type="button" onclick="removeRow(this)" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    <input type="hidden" name="delete_{{ item.DocumentItemId }}" value="false" id="delete_{{ item.DocumentItemId }}">
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                        <tr>
+                            <td class="px-4 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                            <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                            <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                                <span id="sum-total-cost" class="block text-right">0.00</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                                <span id="sum-total-price" class="block text-right">0.00</span>
+                            </td>
+                            <td class="px-2 py-1"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Accounting Details Section -->
+            {% if not user.groups.all.0.name == 'baraa_nyarav' %}
+            <div class="mt-8">
+                <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журанлын бичилт</h3>
+                        </div>
+                        <button type="button" id="add-new-detail-row-btn" 
+                                class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span>Add New Row</span>
+                        </button>
+                    </div>
+                </div>
+        <!-- Accounting Details Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 border border-gray-200" style="table-layout: auto;">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс *</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валютын дүн *</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит эсэх *</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит дүн</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                    </tr>
+                </thead>
+                <tbody id="details-accounting-tbody" class="bg-white divide-y divide-gray-200">
+                    {% for detail in document_details %}
+                    <tr class="hover:bg-gray-50 existing-detail-row" data-detail-id="{{ detail.DocumentDetailId }}">
+                        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                            {{ detail.DocumentDetailId }}
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <div class="relative">
+                                <input type="hidden" name="detail_account_id_{{ detail.DocumentDetailId }}" 
+                                       value="{% if detail.AccountId %}{{ detail.AccountId.AccountId }}{% endif %}" 
+                                       required>
+                                <input type="text" 
+                                       value="{% if detail.AccountId %}{{ detail.AccountId.AccountCode }} - {{ detail.AccountId.AccountName }}{% endif %}" 
+                                       class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
+                                       placeholder="Click to select account" 
+                                       readonly 
+                                      onclick="openAccountPopup(this, 'detail_{{ detail.DocumentDetailId }}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for inventory transactions' })">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <div class="relative">
+                                <input type="hidden" name="detail_client_id_{{ detail.DocumentDetailId }}" 
+                                       value="{% if detail.ClientId %}{{ detail.ClientId.ClientId }}{% endif %}">
+                                <input type="text" 
+                                       value="{% if detail.ClientId %}{{ detail.ClientId.ClientCode }} - {{ detail.ClientId.ClientName }}{% endif %}" 
+                                       class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly cursor-pointer" 
+                                       placeholder="Click to select client" 
+                                       readonly 
+                                       onclick="openClientPopup(this, 'detail_{{ detail.DocumentDetailId }}')">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <select name="detail_currency_id_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Currency</option>
+                                {% for currency in currencies %}
+                                <option value="{{ currency.CurrencyId }}" {% if detail.CurrencyId and currency.CurrencyId == detail.CurrencyId.CurrencyId %}selected{% endif %}>
+                                    {{ currency.CurrencyId }} - {{ currency.Currency_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <input type="number" name="detail_currency_exchange_{{ detail.DocumentDetailId }}" min="0" 
+                                   value="{% if detail.CurrencyExchange %}{{ detail.CurrencyExchange|floatformat:4 }}{% else %}1.0000{% endif %}"
+                                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                   placeholder="1.000000">
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <input type="number" name="detail_currency_amount_{{ detail.DocumentDetailId }}" min="0" required
+                                   value="{{ detail.CurrencyAmount }}"
+                                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                   placeholder="0.00">
+                        </td>
+                        <td class="px-2 py-1 text-left border-r border-gray-200">
+                            <select name="detail_is_debit_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Type</option>
+                                <option value="true" {% if detail.IsDebit %}selected{% endif %}>Debit</option>
+                                <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Credit</option>
+                            </select>
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <input type="number" name="detail_debit_amount_{{ detail.DocumentDetailId }}" min="0"
+                                   value="{% if detail.IsDebit %}{{ detail.DebitAmount|floatformat:2 }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                   placeholder="0.00">
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <input type="number" name="detail_credit_amount_{{ detail.DocumentDetailId }}" min="0"
+                                   value="{% if not detail.IsDebit %}{{ detail.CreditAmount|floatformat:2 }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                   placeholder="0.00">
+                        </td>
+                        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                <button type="button" onclick="removeDetailRow(this)" 
+                                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                    <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                        <tr>
+                            <td class="px-4 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                                <span id="sum-debit-amount" class="block text-right">0.00</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                                <span id="sum-credit-amount" class="block text-right">0.00</span>
+                            </td>
+                            <td class="px-2 py-1"></td>
+                        </tr>
+                    </tfoot>
+            </table>
+        </div>
+        
+            </div>
+            {% endif %}
+            
+            <!-- Summary and Actions -->
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
+                <div class="text-xs text-gray-600">
+                    <div class="flex items-center space-x-3 lg:space-x-6">
+                        <span class="text-xs"><span id="row-counter">{{ document_items|length }}</span> rows ready to save</span>
+                        <div class="flex items-center space-x-2 lg:space-x-3">
+                            <span class="text-gray-500 text-xs">Balance:</span>
+                            <span class="text-gray-500 text-xs">Debit:</span>
+                            <span id="total-debit" class="font-medium text-red-600 text-xs">0.00</span>
+                            <span class="text-gray-400">|</span>
+                            <span class="text-gray-500 text-xs">Credit:</span>
+                            <span id="total-credit" class="font-medium text-green-600 text-xs">0.00</span>
+                            <span id="balance-status" class="ml-2 lg:ml-3 px-2 py-1 lg:px-3 text-xs rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-2 lg:space-x-4">
+                    <a href="{% url 'core:invdocument_master_detail' %}?selected_document={{ document.DocumentId }}" 
+                       class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        Cancel
+                    </a>
+                    <button type="button" id="save-all-items" 
+                            class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onclick="submitViaAPI();">
+                        Save All Items
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Details Message -->
+    {% if not document_items %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-16 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <h3 class="mt-4 text-xs font-medium text-gray-900">No items found</h3>
+        <p class="mt-2 text-xs text-gray-500">Click "Add New Row" to create your first inventory item record.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include Inventory Selection Modal -->
+{% include 'core/components/inventory_selection_modal.html' %}
+
+<!-- Include Account Selection Modal -->
+{% include 'core/components/account_selection_modal.html' %}
+
+<!-- Include Client Selection Modal -->
+{% include 'core/components/client_selection_modal.html' %}
+
+<!-- Include Delete Modal -->
+{% include 'core/components/delete_modal.html' %}
+
+<!-- Include generic FillAccountingDetails function -->
+<script src="{% static 'js/fill-accounting-details.js' %}"></script>
+
+<script>
+// VAT Rate from context processor (no hardcoded values)
+const VAT_RATE = parseFloat('{{ VAT_RATE_PERCENT }}');
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get document's default exchange rate from data attribute
+    window.documentExchangeRate = parseFloat(document.querySelector('[data-exchange-rate]').getAttribute('data-exchange-rate') || '1.0');
+    
+    // Flag to track if automatic records have been generated
+    window.autoRecordsGenerated = false;
+    
+    
+    // Add new inventory row when button is clicked
+    const addNewInventoryRowBtn = document.getElementById('add-new-inventory-row-btn');
+    if (addNewInventoryRowBtn) {
+        addNewInventoryRowBtn.addEventListener('click', function() {
+            window.addNewRow();
+        });
+    }
+    
+    // Add new detail row when button is clicked
+    const addNewDetailRowBtn = document.getElementById('add-new-detail-row-btn');
+    if (addNewDetailRowBtn) {
+        addNewDetailRowBtn.addEventListener('click', function() {
+            // Check if first table (inventory items) has any rows
+            const inventoryTbody = document.getElementById('details-tbody');
+            if (inventoryTbody) {
+                const visibleInventoryRows = inventoryTbody.querySelectorAll('tr:not([style*="display: none"])');
+                if (visibleInventoryRows.length === 0) {
+                    alert('Падааны мэдээлэл оруулна уу?');
+                    return;
+                }
+            }
+            addNewDetailRow();
+        });
+    }
+    
+    // Setup event listeners using generic function
+    setupFillAccountingDetailsListeners({
+        documentDataId: 'document-data',
+        firstTableId: 'details-tbody',
+        secondTableId: 'details-accounting-tbody',
+        documentTypes: [5, 10],
+        debugPrefix: 'Inventory'
+    });
+    
+    // API submission function
+    window.submitViaAPI = function() {
+        try {
+            // Check if first table (inventory items) has any rows before submission
+            const inventoryTbody = document.getElementById('details-tbody');
+            if (inventoryTbody) {
+                const visibleInventoryRows = inventoryTbody.querySelectorAll('tr:not([style*="display: none"])');
+                if (visibleInventoryRows.length === 0) {
+                    alert('Падааны мэдээлэл оруулна уу?');
+                    return;
+                }
+            }
+            
+            // Collect inventory items data (first table)
+            const items = {};
+            const newItems = [];
+            const deletedItems = [];
+            
+            // Process existing inventory items
+            const existingItemRows = document.querySelectorAll('#details-tbody tr.existing-row');
+            existingItemRows.forEach(row => {
+                const itemId = row.getAttribute('data-item-id');
+                const deleteInput = row.querySelector('input[name*="delete_"]');
+                
+                if (deleteInput && deleteInput.value === 'true') {
+                    deletedItems.push(itemId);
+                } else {
+                    const inventoryId = row.querySelector('input[name*="inventory_id_"]')?.value;
+                    const quantity = row.querySelector('input[name*="quantity_"]')?.value;
+                    const unitCost = row.querySelector('input[name*="unit_cost_"]')?.value;
+                    const unitPrice = row.querySelector('input[name*="unit_price_"]')?.value;
+                    
+                    if (inventoryId && quantity && unitCost && unitPrice) {
+                        items[itemId] = {
+                            inventory_id: inventoryId,
+                            quantity: quantity,
+                            unit_cost: unitCost,
+                            unit_price: unitPrice
+                        };
+                    }
+                }
+            });
+            
+            // Process new inventory items
+            const newItemRows = document.querySelectorAll('#details-tbody tr.new-row');
+            newItemRows.forEach(row => {
+                const inventoryId = row.querySelector('input[name*="new_inventory_id_"]')?.value;
+                const quantity = row.querySelector('input[name*="new_quantity_"]')?.value;
+                const unitCost = row.querySelector('input[name*="new_unit_cost_"]')?.value;
+                const unitPrice = row.querySelector('input[name*="new_unit_price_"]')?.value;
+                
+                if (inventoryId && quantity && unitCost && unitPrice) {
+                    newItems.push({
+                        inventory_id: inventoryId,
+                        quantity: quantity,
+                        unit_cost: unitCost,
+                        unit_price: unitPrice
+                    });
+                }
+            });
+            
+            // Collect accounting details data (second table) - exclude deleted rows
+            const details = [];
+            const detailRows = document.querySelectorAll('#details-accounting-tbody tr:not([style*="display: none"])');
+            
+            detailRows.forEach((row, index) => {
+                // Look for both existing and new row patterns
+                const accountId = row.querySelector('input[name*="detail_account_id"]')?.value || row.querySelector('input[name*="new_detail_account_id"]')?.value;
+                const clientId = row.querySelector('input[name*="detail_client_id"]')?.value || row.querySelector('input[name*="new_detail_client_id"]')?.value;
+                const currencyId = row.querySelector('select[name*="detail_currency_id"]')?.value || row.querySelector('select[name*="new_detail_currency_id"]')?.value;
+                const currencyExchange = row.querySelector('input[name*="detail_currency_exchange"]')?.value || row.querySelector('input[name*="new_detail_currency_exchange"]')?.value;
+                const currencyAmount = row.querySelector('input[name*="detail_currency_amount"]')?.value || row.querySelector('input[name*="new_detail_currency_amount"]')?.value;
+                const isDebit = row.querySelector('select[name*="detail_is_debit"]')?.value || row.querySelector('select[name*="new_detail_is_debit"]')?.value;
+                
+                // Enforce currency required
+                if (!currencyId) {
+                    throw new Error('Currency is required for all accounting rows.');
+                }
+
+                if (accountId && currencyAmount && isDebit) {
+                    // Get the calculated debit/credit amounts from the form
+                    const debitAmount = row.querySelector('input[name*="detail_debit_amount"]')?.value || row.querySelector('input[name*="new_detail_debit_amount"]')?.value || '0';
+                    const creditAmount = row.querySelector('input[name*="detail_credit_amount"]')?.value || row.querySelector('input[name*="new_detail_credit_amount"]')?.value || '0';
+                    
+                    details.push({
+                        account_id: accountId,
+                        client_id: clientId,
+                        currency_id: currencyId,
+                        currency_exchange: currencyExchange || '1.0',
+                        currency_amount: currencyAmount,
+                        is_debit: isDebit,
+                        debit_amount: debitAmount,
+                        credit_amount: creditAmount
+                    });
+                }
+            });
+            
+            // Validate balance before submission (sum of debits = sum of credits)
+            if (details.length > 0) {
+                let totalDebit = 0;
+                let totalCredit = 0;
+                
+                details.forEach(detail => {
+                    totalDebit += parseFloat(detail.debit_amount) || 0;
+                    totalCredit += parseFloat(detail.credit_amount) || 0;
+                });
+                
+                const difference = Math.abs(totalDebit - totalCredit);
+                const tolerance = 0.01;
+                
+                if (difference > tolerance) {
+                    alert(`Баланс тэнцэхгүй байна!\nДебит: ${totalDebit.toFixed(2)}\nКредит: ${totalCredit.toFixed(2)}\nЗөрүү: ${difference.toFixed(2)}`);
+                    return;
+                }
+            }
+            
+            // Submit to API
+            const documentId = "{{ document.DocumentId }}";
+            const apiUrl = `/core/invdocuments/${documentId}/bulk-manage-details/api/`;
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ 
+                    items: items,
+                    new_items: newItems,
+                    deleted_items: deletedItems,
+                    details: details 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to master detail page
+                    window.location.href = `/core/invdocuments/?selected_document=${documentId}`;
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('API Error:', error);
+                alert(`API Error: ${error.message}`);
+            });
+                
+            } catch (error) {
+            console.error('Error in API submission:', error);
+            alert(`Error: ${error.message}`);
+        }
+    };
+    
+    // Note: initializeDetailEventListeners() removed as it's unused
+    // because FillAccountingDetails() clears and recreates all rows
+    
+    // Initialize inventory item calculations
+    initializeInventoryCalculations();
+    
+    // Call FillAccountingDetails on page load if template is selected
+    if (typeof FillAccountingDetails === 'function') {
+        console.log('Page loaded, calling FillAccountingDetails...');
+        FillAccountingDetails();
+    }
+    
+    // Recalculate all inventory totals on page load
+    recalculateAllInventoryTotals();
+    
+    // Force recalculate all existing amounts on page load
+    forceRecalculateAllAmounts();
+    
+    // Initialize balance display
+    updateBalanceDisplay();
+    
+    // Initialize inventory totals summary
+    updateInventoryTotalsSummary();
+});
+
+
+// Function to add a new row
+window.addNewRow = function() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) {
+        return;
+    }
+    const newRowCounter = tbody.querySelectorAll('tr.new-row').length;
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-row';
+    row.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            <span class="text-green-600 font-medium">NEW</span>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <div class="relative">
+                <input type="hidden" name="new_inventory_id_${newRowCounter}" required>
+                <input type="text" class="inventory-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       placeholder="Click to select inventory" 
+                       readonly 
+                       onclick="openInventoryPopup(this, 'new_${newRowCounter}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_quantity_${newRowCounter}" min="0" required
+                   class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_unit_cost_${newRowCounter}" min="0" required
+                   class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_unit_price_${newRowCounter}" min="0" required
+                   class="unit-price-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_total_cost_${newRowCounter}" min="0" readonly
+                   class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                   placeholder="0.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_total_price_${newRowCounter}" min="0" readonly
+                   class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                   placeholder="0.000000">
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(row);
+    addInventoryCalculationListeners(row);
+}
+
+// Function to remove a new row
+window.removeNewRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        row.remove();
+        updateInventoryTotalsSummary();
+    }
+}
+
+// Function to remove an existing row (mark for deletion)
+window.removeRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        const itemId = row.querySelector('input[name^="inventory_id_"]').name.replace('inventory_id_', '');
+        const deleteInput = document.getElementById('delete_' + itemId);
+        if (deleteInput) {
+            deleteInput.value = 'true';
+        }
+        // Hide the row visually but keep it in DOM so delete flag is submitted
+        row.style.display = 'none';
+        updateInventoryTotalsSummary();
+    }
+}
+
+
+
+
+
+// The openInventoryPopup function is provided by the inventory_selection_modal.html
+// No wrapper needed - the modal's function is already global
+
+// Function to add a new detail row (blank row for manual entry)
+window.addNewDetailRow = function() {
+    // Check if first table (inventory items) has any rows
+    const inventoryTbody = document.getElementById('details-tbody');
+    if (!inventoryTbody) {
+        return;
+    }
+    
+    // Count visible inventory rows (excluding deleted ones)
+    const visibleInventoryRows = inventoryTbody.querySelectorAll('tr:not([style*="display: none"])');
+    if (visibleInventoryRows.length === 0) {
+        alert('Падааны мэдээлэл оруулна уу?');
+        return;
+    }
+    
+    const tbody = document.getElementById('details-accounting-tbody');
+    if (!tbody) {
+        return;
+    }
+    
+    // Create a blank row for manual entry
+    const newRowCounter = tbody.querySelectorAll('tr').length;
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-detail-row';
+    row.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            <span class="text-green-600 font-medium">NEW</span>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <div class="relative">
+                <input type="hidden" name="new_detail_account_id_${newRowCounter}" required>
+                <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       placeholder="Click to select account" 
+                       readonly 
+                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for inventory transactions' })">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <div class="relative">
+                <input type="hidden" name="new_detail_client_id_${newRowCounter}">
+                <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                       placeholder="Click to select client" 
+                       readonly 
+                       onclick="openClientPopup(this, 'new_detail_${newRowCounter}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1 text-left border-r border-gray-200">
+            <select name="new_detail_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Currency</option>
+                {% for currency in currencies %}
+                <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_exchange_${newRowCounter}" min="0" value="1.0000"
+                   class="w-full border border-gray-300 rounded px-0 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="1.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_amount_${newRowCounter}" min="0" required
+                   class="w-full border border-gray-300 rounded px-0 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1 text-left border-r border-gray-200">
+            <select name="new_detail_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Type</option>
+                <option value="true">Debit</option>
+                <option value="false">Credit</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_debit_amount_${newRowCounter}" min="0"
+                   class="w-full border border-gray-300 rounded px-0 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_credit_amount_${newRowCounter}" min="0"
+                   class="w-full border border-gray-300 rounded px-0 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewDetailRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(row);
+    addEventListenersToDetailRow(row);
+    
+    updateBalanceDisplay();
+}
+
+// Removed old auto-populate functions - now using generic FillAccountingDetails function
+
+// Initialize inventory calculations for existing rows
+function initializeInventoryCalculations() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    tbody.querySelectorAll('tr').forEach(row => {
+        addInventoryCalculationListeners(row);
+    });
+}
+
+// Add calculation event listeners to inventory row
+function addInventoryCalculationListeners(row) {
+    const quantityInput = row.querySelector('.quantity-input');
+    const unitCostInput = row.querySelector('.unit-cost-input');
+    const unitPriceInput = row.querySelector('.unit-price-input');
+    
+    if (quantityInput) {
+        quantityInput.addEventListener('input', function() {
+            calculateInventoryTotals(row);
+        });
+    }
+    
+    if (unitCostInput) {
+        unitCostInput.addEventListener('input', function() {
+            calculateInventoryTotals(row);
+        });
+    }
+    
+    if (unitPriceInput) {
+        unitPriceInput.addEventListener('input', function() {
+            calculateInventoryTotals(row);
+        });
+    }
+}
+
+// Calculate total cost and total price for inventory row
+function calculateInventoryTotals(row) {
+    const quantityInput = row.querySelector('.quantity-input');
+    const unitCostInput = row.querySelector('.unit-cost-input');
+    const unitPriceInput = row.querySelector('.unit-price-input');
+    const totalCostDisplay = row.querySelector('.total-cost-display');
+    const totalPriceDisplay = row.querySelector('.total-price-display');
+    
+    if (quantityInput && unitCostInput && unitPriceInput && totalCostDisplay && totalPriceDisplay) {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitCost = parseFloat(unitCostInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        
+        const totalCost = quantity * unitCost;
+        const totalPrice = quantity * unitPrice;
+        
+        totalCostDisplay.value = totalCost.toFixed(6);
+        totalPriceDisplay.value = totalPrice.toFixed(6);
+    }
+    
+    // Update totals summary after calculation
+    updateInventoryTotalsSummary();
+}
+
+// Recalculate all inventory totals on page load
+function recalculateAllInventoryTotals() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    tbody.querySelectorAll('tr').forEach(row => {
+        calculateInventoryTotals(row);
+    });
+    
+    // Update totals summary
+    updateInventoryTotalsSummary();
+}
+
+// Calculate and display sum of total cost and total price
+function updateInventoryTotalsSummary() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    let sumTotalCost = 0;
+    let sumTotalPrice = 0;
+    
+    // Get all visible rows (not deleted)
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    
+    visibleRows.forEach(row => {
+        const totalCostDisplay = row.querySelector('.total-cost-display');
+        const totalPriceDisplay = row.querySelector('.total-price-display');
+        
+        if (totalCostDisplay) {
+            sumTotalCost += parseFloat(totalCostDisplay.value) || 0;
+        }
+        if (totalPriceDisplay) {
+            sumTotalPrice += parseFloat(totalPriceDisplay.value) || 0;
+        }
+    });
+    
+    // Update summary display
+    const sumTotalCostElement = document.getElementById('sum-total-cost');
+    const sumTotalPriceElement = document.getElementById('sum-total-price');
+    
+    if (sumTotalCostElement) {
+        sumTotalCostElement.textContent = sumTotalCost.toFixed(2);
+    }
+    if (sumTotalPriceElement) {
+        sumTotalPriceElement.textContent = sumTotalPrice.toFixed(2);
+    }
+}
+
+// Function to remove a new detail row
+window.removeNewDetailRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        row.remove();
+        updateBalanceDisplay();
+    }
+}
+
+// Function to remove an existing detail row (delete all and insert approach)
+window.removeDetailRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        // Simply remove the row from DOM - backend will handle delete all and insert
+        row.remove();
+        updateBalanceDisplay();
+    }
+}
+
+
+// Note: initializeDetailEventListeners() function removed as it's unused
+// because FillAccountingDetails() clears and recreates all rows with proper event listeners
+
+// Add event listeners to a detail row
+function addEventListenersToDetailRow(row) {
+    const currencyAmountInput = row.querySelector('input[name*="detail_currency_amount"]');
+    if (currencyAmountInput) {
+        currencyAmountInput.addEventListener('input', function() {
+            updateDetailDebitCreditAmounts(this);
+        });
+    }
+    
+    // Add event listener to currency exchange input
+    const currencyExchangeInput = row.querySelector('input[name*="detail_currency_exchange"]');
+    if (currencyExchangeInput) {
+        currencyExchangeInput.addEventListener('input', function() {
+            // Recalculate amounts when exchange rate changes
+            const currencyAmountInput = row.querySelector('input[name*="detail_currency_amount"]');
+            if (currencyAmountInput) {
+                updateDetailDebitCreditAmounts(currencyAmountInput);
+            }
+        });
+    }
+    
+    // Add event listener to IsDebit select
+    const isDebitSelect = row.querySelector('select[name*="detail_is_debit"]');
+    if (isDebitSelect) {
+        isDebitSelect.addEventListener('change', function() {
+            updateDetailAmountsFromIsDebit(this);
+        });
+    }
+    
+    // Add validation for debit/credit amounts
+    const debitInput = row.querySelector('input[name*="detail_debit_amount"]');
+    const creditInput = row.querySelector('input[name*="detail_credit_amount"]');
+    
+    if (debitInput && creditInput) {
+        // When debit amount is entered, clear credit amount
+        debitInput.addEventListener('input', function() {
+            const debitValue = parseFloat(this.value) || 0;
+            if (debitValue > 0) {
+                creditInput.value = '0.00';
+            }
+            updateBalanceDisplay();
+        });
+        
+        // When credit amount is entered, clear debit amount
+        creditInput.addEventListener('input', function() {
+            const creditValue = parseFloat(this.value) || 0;
+            if (creditValue > 0) {
+                debitInput.value = '0.00';
+            }
+            updateBalanceDisplay();
+        });
+    }
+}
+
+
+// Auto-populate debit/credit amounts based on currency amount and IsDebit selection
+function updateDetailDebitCreditAmounts(currencyAmountInput) {
+    const row = currencyAmountInput.closest('tr');
+    const currencyAmountValue = parseFloat(currencyAmountInput.value) || 0;
+    const currencyExchangeInput = row.querySelector('input[name*="detail_currency_exchange"]');
+    const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : window.documentExchangeRate;
+    const isDebitSelect = row.querySelector('select[name*="detail_is_debit"]');
+    const debitInput = row.querySelector('input[name*="detail_debit_amount"]');
+    const creditInput = row.querySelector('input[name*="detail_credit_amount"]');
+    
+    if (debitInput && creditInput && isDebitSelect) {
+        // Clear both fields first
+        debitInput.value = '0.00';
+        creditInput.value = '0.00';
+        
+        // If there's a currency amount and IsDebit is selected, calculate MNT amount
+        if (currencyAmountValue > 0 && isDebitSelect.value !== '') {
+            const calculatedAmount = (currencyExchange * currencyAmountValue).toFixed(2);
+            const formattedAmount = parseFloat(calculatedAmount).toFixed(2);
+            
+            // DO NOT overwrite currency_amount input
+            // Only update debit/credit display fields
+            if (isDebitSelect.value === 'true') {
+                debitInput.value = formattedAmount;
+                creditInput.value = '0.00';
+            } else if (isDebitSelect.value === 'false') {
+                debitInput.value = '0.00';
+                creditInput.value = formattedAmount;
+            }
+        }
+    }
+    
+    // Update balance display
+    updateBalanceDisplay();
+}
+
+// Auto-populate debit/credit amounts when IsDebit selection changes
+function updateDetailAmountsFromIsDebit(isDebitSelect) {
+    const row = isDebitSelect.closest('tr');
+    const currencyAmountInput = row.querySelector('input[name*="detail_currency_amount"]');
+    const currencyExchangeInput = row.querySelector('input[name*="detail_currency_exchange"]');
+    const debitInput = row.querySelector('input[name*="detail_debit_amount"]');
+    const creditInput = row.querySelector('input[name*="detail_credit_amount"]');
+    
+    if (currencyAmountInput && debitInput && creditInput) {
+        const currencyAmountValue = parseFloat(currencyAmountInput.value) || 0;
+        const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : window.documentExchangeRate;
+        
+        // Clear both fields first
+        debitInput.value = '0.00';
+        creditInput.value = '0.00';
+        
+        // Auto-populate based on IsDebit selection with currency exchange calculation
+        if (currencyAmountValue > 0 && isDebitSelect.value !== '') {
+            const calculatedAmount = (currencyExchange * currencyAmountValue).toFixed(2);
+            const formattedAmount = parseFloat(calculatedAmount).toFixed(2);
+            
+            // DO NOT overwrite currency_amount input
+            // Only update debit/credit display fields
+            if (isDebitSelect.value === 'true') {
+                debitInput.value = formattedAmount;
+                creditInput.value = '0.00';
+            } else if (isDebitSelect.value === 'false') {
+                debitInput.value = '0.00';
+                creditInput.value = formattedAmount;
+            }
+        }
+    }
+    
+    // Update balance display
+    updateBalanceDisplay();
+}
+
+// Function to update balance display
+function updateBalanceDisplay() {
+    const tbody = document.getElementById('details-accounting-tbody');
+    if (!tbody) return;
+    
+    let totalDebit = 0;
+    let totalCredit = 0;
+    
+    // Calculate totals from all visible rows (existing and new) - exclude deleted rows
+    const allRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    allRows.forEach(row => {
+        // Check for existing row debit/credit amounts
+        const existingDebitInput = row.querySelector('input[name*="detail_debit_amount"]');
+        const existingCreditInput = row.querySelector('input[name*="detail_credit_amount"]');
+        
+        // Check for new row debit/credit amounts
+        const newDebitInput = row.querySelector('input[name*="new_detail_debit_amount"]');
+        const newCreditInput = row.querySelector('input[name*="new_detail_credit_amount"]');
+        
+        // Add amounts - prioritize existing over new to avoid double counting
+        if (existingDebitInput) {
+            totalDebit += parseFloat(existingDebitInput.value) || 0;
+        } else if (newDebitInput) {
+            totalDebit += parseFloat(newDebitInput.value) || 0;
+        }
+        
+        if (existingCreditInput) {
+            totalCredit += parseFloat(existingCreditInput.value) || 0;
+        } else if (newCreditInput) {
+            totalCredit += parseFloat(newCreditInput.value) || 0;
+        }
+    });
+    
+    // Debug logging
+    console.log('updateBalanceDisplay - Total Debit:', totalDebit, 'Total Credit:', totalCredit);
+    
+    // Update display elements
+    const totalDebitElement = document.getElementById('total-debit');
+    const totalCreditElement = document.getElementById('total-credit');
+    const balanceStatusElement = document.getElementById('balance-status');
+    
+    if (totalDebitElement) {
+        totalDebitElement.textContent = totalDebit.toFixed(2);
+    }
+    if (totalCreditElement) {
+        totalCreditElement.textContent = totalCredit.toFixed(2);
+    }
+    
+    // Update balance status
+    if (balanceStatusElement) {
+        const difference = Math.abs(totalDebit - totalCredit);
+        const tolerance = 0.01;
+        const isBalanced = difference <= tolerance;
+        
+        if (isBalanced) {
+            balanceStatusElement.textContent = 'balanced ✓';
+            balanceStatusElement.className = 'text-green-600 font-bold';
+        } else {
+            balanceStatusElement.textContent = `not balanced (${difference.toFixed(2)})`;
+            balanceStatusElement.className = 'text-red-600 font-bold';
+        }
+    }
+    
+    // Update table summary row
+    updateAccountingTotalsSummary(totalDebit, totalCredit);
+}
+
+// Calculate and display sum of debit and credit in table summary
+function updateAccountingTotalsSummary(totalDebit, totalCredit) {
+    const sumDebitElement = document.getElementById('sum-debit-amount');
+    const sumCreditElement = document.getElementById('sum-credit-amount');
+    
+    if (sumDebitElement) {
+        sumDebitElement.textContent = totalDebit.toFixed(2);
+    }
+    if (sumCreditElement) {
+        sumCreditElement.textContent = totalCredit.toFixed(2);
+    }
+}
+
+
+// Force recalculate all amounts on page load
+function forceRecalculateAllAmounts() {
+    const rows = document.querySelectorAll('#details-accounting-tbody tr');
+    
+    rows.forEach((row, index) => {
+        const currencyAmountInput = row.querySelector('input[name*="detail_currency_amount"]');
+        const currencyExchangeInput = row.querySelector('input[name*="detail_currency_exchange"]');
+        const isDebitSelect = row.querySelector('select[name*="detail_is_debit"]');
+        const debitInput = row.querySelector('input[name*="detail_debit_amount"]');
+        const creditInput = row.querySelector('input[name*="detail_credit_amount"]');
+        
+        if (currencyAmountInput && currencyExchangeInput && isDebitSelect && debitInput && creditInput) {
+            const originalCurrencyAmount = parseFloat(currencyAmountInput.value) || 0;
+            const currencyExchange = parseFloat(currencyExchangeInput.value) || window.documentExchangeRate;
+            
+            if (originalCurrencyAmount > 0 && isDebitSelect.value !== '') {
+                const calculatedAmount = (currencyExchange * originalCurrencyAmount).toFixed(2);
+                
+                // Only update debit/credit values, not the currency amount
+                if (isDebitSelect.value === 'true') {
+                    debitInput.value = calculatedAmount;
+                    creditInput.value = '0.00';
+                } else if (isDebitSelect.value === 'false') {
+                    debitInput.value = '0.00';
+                    creditInput.value = calculatedAmount;
+                }
+            }
+        }
+    });
+}
+
+// FillAccountingDetails function - uses generic function with inventory-specific configuration
+function FillAccountingDetails() {
+    console.log('FillAccountingDetails called');
+    
+    // Call the generic FillAccountingDetails function with inventory-specific config
+    if (typeof window.FillAccountingDetailsGeneric === 'function') {
+        console.log('FillAccountingDetailsGeneric function found');
+        
+        // Ensure functions are available
+        if (typeof addDetailRow !== 'function') {
+            console.error('addDetailRow function not defined');
+            return;
+        }
+        if (typeof updateBalanceDisplay !== 'function') {
+            console.error('updateBalanceDisplay function not defined');
+            return;
+        }
+        
+        console.log('All required functions available, calling FillAccountingDetailsGeneric...');
+        
+        window.FillAccountingDetailsGeneric({
+            documentDataId: 'document-data',
+            firstTableId: 'details-tbody',
+            secondTableId: 'details-accounting-tbody',
+            documentTypes: [5, 6, 10, 11], // All document types that support VAT
+            debugPrefix: 'Inventory',
+            addDetailRowFunction: addDetailRow,
+            updateBalanceDisplayFunction: updateBalanceDisplay
+        });
+    } else {
+        console.error('Generic FillAccountingDetailsGeneric function not loaded');
+    }
+}
+
+// Test function to manually test FillAccountingDetails
+function testFillAccountingDetails() {
+    console.log('=== TESTING FillAccountingDetails ===');
+    FillAccountingDetails();
+    console.log('=== TEST COMPLETED ===');
+}
+
+// Make test function globally available
+window.testFillAccountingDetails = testFillAccountingDetails;
+
+// Test function to check template data
+function testTemplateData() {
+    console.log('=== TESTING TEMPLATE DATA ===');
+    const documentDataElement = document.getElementById('document-data');
+    if (documentDataElement) {
+        const docData = JSON.parse(documentDataElement.textContent);
+        console.log('Document data:', docData);
+        console.log('Template ID:', docData.TemplateId);
+        console.log('Template details count:', docData.template_details?.length || 0);
+        console.log('Template details:', docData.template_details);
+        console.log('Document type ID:', docData.DocumentTypeId);
+        console.log('Is VAT:', docData.IsVat);
+        console.log('VAT Percent:', docData.VatPercent);
+    } else {
+        console.error('Document data element not found');
+    }
+    console.log('=== TEMPLATE DATA TEST COMPLETED ===');
+}
+
+// Make test function globally available
+window.testTemplateData = testTemplateData;
+
+// Simple test function to manually populate the second table
+function testManualPopulate() {
+    console.log('=== MANUAL POPULATE TEST ===');
+    
+    const detailsTbody = document.getElementById('details-accounting-tbody');
+    if (!detailsTbody) {
+        console.error('details-accounting-tbody not found');
+        return;
+    }
+    
+    // Clear existing rows
+    detailsTbody.innerHTML = '';
+    
+    // Add a test row with actual values
+    const testRow = document.createElement('tr');
+    testRow.className = 'hover:bg-gray-50 new-detail-row';
+    testRow.setAttribute('data-row-id', 'test_1');
+    
+    testRow.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            test_1
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <input type="hidden" name="new_detail_account_id_test_1" value="1201">
+            <input type="text" value="1201 - Test Account" 
+                   class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs" 
+                   readonly>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <input type="hidden" name="new_detail_client_id_test_1" value="2">
+            <input type="text" value="2 - Test Client" 
+                   class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                   readonly>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <select name="new_detail_currency_id_test_1" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="1" selected>MNT</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_exchange_test_1" 
+                   value="1" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_amount_test_1" 
+                   value="224.00" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-2 py-1 text-left border-r border-gray-200">
+            <select name="new_detail_is_debit_test_1" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="true" selected>Debit</option>
+                <option value="false">Credit</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_debit_amount_test_1" 
+                   value="224.00" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_credit_amount_test_1" 
+                   value="0.00" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-2 py-1 text-center border-r border-gray-200">
+            <button type="button" class="delete-detail-btn text-red-600 hover:text-red-800">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </td>
+    `;
+    
+    detailsTbody.appendChild(testRow);
+    
+    // Update balance display
+    if (typeof updateBalanceDisplay === 'function') {
+        updateBalanceDisplay();
+    }
+    
+    console.log('Manual test row added with values 224.00');
+    console.log('=== MANUAL POPULATE TEST COMPLETED ===');
+}
+
+// Make test function globally available
+window.testManualPopulate = testManualPopulate;
+
+function addDetailRow(data) {
+    // Helper function to add a detail row to the second table
+    console.log('addDetailRow called with data:', data);
+    
+    const detailsTbody = document.getElementById('details-accounting-tbody');
+    if (!detailsTbody) {
+        console.error('details-accounting-tbody not found');
+        return;
+    }
+    
+    const newRow = document.createElement('tr');
+    newRow.className = 'hover:bg-gray-50 new-detail-row';
+    newRow.setAttribute('data-row-id', data.rowId);
+    
+    newRow.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+            ${data.rowId}
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <input type="hidden" name="new_detail_account_id_${data.rowId}" value="${data.accountId}">
+            <input type="text" value="${data.accountDisplay}" 
+                   class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs" 
+                   readonly>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <input type="hidden" name="new_detail_client_id_${data.rowId}" value="${data.clientId}">
+            <input type="text" value="${data.clientDisplay}" 
+                   class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs" 
+                   readonly>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <select name="new_detail_currency_id_${data.rowId}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="${data.currencyId}" selected>MNT</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_exchange_${data.rowId}" 
+                   value="${data.currencyExchange}" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_amount_${data.rowId}" 
+                   value="${data.currencyAmount}" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-2 py-1 text-left border-r border-gray-200">
+            <select name="new_detail_is_debit_${data.rowId}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                <option value="true" ${data.isDebit ? 'selected' : ''}>Debit</option>
+                <option value="false" ${!data.isDebit ? 'selected' : ''}>Credit</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_debit_amount_${data.rowId}" 
+                   value="${data.isDebit ? data.currencyAmount : '0.000000'}" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_credit_amount_${data.rowId}" 
+                   value="${!data.isDebit ? data.currencyAmount : '0.000000'}" 
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right">
+        </td>
+        <td class="px-2 py-1 text-center border-r border-gray-200">
+            <button type="button" class="delete-detail-btn text-red-600 hover:text-red-800">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </td>
+    `;
+    
+    detailsTbody.appendChild(newRow);
+    
+    // Debug: Verify the values were set correctly
+    const currencyAmountInput = newRow.querySelector(`input[name="new_detail_currency_amount_${data.rowId}"]`);
+    const debitAmountInput = newRow.querySelector(`input[name="new_detail_debit_amount_${data.rowId}"]`);
+    const creditAmountInput = newRow.querySelector(`input[name="new_detail_credit_amount_${data.rowId}"]`);
+    
+    console.log('Row created with values:', {
+        currencyAmount: currencyAmountInput?.value,
+        debitAmount: debitAmountInput?.value,
+        creditAmount: creditAmountInput?.value,
+        isDebit: data.isDebit
+    });
+    
+    // Add event listeners to the new row for balance updates
+    addEventListenersToDetailRow(newRow);
+}
+
+
+</script>
+{% endblock %}

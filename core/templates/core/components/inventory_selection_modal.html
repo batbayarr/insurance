@@ -1,0 +1,679 @@
+<!-- Inventory Selection Modal Component -->
+<div id="inventory-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-6xl min-w-[1200px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900">Select Inventory Item</h3>
+                <p class="text-sm text-gray-500 mt-1">Choose an inventory item from the list below</p>
+            </div>
+            <button onclick="closeInventoryPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Column Filters and Actions -->
+        <div class="mb-4">
+            <div class="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <div class="col-span-1">
+                    <input type="text" 
+                           id="filter-inventory-code" 
+                           placeholder="Code..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-inventory-name" 
+                           placeholder="Filter by name..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-inventory-type" 
+                           placeholder="Filter by type..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-inventory-unit" 
+                           placeholder="Filter by unit..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-3 flex items-center justify-center space-x-2">
+                    <button onclick="showAddInventoryForm()" 
+                            class="inline-flex items-center px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                            title="Add New Inventory Item">
+                        <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add
+                    </button>
+                    <button onclick="clearAllInventoryFilters()" 
+                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Inventory Form (Hidden by default) -->
+        <div id="inventory-form-container" class="mb-4 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 id="inventory-form-title" class="text-lg font-medium text-gray-900">Add New Inventory Item</h4>
+                    <button onclick="hideInventoryForm()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="inventory-form" onsubmit="submitInventoryForm(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="inventory-code" class="block text-sm font-medium text-gray-700 mb-1">Inventory Code</label>
+                            <input type="text" id="inventory-code" name="InventoryCode" maxlength="5"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="inventory-name" class="block text-sm font-medium text-gray-700 mb-1">Inventory Name *</label>
+                            <input type="text" id="inventory-name" name="InventoryName" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="inventory-type" class="block text-sm font-medium text-gray-700 mb-1">Inventory Type *</label>
+                            <select id="inventory-type" name="InventoryTypeId" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Type</option>
+                                <option value="1">Raw Materials</option>
+                                <option value="2">Finished Goods</option>
+                                <option value="3">Work in Progress</option>
+                                <option value="4">Consumables</option>
+                                <option value="5">Tools & Equipment</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="inventory-measurement" class="block text-sm font-medium text-gray-700 mb-1">Measurement Unit *</label>
+                            <select id="inventory-measurement" name="MeasurementId" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Unit</option>
+                                <option value="1">Pieces</option>
+                                <option value="2">Kilograms</option>
+                                <option value="3">Liters</option>
+                                <option value="4">Meters</option>
+                                <option value="5">Boxes</option>
+                                <option value="6">Pallets</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="inventory-unit-cost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                            <input type="number" id="inventory-unit-cost" name="UnitCost" step="0.000001" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="inventory-unit-price" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                            <input type="number" id="inventory-unit-price" name="UnitPrice" step="0.000001" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="inventory-active" name="IsActive" checked
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="ml-2 text-sm text-gray-700">Active</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-blue-200">
+                        <button type="button" onclick="hideInventoryForm()" 
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" id="inventory-submit-btn"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <span id="inventory-submit-text">Add Inventory Item</span>
+                            <span id="inventory-submit-loading" class="hidden">
+                                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Saving...
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" id="inventory-id" name="InventoryId" value="">
+                </form>
+            </div>
+        </div>
+
+        <!-- Inventory List Container -->
+        <div id="inventory-list-container" class="max-h-96 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg min-w-[1100px]">
+            <!-- Inventory list will be loaded here -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+            <button onclick="closeInventoryPopup()" 
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Inventory Selection Modal Functions
+window.openInventoryPopup = function(inputElement = null, rowId = null) {
+    // Store the current input element and row ID for later use
+    window.currentInventoryInput = inputElement;
+    window.currentInventoryRowId = rowId;
+    
+    // Open inventory selection modal
+    const modal = document.getElementById('inventory-selection-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Load inventories
+        loadInventoryList();
+    }
+}
+
+window.closeInventoryPopup = function() {
+    const modal = document.getElementById('inventory-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+window.selectInventory = function(inventoryId, inventoryName, unitCost = '', unitPrice = '') {
+    // Check if we're in bulk manage mode (has currentInventoryInput and currentInventoryRowId)
+    if (window.currentInventoryInput && window.currentInventoryRowId) {
+        // Bulk manage mode - populate the specific row
+        const row = window.currentInventoryInput.closest('tr');
+        if (row) {
+            // Try multiple selectors to find the hidden input
+            const hiddenInput = row.querySelector('.inventory-id-input') || 
+                               row.querySelector('input[name*="inventory_id_"]') || 
+                               row.querySelector('input[name*="new_inventory_id_"]');
+            const displayInput = row.querySelector('.inventory-display-input');
+            const unitCostInput = row.querySelector('.unit-cost-input');
+            const unitPriceInput = row.querySelector('.unit-price-input');
+            
+            if (hiddenInput && displayInput) {
+                hiddenInput.value = inventoryId;
+                displayInput.value = inventoryName;
+            }
+            
+            // Populate unit cost and unit price if inputs exist
+            if (unitCostInput) {
+                unitCostInput.value = unitCost;
+            }
+            if (unitPriceInput) {
+                unitPriceInput.value = unitPrice;
+            }
+            
+            // Trigger calculation if we're in bulk manage mode
+            if (typeof calculateInventoryTotals === 'function') {
+                calculateInventoryTotals(row);
+            }
+        }
+    } else {
+        // Regular form mode - populate main form fields
+        const hiddenInput = document.getElementById('InventoryId');
+        const displayInput = document.getElementById('InventoryIdDisplay');
+        const unitCostInput = document.getElementById('UnitCost');
+        const unitPriceInput = document.getElementById('UnitPrice');
+        
+        if (hiddenInput && displayInput) {
+            hiddenInput.value = inventoryId;
+            displayInput.value = inventoryName;
+        }
+        
+        // Populate unit cost and unit price if inputs exist
+        if (unitCostInput) {
+            unitCostInput.value = unitCost;
+        }
+        if (unitPriceInput) {
+            unitPriceInput.value = unitPrice;
+        }
+    }
+    
+    // Clear the stored references
+    window.currentInventoryInput = null;
+    window.currentInventoryRowId = null;
+    
+    closeInventoryPopup();
+}
+
+// Show add inventory form
+function showAddInventoryForm() {
+    const formContainer = document.getElementById('inventory-form-container');
+    const formTitle = document.getElementById('inventory-form-title');
+    const submitText = document.getElementById('inventory-submit-text');
+    const inventoryIdInput = document.getElementById('inventory-id');
+    
+    // Reset form
+    document.getElementById('inventory-form').reset();
+    inventoryIdInput.value = '';
+    document.getElementById('inventory-active').checked = true; // Set default to active
+    
+    // Update form title and button text
+    formTitle.textContent = 'Add New Inventory Item';
+    submitText.textContent = 'Add Inventory Item';
+    
+    // Show form
+    formContainer.classList.remove('hidden');
+}
+
+// Show edit inventory form
+function updateInventory(inventoryId, inventoryName) {
+    const formContainer = document.getElementById('inventory-form-container');
+    const formTitle = document.getElementById('inventory-form-title');
+    const submitText = document.getElementById('inventory-submit-text');
+    const inventoryIdInput = document.getElementById('inventory-id');
+    
+    // Populate form with existing data
+    inventoryIdInput.value = inventoryId;
+    document.getElementById('inventory-name').value = inventoryName;
+    
+    // Update form title and button text
+    formTitle.textContent = 'Edit Inventory Item';
+    submitText.textContent = 'Update Inventory Item';
+    
+    // Show form
+    formContainer.classList.remove('hidden');
+}
+
+// Hide inventory form
+function hideInventoryForm() {
+    const formContainer = document.getElementById('inventory-form-container');
+    formContainer.classList.add('hidden');
+}
+
+// Submit inventory form
+function submitInventoryForm(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('inventory-form');
+    const formData = new FormData(form);
+    const inventoryId = document.getElementById('inventory-id').value;
+    const isEdit = inventoryId !== '';
+    
+    // Show loading state
+    const submitBtn = document.getElementById('inventory-submit-btn');
+    const submitText = document.getElementById('inventory-submit-text');
+    const submitLoading = document.getElementById('inventory-submit-loading');
+    
+    // Use shared component if available, otherwise fall back to manual implementation
+    if (typeof Silicon4Form !== 'undefined' && Silicon4Form.showLoading) {
+        Silicon4Form.showLoading(submitBtn, 'Saving...');
+    } else {
+        // Original implementation (fallback)
+        submitText.classList.add('hidden');
+        submitLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+    }
+    
+    // Determine URL and get CSRF token
+    const url = isEdit ? `/core/refinventory/${inventoryId}/update/` : '/core/refinventory/create/';
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Use fetch to submit and handle response
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken ? csrfToken.value : ''
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Success - hide form and refresh inventory list
+            hideInventoryForm();
+            loadInventoryList();
+            
+            // Show success message
+            showInventoryMessage(isEdit ? 'Inventory item updated successfully!' : 'Inventory item created successfully!', 'success');
+        } else {
+            throw new Error('Failed to save inventory item');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving inventory item:', error);
+        showInventoryMessage('Error saving inventory item. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset loading state
+        // Use shared component if available, otherwise fall back to manual implementation
+        if (typeof Silicon4Form !== 'undefined' && Silicon4Form.hideLoading) {
+            const originalHtml = isEdit ? 'Update Inventory Item' : 'Add Inventory Item';
+            Silicon4Form.hideLoading(submitBtn, originalHtml);
+        } else {
+            // Original implementation (fallback)
+            submitText.classList.remove('hidden');
+            submitLoading.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Show message to user
+function showInventoryMessage(message, type) {
+    // Use shared component if available, otherwise fall back to original implementation
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.show) {
+        Silicon4Message.show(message, type);
+    } else {
+        // Original implementation (fallback)
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+        }`;
+        messageDiv.textContent = message;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+}
+
+// Delete inventory function
+function deleteInventory(inventoryId, inventoryName) {
+    const deleteUrl = `/core/refinventory/${inventoryId}/delete/`;
+    const itemName = `inventory item "${inventoryName}"`;
+    
+    // Use standardized delete modal
+    Silicon4Delete.showModal(deleteUrl, itemName, function() {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Add a callback to refresh the inventory list after successful deletion
+        form.addEventListener('submit', function() {
+            setTimeout(() => {
+                loadInventoryList();
+            }, 1000);
+        });
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+function loadInventoryList() {
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    if (!inventoryListContainer) return;
+    
+    // Show loading
+    inventoryListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading inventory items...</p></div>';
+    
+    // Use shared component for loading message if available
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
+        Silicon4Message.info('Loading inventory items...');
+    }
+    
+    // Fetch inventories data and render custom modal
+    const url = `/core/refinventory/?modal=true&select_mode=true`;
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Parse the HTML to extract inventory data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const inventoryRows = doc.querySelectorAll('tbody tr');
+            
+            if (inventoryRows.length === 0) {
+                inventoryListContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory items found</h3>
+                        <p class="mt-1 text-sm text-gray-500">No inventory items match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create custom inventory list HTML
+            let inventoriesHtml = `
+                <div class="space-y-0">
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div class="col-span-1 border-r border-gray-200 px-2">Code</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Inventory Name</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Type</div>
+                        <div class="col-span-1 border-r border-gray-200 px-2">Unit</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Unit Cost</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Unit Price</div>
+                        <div class="col-span-1 border-r border-gray-200 px-2 text-center">Select</div>
+                        <div class="col-span-1 px-2 text-center">Actions</div>
+                    </div>
+            `;
+            
+            inventoryRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const inventoryCode = cells[0]?.textContent?.trim() || '-';
+                    const inventoryName = cells[1]?.textContent?.trim() || '';
+                    const inventoryType = cells[2]?.textContent?.trim() || '-';
+                    const inventoryUnit = cells[3]?.textContent?.trim() || '-';
+                    
+                    // Extract inventory ID and unit cost/price from the select button onclick
+                    const selectButton = row.querySelector('button[onclick*="selectInventory"]');
+                    let inventoryId = '';
+                    let unitCost = '-';
+                    let unitPrice = '-';
+                    
+                    if (selectButton) {
+                        const onclickAttr = selectButton.getAttribute('onclick');
+                        const matches = onclickAttr.match(/selectInventory\('([^']+)',\s*'([^']+)',\s*'([^']*)',\s*'([^']*)'\)/);
+                        if (matches) {
+                            inventoryId = matches[1];
+                            unitCost = matches[3] || '-';
+                            unitPrice = matches[4] || '-';
+                        }
+                    }
+                    
+                    // Format inventory name to match bulk manage template format: "CODE - NAME"
+                    const formattedInventoryName = inventoryCode && inventoryCode !== '-' ? 
+                        `${inventoryCode} - ${inventoryName}` : inventoryName;
+                    
+                    inventoriesHtml += `
+                        <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer inventory-row" 
+                             data-inventory-code="${inventoryCode.toLowerCase()}" 
+                             data-inventory-name="${inventoryName.toLowerCase()}" 
+                             data-inventory-type="${inventoryType.toLowerCase()}"
+                             data-inventory-unit="${inventoryUnit.toLowerCase()}"
+                             onclick="selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCost}', '${unitPrice}')">
+                            <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${inventoryCode}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${inventoryName}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${inventoryType}</span>
+                            </div>
+                            <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${inventoryUnit}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-2">
+                                <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCost}', '${unitPrice}')" 
+                                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                                    Select
+                                </button>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center space-x-1">
+                                <button onclick="event.stopPropagation(); updateInventory('${inventoryId}', '${inventoryName}')" 
+                                        class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                        title="Update Inventory Item">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteInventory('${inventoryId}', '${inventoryName}')" 
+                                        class="inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                        title="Delete Inventory Item">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            inventoriesHtml += '</div>';
+            inventoryListContainer.innerHTML = inventoriesHtml;
+            
+            // Add search filter functionality
+            initializeInventorySearchFilter();
+        })
+        .catch(error => {
+            console.error('Error loading inventory items:', error);
+            
+            // Use shared component for error message if available
+            if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error('load-inventory-failed');
+            }
+            
+            inventoryListContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading inventory items</h3>
+                    <p class="mt-1 text-sm text-gray-500">Please try again or contact support.</p>
+                </div>
+            `;
+        });
+}
+
+// Initialize inventory search filter functionality
+function initializeInventorySearchFilter() {
+    const codeFilter = document.getElementById('filter-inventory-code');
+    const nameFilter = document.getElementById('filter-inventory-name');
+    const typeFilter = document.getElementById('filter-inventory-type');
+    const unitFilter = document.getElementById('filter-inventory-unit');
+    
+    if (!codeFilter || !nameFilter || !typeFilter || !unitFilter) return;
+    
+    // Function to apply all filters
+    function applyInventoryFilters() {
+        const codeTerm = codeFilter.value.toLowerCase().trim();
+        const nameTerm = nameFilter.value.toLowerCase().trim();
+        const typeTerm = typeFilter.value.toLowerCase().trim();
+        const unitTerm = unitFilter.value.toLowerCase().trim();
+        
+        const inventoryRows = document.querySelectorAll('.inventory-row');
+        let visibleCount = 0;
+        
+        inventoryRows.forEach(row => {
+            const inventoryCode = row.getAttribute('data-inventory-code') || '';
+            const inventoryName = row.getAttribute('data-inventory-name') || '';
+            const inventoryType = row.getAttribute('data-inventory-type') || '';
+            const inventoryUnit = row.getAttribute('data-inventory-unit') || '';
+            
+            const codeMatch = !codeTerm || inventoryCode.includes(codeTerm);
+            const nameMatch = !nameTerm || inventoryName.includes(nameTerm);
+            const typeMatch = !typeTerm || inventoryType.includes(typeTerm);
+            const unitMatch = !unitTerm || inventoryUnit.includes(unitTerm);
+            
+            if (codeMatch && nameMatch && typeMatch && unitMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide "no results" message
+        const noResultsMsg = document.getElementById('no-results-message');
+        const hasActiveFilters = codeTerm || nameTerm || typeTerm || unitTerm;
+        
+        if (hasActiveFilters && visibleCount === 0) {
+            if (!noResultsMsg) {
+                const container = document.getElementById('inventory-list-container');
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.id = 'no-results-message';
+                noResultsDiv.className = 'text-center py-8 text-gray-500';
+                noResultsDiv.innerHTML = `
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p class="text-sm">No inventory items found matching the current filters</p>
+                `;
+                container.appendChild(noResultsDiv);
+            }
+        } else if (noResultsMsg) {
+            noResultsMsg.remove();
+        }
+    }
+    
+    // Add event listeners to all filter inputs
+    [codeFilter, nameFilter, typeFilter, unitFilter].forEach(input => {
+        input.addEventListener('input', applyInventoryFilters);
+    });
+    
+    // Clear all filters function
+    window.clearAllInventoryFilters = function() {
+        codeFilter.value = '';
+        nameFilter.value = '';
+        typeFilter.value = '';
+        unitFilter.value = '';
+        applyInventoryFilters();
+    };
+    
+    // Clear filters when modal is closed
+    const modal = document.getElementById('inventory-selection-modal');
+    if (modal) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (modal.classList.contains('hidden')) {
+                        // Clear all filters
+                        codeFilter.value = '';
+                        nameFilter.value = '';
+                        typeFilter.value = '';
+                        unitFilter.value = '';
+                        // Show all rows again
+                        const inventoryRows = document.querySelectorAll('.inventory-row');
+                        inventoryRows.forEach(row => {
+                            row.style.display = '';
+                        });
+                        // Remove no results message
+                        const noResultsMsg = document.getElementById('no-results-message');
+                        if (noResultsMsg) {
+                            noResultsMsg.remove();
+                        }
+                    }
+                }
+            });
+        });
+        observer.observe(modal, { attributes: true });
+    }
+}
+</script>

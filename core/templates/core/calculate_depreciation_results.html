@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Depreciation Calculation Results - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Depreciation Calculation Results</h1>
+            <p class="text-gray-600">Period: {{ period.PeriodName }} ({{ period.BeginDate|date:"Y-m-d" }} to {{ period.EndDate|date:"Y-m-d" }})</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'core:calculate_depreciation' %}" 
+               class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Calculate Another Period
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Total Records</p>
+                <p class="text-2xl font-bold text-gray-900">{{ results|length }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Total Expense Amount</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    {% widthratio results|length 1 1 as total %}
+                    {{ results|sum_by:'expenseamount'|default:"0"|floatformat:2 }}
+                </p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Expense Days</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    {% if results %}{{ results.0.expenseday }}{% else %}0{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% if results %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Account</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Debit Account</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credit Account</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expense Days</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Expense</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expense Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for row in results %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-4 text-sm text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-medium">{{ row.assetaccountcode }}</span>
+                                    <span class="text-gray-500 text-xs">ID: {{ row.assetaccountid }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-medium">{{ row.debitaccountcode }}</span>
+                                    <span class="text-gray-500 text-xs">ID: {{ row.debitaccountid }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-medium">{{ row.creditaccountcode }}</span>
+                                    <span class="text-gray-500 text-xs">ID: {{ row.creditaccountid }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-medium">{{ row.periodname }}</span>
+                                    <span class="text-gray-500 text-xs">ID: {{ row.periodid }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-mono">
+                                {{ row.expenseday }}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-mono">
+                                {{ row.dailyexpense|floatformat:2 }}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-mono font-semibold">
+                                {{ row.expenseamount|floatformat:2 }}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if row.documentno %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {{ row.documentno }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Not Posted
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <td colspan="6" class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                                Total:
+                            </td>
+                            <td class="px-4 py-3 text-sm font-bold text-gray-900 text-right font-mono">
+                                {% widthratio results|length 1 1 as total_amount %}
+                                {% for row in results %}
+                                    {% if forloop.first %}
+                                        {% widthratio row.expenseamount 1 1 as sum %}
+                                    {% else %}
+                                        {% widthratio sum 1 1 as temp %}
+                                        {% widthratio temp|add:row.expenseamount 1 1 as sum %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ sum|default:"0"|floatformat:2 }}
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No depreciation expenses calculated</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    No assets found with positive ending quantity and daily expense values for this period.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

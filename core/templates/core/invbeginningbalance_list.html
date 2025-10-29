@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Beginning Balances{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Inventory Beginning Balances</h1>
+                        <p class="mt-1 text-sm text-gray-500">Manage initial inventory balances for accounts</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="refreshBalanceList()" 
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Refresh
+                        </button>
+                        <button onclick="addNewBalance()" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Add New Balance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Filters Section -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Filters</h3>
+            </div>
+            <div class="px-6 py-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="filter-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                        <input type="text" 
+                               id="filter-account" 
+                               placeholder="Filter by account..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="filter-inventory" class="block text-sm font-medium text-gray-700 mb-1">Inventory</label>
+                        <input type="text" 
+                               id="filter-inventory" 
+                               placeholder="Filter by inventory..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="filter-warehouse" class="block text-sm font-medium text-gray-700 mb-1">Warehouse</label>
+                        <input type="text" 
+                               id="filter-warehouse" 
+                               placeholder="Filter by warehouse..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="clearAllFilters()" 
+                                class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance List Section -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">Inventory Beginning Balances</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500">Total Records:</span>
+                        <span id="total-records" class="text-sm font-medium text-gray-900">{{ balances|length }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Balance Grid -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" id="select-all" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Account
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Inventory
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Unit Cost
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Unit Price
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Warehouse
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Employee
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Created Date
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Created By
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="balance-tbody" class="bg-white divide-y divide-gray-200">
+                        {% for balance in balances %}
+                        <tr class="balance-row" 
+                            data-account="{{ balance.AccountId.AccountName|lower }}" 
+                            data-inventory="{{ balance.InventoryId.InventoryName|lower }}" 
+                            data-warehouse="{{ balance.WarehouseId.WarehouseName|lower }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="balance-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" value="{{ balance.BeginningBalanceId }}">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    <span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.InventoryId.InventoryName }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.Quantity|floatformat:2 }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.UnitCost|floatformat:2 }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.UnitPrice|floatformat:2 }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.WarehouseId.WarehouseName|default:"-" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.EmployeeId|default:"-" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.CreatedDate|date:"Y-m-d" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ balance.CreatedBy.username|default:"-" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center space-x-2">
+                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 transition-colors" 
+                                            data-balance-id="{{ balance.BeginningBalanceId }}" title="Edit">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 transition-colors" 
+                                            data-balance-id="{{ balance.BeginningBalanceId }}" title="Delete">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="px-6 py-4 text-center text-gray-500">No inventory beginning balances found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="text-center py-12 hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory beginning balances</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by adding a new inventory beginning balance.</p>
+                <div class="mt-6">
+                    <button onclick="addNewBalance()" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add New Balance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Balance Modal -->
+<div id="balance-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-4xl shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+            <div>
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Add New Inventory Balance</h3>
+                <p class="text-sm text-gray-500 mt-1">Enter the inventory beginning balance details</p>
+            </div>
+            <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form id="balance-form" method="post" action="">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Account Selection -->
+                <div>
+                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="AccountIdDisplay" 
+                               readonly
+                               placeholder="Click to select account..."
+                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Inventory Balance', modalSubtitle: 'Choose an account to set the inventory beginning balance'})"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
+                        <input type="hidden" id="AccountId" name="AccountId">
+                    </div>
+                </div>
+
+                <!-- Inventory Selection -->
+                <div>
+                    <label for="InventoryIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Inventory *</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="InventoryIdDisplay" 
+                               readonly
+                               placeholder="Click to select inventory..."
+                               onclick="openInventoryPopup(this, null)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white"
+                               required>
+                        <input type="hidden" id="InventoryId" name="InventoryId" required>
+                    </div>
+                </div>
+
+                <!-- Quantity -->
+                <div>
+                    <label for="Quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <input type="number" 
+                           id="Quantity" 
+                           name="Quantity" 
+                           step="0.000001" 
+                           min="0" 
+                           required
+                           placeholder="0.000000"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Unit Cost -->
+                <div>
+                    <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                    <input type="number" 
+                           id="UnitCost" 
+                           name="UnitCost" 
+                           step="0.000001" 
+                           min="0" 
+                           required
+                           placeholder="0.000000"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Unit Price -->
+                <div>
+                    <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                    <input type="number" 
+                           id="UnitPrice" 
+                           name="UnitPrice" 
+                           step="0.000001" 
+                           min="0" 
+                           required
+                           placeholder="0.000000"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Warehouse Selection -->
+                <div>
+                    <label for="WarehouseId" class="block text-sm font-medium text-gray-700 mb-1">Warehouse *</label>
+                    <select id="WarehouseId" name="WarehouseId" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Warehouse</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.WarehouseId }}">{{ warehouse.WarehouseCode }} - {{ warehouse.WarehouseName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Employee ID -->
+                <div>
+                    <label for="EmployeeId" class="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                    <input type="number" 
+                           id="EmployeeId" 
+                           name="EmployeeId" 
+                           placeholder="Optional"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <button type="button" onclick="closeBalanceModal()" 
+                        class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="submit-btn"
+                        class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <span id="submit-text">Add Balance</span>
+                    <span id="submit-loading" class="hidden">
+                        <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                    </span>
+                </button>
+            </div>
+            
+            <input type="hidden" id="balance-id" name="BeginningBalanceId" value="">
+        </form>
+    </div>
+</div>
+
+<!-- Include Selection Modals -->
+{% include 'core/components/account_selection_modal.html' %}
+{% include 'core/components/inventory_selection_modal.html' %}
+
+<!-- Initialize balance data from server -->
+<script type="application/json" id="balance-data">
+[
+    {% for balance in balances %}
+    {
+        "BeginningBalanceId": {{ balance.BeginningBalanceId }},
+        "AccountId": {{ balance.AccountId.AccountId }},
+        "account_code": "{{ balance.AccountId.AccountCode }}",
+        "account_name": "{{ balance.AccountId.AccountName }}",
+        "InventoryId": {{ balance.InventoryId.InventoryId }},
+        "inventory_name": "{{ balance.InventoryId.InventoryName }}",
+        "Quantity": "{{ balance.Quantity }}",
+        "UnitCost": "{{ balance.UnitCost }}",
+        "UnitPrice": "{{ balance.UnitPrice }}",
+        "WarehouseId": {{ balance.WarehouseId.WarehouseId }},
+        "warehouse_name": "{{ balance.WarehouseId.WarehouseName }}",
+        "EmployeeId": {{ balance.EmployeeId|default:"null" }},
+        "CreatedDate": "{{ balance.CreatedDate|date:'Y-m-d' }}",
+        "created_by_name": "{{ balance.CreatedBy.username|default:'' }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+
+<script>
+// Inventory Beginning Balance Management Functions
+let balanceData = JSON.parse(document.getElementById('balance-data').textContent);
+let isEditMode = false;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    setupFilters();
+    setupActionButtons();
+});
+
+// Setup action buttons with event listeners
+function setupActionButtons() {
+    // Edit buttons
+    document.querySelectorAll('.edit-balance-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const balanceId = parseInt(this.getAttribute('data-balance-id'));
+            editBalance(balanceId);
+        });
+    });
+    
+    // Delete buttons
+    document.querySelectorAll('.delete-balance-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const balanceId = parseInt(this.getAttribute('data-balance-id'));
+            deleteBalance(balanceId);
+        });
+    });
+}
+
+// Setup filters
+function setupFilters() {
+    const accountFilter = document.getElementById('filter-account');
+    const inventoryFilter = document.getElementById('filter-inventory');
+    const warehouseFilter = document.getElementById('filter-warehouse');
+    
+    const applyFilters = () => {
+        const accountTerm = accountFilter.value.toLowerCase();
+        const inventoryTerm = inventoryFilter.value.toLowerCase();
+        const warehouseTerm = warehouseFilter.value.toLowerCase();
+        
+        const rows = document.querySelectorAll('.balance-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const account = row.dataset.account || '';
+            const inventory = row.dataset.inventory || '';
+            const warehouse = row.dataset.warehouse || '';
+            
+            const matchesAccount = !accountTerm || account.includes(accountTerm);
+            const matchesInventory = !inventoryTerm || inventory.includes(inventoryTerm);
+            const matchesWarehouse = !warehouseTerm || warehouse.includes(warehouseTerm);
+            
+            if (matchesAccount && matchesInventory && matchesWarehouse) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('total-records').textContent = visibleCount;
+    };
+    
+    accountFilter.addEventListener('input', applyFilters);
+    inventoryFilter.addEventListener('input', applyFilters);
+    warehouseFilter.addEventListener('input', applyFilters);
+}
+
+// Clear all filters
+function clearAllFilters() {
+    document.getElementById('filter-account').value = '';
+    document.getElementById('filter-inventory').value = '';
+    document.getElementById('filter-warehouse').value = '';
+    
+    const rows = document.querySelectorAll('.balance-row');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    document.getElementById('total-records').textContent = balanceData.length;
+}
+
+// Add new balance
+function addNewBalance() {
+    isEditMode = false;
+    document.getElementById('modal-title').textContent = 'Add New Inventory Balance';
+    document.getElementById('submit-text').textContent = 'Add Balance';
+    document.getElementById('balance-form').reset();
+    document.getElementById('balance-id').value = '';
+    
+    // Set form action for create
+    document.getElementById('balance-form').action = '/core/invbeginningbalances/create/';
+    
+    // Clear selections
+    document.getElementById('AccountId').value = '';
+    document.getElementById('AccountIdDisplay').value = '';
+    document.getElementById('InventoryId').value = '';
+    document.getElementById('InventoryIdDisplay').value = '';
+    
+    document.getElementById('balance-modal').classList.remove('hidden');
+}
+
+// Edit balance
+function editBalance(balanceId) {
+    const balance = balanceData.find(b => b.BeginningBalanceId === balanceId);
+    if (!balance) return;
+    
+    isEditMode = true;
+    document.getElementById('modal-title').textContent = 'Edit Inventory Balance';
+    document.getElementById('submit-text').textContent = 'Update Balance';
+    
+    // Set form action for update
+    document.getElementById('balance-form').action = `/core/invbeginningbalances/${balanceId}/update/`;
+    
+    // Populate form
+    document.getElementById('balance-id').value = balance.BeginningBalanceId;
+    document.getElementById('AccountId').value = balance.AccountId;
+    document.getElementById('AccountIdDisplay').value = `${balance.account_code} - ${balance.account_name}`;
+    document.getElementById('InventoryId').value = balance.InventoryId;
+    document.getElementById('InventoryIdDisplay').value = balance.inventory_name;
+    document.getElementById('Quantity').value = balance.Quantity;
+    document.getElementById('UnitCost').value = balance.UnitCost;
+    document.getElementById('UnitPrice').value = balance.UnitPrice;
+    document.getElementById('WarehouseId').value = balance.WarehouseId;
+    document.getElementById('EmployeeId').value = balance.EmployeeId || '';
+    
+    document.getElementById('balance-modal').classList.remove('hidden');
+}
+
+// Delete balance
+function deleteBalance(balanceId) {
+    const balance = balanceData.find(b => b.BeginningBalanceId === balanceId);
+    if (!balance) return;
+    
+    const accountName = `${balance.account_code} - ${balance.account_name}`;
+    const inventoryName = balance.inventory_name;
+    const quantity = parseFloat(balance.Quantity).toFixed(2);
+    
+    if (confirm(`Are you sure you want to delete the inventory beginning balance for ${accountName} - ${inventoryName} (Qty: ${quantity})?`)) {
+        // Create and submit a form for deletion
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/core/invbeginningbalances/${balanceId}/delete/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Close balance modal
+function closeBalanceModal() {
+    document.getElementById('balance-modal').classList.add('hidden');
+}
+
+// Refresh balance list
+function refreshBalanceList() {
+    // Reload the page to refresh the balance list
+    window.location.reload();
+}
+
+// Select all checkbox functionality
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.balance-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="space-y-2">
+    <!-- Welcome Header -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-3">
+            <h1 class="text-lg lg:text-xl xl:text-2xl font-medium text-gray-900">
+                Welcome to Silicon4 Accounting
+            </h1>
+            <p class="text-xs lg:text-sm text-gray-600">
+                Manage your chart of accounts with ease.
+            </p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+
+        <!-- Accounts Card -->
+        {% if perms.core.view_refaccount %}
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-accounting-green rounded-md flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-6 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Chart of Accounts
+                            </dt>
+                            <dd class="text-xl font-medium text-gray-900">
+                                {{ accounts_count|default:"0" }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-2">
+                <div class="text-sm flex justify-between items-center">
+                    <a href="{% url 'core:refaccount_list' %}" class="font-medium text-accounting-blue hover:text-accounting-blue-dark">
+                        View all
+                    </a>
+                    {% if perms.core.add_refaccount %}
+                    <a href="{% url 'core:refaccount_create' %}" class="text-accounting-green hover:text-accounting-green-dark">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Assets Card -->
+        {% if perms.core.view_refasset %}
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-accounting-blue rounded-md flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-6 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Asset Management
+                            </dt>
+                            <dd class="text-xl font-medium text-gray-900">
+                                {{ assets_count|default:"0" }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-2">
+                <div class="text-sm flex justify-between items-center">
+                    <a href="{% url 'core:asset_master_detail' %}" class="font-medium text-accounting-blue hover:text-accounting-blue-dark">
+                        View all
+                    </a>
+                    {% if perms.core.add_refasset %}
+                    <a href="{% url 'core:refasset_create' %}" class="text-accounting-green hover:text-accounting-green-dark">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions Card -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-gray-500 rounded-md flex items-center justify-center">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-6 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Quick Actions
+                            </dt>
+                            <dd class="text-xl font-medium text-gray-900">
+                                {{ quick_actions_count|default:"3" }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-2">
+                <div class="text-sm">
+                    <span class="font-medium text-gray-700">Available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    {% if perms.core.view_refaccount %}
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-3">
+            <h3 class="text-base lg:text-lg font-medium text-gray-900 mb-3">
+                Recent Activity
+            </h3>
+            <div class="space-y-2">
+                {% if perms.core.view_refaccount %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                    <div class="flex items-center">
+                        <svg class="h-6 w-6 text-accounting-green mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <span class="text-base text-gray-700">Chart of Accounts</span>
+                    </div>
+                    <a href="{% url 'core:refaccount_list' %}" class="text-sm font-medium text-accounting-blue hover:text-accounting-blue-dark">
+                        Manage →
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if perms.core.view_refasset %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                    <div class="flex items-center">
+                        <svg class="h-6 w-6 text-accounting-blue mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span class="text-base text-gray-700">Asset Management</span>
+                    </div>
+                    <a href="{% url 'core:asset_master_detail' %}" class="text-sm font-medium text-accounting-blue hover:text-accounting-blue-dark">
+                        Manage →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Permission Notice -->
+    {% if not perms.core.view_refaccount %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">
+                    Limited Access
+                </h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                    <p>You don't have permission to view account management features. Please contact your administrator for access.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

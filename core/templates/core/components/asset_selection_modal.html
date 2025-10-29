@@ -1,0 +1,711 @@
+<!-- Asset Selection Modal Component -->
+<div id="asset-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-6xl shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900">Select Asset Card</h3>
+                <p class="text-sm text-gray-500 mt-1">Choose an asset card from the list below</p>
+            </div>
+            <button onclick="closeAssetPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Column Filters and Actions -->
+        <div class="mb-4">
+            <div class="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <div class="col-span-1">
+                    <input type="text" 
+                           id="filter-asset-code" 
+                           placeholder="Code..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-asset-name" 
+                           placeholder="Filter by name..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-asset-type" 
+                           placeholder="Filter by asset..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" 
+                           id="filter-employee" 
+                           placeholder="Filter by employee..." 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-3 flex items-center justify-center space-x-2">
+                    <button onclick="showAddAssetForm()" 
+                            class="inline-flex items-center px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                            title="Add New Asset Card">
+                        <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add
+                    </button>
+                    <button onclick="clearAllAssetFilters()" 
+                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Asset Form (Hidden by default) -->
+        <div id="asset-form-container" class="mb-4 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 id="asset-form-title" class="text-lg font-medium text-gray-900">Add New Asset Card</h4>
+                    <button onclick="hideAssetForm()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="asset-form" onsubmit="submitAssetForm(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="asset-id" class="block text-sm font-medium text-gray-700 mb-1">Asset *</label>
+                            <select id="asset-id" name="AssetId" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Asset</option>
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="asset-card-code" class="block text-sm font-medium text-gray-700 mb-1">Asset Card Code *</label>
+                            <input type="text" id="asset-card-code" name="AssetCardCode" maxlength="5" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="asset-card-name" class="block text-sm font-medium text-gray-700 mb-1">Asset Card Name</label>
+                            <input type="text" id="asset-card-name" name="AssetCardName" maxlength="50"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="manufactured-date" class="block text-sm font-medium text-gray-700 mb-1">Manufactured Date</label>
+                            <input type="date" id="manufactured-date" name="ManufacturedDate"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="received-date" class="block text-sm font-medium text-gray-700 mb-1">Received Date</label>
+                            <input type="date" id="received-date" name="ReceivedDate"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="months-to-use" class="block text-sm font-medium text-gray-700 mb-1">Months to Use</label>
+                            <input type="number" id="months-to-use" name="MonthsToUse" min="1" max="999"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="unit-cost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                            <input type="number" id="unit-cost" name="UnitCost" step="0.000001" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="unit-price" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                            <input type="number" id="unit-price" name="UnitPrice" step="0.000001" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="employee-id" class="block text-sm font-medium text-gray-700 mb-1">Employee (Optional)</label>
+                            <select id="employee-id" name="EmployeeId"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Employee</option>
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="asset-active" name="IsDelete" 
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="ml-2 text-sm text-gray-700">Mark as Deleted</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-blue-200">
+                        <button type="button" onclick="hideAssetForm()" 
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" id="asset-submit-btn"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <span id="asset-submit-text">Add Asset Card</span>
+                            <span id="asset-submit-loading" class="hidden">
+                                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Saving...
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" id="asset-card-id" name="AssetCardId" value="">
+                </form>
+            </div>
+        </div>
+
+        <!-- Asset List Container -->
+        <div id="asset-list-container" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+            <!-- Asset list will be loaded here -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+            <button onclick="closeAssetPopup()" 
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Asset Selection Modal Functions
+window.openAssetPopup = function(inputElement = null, rowId = null) {
+    // Store the current input element and row ID for later use
+    window.currentAssetInput = inputElement;
+    window.currentAssetRowId = rowId;
+    
+    // Open asset selection modal
+    const modal = document.getElementById('asset-selection-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Load assets
+        loadAssetList();
+    }
+}
+
+window.closeAssetPopup = function() {
+    const modal = document.getElementById('asset-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '') {
+    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice});
+    // Check if we're in bulk manage mode (has currentAssetInput and currentAssetRowId)
+    if (window.currentAssetInput && window.currentAssetRowId) {
+        // Bulk manage mode - populate the specific row
+        const row = window.currentAssetInput.closest('tr');
+        if (row) {
+            const hiddenInput = row.querySelector('.asset-card-id-input');
+            const displayInput = row.querySelector('.asset-card-display-input');
+            const unitCostInput = row.querySelector('.unit-cost-input');
+            const unitPriceInput = row.querySelector('.unit-price-input');
+            
+            if (hiddenInput && displayInput) {
+                hiddenInput.value = assetCardId;
+                // Format display value as "AssetCardCode - AssetCardName" to match template format
+                displayInput.value = assetCardName;
+            }
+            
+            // Populate unit cost and unit price if inputs exist
+            if (unitCostInput) {
+                unitCostInput.value = unitCost;
+            }
+            if (unitPriceInput) {
+                unitPriceInput.value = unitPrice;
+            }
+        }
+    } else {
+        // Regular form mode - populate main form fields
+        console.log('DEBUG: Regular form mode - populating form fields');
+        const hiddenInput = document.getElementById('AssetCardId');
+        const displayInput = document.getElementById('AssetCardIdDisplay');
+        const unitCostInput = document.getElementById('UnitCost');
+        const unitPriceInput = document.getElementById('UnitPrice');
+        
+        console.log('DEBUG: Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput});
+        
+        if (hiddenInput && displayInput) {
+            hiddenInput.value = assetCardId;
+            displayInput.value = assetCardName;
+            console.log('DEBUG: Set AssetCardId to:', assetCardId, 'and display to:', assetCardName);
+        }
+        
+        // Populate unit cost and unit price if inputs exist
+        if (unitCostInput) {
+            unitCostInput.value = unitCost;
+            console.log('DEBUG: Set UnitCost to:', unitCost);
+        }
+        if (unitPriceInput) {
+            unitPriceInput.value = unitPrice;
+            console.log('DEBUG: Set UnitPrice to:', unitPrice);
+        }
+    }
+    
+    // Clear the stored references
+    window.currentAssetInput = null;
+    window.currentAssetRowId = null;
+    
+    closeAssetPopup();
+}
+
+// Show add asset form
+function showAddAssetForm() {
+    const formContainer = document.getElementById('asset-form-container');
+    const formTitle = document.getElementById('asset-form-title');
+    const submitText = document.getElementById('asset-submit-text');
+    const assetCardIdInput = document.getElementById('asset-card-id');
+    
+    // Reset form
+    document.getElementById('asset-form').reset();
+    assetCardIdInput.value = '';
+    document.getElementById('asset-active').checked = false; // Set default to not deleted
+    
+    // Update form title and button text
+    formTitle.textContent = 'Add New Asset Card';
+    submitText.textContent = 'Add Asset Card';
+    
+    // Show form
+    formContainer.classList.remove('hidden');
+    
+    // Load assets and employees for dropdowns
+    loadAssetFormData();
+}
+
+// Show edit asset form
+function updateAsset(assetCardId, assetCardName) {
+    const formContainer = document.getElementById('asset-form-container');
+    const formTitle = document.getElementById('asset-form-title');
+    const submitText = document.getElementById('asset-submit-text');
+    const assetCardIdInput = document.getElementById('asset-card-id');
+    
+    // Populate form with existing data
+    assetCardIdInput.value = assetCardId;
+    document.getElementById('asset-card-name').value = assetCardName;
+    
+    // Update form title and button text
+    formTitle.textContent = 'Edit Asset Card';
+    submitText.textContent = 'Update Asset Card';
+    
+    // Show form
+    formContainer.classList.remove('hidden');
+    
+    // Load assets and employees for dropdowns
+    loadAssetFormData();
+}
+
+// Hide asset form
+function hideAssetForm() {
+    const formContainer = document.getElementById('asset-form-container');
+    formContainer.classList.add('hidden');
+}
+
+// Load assets and employees for form dropdowns
+function loadAssetFormData() {
+    // Load assets
+    fetch('/core/api/assets/')
+        .then(response => response.json())
+        .then(data => {
+            const assetSelect = document.getElementById('asset-id');
+            assetSelect.innerHTML = '<option value="">Select Asset</option>';
+            data.assets.forEach(asset => {
+                const option = document.createElement('option');
+                option.value = asset.AssetId;
+                option.textContent = asset.AssetName;
+                assetSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading assets:', error));
+    
+    // Load employees
+    fetch('/core/api/clients/')
+        .then(response => response.json())
+        .then(data => {
+            const employeeSelect = document.getElementById('employee-id');
+            employeeSelect.innerHTML = '<option value="">Select Employee</option>';
+            data.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.ClientId;
+                option.textContent = client.ClientName;
+                employeeSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading employees:', error));
+}
+
+// Submit asset form
+function submitAssetForm(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('asset-form');
+    const formData = new FormData(form);
+    const assetCardId = document.getElementById('asset-card-id').value;
+    const isEdit = assetCardId !== '';
+    
+    // Show loading state
+    const submitBtn = document.getElementById('asset-submit-btn');
+    const submitText = document.getElementById('asset-submit-text');
+    const submitLoading = document.getElementById('asset-submit-loading');
+    
+    // Use shared component if available, otherwise fall back to manual implementation
+    if (typeof Silicon4Form !== 'undefined' && Silicon4Form.showLoading) {
+        Silicon4Form.showLoading(submitBtn, 'Saving...');
+    } else {
+        // Original implementation (fallback)
+        submitText.classList.add('hidden');
+        submitLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+    }
+    
+    // Determine URL and get CSRF token
+    const url = isEdit ? `/core/asset-cards/${assetCardId}/update/` : '/core/asset-cards/create/';
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Use fetch to submit and handle response
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken ? csrfToken.value : '',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success - hide form and refresh asset list
+            hideAssetForm();
+            loadAssetList();
+            
+            // Show success message
+            showAssetMessage(data.message || (isEdit ? 'Asset card updated successfully!' : 'Asset card created successfully!'), 'success');
+        } else {
+            throw new Error(data.message || 'Failed to save asset card');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving asset card:', error);
+        showAssetMessage('Error saving asset card. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset loading state
+        // Use shared component if available, otherwise fall back to manual implementation
+        if (typeof Silicon4Form !== 'undefined' && Silicon4Form.hideLoading) {
+            const originalHtml = isEdit ? 'Update Asset Card' : 'Add Asset Card';
+            Silicon4Form.hideLoading(submitBtn, originalHtml);
+        } else {
+            // Original implementation (fallback)
+            submitText.classList.remove('hidden');
+            submitLoading.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Show message to user
+function showAssetMessage(message, type) {
+    // Use shared component if available, otherwise fall back to original implementation
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.show) {
+        Silicon4Message.show(message, type);
+    } else {
+        // Original implementation (fallback)
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+        }`;
+        messageDiv.textContent = message;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+}
+
+// Delete asset function
+function deleteAsset(assetCardId, assetCardName) {
+    const deleteUrl = `/core/asset-cards/${assetCardId}/delete/`;
+    const itemName = `asset card "${assetCardName}"`;
+    
+    // Use standardized delete modal
+    Silicon4Delete.showModal(deleteUrl, itemName, function() {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Add a callback to refresh the asset list after successful deletion
+        form.addEventListener('submit', function() {
+            setTimeout(() => {
+                loadAssetList();
+            }, 1000);
+        });
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+function loadAssetList() {
+    const assetListContainer = document.getElementById('asset-list-container');
+    if (!assetListContainer) return;
+    
+    // Show loading
+    assetListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading asset cards...</p></div>';
+    
+    // Use shared component for loading message if available
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
+        Silicon4Message.info('Loading asset cards...');
+    }
+    
+    // Fetch assets data and render custom modal
+    const url = `/core/asset-cards/?modal=true&select_mode=true`;
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Parse the HTML to extract asset data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const assetRows = doc.querySelectorAll('tbody tr');
+            
+            if (assetRows.length === 0) {
+                assetListContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No asset cards found</h3>
+                        <p class="mt-1 text-sm text-gray-500">No asset cards match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create custom asset list HTML
+            let assetsHtml = `
+                <div class="space-y-0">
+                    <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                        <div class="col-span-1 px-4 border-r border-gray-200">Code</div>
+                        <div class="col-span-2 px-4 border-r border-gray-200">Asset Card Name</div>
+                        <div class="col-span-2 px-4 border-r border-gray-200">Asset</div>
+                        <div class="col-span-2 px-4 border-r border-gray-200">Unit Cost</div>
+                        <div class="col-span-2 px-4 border-r border-gray-200">Unit Price</div>
+                        <div class="col-span-2 px-4 border-r border-gray-200">Employee</div>
+                        <div class="col-span-1 px-4 text-center">Select</div>
+                    </div>
+            `;
+            
+            assetRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const assetCardCode = cells[0]?.textContent?.trim() || '-';
+                    const assetCardName = cells[1]?.textContent?.trim() || '';
+                    const assetName = cells[2]?.textContent?.trim() || '-';
+                    const unitCost = cells[3]?.textContent?.trim() || '-';
+                    const unitPrice = cells[4]?.textContent?.trim() || '-';
+                    const employee = cells[5]?.textContent?.trim() || '-';
+                    
+                    // Extract asset card ID from the select button
+                    const selectButton = row.querySelector('button[onclick*="selectAsset"]');
+                    let assetCardId = '';
+                    
+                    console.log('DEBUG: Processing row, selectButton:', selectButton);
+                    
+                    if (selectButton) {
+                        const onclickAttr = selectButton.getAttribute('onclick');
+                        console.log('DEBUG: onclick attribute:', onclickAttr);
+                        const matches = onclickAttr.match(/selectAsset\('([^']+)'/);
+                        if (matches) {
+                            assetCardId = matches[1];
+                            console.log('DEBUG: Extracted assetCardId:', assetCardId);
+                        } else {
+                            console.log('DEBUG: No match found for assetCardId');
+                        }
+                    } else {
+                        console.log('DEBUG: No select button found');
+                    }
+                    
+                    assetsHtml += `
+                        <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
+                             data-asset-code="${assetCardCode.toLowerCase()}" 
+                             data-asset-name="${assetCardName.toLowerCase()}" 
+                             data-asset-type="${assetName.toLowerCase()}"
+                             data-employee="${employee.toLowerCase()}"
+                             onclick="selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}')">
+                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm font-medium text-gray-900">${assetCardCode}</span>
+                            </div>
+                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm font-medium text-gray-900">${assetCardName}</span>
+                            </div>
+                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900">${assetName}</span>
+                            </div>
+                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
+                            </div>
+                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
+                            </div>
+                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900">${employee}</span>
+                            </div>
+                            <div class="col-span-1 px-4 flex items-center justify-center">
+                                <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}')" 
+                                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                    Select
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            assetsHtml += '</div>';
+            assetListContainer.innerHTML = assetsHtml;
+            
+            // Add search filter functionality
+            initializeAssetSearchFilter();
+        })
+        .catch(error => {
+            console.error('Error loading asset cards:', error);
+            
+            // Use shared component for error message if available
+            if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error('load-assets-failed');
+            }
+            
+            assetListContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading asset cards</h3>
+                    <p class="mt-1 text-sm text-gray-500">Please try again or contact support.</p>
+                </div>
+            `;
+        });
+}
+
+// Initialize asset search filter functionality
+function initializeAssetSearchFilter() {
+    const codeFilter = document.getElementById('filter-asset-code');
+    const nameFilter = document.getElementById('filter-asset-name');
+    const typeFilter = document.getElementById('filter-asset-type');
+    const employeeFilter = document.getElementById('filter-employee');
+    
+    if (!codeFilter || !nameFilter || !typeFilter || !employeeFilter) return;
+    
+    // Function to apply all filters
+    function applyAssetFilters() {
+        const codeTerm = codeFilter.value.toLowerCase().trim();
+        const nameTerm = nameFilter.value.toLowerCase().trim();
+        const typeTerm = typeFilter.value.toLowerCase().trim();
+        const employeeTerm = employeeFilter.value.toLowerCase().trim();
+        
+        const assetRows = document.querySelectorAll('.asset-row');
+        let visibleCount = 0;
+        
+        assetRows.forEach(row => {
+            const assetCode = row.getAttribute('data-asset-code') || '';
+            const assetName = row.getAttribute('data-asset-name') || '';
+            const assetType = row.getAttribute('data-asset-type') || '';
+            const employee = row.getAttribute('data-employee') || '';
+            
+            const codeMatch = !codeTerm || assetCode.includes(codeTerm);
+            const nameMatch = !nameTerm || assetName.includes(nameTerm);
+            const typeMatch = !typeTerm || assetType.includes(typeTerm);
+            const employeeMatch = !employeeTerm || employee.includes(employeeTerm);
+            
+            if (codeMatch && nameMatch && typeMatch && employeeMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide "no results" message
+        const noResultsMsg = document.getElementById('no-results-message');
+        const hasActiveFilters = codeTerm || nameTerm || typeTerm || employeeTerm;
+        
+        if (hasActiveFilters && visibleCount === 0) {
+            if (!noResultsMsg) {
+                const container = document.getElementById('asset-list-container');
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.id = 'no-results-message';
+                noResultsDiv.className = 'text-center py-8 text-gray-500';
+                noResultsDiv.innerHTML = `
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p class="text-sm">No asset cards found matching the current filters</p>
+                `;
+                container.appendChild(noResultsDiv);
+            }
+        } else if (noResultsMsg) {
+            noResultsMsg.remove();
+        }
+    }
+    
+    // Add event listeners to all filter inputs
+    [codeFilter, nameFilter, typeFilter, employeeFilter].forEach(input => {
+        input.addEventListener('input', applyAssetFilters);
+    });
+    
+    // Clear all filters function
+    window.clearAllAssetFilters = function() {
+        codeFilter.value = '';
+        nameFilter.value = '';
+        typeFilter.value = '';
+        employeeFilter.value = '';
+        applyAssetFilters();
+    };
+    
+    // Clear filters when modal is closed
+    const modal = document.getElementById('asset-selection-modal');
+    if (modal) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (modal.classList.contains('hidden')) {
+                        // Clear all filters
+                        codeFilter.value = '';
+                        nameFilter.value = '';
+                        typeFilter.value = '';
+                        employeeFilter.value = '';
+                        // Show all rows again
+                        const assetRows = document.querySelectorAll('.asset-row');
+                        assetRows.forEach(row => {
+                            row.style.display = '';
+                        });
+                        // Remove no results message
+                        const noResultsMsg = document.getElementById('no-results-message');
+                        if (noResultsMsg) {
+                            noResultsMsg.remove();
+                        }
+                    }
+                }
+            });
+        });
+        observer.observe(modal, { attributes: true });
+    }
+}
+</script>

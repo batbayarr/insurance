@@ -1,0 +1,490 @@
+<!-- Account Statement Modal -->
+<div id="account-statement-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900" id="modal-account-title">Account Statement</h3>
+                <p class="text-sm text-gray-600" id="modal-date-range"></p>
+            </div>
+            <button onclick="closeAccountStatementModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="py-4">
+            <!-- Account Info -->
+            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Account Code</label>
+                        <p class="text-sm text-gray-900" id="modal-account-code"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Account Name</label>
+                        <p class="text-sm text-gray-900" id="modal-account-name"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Account Type</label>
+                        <p class="text-sm text-gray-900" id="modal-account-type"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Beginning Balance</label>
+                        <p class="text-sm font-semibold text-gray-900" id="modal-beginning-balance"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total Debit</label>
+                        <p class="text-sm font-semibold text-gray-900" id="modal-total-debit"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total Credit</label>
+                        <p class="text-sm font-semibold text-gray-900" id="modal-total-credit"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Ending Balance</label>
+                        <p class="text-sm font-semibold text-gray-900" id="modal-ending-balance"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="modal-loading" class="text-center py-8 hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-sm text-gray-600">Loading account statement...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="modal-error" class="text-center py-8 hidden">
+                <div class="text-red-600">
+                    <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading account statement</h3>
+                    <p class="mt-1 text-sm text-gray-500" id="modal-error-message"></p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="modal-empty" class="text-center py-8 hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No transactions found</h3>
+                <p class="mt-1 text-sm text-gray-500">No transactions were found for this account in the selected date range.</p>
+            </div>
+
+            <!-- Documents Table -->
+            <div id="modal-documents" class="hidden">
+                <!-- Expand/Collapse Controls -->
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-sm font-medium text-gray-700">Document Details</h4>
+                    <div class="flex space-x-2">
+                        <button id="expand-all-btn" 
+                                class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Expand All
+                        </button>
+                        <button id="collapse-all-btn" 
+                                class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                            Collapse All
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div id="modal-documents-list">
+                        <!-- Document groups will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Pagination Controls -->
+                <div class="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        <button id="prev-page-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Previous
+                        </button>
+                        <button id="next-page-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Next
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Showing <span id="page-start" class="font-medium">1</span> to <span id="page-end" class="font-medium">10</span> of <span id="total-items" class="font-medium">0</span> results
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="prev-page" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div id="page-numbers" class="flex">
+                                    <!-- Page numbers will be generated by JavaScript -->
+                                </div>
+                                <button id="next-page" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end pt-4 border-t border-gray-200">
+            <button onclick="closeAccountStatementModal()" 
+                    class="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Cache bust: Updated 2025-10-19 20:30 - Added Expand All / Collapse All buttons
+function showAccountStatementModal() {
+    document.getElementById('account-statement-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAccountStatementModal() {
+    document.getElementById('account-statement-modal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function formatNumber(num) {
+    if (num === null || num === undefined || num === 0) return '-';
+    return parseFloat(num).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatCurrency(num) {
+    if (num === null || num === undefined || isNaN(num)) return '-';
+    const formatted = parseFloat(num).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    return formatted === '0.00' ? '-' : formatted;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US');
+}
+
+// Pagination variables
+let allDocuments = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+function populateAccountStatementModal(data, balanceData) {
+    try {
+        console.log('populateAccountStatementModal called with data:', data);
+        console.log('Documents array:', data.documents);
+        
+        // Populate account info
+        document.getElementById('modal-account-title').textContent = `${data.account.AccountCode} - ${data.account.AccountName}`;
+        document.getElementById('modal-date-range').textContent = `${data.date_range.begin_date} to ${data.date_range.end_date}`;
+        document.getElementById('modal-account-code').textContent = data.account.AccountCode;
+        document.getElementById('modal-account-name').textContent = data.account.AccountName;
+        document.getElementById('modal-account-type').textContent = data.account.AccountType;
+
+    // Populate balance summary from trial balance data
+    const beginningBalance = (balanceData.beginningBalanceDebit || 0) + (balanceData.beginningBalanceCredit || 0);
+    const endingBalance = (balanceData.endingBalanceDebit || 0) + (balanceData.endingBalanceCredit || 0);
+    
+    document.getElementById('modal-beginning-balance').textContent = formatCurrency(beginningBalance);
+    document.getElementById('modal-total-debit').textContent = formatCurrency(data.total_debit);
+    document.getElementById('modal-total-credit').textContent = formatCurrency(data.total_credit);
+    document.getElementById('modal-ending-balance').textContent = formatCurrency(endingBalance);
+
+    // Store all documents and initialize pagination
+    allDocuments = data.documents || [];
+    currentPage = 1;
+    
+
+        if (allDocuments.length > 0) {
+            displayDocuments();
+            setupPagination();
+            document.getElementById('modal-documents').classList.remove('hidden');
+            document.getElementById('modal-empty').classList.add('hidden');
+        } else {
+        document.getElementById('modal-documents').classList.add('hidden');
+        document.getElementById('modal-empty').classList.remove('hidden');
+    }
+
+        // Hide loading and error states
+        document.getElementById('modal-loading').classList.add('hidden');
+        document.getElementById('modal-error').classList.add('hidden');
+    } catch (error) {
+        console.error('Error in populateAccountStatementModal:', error);
+        showModalError('Error loading account statement: ' + error.message);
+    }
+}
+
+function displayDocuments() {
+    try {
+        console.log('displayDocuments called with', allDocuments.length, 'documents');
+        const container = document.getElementById('modal-documents-list');
+        container.innerHTML = '';
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageDocuments = allDocuments.slice(startIndex, endIndex);
+
+        console.log('Processing', pageDocuments.length, 'documents for current page');
+        pageDocuments.forEach((doc, index) => {
+            console.log('Processing document', index, ':', doc.DocumentId);
+            const documentGroup = createDocumentGroup(doc);
+            container.appendChild(documentGroup);
+        });
+
+        // All details are already collapsed from creation
+
+        updatePaginationInfo();
+    } catch (error) {
+        console.error('Error in displayDocuments:', error);
+        throw error;
+    }
+}
+
+function createDocumentGroup(doc) {
+    try {
+        console.log('Creating document group for:', doc.DocumentId);
+        const group = document.createElement('div');
+        group.className = 'border border-gray-200 rounded-lg overflow-hidden';
+    
+    // Document header
+    const header = document.createElement('div');
+    header.className = 'bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors';
+    header.onclick = () => toggleDetails(doc.DocumentId);
+    
+    header.innerHTML = `
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                <div class="flex items-center space-x-4">
+                    <span class="font-medium text-gray-900">${doc.DocumentNo}</span>
+                    <span class="text-sm text-gray-600">${formatDate(doc.DocumentDate)}</span>
+                    <span class="text-sm text-gray-600">${doc.DocumentType}</span>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${doc.DocumentCategory}</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1">${doc.DocumentDescription || 'No description'}</div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm font-medium text-gray-900">Total: ${formatCurrency(doc.TotalAmount)}</span>
+                <svg class="h-5 w-5 text-gray-400 transition-transform" id="icon-${doc.DocumentId}" style="transform: rotate(180deg);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </div>
+    `;
+    
+    // Document details (expanded by default)
+    const details = document.createElement('div');
+    details.className = 'border-t border-gray-200 border-l-2 border-r-2 border-b-2 border-blue-200 bg-blue-50';
+    details.id = `details-${doc.DocumentId}`;
+    
+    const table = document.createElement('div');
+    table.className = 'overflow-x-auto';
+    table.innerHTML = `
+        <table class="min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Debit</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                ${doc.details.map(detail => `
+                    <tr class="${detail.IsMatchingAccount ? 'bg-yellow-50' : 'hover:bg-gray-50'}">
+                        <td class="px-4 py-2 text-sm text-gray-900">
+                            <span class="font-medium">${detail.AccountCode}</span>
+                            <span class="text-gray-600">- ${detail.AccountName}</span>
+                            ${detail.IsMatchingAccount ? '<span class="ml-2 text-xs bg-yellow-200 text-yellow-800 px-1 py-0.5 rounded">Target</span>' : ''}
+                        </td>
+                        <td class="px-4 py-2 text-sm text-gray-900">
+                            ${detail.ClientCode ? `${detail.ClientCode} - ${detail.ClientName}` : '-'}
+                        </td>
+                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(detail.DebitAmount)}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(detail.CreditAmount)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    details.appendChild(table);
+    
+        group.appendChild(header);
+        group.appendChild(details);
+        
+        return group;
+    } catch (error) {
+        console.error('Error in createDocumentGroup:', error);
+        console.error('Document object:', doc);
+        throw error;
+    }
+}
+
+function toggleDetails(documentId) {
+    const details = document.getElementById(`details-${documentId}`);
+    const icon = document.getElementById(`icon-${documentId}`);
+    
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        details.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function expandAllDetails() {
+    // Expand all document details
+    allDocuments.forEach(doc => {
+        const details = document.getElementById(`details-${doc.DocumentId}`);
+        const icon = document.getElementById(`icon-${doc.DocumentId}`);
+        
+        if (details) {
+            details.classList.remove('hidden');
+        }
+        if (icon) {
+            icon.style.transform = 'rotate(180deg)';
+        }
+    });
+}
+
+function collapseAllDetails() {
+    // Collapse all document details
+    allDocuments.forEach(doc => {
+        const details = document.getElementById(`details-${doc.DocumentId}`);
+        const icon = document.getElementById(`icon-${doc.DocumentId}`);
+        
+        if (details) {
+            details.classList.add('hidden');
+        }
+        if (icon) {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    });
+}
+
+function setupPagination() {
+    const totalPages = Math.ceil(allDocuments.length / itemsPerPage);
+    
+    // Clear existing page numbers
+    const pageNumbersContainer = document.getElementById('page-numbers');
+    pageNumbersContainer.innerHTML = '';
+
+    // Generate page number buttons
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.className = `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+            i === currentPage 
+                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+        }`;
+        pageButton.addEventListener('click', () => goToPage(i));
+        pageNumbersContainer.appendChild(pageButton);
+    }
+
+    // Setup navigation buttons
+    document.getElementById('prev-page').onclick = () => goToPage(currentPage - 1);
+    document.getElementById('next-page').onclick = () => goToPage(currentPage + 1);
+    document.getElementById('prev-page-mobile').onclick = () => goToPage(currentPage - 1);
+    document.getElementById('next-page-mobile').onclick = () => goToPage(currentPage + 1);
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(allDocuments.length / itemsPerPage);
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        displayDocuments();
+        setupPagination();
+    }
+}
+
+function updatePaginationInfo() {
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, allDocuments.length);
+    
+    document.getElementById('page-start').textContent = startIndex;
+    document.getElementById('page-end').textContent = endIndex;
+    document.getElementById('total-items').textContent = allDocuments.length;
+
+    // Update button states
+    const totalPages = Math.ceil(allDocuments.length / itemsPerPage);
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage === totalPages;
+    document.getElementById('prev-page-mobile').disabled = currentPage === 1;
+    document.getElementById('next-page-mobile').disabled = currentPage === totalPages;
+}
+
+function showModalLoading() {
+    document.getElementById('modal-loading').classList.remove('hidden');
+    document.getElementById('modal-documents').classList.add('hidden');
+    document.getElementById('modal-empty').classList.add('hidden');
+    document.getElementById('modal-error').classList.add('hidden');
+}
+
+function showModalError(message) {
+    document.getElementById('modal-error-message').textContent = message;
+    document.getElementById('modal-error').classList.remove('hidden');
+    document.getElementById('modal-loading').classList.add('hidden');
+    document.getElementById('modal-documents').classList.add('hidden');
+    document.getElementById('modal-empty').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('account-statement-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAccountStatementModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAccountStatementModal();
+    }
+});
+
+// Expand/Collapse All buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const expandAllBtn = document.getElementById('expand-all-btn');
+    const collapseAllBtn = document.getElementById('collapse-all-btn');
+    
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function() {
+            expandAllDetails();
+        });
+    }
+    
+    if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', function() {
+            collapseAllDetails();
+        });
+    }
+});
+</script>

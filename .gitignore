@@ -1,0 +1,71 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# PostgreSQL
+*.sql.backup
+*.dump
+pg_dump_*
+
+# Environment variables
+.env
+.env.production
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files (exclude all your backup directories and files)
+backup_*.json
+backup_*.sql
+backup_*.zip
+backup_*.rar
+backup_full_*/
+session_backup_*/
+backup_script.py
+backup_simple*.py
+backup_full_project.py
+backup_project.bat
+check_template_data.py
+debug_template.py
+simple_test.py
+favicon-generator.html
+
+# Logs
+logs/
+*.log
+
+# Static files (Django collectstatic output)
+staticfiles/
+
+# Database files
+databases.txt
+database_*.json
+database_*.sql
+
+# Temporary files
+*.tmp
+*.temp

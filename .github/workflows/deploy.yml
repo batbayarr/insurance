@@ -1,0 +1,35 @@
+name: Deploy to Vultr
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to Vultr Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VULTR_HOST }}
+          username: ${{ secrets.VULTR_USERNAME }}
+          key: ${{ secrets.VULTR_SSH_KEY }}
+          script: |
+            cd /var/www/silicon4_accounting
+            bash deploy.sh
+      
+      - name: Deployment Status
+        if: success()
+        run: echo "Deployment completed successfully!"
+      
+      - name: Deployment Failed
+        if: failure()
+        run: |
+          echo "Deployment failed! Check the logs above for details."
+          exit 1

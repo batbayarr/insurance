@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+            <p class="text-gray-600">{% if inventory %}Update inventory item{% else %}Create a new inventory item{% endif %}</p>
+        </div>
+        <a href="{% url 'core:refinventory_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to List
+        </a>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <form method="post" class="space-y-6 p-6" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">
+                            There were errors with your submission
+                        </h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Inventory Code -->
+                <div>
+                    <label for="{{ form.InventoryCode.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.InventoryCode.label }}
+                    </label>
+                    <div class="mt-1">
+                        {{ form.InventoryCode }}
+                        {% if form.InventoryCode.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.InventoryCode.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Enter a unique code for the inventory item (max 5 characters)</p>
+                    </div>
+                </div>
+                
+                <!-- Inventory Name -->
+                <div>
+                    <label for="{{ form.InventoryName.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.InventoryName.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        {{ form.InventoryName }}
+                        {% if form.InventoryName.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.InventoryName.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Enter the name of the inventory item (max 50 characters)</p>
+                    </div>
+                </div>
+                
+                <!-- Inventory Type -->
+                <div>
+                    <label for="{{ form.InventoryTypeId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.InventoryTypeId.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        {{ form.InventoryTypeId }}
+                        {% if form.InventoryTypeId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.InventoryTypeId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Select the type of inventory item</p>
+                    </div>
+                </div>
+                
+                <!-- Measurement Unit -->
+                <div>
+                    <label for="{{ form.MeasurementId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.MeasurementId.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        {{ form.MeasurementId }}
+                        {% if form.MeasurementId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.MeasurementId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Select the measurement unit</p>
+                    </div>
+                </div>
+                
+                <!-- Unit Cost -->
+                <div>
+                    <label for="{{ form.UnitCost.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.UnitCost.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        {{ form.UnitCost }}
+                        {% if form.UnitCost.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.UnitCost.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Enter the cost price per unit</p>
+                    </div>
+                </div>
+                
+                <!-- Unit Price -->
+                <div>
+                    <label for="{{ form.UnitPrice.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        {{ form.UnitPrice.label }}
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        {{ form.UnitPrice }}
+                        {% if form.UnitPrice.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.UnitPrice.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Enter the selling price per unit</p>
+                    </div>
+                </div>
+                
+                <!-- Is Active -->
+                <div class="sm:col-span-2">
+                    <div class="flex items-center">
+                        {{ form.IsActive }}
+                        <label for="{{ form.IsActive.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                            {{ form.IsActive.label }}
+                        </label>
+                    </div>
+                    {% if form.IsActive.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.IsActive.errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Check this box to make the inventory item active and available for use</p>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{% url 'core:refinventory_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    {% if inventory %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Update Inventory Item
+                    {% else %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create Inventory Item
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on the first input field
+    const firstInput = document.querySelector('input[type="text"]');
+    if (firstInput) {
+        firstInput.focus();
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    const inventoryNameInput = document.querySelector('input[name="InventoryName"]');
+    const inventoryCodeInput = document.querySelector('input[name="InventoryCode"]');
+    
+    if (inventoryNameInput) {
+        inventoryNameInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 50) {
+                this.value = value.substring(0, 50);
+            }
+        });
+    }
+    
+    if (inventoryCodeInput) {
+        inventoryCodeInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 5) {
+                this.value = value.substring(0, 5);
+            }
+        });
+    }
+    
+    // Prevent form submission if required fields are empty
+    form.addEventListener('submit', function(e) {
+        const inventoryName = document.querySelector('input[name="InventoryName"]');
+        const inventoryType = document.querySelector('select[name="InventoryTypeId"]');
+        const measurement = document.querySelector('select[name="MeasurementId"]');
+        const unitCost = document.querySelector('input[name="UnitCost"]');
+        const unitPrice = document.querySelector('input[name="UnitPrice"]');
+        
+        if (!inventoryName || !inventoryName.value.trim()) {
+            e.preventDefault();
+            alert('Please enter an inventory name.');
+            if (inventoryName) {
+                inventoryName.focus();
+            }
+            return false;
+        }
+        
+        if (!inventoryType || !inventoryType.value) {
+            e.preventDefault();
+            alert('Please select an inventory type.');
+            if (inventoryType) {
+                inventoryType.focus();
+            }
+            return false;
+        }
+        
+        if (!measurement || !measurement.value) {
+            e.preventDefault();
+            alert('Please select a measurement unit.');
+            if (measurement) {
+                measurement.focus();
+            }
+            return false;
+        }
+        
+        if (!unitCost || !unitCost.value || parseFloat(unitCost.value) < 0) {
+            e.preventDefault();
+            alert('Please enter a valid unit cost (must be 0 or greater).');
+            if (unitCost) {
+                unitCost.focus();
+            }
+            return false;
+        }
+        
+        if (!unitPrice || !unitPrice.value || parseFloat(unitPrice.value) < 0) {
+            e.preventDefault();
+            alert('Please enter a valid unit price (must be 0 or greater).');
+            if (unitPrice) {
+                unitPrice.focus();
+            }
+            return false;
+        }
+    });
+    
+    // Add loading state to submit button
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton) {
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...';
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,938 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Inventory Documents - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">БАРАА МАТЕРИАЛЫН МОДУЛЬ</h1>            
+        </div>
+        {% if perms.core.add_inv_document %}
+        <a href="{% url 'core:invdocument_create' %}" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Нэмэх
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white border-b border-gray-200 px-3 py-2 lg:px-6">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center space-x-2">
+                <label for="start-date" class="text-sm font-medium text-gray-700">Эхлэх огноо:</label>
+                <input type="date" id="start-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
+                <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="apply-date-filter" class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
+                Хайх
+            </button>
+        </div>
+    </div>
+
+    <!-- Master Grid (Inventory Documents) -->
+    <div id="inventory-document-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+        
+        <!-- Responsive table with horizontal scroll -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 80px;">Данс</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">Н</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Агуулах</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Өртөг</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үнэ</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэн</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-4 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-document-no" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-document-type" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-client" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-date" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-description" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200" style="min-width: 80px;">
+                            <input type="text" id="filter-account" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200" style="width: 40px; max-width: 40px;">
+                            <input type="text" id="filter-isvat" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-warehouse" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="number" id="filter-cost-amount" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   step="0.000001">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="number" id="filter-price-amount" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   step="0.000001">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-created-by" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1">
+                            <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="documents-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Documents will be dynamically loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            <button id="prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Өмнөх
+                                </button>
+            <button id="next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Дараа
+                                </button>
+                            </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p id="pagination-info" class="text-sm text-gray-700">
+                    Нийт <span id="total-count">0</span> бичлэгээс <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                </p>
+        </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                    <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="10" selected>10</option>
+                    </select>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+                        </button>
+                        <span id="page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            <!-- Dynamic page buttons will be generated here -->
+                        </span>
+                        <button id="next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                        </button>
+                    </nav>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Detail Grid will be loaded here via AJAX -->
+    <div id="detail-grid-container">
+        <!-- Detail grid content will be dynamically loaded here -->
+    </div>
+</div>
+
+<!-- Include Delete Modal -->
+{% include 'core/components/delete_modal.html' %}
+
+<script>
+// Prevent script re-execution
+if (!window.invDocumentScriptLoaded) {
+    window.invDocumentScriptLoaded = true;
+
+// API-Based Data Management
+let allDocumentsData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+let currentApiRequest = null;
+let currentDetailRequest = null;  // For AbortController on detail loading
+const detailCache = new Map();     // Cache loaded details
+const currentUserId = {{ request.user.id }};
+const hasChangePermission = {% if perms.core.change_inv_document %}true{% else %}false{% endif %};
+const hasDeletePermission = {% if perms.core.delete_inv_document %}true{% else %}false{% endif %};
+
+// Initialize date inputs with local system date
+function initializeDateInputs() {
+    // Use user's local system date
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Format dates for HTML date input (YYYY-MM-DD)
+    const formatDateForInput = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const pageSizeSelect = document.getElementById('page-size-select');
+    const applyButton = document.getElementById('apply-date-filter');
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDateForInput(firstDay);
+        endDateInput.value = formatDateForInput(lastDay);
+        
+        // Remove automatic date change listeners - only search button should trigger API call
+        // Date inputs are now passive until user clicks "ХАЙХ" button
+    }
+    
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', () => {
+            pageSize = parseInt(pageSizeSelect.value);
+            currentPage = 1;
+            applyFrontendFilter();
+        });
+    }
+    
+    if (applyButton) {
+        applyButton.addEventListener('click', () => {
+            fetchDocuments(startDateInput.value, endDateInput.value);
+        });
+    }
+    
+    // Load initial data
+    fetchDocuments(startDateInput.value, endDateInput.value);
+}
+
+// Fetch documents from API
+function fetchDocuments(startDate, endDate) {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    
+    // Cancel previous request if still in flight
+    if (currentApiRequest) {
+        currentApiRequest.abort();
+        currentApiRequest = null;
+    }
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    
+    const url = `/core/api/inventory-documents-master/?start_date=${startDate}&end_date=${endDate}`;
+    
+    // Create new AbortController for this request
+    currentApiRequest = new AbortController();
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: currentApiRequest.signal
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Clear request reference on success
+        currentApiRequest = null;
+        
+        if (data.success) {
+            allDocumentsData = data.documents;
+            currentPage = 1;
+            applyFrontendFilter();
+        } else {
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        // Clear request reference
+        currentApiRequest = null;
+        
+        // Only show error if it's not an abort error (abort is intentional)
+        if (error.name !== 'AbortError') {
+            console.error('Error fetching documents:', error);
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>';
+        }
+        // If AbortError, silently ignore (user triggered it by changing filters)
+    });
+}
+
+// Apply frontend filtering with null-safe operations
+function applyFrontendFilter() {
+    // Get filter values
+    const filters = {
+        documentNo: document.getElementById('filter-document-no')?.value.toLowerCase().trim() || '',
+        documentType: document.getElementById('filter-document-type')?.value.toLowerCase().trim() || '',
+        client: document.getElementById('filter-client')?.value.toLowerCase().trim() || '',
+        date: document.getElementById('filter-date')?.value.toLowerCase().trim() || '',
+        description: document.getElementById('filter-description')?.value.toLowerCase().trim() || '',
+        account: document.getElementById('filter-account')?.value.toLowerCase().trim() || '',
+        isvat: document.getElementById('filter-isvat')?.value.toLowerCase().trim() || '',
+        warehouse: document.getElementById('filter-warehouse')?.value.toLowerCase().trim() || '',
+        costAmount: document.getElementById('filter-cost-amount')?.value.toLowerCase().trim() || '',
+        priceAmount: document.getElementById('filter-price-amount')?.value.toLowerCase().trim() || '',
+        createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
+    };
+    
+    // Filter data with null-safe operations
+    filteredData = allDocumentsData.filter(doc => {
+        if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
+        if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
+        if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
+        if (filters.date && !(doc.DocumentDate || '').toLowerCase().includes(filters.date)) return false;
+        if (filters.description && !(doc.Description || '').toLowerCase().includes(filters.description)) return false;
+        if (filters.account && !(doc.AccountCode || '').toLowerCase().includes(filters.account)) return false;
+        if (filters.isvat) {
+            const vatValue = doc.IsVat ? 'y' : 'n';
+            if (!vatValue.includes(filters.isvat)) return false;
+        }
+        if (filters.warehouse && !(doc.WarehouseCode || '').toLowerCase().includes(filters.warehouse)) return false;
+        if (filters.costAmount && !(doc.CostAmount || 0).toString().includes(filters.costAmount)) return false;
+        if (filters.priceAmount && !(doc.PriceAmount || 0).toString().includes(filters.priceAmount)) return false;
+        if (filters.createdBy && !(doc.CreatedByUsername || '').toLowerCase().includes(filters.createdBy)) return false;
+        return true;
+    });
+    
+    // Calculate pagination
+    totalPages = Math.ceil(filteredData.length / pageSize);
+    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+    
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, filteredData.length);
+    const pageData = filteredData.slice(startIndex, endIndex);
+    
+    // Render table
+    renderDocumentsTable(pageData);
+    
+    // Update pagination info
+    updatePaginationInfo(startIndex + 1, endIndex, filteredData.length);
+}
+
+// Render documents table with DocumentFragment for performance
+function renderDocumentsTable(documents) {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    
+    const fragment = document.createDocumentFragment();
+    
+    documents.forEach(doc => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 cursor-pointer';
+        tr.setAttribute('data-document-id', doc.DocumentId);
+        
+        // Build action buttons based on permissions
+        let actionButtons = '';
+        
+        // Manage Details button
+        actionButtons += `
+            <a href="/core/invdocuments/${doc.DocumentId}/bulk-manage-details/" 
+                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                   onclick="event.stopPropagation();"
+                                   title="Manage Details">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                </a>
+        `;
+                                
+        // Print button
+        actionButtons += `
+                                <button class="print-document-btn" 
+                    data-document-id="${doc.DocumentId}"
+                                        class="inline-flex items-center p-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        title="Print Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                </button>
+        `;
+        
+        // Edit button (if user has permission and is the creator)
+        if (hasChangePermission && doc.CreatedById === currentUserId) {
+            actionButtons += `
+                <button class="edit-document-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                        data-document-id="${doc.DocumentId}"
+                        data-document-date="${doc.DocumentDate}"
+                        title="Edit Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+            `;
+        }
+        
+        // Delete button (if user has permission and is the creator)
+        if (hasDeletePermission && doc.CreatedById === currentUserId) {
+            actionButtons += `
+                                <button class="delete-document-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                        data-delete-url="/core/invdocuments/${doc.DocumentId}/delete/"
+                        data-document-name="Document ${doc.DocumentNo}" 
+                                        title="Delete Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+            `;
+        }
+        
+        tr.innerHTML = `
+            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentTypeCode || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                <span title="${doc.Description || ''}">${truncateText(doc.Description || '', 50)}</span>
+                        </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 80px;">
+                <span class="account-format" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
+            </td>
+            <td class="px-2 py-1 text-center text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">
+                ${doc.IsVat ? 'Y' : 'N'}
+            </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span class="warehouse-format" title="${doc.WarehouseCode || ''} - ${doc.WarehouseName || ''}">${doc.WarehouseCode || '-'}</span>
+            </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                ${doc.CostAmount ? formatNumber(doc.CostAmount) : '-'}
+            </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                ${doc.PriceAmount ? formatNumber(doc.PriceAmount) : '-'}
+            </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.CreatedByUsername || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
+                <div class="flex items-center justify-center space-x-2">
+                    ${actionButtons}
+        </div>
+            </td>
+        `;
+        
+        fragment.appendChild(tr);
+    });
+    
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+    
+    // Event handlers are already attached via delegation, no need to re-initialize
+}
+
+// Helper function to truncate text
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+// Helper function to format numbers
+function formatNumber(num) {
+    return parseFloat(num).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Update pagination info
+function updatePaginationInfo(start, end, total) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCount = document.getElementById('total-count');
+    
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : start;
+    if (showingEnd) showingEnd.textContent = end;
+    if (totalCount) totalCount.textContent = total;
+    
+    generatePaginationButtons();
+}
+
+// Generate pagination buttons
+function generatePaginationButtons() {
+    const pageInfo = document.getElementById('page-info');
+    if (!pageInfo) return;
+    
+    // Clear existing buttons
+    pageInfo.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Calculate pagination range
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Generate page buttons
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${
+            i === currentPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changePage(i));
+        pageInfo.appendChild(button);
+    }
+}
+
+// Change page
+function changePage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    applyFrontendFilter();
+}
+
+// Initialize pagination listeners
+function initializePaginationListeners() {
+    // Mobile pagination buttons
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    
+    if (prevBtn) prevBtn.onclick = () => changePage(currentPage - 1);
+    if (nextBtn) nextBtn.onclick = () => changePage(currentPage + 1);
+    
+    // Desktop pagination buttons
+    const prevDesktopBtn = document.getElementById('prev-page-desktop');
+    const nextDesktopBtn = document.getElementById('next-page-desktop');
+    
+    if (prevDesktopBtn) prevDesktopBtn.onclick = () => changePage(currentPage - 1);
+    if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
+}
+
+// Debounce utility function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Initialize filter listeners
+function initializeFilterListeners() {
+    const debouncedFilter = debounce(applyFrontendFilter, 300);
+    
+    // Add event listeners to all filter inputs
+    const filterInputs = [
+        'filter-document-no', 'filter-document-type', 'filter-client', 'filter-date',
+        'filter-description', 'filter-account', 'filter-isvat', 'filter-warehouse',
+        'filter-cost-amount', 'filter-price-amount', 'filter-created-by'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const input = document.getElementById(filterId);
+        if (input) {
+            input.addEventListener('input', debouncedFilter);
+        }
+    });
+    
+    // Clear filters button
+    const clearButton = document.getElementById('clear-filters');
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            filterInputs.forEach(filterId => {
+                const input = document.getElementById(filterId);
+                if (input) input.value = '';
+            });
+            applyFrontendFilter();
+        });
+    }
+}
+
+// Initialize event handlers with delegation pattern
+function initializeEventHandlers() {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    
+    // Check if already initialized to prevent duplicates
+    if (tbody.hasAttribute('data-handlers-initialized')) return;
+    
+    // Single delegated event listener for all row interactions
+    tbody.addEventListener('click', function(e) {
+        // Handle row clicks for document selection
+        const row = e.target.closest('tr[data-document-id]');
+        if (row && !e.target.closest('button') && !e.target.closest('a')) {
+            const documentId = row.getAttribute('data-document-id');
+            if (documentId) {
+                loadDocumentDetails(documentId);
+            }
+            return;
+        }
+        
+        // Handle edit document buttons
+        const editBtn = e.target.closest('.edit-document-btn');
+        if (editBtn) {
+            console.log('Edit button clicked!', editBtn);
+            e.stopPropagation();
+            
+            const documentId = editBtn.getAttribute('data-document-id');
+            const documentDate = editBtn.getAttribute('data-document-date');
+            
+            console.log('Document ID:', documentId, 'Date:', documentDate);
+            
+            // Check period lock before allowing edit
+            checkPeriodLockForEdit(documentId, documentDate);
+            return;
+        }
+        
+        // Handle delete buttons
+        const deleteBtn = e.target.closest('.delete-document-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const deleteUrl = deleteBtn.getAttribute('data-delete-url');
+            const documentName = deleteBtn.getAttribute('data-document-name');
+            if (deleteUrl && documentName) {
+                Silicon4Delete.showModal(deleteUrl, documentName);
+            }
+            return;
+        }
+        
+        // Handle print buttons
+        const printBtn = e.target.closest('.print-document-btn');
+        if (printBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const documentId = printBtn.getAttribute('data-document-id');
+            if (documentId) {
+                printDocument(documentId);
+            }
+            return;
+        }
+    });
+    
+    // Mark as initialized
+    tbody.setAttribute('data-handlers-initialized', 'true');
+}
+
+// Load document details via AJAX with caching and request cancellation
+function loadDocumentDetails(documentId) {
+    // Check cache first
+    if (detailCache.has(documentId)) {
+        renderCachedDetails(documentId);
+        return;
+    }
+    
+    // Cancel previous request if still in flight
+    if (currentDetailRequest) {
+        currentDetailRequest.abort();
+        currentDetailRequest = null;
+    }
+    
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    // Show loading state
+    detailContainer.innerHTML = `
+        <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-sm text-gray-600">Loading details...</p>
+        </div>
+    `;
+    
+    // Create new AbortController for this request
+    currentDetailRequest = new AbortController();
+    
+    // Make AJAX request
+    fetch(`/core/invdocuments/?selected_document=${documentId}&ajax=1`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'text/html'
+        },
+        signal: currentDetailRequest.signal
+    })
+    .then(response => {
+        // Clear request reference on success
+        currentDetailRequest = null;
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.text();
+    })
+    .then(html => {
+        // Cache the response
+        detailCache.set(documentId, html);
+        
+        // Render the details
+        detailContainer.innerHTML = html;
+        
+        // Call calculation functions if available
+        if (typeof window.calculateInventoryItemTotals === 'function') {
+            setTimeout(() => {
+                window.calculateInventoryItemTotals();
+                window.calculateInventoryAccountingTotals();
+            }, 100);
+        }
+    })
+    .catch(error => {
+        // Clear request reference
+        currentDetailRequest = null;
+        
+        // Only show error if it's not an abort error (abort is intentional)
+        if (error.name !== 'AbortError') {
+            console.error('Error loading document details:', error);
+            detailContainer.innerHTML = `
+                <div class="text-center py-8 text-red-600">
+                    <p>Error loading document details. Please try again.</p>
+                </div>
+            `;
+        }
+        // If AbortError, silently ignore (user triggered it by clicking another row)
+    });
+}
+
+// Render cached details
+function renderCachedDetails(documentId) {
+    const html = detailCache.get(documentId);
+    if (html) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = html;
+        
+            // Call calculation functions if available
+                    if (typeof window.calculateInventoryItemTotals === 'function') {
+                setTimeout(() => {
+                        window.calculateInventoryItemTotals();
+                    window.calculateInventoryAccountingTotals();
+                }, 100);
+            }
+        }
+    }
+}
+
+// Print document
+function printDocument(documentId) {
+    // This would integrate with your print system
+    console.log('Printing document:', documentId);
+    // You can implement the actual print functionality here
+}
+
+// Initialize everything when DOM is loaded
+function initializeAll() {
+    initializeEventHandlers();
+    initializeDateInputs();
+    initializeFilterListeners();
+    initializePaginationListeners();
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAll();
+});
+
+// Inventory Document Calculation Functions (moved here to ensure they're always available)
+function calculateInventoryItemTotals() {
+    const itemsTbody = document.getElementById('items-tbody');
+    if (!itemsTbody) {
+        console.warn('Inventory: No items tbody found');
+        return;
+    }
+    
+    const totalCostCells = itemsTbody.querySelectorAll('td.total-cost');
+    const totalPriceCells = itemsTbody.querySelectorAll('td.total-price');
+    
+    let totalCost = 0;
+    let totalPrice = 0;
+    
+    // Calculate total cost
+    totalCostCells.forEach((cell) => {
+        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
+        totalCost += value;
+    });
+    
+    // Calculate total price
+    totalPriceCells.forEach((cell) => {
+        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
+        totalPrice += value;
+    });
+    
+    // Update display elements
+    const totalCostElement = document.getElementById('display-total-cost');
+    const totalPriceElement = document.getElementById('display-total-price');
+    
+    if (totalCostElement) {
+        const formattedCost = totalCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        totalCostElement.textContent = formattedCost;
+    }
+    
+    if (totalPriceElement) {
+        const formattedPrice = totalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        totalPriceElement.textContent = formattedPrice;
+    }
+}
+
+function calculateInventoryAccountingTotals() {
+    const tbody = document.getElementById('detail-tbody');
+    if (!tbody) {
+        console.warn('Inventory: No detail tbody found');
+        return;
+    }
+    
+    const rows = tbody.querySelectorAll('tr');
+    let totalDebit = 0;
+    let totalCredit = 0;
+    
+    // Calculate totals and update currency conversions
+    rows.forEach((row) => {
+        const currencyAmountCell = row.querySelector('td:nth-child(5)'); // Currency Amount column
+        const currencyExchangeCell = row.querySelector('td:nth-child(4)'); // Exchange Rate column
+        const debitCell = row.querySelector('td.debit-amount');
+        const creditCell = row.querySelector('td.credit-amount');
+        
+        if (currencyAmountCell && currencyExchangeCell) {
+            const currencyAmount = parseFloat(currencyAmountCell.textContent.replace(/,/g, '')) || 0;
+            const currencyExchange = parseFloat(currencyExchangeCell.textContent.replace(/,/g, '')) || 0;
+            
+            // Calculate converted amount
+            const convertedAmount = currencyAmount * currencyExchange;
+            
+            // Update debit/credit cells with calculated amounts
+            if (debitCell && creditCell) {
+                const currentDebit = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
+                const currentCredit = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
+                
+                // Only update if there's a debit or credit amount (not both zero)
+                if (currentDebit > 0 || currentCredit > 0) {
+                    if (currentDebit > 0) {
+                        debitCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        totalDebit += convertedAmount;
+                    } else if (currentCredit > 0) {
+                        creditCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        totalCredit += convertedAmount;
+                    }
+                }
+            }
+        } else {
+            // Fallback: use existing debit/credit amounts if currency conversion not available
+            if (debitCell) {
+                const value = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
+                totalDebit += value;
+            }
+            if (creditCell) {
+                const value = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
+                totalCredit += value;
+            }
+        }
+    });
+    
+    const difference = totalDebit - totalCredit;
+    
+    // Update display elements
+    const totalDebitElement = document.getElementById('display-total-debit');
+    const totalCreditElement = document.getElementById('display-total-credit');
+    const balanceStatusElement = document.getElementById('display-balance-status');
+    
+    if (totalDebitElement) {
+        const formattedDebit = totalDebit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        totalDebitElement.textContent = formattedDebit;
+    }
+    
+    if (totalCreditElement) {
+        const formattedCredit = totalCredit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        totalCreditElement.textContent = formattedCredit;
+    }
+    
+    if (balanceStatusElement) {
+        if (Math.abs(difference) < 0.01) {
+            balanceStatusElement.textContent = 'balanced ✓';
+            balanceStatusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+        } else {
+            balanceStatusElement.textContent = `not balanced (${difference.toFixed(2)})`;
+            balanceStatusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
+        }
+    }
+}
+
+// Make functions globally available
+window.calculateInventoryItemTotals = calculateInventoryItemTotals;
+window.calculateInventoryAccountingTotals = calculateInventoryAccountingTotals;
+console.log('✅ Inventory calculation functions defined in master-detail template');
+
+// Check period lock before allowing edit
+function checkPeriodLockForEdit(documentId, documentDate) {
+    console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
+    
+    if (!documentDate) {
+        console.log('No date, proceeding to edit');
+        // No date, proceed to edit
+        window.location.href = `/core/invdocuments/${documentId}/update/`;
+        return;
+    }
+    
+    console.log('Checking period lock for date:', documentDate);
+    
+    // Check period lock via API
+    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Period lock API response:', data);
+            if (data.is_locked) {
+                console.log('Period is locked, showing modal');
+                // Show modal for locked period
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                console.log('Period not locked, proceeding to edit');
+                // Not locked, proceed to edit
+                window.location.href = `/core/invdocuments/${documentId}/update/`;
+            }
+        })
+        .catch(error => {
+            console.error('Period lock check failed:', error);
+            // On error, allow edit (fail open)
+            window.location.href = `/core/invdocuments/${documentId}/update/`;
+        });
+}
+
+} // End of execution guard
+</script>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
+{% endblock %}

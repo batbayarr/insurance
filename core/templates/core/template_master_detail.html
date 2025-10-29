@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Template Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="space-y-6">
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Template Management</h1>
+                        <p class="text-gray-600">Manage document templates and their account details</p>
+                    </div>
+                    <a href="{% url 'core:template_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <i class="fas fa-plus mr-2"></i>Add Template
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Master Table - Templates -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Templates (Master)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template ID</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template Name</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document Type</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VAT</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="templates-tbody" class="bg-white divide-y divide-gray-200">
+                                    {% for template in templates %}
+                                    <tr class="template-row hover:bg-gray-50 cursor-pointer" data-template-id="{{ template.TemplateId }}" onclick="selectTemplateFromRow(this)">
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ template.TemplateId }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ template.TemplateName }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ template.DocumentTypeId.Description }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                                            {% if template.AccountId %}
+                                                {{ template.AccountId.AccountCode }} - {{ template.AccountId.AccountName }}
+                                            {% else %}
+                                                <span class="text-gray-400">No Account</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                                            {% if template.IsVat %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <i class="fas fa-check mr-1"></i>Yes
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    <i class="fas fa-times mr-1"></i>No
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ template.CreatedBy.username }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                                            <div class="flex space-x-1">
+                                                <button class="select-template inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" 
+                                                        data-template-id="{{ template.TemplateId }}"
+                                                        title="Select Template">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a href="{% url 'core:template_update' template.TemplateId %}" 
+                                                   class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500" 
+                                                   title="Edit Template"
+                                                   onclick="event.stopPropagation()">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="delete-template-btn inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" 
+                                                        data-template-id="{{ template.TemplateId }}"
+                                                        data-template-name="{{ template.TemplateName }}"
+                                                        title="Delete Template"
+                                                        onclick="event.stopPropagation()">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="px-3 py-4 text-center text-sm text-gray-500">
+                                            No templates found
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Detail Table - Template Details -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Template Details</h3>
+                            <button id="add-detail-btn" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400" disabled>
+                                <i class="fas fa-plus mr-1"></i>Add Detail
+                            </button>
+                        </div>
+                        <div id="detail-grid-container">
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                <p>Select a template to view its details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Delete Modal -->
+{% include 'core/components/delete_modal.html' %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let selectedTemplateId = null;
+    
+    // Handle template selection
+    document.querySelectorAll('.select-template').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent row click
+            const templateId = this.getAttribute('data-template-id');
+            selectTemplate(templateId);
+        });
+    });
+    
+    // Handle row clicks
+    window.selectTemplateFromRow = function(row) {
+        const templateId = row.getAttribute('data-template-id');
+        selectTemplate(templateId);
+    };
+    
+    // Handle add detail button
+    document.getElementById('add-detail-btn').addEventListener('click', function() {
+        console.log('Add detail button clicked, selectedTemplateId:', selectedTemplateId);
+        if (selectedTemplateId) {
+            const url = `/core/templates/${selectedTemplateId}/details/create/`;
+            console.log('Redirecting to:', url);
+            window.location.href = url;
+        } else {
+            console.log('No template selected');
+            alert('Please select a template first');
+        }
+    });
+    
+    // Handle delete template buttons
+    document.querySelectorAll('.delete-template-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.getAttribute('data-template-id');
+            const templateName = this.getAttribute('data-template-name');
+            const deleteUrl = `/core/templates/${templateId}/delete/`;
+            
+            // Use the existing generic delete modal
+            Silicon4Delete.showModal(deleteUrl, templateName, function() {
+                // Optional callback after successful deletion
+                console.log('Template deleted successfully');
+            });
+        });
+    });
+    
+    function selectTemplate(templateId) {
+        console.log('selectTemplate called with templateId:', templateId);
+        selectedTemplateId = templateId;
+        
+        // Update UI
+        document.querySelectorAll('.template-row').forEach(row => {
+            row.classList.remove('bg-blue-50', 'border-blue-200');
+            row.classList.add('hover:bg-gray-50');
+        });
+        const selectedRow = document.querySelector(`[data-template-id="${templateId}"]`);
+        if (selectedRow) {
+            selectedRow.classList.add('bg-blue-50', 'border-blue-200');
+            selectedRow.classList.remove('hover:bg-gray-50');
+        }
+        
+        // Enable add detail button
+        const addDetailBtn = document.getElementById('add-detail-btn');
+        if (addDetailBtn) {
+            addDetailBtn.disabled = false;
+            addDetailBtn.classList.remove('disabled:bg-gray-400');
+            addDetailBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            addDetailBtn.innerHTML = '<i class="fas fa-plus mr-1"></i>Add Detail'; // Ensure text is correct
+            console.log('Add detail button enabled, disabled:', addDetailBtn.disabled);
+        } else {
+            console.error('Add detail button not found');
+        }
+        
+        // Load template details via AJAX
+        loadTemplateDetails(templateId);
+    }
+    
+    function loadTemplateDetails(templateId) {
+        const detailContainer = document.getElementById('detail-grid-container');
+        
+        // Show loading state
+        detailContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-sm text-gray-500">Loading template details...</p>
+            </div>
+        `;
+        
+        // Make AJAX request
+        fetch(`/core/templates/?selected_template=${templateId}&ajax=1`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'text/html'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            detailContainer.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading template details:', error);
+            detailContainer.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Error loading template details</p>
+                </div>
+            `;
+        });
+    }
+});
+</script>
+{% endblock %}

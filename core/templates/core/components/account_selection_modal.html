@@ -1,0 +1,735 @@
+<!-- Account Selection Modal Component - Based on Fresh Modal Pattern -->
+<div id="account-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-5xl min-w-[1100px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Дансаны жагсаалт</h3>                
+            </div>
+            <button onclick="closeAccountPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+
+        <!-- Account list will be loaded here -->
+        <div id="account-list-container" class="border border-gray-200 rounded-lg min-w-[1000px]">
+            <!-- Account list will be populated here -->
+        </div>
+
+        <!-- Account Pagination -->
+        <div id="account-pagination" class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200" style="display: none;">
+            <div class="flex-1 flex justify-between lg:hidden">
+                <button id="prev-account-page-mobile" class="relative inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                    Previous
+                </button>
+                <button id="next-account-page-mobile" class="ml-3 relative inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                    Next
+            </button>
+        </div>
+            <div class="hidden lg:flex-1 lg:flex lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-xs text-gray-700">
+                        Showing <span id="account-page-start">1</span> to <span id="account-page-end">12</span> of <span id="account-total-records">0</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="account-pagination-buttons">
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        
+    </div>
+</div>
+
+<script>
+// Account Selection Modal Functions
+window.openAccountPopup = function(inputElement, rowId, options = {}) {
+    // Store references for later use
+    window.currentAccountInput = inputElement;
+    window.currentAccountRowId = rowId;
+    window.currentAccountOptions = options;
+    
+    console.log('DEBUG: openAccountPopup called with:', {inputElement, rowId, options});
+    
+    // Update modal title and subtitle if provided
+    const modalTitle = document.querySelector('#account-selection-modal h3');
+    const modalSubtitle = document.querySelector('#account-selection-modal p');
+    
+    if (options.modalTitle && modalTitle) {
+        modalTitle.textContent = options.modalTitle;
+    }
+    if (options.modalSubtitle && modalSubtitle) {
+        modalSubtitle.textContent = options.modalSubtitle;
+    }
+    
+    // Show the modal
+    const modal = document.getElementById('account-selection-modal');
+    console.log('DEBUG: Modal element found:', modal);
+    if (modal) {
+        console.log('DEBUG: Modal classes before:', modal.className);
+        modal.classList.remove('hidden');
+        console.log('DEBUG: Modal classes after:', modal.className);
+        console.log('DEBUG: Modal is hidden:', modal.classList.contains('hidden'));
+        console.log('DEBUG: Modal style.display:', modal.style.display);
+        console.log('DEBUG: Modal computed style:', window.getComputedStyle(modal).display);
+        
+        // Load accounts with filters
+        loadAccountList(options);
+    } else {
+        console.error('DEBUG: Account selection modal not found!');
+    }
+}
+
+window.closeAccountPopup = function() {
+    const modal = document.getElementById('account-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+window.selectAccount = function(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue) {
+    console.log('DEBUG: selectAccount called with:', {accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue});
+    
+    // Check if we're in bulk manage mode (has currentAccountInput and currentAccountRowId)
+    if (window.currentAccountInput && window.currentAccountRowId) {
+        // Bulk manage mode - populate the specific row
+        const row = window.currentAccountInput.closest('tr');
+        console.log('DEBUG: Found row:', row);
+        
+        if (row) {
+            // Look for hidden input with various name patterns
+            const hiddenInput = row.querySelector('input[name*="detail_account_id"]') ||
+                               row.querySelector('input[name*="account_id_"]') ||
+                               row.querySelector('input[name*="new_account_id_"]') ||
+                               row.querySelector('.account-id-input');
+            const displayInput = row.querySelector('.account-display-input');
+            
+            console.log('DEBUG: Bulk manage mode - found elements:', {
+                hiddenInput, 
+                displayInput, 
+                rowId: window.currentAccountRowId,
+                rowHTML: row.outerHTML.substring(0, 200) + '...'
+            });
+            
+            // Also try alternative selectors
+            const allHiddenInputs = row.querySelectorAll('input[type="hidden"]');
+            console.log('DEBUG: All hidden inputs in row:', Array.from(allHiddenInputs).map(input => ({
+                name: input.name,
+                value: input.value
+            })));
+            
+            if (hiddenInput && displayInput) {
+                hiddenInput.value = accountId;
+                displayInput.value = accountCode;
+                console.log('DEBUG: Set account values:', {accountId, displayValue: accountCode});
+            } else {
+                console.log('DEBUG: Missing elements - hiddenInput:', hiddenInput, 'displayInput:', displayInput);
+            }
+        } else {
+            console.log('DEBUG: No row found for input element:', window.currentAccountInput);
+        }
+    } else {
+        // Regular form mode - populate main form fields
+        console.log('DEBUG: Regular form mode - populating account form fields');
+        const hiddenInput = document.getElementById('AccountId');
+        const displayInput = document.getElementById('AccountIdDisplay');
+        
+        console.log('DEBUG: Found account elements:', {hiddenInput, displayInput});
+        
+        if (hiddenInput && displayInput) {
+            hiddenInput.value = accountId;
+            displayInput.value = accountCode;
+            console.log('DEBUG: Set AccountId to:', accountId, 'and display to:', accountCode);
+        }
+        
+        // Handle currency fields if they exist
+        const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+        const currencyHiddenInput = document.getElementById('CurrencyId');
+        
+        if (currencyDisplayInput && currencyHiddenInput && currencyId && currencyId !== 'null' && currencyName) {
+            // Populate the currency input fields
+            currencyDisplayInput.value = currencyName;
+            currencyHiddenInput.value = currencyId;
+            
+            // Add visual feedback
+            currencyDisplayInput.style.backgroundColor = '#dbeafe';
+            currencyDisplayInput.style.borderColor = '#3b82f6';
+            
+            // Set default exchange rate directly from the passed value
+            setDefaultExchangeRate(currencyDefaultValue);
+        }
+        
+        // Handle exchange rate field - set default value from currency
+        const currencyExchangeInput = document.getElementById('CurrencyExchange') || 
+                                     document.querySelector('input[name="CurrencyExchange"]') ||
+                                     document.querySelector('input[name="currencyExchange"]');
+        
+        if (currencyExchangeInput) {
+            // Set placeholder to indicate auto-population
+            currencyExchangeInput.setAttribute('placeholder', 'Exchange rate will be auto-filled');
+            // Add visual indicator that this field will be auto-populated
+            currencyExchangeInput.style.backgroundColor = '#f0f9ff';
+            currencyExchangeInput.style.borderColor = '#0ea5e9';
+        }
+    }
+    
+    // Clear the stored references
+    window.currentAccountInput = null;
+    window.currentAccountRowId = null;
+    window.currentAccountOptions = null;
+    
+    closeAccountPopup();
+}
+
+// Function to set default exchange rate directly from passed value
+window.setDefaultExchangeRate = function(currencyDefaultValue) {
+    if (!currencyDefaultValue || currencyDefaultValue === 'null') {
+        return;
+    }
+    
+    // Set the exchange rate field with the default value
+    const currencyExchangeInput = document.getElementById('CurrencyExchange') || 
+                               document.querySelector('input[name="CurrencyExchange"]') ||
+                               document.querySelector('input[name="currencyExchange"]');
+    
+    if (currencyExchangeInput) {
+        currencyExchangeInput.value = currencyDefaultValue;
+        
+        // Add visual feedback
+        currencyExchangeInput.style.backgroundColor = '#dcfce7';
+        currencyExchangeInput.style.borderColor = '#16a34a';
+        
+        // Trigger change event to update MNT calculation
+        currencyExchangeInput.dispatchEvent(new Event('change', { bubbles: true }));
+        currencyExchangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+// Load account list with specific filter parameters
+window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') {
+    console.log('DEBUG: loadAccountListWithFilters called with:', filterParams);
+    const accountListContainer = document.getElementById('account-list-container');
+    
+    if (!accountListContainer) {
+        console.error('DEBUG: account-list-container not found!');
+        return;
+    }
+    
+    // Show loading
+    accountListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading accounts...</p></div>';
+    
+    // Fetch accounts data and render custom modal
+    const url = `/core/refaccounts/?${filterParams}`;
+    console.log('DEBUG: Fetching accounts from URL:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('DEBUG: Fetch response status:', response.status);
+            return response.text();
+        })
+        .then(html => {
+            console.log('DEBUG: Received HTML length:', html.length);
+            // Parse the HTML to extract account data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const accountRows = doc.querySelectorAll('tbody tr');
+            
+            if (accountRows.length === 0) {
+                accountListContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No accounts found</h3>
+                        <p class="mt-1 text-sm text-gray-500">No accounts match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create custom account list HTML with filter row
+            let accountsHtml = `
+                <div class="space-y-0">
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div class="col-span-1 border-r border-gray-200 px-1 text-center">#</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Код</div>
+                        <div class="col-span-5 border-r border-gray-200 px-2">Дансны нэр</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Төрөл</div>
+                        <div class="col-span-1 border-r border-gray-200 px-2">Валют</div>
+                        <div class="col-span-1 text-center">Үйлдэл</div>
+                    </div>
+                    <!-- Filter Row -->
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-100 border-b border-gray-200">
+                        <div class="col-span-1 border-r border-gray-200 px-1">
+                            <span class="w-full px-1 py-1 text-xs text-gray-500 text-center block">#</span>
+                        </div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-account-code" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-5 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-account-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-account-type" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-1 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-account-currency" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-1 px-2">
+                            <button id="clear-account-filters" class="w-full px-1 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+            `;
+            
+            accountRows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 6) {
+                    const accountCode = cells[0]?.textContent?.trim() || '';
+                    const accountName = cells[1]?.textContent?.trim() || '';
+                    const accountType = cells[2]?.textContent?.trim() || '';
+                    const currency = cells[3]?.textContent?.trim() || '';
+                    
+                    // Extract account ID from the select button onclick
+                    const selectButton = row.querySelector('button[onclick*="selectAccount"]');
+                    let accountId = '';
+                    let currencyId = '';
+                    let currencyName = '';
+                    let defaultValue = '';
+                    
+                    if (selectButton) {
+                        const onclickAttr = selectButton.getAttribute('onclick');
+                        const matches = onclickAttr.match(/selectAccount\('([^']+)',\s*'([^']+)',\s*'([^']+)',\s*([^,]+),\s*'([^']*)',\s*([^)]+)\)/);
+                        if (matches) {
+                            accountId = matches[1];
+                            currencyId = matches[4] || 'null';
+                            currencyName = matches[5] || '';
+                            defaultValue = matches[6] || 'null';
+                        }
+                    }
+                    
+                    // Use full account type name for display
+                    const accountTypeDisplay = accountType || '';
+                    
+                    accountsHtml += `
+                        <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer account-row" 
+                             data-account-code="${accountCode.toLowerCase()}" 
+                             data-account-name="${accountName.toLowerCase()}"
+                             data-account-type="${accountTypeDisplay.toLowerCase()}"
+                             data-account-currency="${(currency || '').toLowerCase()}"
+                             data-row-index="${index}"
+                             onclick="selectAccount('${accountId}', '${accountCode}', '${accountName}', ${currencyId}, '${currencyName}', ${defaultValue})">
+                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
+                                <span class="text-xs text-gray-500">${index + 1}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${accountCode}</span>
+                            </div>
+                            <div class="col-span-5 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${accountName}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${accountTypeDisplay}</span>
+                            </div>
+                            <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-600">${currency || '-'}</span>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center">
+                                <button class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                                    Сонгох
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            accountsHtml += '</div>';
+            accountListContainer.innerHTML = accountsHtml;
+            
+            // Apply client-side currency filtering if specified
+            if (currencyFilter) {
+                const rows = document.querySelectorAll('.account-row');
+                rows.forEach(row => {
+                    const currency = row.getAttribute('data-account-currency') || '';
+                    if (!currency.includes(currencyFilter.toLowerCase())) {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Initialize account filters and pagination
+            initializeAccountFilters();
+            initializeAccountPagination();
+        })
+        .catch(error => {
+            console.error('DEBUG: Error loading accounts:', error);
+            accountListContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading accounts</h3>
+                    <p class="mt-1 text-sm text-gray-500">Please try again later.</p>
+                    <p class="mt-1 text-xs text-gray-400">Error: ${error.message}</p>
+                </div>
+            `;
+        });
+}
+
+window.loadAccountList = function(options = {}) {
+    console.log('DEBUG: loadAccountList called with options:', options);
+    const accountListContainer = document.getElementById('account-list-container');
+    console.log('DEBUG: accountListContainer found:', accountListContainer);
+    
+    if (!accountListContainer) {
+        console.error('DEBUG: account-list-container not found!');
+        return;
+    }
+    
+    // Store options for later use in filtering
+    window.currentAccountOptions = options;
+    
+    // Show loading
+    accountListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading accounts...</p></div>';
+    
+    // Use shared component for loading message if available
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
+        Silicon4Message.info('Loading accounts...');
+    }
+    
+    // Build filter URL based on options (generic)
+    let filterParams = 'modal=true&select_mode=true';
+    
+    // Allow callers to pass any additional query params generically
+    if (options.extraQueryParams) {
+        filterParams += options.extraQueryParams;
+    }
+    
+    // Use the new function to load with filters
+    loadAccountListWithFilters(filterParams);
+}
+
+// Account filtering and pagination variables
+const ACCOUNT_RECORDS_PER_PAGE = 12;
+let currentAccountPage = 1;
+let totalAccountRecords = 0;
+let filteredAccountRecords = [];
+let allAccountRows = [];
+
+// Debounce utility function for account filtering
+function debounceAccount(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Initialize account filters with real-time search
+function initializeAccountFilters() {
+    // Add event listener to clear button
+    const clearButton = document.getElementById('clear-account-filters');
+    if (clearButton) {
+        clearButton.addEventListener('click', clearAllAccountFilters);
+    }
+    
+    // Add real-time filtering to all filter inputs
+    const filterInputs = [
+        'filter-account-code',
+        'filter-account-name', 
+        'filter-account-type',
+        'filter-account-currency'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            // Real-time filtering on input
+            element.addEventListener('input', debounceAccount(applyRealTimeFilters, 300));
+        }
+    });
+}
+
+// Apply real-time client-side filtering
+function applyRealTimeFilters() {
+    // Get current filter values
+    const codeFilter = document.getElementById('filter-account-code')?.value.toLowerCase() || '';
+    const nameFilter = document.getElementById('filter-account-name')?.value.toLowerCase() || '';
+    const typeFilter = document.getElementById('filter-account-type')?.value.toLowerCase() || '';
+    const currencyFilter = document.getElementById('filter-account-currency')?.value.toLowerCase() || '';
+    
+    // Filter account rows in real-time
+    const accountRows = document.querySelectorAll('.account-row');
+    let visibleCount = 0;
+    
+    accountRows.forEach(row => {
+        const accountCode = row.getAttribute('data-account-code') || '';
+        const accountName = row.getAttribute('data-account-name') || '';
+        const accountType = row.getAttribute('data-account-type') || '';
+        const accountCurrency = row.getAttribute('data-account-currency') || '';
+        
+        const matchesCode = !codeFilter || accountCode.includes(codeFilter);
+        const matchesName = !nameFilter || accountName.includes(nameFilter);
+        const matchesType = !typeFilter || accountType.includes(typeFilter);
+        const matchesCurrency = !currencyFilter || accountCurrency.includes(currencyFilter);
+        
+        if (matchesCode && matchesName && matchesType && matchesCurrency) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update pagination with filtered results
+    updateFilteredAccountRecords();
+    
+    // Show "no results" message if needed
+    if (visibleCount === 0) {
+        showNoResultsMessage();
+    } else {
+        hideNoResultsMessage();
+    }
+}
+
+// Apply account filters (server-side) - kept for backward compatibility
+function applyAccountFilters() {
+    // Get current filter values
+    const codeFilter = document.getElementById('filter-account-code')?.value || '';
+    const nameFilter = document.getElementById('filter-account-name')?.value || '';
+    const typeFilter = document.getElementById('filter-account-type')?.value || '';
+    const currencyFilter = document.getElementById('filter-account-currency')?.value || '';
+    
+    // Build filter parameters (only use supported filters)
+    let filterParams = 'modal=true&select_mode=true';
+    
+    if (codeFilter) filterParams += `&code=${encodeURIComponent(codeFilter)}`;
+    if (nameFilter) filterParams += `&name=${encodeURIComponent(nameFilter)}`;
+    if (typeFilter) filterParams += `&type=${encodeURIComponent(typeFilter)}`;
+    // Note: currency filter is not supported by the Django view, so we'll do client-side filtering for currency
+    
+    // Add any existing extra query params from options
+    if (window.currentAccountOptions && window.currentAccountOptions.extraQueryParams) {
+        filterParams += window.currentAccountOptions.extraQueryParams;
+    }
+    
+    // Reload the account list with server-side filters
+    loadAccountListWithFilters(filterParams, currencyFilter);
+}
+
+// Clear all account filters
+function clearAllAccountFilters() {
+    const filterInputs = [
+        'filter-account-code',
+        'filter-account-name', 
+        'filter-account-type',
+        'filter-account-currency'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) element.value = '';
+    });
+    
+    // Show all rows and reset pagination
+    const accountRows = document.querySelectorAll('.account-row');
+    accountRows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    // Update pagination with all records
+    updateFilteredAccountRecords();
+    hideNoResultsMessage();
+}
+
+// Update filtered account records for pagination
+function updateFilteredAccountRecords() {
+    const visibleRows = Array.from(document.querySelectorAll('.account-row')).filter(row => 
+        row.style.display !== 'none'
+    );
+    filteredAccountRecords = visibleRows;
+    totalAccountRecords = visibleRows.length;
+    
+    // Reset to first page and update pagination
+    currentAccountPage = 1;
+    showAccountPage(1);
+}
+
+// Show no results message
+function showNoResultsMessage() {
+    const container = document.getElementById('account-list-container');
+    if (container && !container.querySelector('.no-results-message')) {
+        const noResultsDiv = document.createElement('div');
+        noResultsDiv.className = 'no-results-message text-center py-8 bg-white border-b border-gray-200';
+        noResultsDiv.innerHTML = `
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No accounts found</h3>
+            <p class="mt-1 text-sm text-gray-500">No accounts match the current filter criteria.</p>
+        `;
+        container.appendChild(noResultsDiv);
+    }
+}
+
+// Hide no results message
+function hideNoResultsMessage() {
+    const noResultsMessage = document.querySelector('.no-results-message');
+    if (noResultsMessage) {
+        noResultsMessage.remove();
+    }
+}
+
+// Initialize account pagination
+function initializeAccountPagination() {
+    // Store all account rows
+    allAccountRows = Array.from(document.querySelectorAll('.account-row'));
+    totalAccountRecords = allAccountRows.length;
+    filteredAccountRecords = allAccountRows;
+    
+    console.log(`Account pagination initialized: ${totalAccountRecords} total records`);
+    
+    // Show pagination if we have more than one page
+    const totalPages = Math.ceil(totalAccountRecords / ACCOUNT_RECORDS_PER_PAGE);
+    const paginationDiv = document.getElementById('account-pagination');
+    if (paginationDiv) {
+        paginationDiv.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+    
+    // Add event listeners to pagination buttons
+    const prevMobile = document.getElementById('prev-account-page-mobile');
+    const nextMobile = document.getElementById('next-account-page-mobile');
+    
+    if (prevMobile) {
+        prevMobile.addEventListener('click', () => goToAccountPage(currentAccountPage - 1));
+    }
+    if (nextMobile) {
+        nextMobile.addEventListener('click', () => goToAccountPage(currentAccountPage + 1));
+    }
+    
+    // Show first page
+    showAccountPage(1);
+}
+
+// Show specific account page
+function showAccountPage(pageNumber) {
+    const totalPages = Math.ceil(filteredAccountRecords.length / ACCOUNT_RECORDS_PER_PAGE);
+    
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    
+    currentAccountPage = pageNumber;
+    
+    // Hide all rows
+    allAccountRows.forEach(row => row.style.display = 'none');
+    
+    // Show rows for current page
+    const startIndex = (pageNumber - 1) * ACCOUNT_RECORDS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ACCOUNT_RECORDS_PER_PAGE, filteredAccountRecords.length);
+    
+    for (let i = startIndex; i < endIndex; i++) {
+        filteredAccountRecords[i].style.display = '';
+    }
+    
+    // Update pagination controls
+    updateAccountPaginationControls(startIndex + 1, endIndex, filteredAccountRecords.length, totalPages);
+}
+
+// Update account pagination controls
+function updateAccountPaginationControls(start, end, total, totalPages) {
+    const pageStart = document.getElementById('account-page-start');
+    const pageEnd = document.getElementById('account-page-end');
+    const totalRecords = document.getElementById('account-total-records');
+    
+    if (pageStart) pageStart.textContent = total === 0 ? 0 : start;
+    if (pageEnd) pageEnd.textContent = end;
+    if (totalRecords) totalRecords.textContent = total;
+    
+    // Update mobile buttons
+    const prevMobile = document.getElementById('prev-account-page-mobile');
+    const nextMobile = document.getElementById('next-account-page-mobile');
+    
+    if (prevMobile && nextMobile) {
+        prevMobile.disabled = currentAccountPage === 1;
+        nextMobile.disabled = currentAccountPage === totalPages || totalPages === 0;
+        
+        prevMobile.classList.toggle('opacity-50', currentAccountPage === 1);
+        prevMobile.classList.toggle('cursor-not-allowed', currentAccountPage === 1);
+        nextMobile.classList.toggle('opacity-50', currentAccountPage === totalPages || totalPages === 0);
+        nextMobile.classList.toggle('cursor-not-allowed', currentAccountPage === totalPages || totalPages === 0);
+    }
+    
+    // Create page number buttons
+    createAccountPageButtons(totalPages);
+}
+
+// Create account page number buttons
+function createAccountPageButtons(totalPages) {
+    const container = document.getElementById('account-pagination-buttons');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Previous button
+    const prevBtn = createAccountPaginationButton('‹', currentAccountPage - 1, currentAccountPage === 1);
+    container.appendChild(prevBtn);
+    
+    // Page number buttons (show 5 pages at a time)
+    const startPage = Math.max(1, currentAccountPage - 2);
+    const endPage = Math.min(totalPages, startPage + 4);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = createAccountPaginationButton(i.toString(), i, false, i === currentAccountPage);
+        container.appendChild(btn);
+    }
+    
+    // Next button
+    const nextBtn = createAccountPaginationButton('›', currentAccountPage + 1, currentAccountPage === totalPages);
+    container.appendChild(nextBtn);
+}
+
+// Create account pagination button
+function createAccountPaginationButton(text, page, disabled, active = false) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.disabled = disabled;
+    
+    if (active) {
+        btn.className = 'relative inline-flex items-center px-2 py-1 border border-gray-300 bg-blue-600 text-xs font-medium text-white';
+    } else {
+        btn.className = 'relative inline-flex items-center px-2 py-1 border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50';
+    }
+    
+    if (disabled) {
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    if (!disabled && !active) {
+        btn.addEventListener('click', () => goToAccountPage(page));
+    }
+    
+    return btn;
+}
+
+// Go to specific account page
+function goToAccountPage(pageNumber) {
+    showAccountPage(pageNumber);
+}
+
+
+</script>

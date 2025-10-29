@@ -1,0 +1,138 @@
+{% load humanize %}
+<!-- Detail Grid (Cash Document Details) -->
+<div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+        
+    <!-- Note: Table styling and number formatting are handled by CSS and Django template filters -->
+    
+    {% if selected_document %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200" style="table-layout: auto;">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Account</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 60px; max-width: 60px;">Валют</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют.Дүн</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит дүн(₮)</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн(₮)</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Мөнгөн гүйлгээ</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гэрээ</th>
+                </tr>
+            </thead>
+            <tbody id="detail-tbody" class="bg-white divide-y divide-gray-200">
+                {% for detail in document_details %}
+                <tr class="hover:bg-gray-50" data-is-debit="{{ detail.IsDebit|yesno:'true,false' }}">
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        <span class="account-format text-xs" title="{{ detail.AccountId.AccountCode }} - {{ detail.AccountId.AccountName }}">{{ detail.AccountId.AccountCode }}</span>
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        {% if detail.ClientId %}
+                            {{ detail.ClientId.ClientCode }} - {{ detail.ClientId.ClientName }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="width: 60px; max-width: 60px;">
+                        {% if detail.CurrencyId %}
+                            <span title="{{ detail.CurrencyId.CurrencyId }} - {{ detail.CurrencyId.Currency_name }}">{{ detail.CurrencyId.Currency_name|truncatechars:3 }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        {{ detail.CurrencyExchange|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        {{ detail.CurrencyAmount|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right debit-amount">
+                        {% if detail.DebitAmount %}{{ detail.DebitAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right credit-amount">
+                        {% if detail.CreditAmount %}{{ detail.CreditAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        {% if detail.CashFlowId %}
+                            {{ detail.CashFlowId.CashFlowId }} - {{ detail.CashFlowId.Description }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        {% if detail.ContractId %}
+                            {{ detail.ContractId.ContractCode }} - {{ detail.ContractId.Description }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <!-- Summary Row -->
+            {% if document_details %}
+            <tfoot class="bg-gray-50">
+                <tr class="border-t-2 border-gray-300">
+                    <td colspan="5" class="px-2 py-1 text-xs text-gray-900 text-right">
+                        TOTALS:
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        <span id="display-total-debit" class="font-medium text-red-600">0.00</span>
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        <span id="display-total-credit" class="font-medium text-green-600">0.00</span>
+                    </td>
+                    <td colspan="2" class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
+                </tr>
+                <!-- Balance Status Row -->
+                <tr>
+                    <td colspan="9" class="px-2 py-1 text-xs text-gray-900 text-center">
+                        <span id="display-balance-status" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            Calculating...
+                        </span>
+                    </td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+    
+    {% if not document_details %}
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <h3 class="mt-2 text-xs font-medium text-gray-900">No details</h3>
+        <p class="mt-1 text-xs text-gray-500">This document has no details yet.</p>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <h3 class="mt-2 text-xs font-medium text-gray-900">No document selected</h3>
+        <p class="mt-1 text-xs text-gray-500">Select a document from the list above to view its details.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Cash Document Detail Grid Template
+// The calculation function is now defined in the master-detail template
+// This ensures it's always available when needed
+
+// Try to call the calculation function if it's available
+if (typeof window.calculateCashDocumentTotals === 'function') {
+    // Multiple execution attempts to ensure it runs
+    window.calculateCashDocumentTotals();
+    
+    setTimeout(() => {
+        window.calculateCashDocumentTotals();
+    }, 50);
+    
+    setTimeout(() => {
+        window.calculateCashDocumentTotals();
+    }, 100);
+}
+</script>

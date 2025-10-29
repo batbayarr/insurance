@@ -1,0 +1,185 @@
+{% load humanize %}
+<!-- Asset Document Detail Grid Component -->
+<div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+    <!-- Header -->
+    <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Хөрөнгийн бичилт</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Items Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хөрөнгө (Asset Card)</th>
+                    <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Тоо хэмжээ</th>
+                    <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн өртөг</th>
+                    <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн үнэ</th>
+                    <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нийт өртөг</th>
+                    <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нийт үнэ</th>
+                </tr>
+            </thead>
+            <tbody id="items-tbody" class="bg-white divide-y divide-gray-200">
+                {% for item in document_items %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                        {{ item.DocumentItemId }}
+                    </td>
+                    <td class="px-2 py-1 border-r border-gray-200">
+                        <div class="text-xs text-gray-900">
+                            {% if item.AssetCardId %}
+                                {% if item.AssetCardId.AssetCardCode %}{{ item.AssetCardId.AssetCardCode }} - {% endif %}{{ item.AssetCardId.AssetCardName }}
+                            {% else %}
+                                <span class="text-gray-400">No asset card</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-1 py-1 text-right border-r border-gray-200">
+                        <span class="text-xs text-gray-900">{{ item.Quantity|floatformat:6 }}</span>
+                    </td>
+                    <td class="px-1 py-1 text-right border-r border-gray-200">
+                        <span class="text-xs text-gray-900">{{ item.UnitCost|floatformat:6 }}</span>
+                    </td>
+                    <td class="px-1 py-1 text-right border-r border-gray-200">
+                        <span class="text-xs text-gray-900">{{ item.UnitPrice|floatformat:6 }}</span>
+                    </td>
+                    <td class="px-1 py-1 text-right border-r border-gray-200 total-cost">
+                        {% widthratio item.Quantity 1 item.UnitCost as total_cost %}
+                        {{ total_cost|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-1 py-1 text-right border-r border-gray-200 total-price">
+                        {% widthratio item.Quantity 1 item.UnitPrice as total_price %}
+                        {{ total_price|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-xs text-gray-500">
+                        No asset items found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                <tr>
+                    <td class="px-4 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        <span id="asset-total-cost" class="font-medium text-blue-600">0.00</span>
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                        <span id="asset-total-price" class="font-medium text-purple-600">0.00</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Accounting Details Table -->
+    {% if not user.groups.all.0.name == 'baraa_nyarav' %}
+    <div class="mt-6">
+        <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журанлын бичилт</h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валютын дүн</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит дүн</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн</th>
+                    </tr>
+                </thead>
+                <tbody id="detail-tbody" class="bg-white divide-y divide-gray-200">
+                    {% for detail in document_details %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                            {{ detail.DocumentDetailId }}
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <div class="text-xs text-gray-900">
+                                {% if detail.AccountId %}
+                                    {{ detail.AccountId.AccountCode }} - {{ detail.AccountId.AccountName }}
+                                {% else %}
+                                    <span class="text-gray-400">No account</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <div class="text-xs text-gray-900">
+                                {% if detail.ClientId %}
+                                    {{ detail.ClientId.ClientCode }} - {{ detail.ClientId.ClientName }}
+                                {% else %}
+                                    <span class="text-gray-400">No client</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <div class="text-xs text-gray-900">
+                                {% if detail.CurrencyId %}
+                                    {{ detail.CurrencyId.CurrencyId }} - {{ detail.CurrencyId.Currency_name }}
+                                {% else %}
+                                    <span class="text-gray-400">No currency</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <span class="text-xs text-gray-900">{{ detail.CurrencyExchange|floatformat:4 }}</span>
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200">
+                            <span class="text-xs text-gray-900">{{ detail.CurrencyAmount|floatformat:2 }}</span>
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200 debit-amount">
+                            {% if detail.DebitAmount %}{{ detail.DebitAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                        </td>
+                        <td class="px-1 py-1 text-right border-r border-gray-200 credit-amount">
+                            {% if detail.CreditAmount %}{{ detail.CreditAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-8 text-center text-xs text-gray-500">
+                            No accounting details found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                    <tr>
+                        <td class="px-4 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                            <span id="display-total-debit" class="font-medium text-red-600">0.00</span>
+                        </td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
+                            <span id="display-total-credit" class="font-medium text-green-600">0.00</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>

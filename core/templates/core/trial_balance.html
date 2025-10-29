@@ -1,0 +1,743 @@
+{% extends 'base.html' %}
+{% load humanize %}
+<!-- Cache bust: Updated 2025-10-19 19:40 - Regular border for summary row -->
+
+{% block title %}ГҮЙЛГЭЭ БАЛАНС - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div>
+    <!-- Header -->
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ГҮЙЛГЭЭ БАЛАНС</h1>
+            <p class="text-xs text-gray-600">Тайлангийн хугацааны гүйлгээний баланс</p>
+        </div>
+    </div>
+
+    <!-- Date Filter Form -->
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-4 mb-4">
+        <form method="get" class="flex flex-col lg:flex-row gap-4 items-end">
+            <div class="flex-1">
+                <label for="begin_date" class="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
+                <input type="date" 
+                       id="begin_date" 
+                       name="begin_date" 
+                       value="{{ begin_date }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required>
+            </div>
+            <div class="flex-1">
+                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
+                <input type="date" 
+                       id="end_date" 
+                       name="end_date" 
+                       value="{{ end_date }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required>
+            </div>
+            <div>
+                <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Тайлан үүсгэх
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Error Message -->
+    {% if error_message %}
+    <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Алдаа</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    {{ error_message }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Trial Balance Table -->
+    {% if trial_balance_data %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-sm font-medium text-gray-900">
+                Гүйлгээний баланс: {{ begin_date }} - {{ end_date }}
+            </h3>
+            
+        </div>
+        
+        
+        <div class="overflow-x-auto">
+            <table id="trial-balance-table" class="min-w-full border border-gray-300">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны код</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны нэр</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Дт)</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Кт)</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дт гүйлгээ</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Кт гүйлгээ</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эцсийн үлдэгдэл (Дт)</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эцсийн үлдэгдэл (Кт)</th>
+                    </tr>
+                    <tr class="bg-gray-100">
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-account-code" placeholder="Код..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-account-name" placeholder="Нэр..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-begin-debit" placeholder="Дт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-begin-credit" placeholder="Кт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-debit-amount" placeholder="Дт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-credit-amount" placeholder="Кт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-end-debit" placeholder="Дт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-end-credit" placeholder="Кт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white">
+                    {% for row in trial_balance_data %}
+                    <tr class="hover:bg-gray-50 border-b border-gray-300" 
+                        data-account-id="{{ row.accountid }}"
+                        data-account-code="{{ row.accountcode }}"
+                        data-account-name="{{ row.accountname }}"
+                        data-account-type="{{ row.accounttype }}"
+                        data-beginning-balance-debit="{{ row.beginningbalancedebit }}"
+                        data-beginning-balance-credit="{{ row.beginningbalancecredit }}"
+                        data-debit-amount="{{ row.debitamount }}"
+                        data-credit-amount="{{ row.creditamount }}"
+                        data-ending-balance-debit="{{ row.endingbalancedebit }}"
+                        data-ending-balance-credit="{{ row.endingbalancecredit }}">
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border border-gray-300">
+                            {{ row.accountcode }}
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                            {{ row.accountname }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                            {% if row.beginningbalancedebit != 0 %}
+                                {% if row.beginningbalancedebit < 0 %}
+                                    <span class="text-red-600 font-medium">{{ row.beginningbalancedebit|floatformat:2|intcomma }}</span>
+                                {% else %}
+                                    <span class="text-gray-900">{{ row.beginningbalancedebit|floatformat:2|intcomma }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                            {% if row.beginningbalancecredit != 0 %}
+                                {% if row.beginningbalancecredit < 0 %}
+                                    <span class="text-red-600 font-medium">{{ row.beginningbalancecredit|floatformat:2|intcomma }}</span>
+                                {% else %}
+                                    <span class="text-gray-900">{{ row.beginningbalancecredit|floatformat:2|intcomma }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.debitamount != 0 %}
+                                {{ row.debitamount|floatformat:2|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.creditamount != 0 %}
+                                {{ row.creditamount|floatformat:2|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                            {% if row.endingbalancedebit != 0 %}
+                                {% if row.endingbalancedebit < 0 %}
+                                    <span class="text-red-600 font-medium">{{ row.endingbalancedebit|floatformat:2|intcomma }}</span>
+                                {% else %}
+                                    <span class="text-gray-900">{{ row.endingbalancedebit|floatformat:2|intcomma }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                            {% if row.endingbalancecredit != 0 %}
+                                {% if row.endingbalancecredit < 0 %}
+                                    <span class="text-red-600 font-medium">{{ row.endingbalancecredit|floatformat:2|intcomma }}</span>
+                                {% else %}
+                                    <span class="text-gray-900">{{ row.endingbalancecredit|floatformat:2|intcomma }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr class="border-t border-gray-300">
+                        <td colspan="2" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-begin-debit">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-begin-credit">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-debit-amount">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-credit-amount">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-end-debit">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-end-credit">
+                            <span>0.00</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-sm text-gray-700">
+                    <span id="pagination-info">Хуудас 1, нийт 1 хуудас</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="prev-page" 
+                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        Өмнөх
+                    </button>
+                    <div id="page-numbers" class="flex gap-1">
+                        <!-- Page numbers will be generated here -->
+                    </div>
+                    <button id="next-page" 
+                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        Дараах
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="rows-per-page" class="text-sm text-gray-700">Хуудас бүрт:</label>
+                    <select id="rows-per-page" 
+                            class="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif begin_date and end_date %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-16 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">Мэдээлэл олдсонгүй</h3>
+        <p class="mt-2 text-sm text-gray-500">Сонгосон хугацаанд гүйлгээний баланс олдсонгүй.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include Account Statement Modal -->
+{% include 'core/components/account_statement_modal.html' %}
+
+<script>
+(function() {
+// Set default dates if not provided
+document.addEventListener('DOMContentLoaded', function() {
+    const beginDateInput = document.getElementById('begin_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    if (!beginDateInput.value) {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        beginDateInput.value = firstDay.toISOString().split('T')[0];
+    }
+    
+    if (!endDateInput.value) {
+        const today = new Date();
+        endDateInput.value = today.toISOString().split('T')[0];
+    }
+});
+
+// Account Statement Modal Functions
+function handleAccountRowClick(row) {
+    // Get the account data from the row
+    const accountId = row.dataset.accountId;
+    const accountCode = row.dataset.accountCode;
+    const accountName = row.dataset.accountName;
+    const accountType = row.dataset.accountType;
+    const beginningBalanceDebit = parseFloat(row.dataset.beginningBalanceDebit) || 0;
+    const beginningBalanceCredit = parseFloat(row.dataset.beginningBalanceCredit) || 0;
+    const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
+    const creditAmount = parseFloat(row.dataset.creditAmount) || 0;
+    const endingBalanceDebit = parseFloat(row.dataset.endingBalanceDebit) || 0;
+    const endingBalanceCredit = parseFloat(row.dataset.endingBalanceCredit) || 0;
+    
+    // Get date range from the form
+    const beginDate = document.getElementById('begin_date').value;
+    const endDate = document.getElementById('end_date').value;
+    
+    if (!beginDate || !endDate) {
+        alert('Please select a date range first');
+        return;
+    }
+    
+    // Show modal and loading state
+    showAccountStatementModal();
+    showModalLoading();
+    
+    // Prepare balance data from the row
+    const balanceData = {
+        beginningBalanceDebit: beginningBalanceDebit,
+        beginningBalanceCredit: beginningBalanceCredit,
+        debitAmount: debitAmount,
+        creditAmount: creditAmount,
+        endingBalanceDebit: endingBalanceDebit,
+        endingBalanceCredit: endingBalanceCredit
+    };
+    
+    // Make AJAX call to get account statement details
+    const url = `/core/api/account-statement/?account_id=${accountId}&begin_date=${beginDate}&end_date=${endDate}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                populateAccountStatementModal(data, balanceData);
+            } else {
+                showModalError(data.error || 'Failed to load account statement');
+            }
+        })
+        .catch(error => {
+            showModalError(`Network error: ${error.message}`);
+        });
+}
+
+// Add click event listeners to trial balance table rows
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to existing rows
+    const trialBalanceRows = document.querySelectorAll('#trial-balance-table tbody tr');
+    trialBalanceRows.forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function() {
+            handleAccountRowClick(this);
+        });
+        
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+            this.classList.add('bg-blue-50');
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.classList.remove('bg-blue-50');
+        });
+    });
+});
+
+// Function to add click handlers to dynamically loaded rows
+function addClickHandlersToRows() {
+    const trialBalanceRows = document.querySelectorAll('#trial-balance-table tbody tr');
+    trialBalanceRows.forEach(row => {
+        if (!row.dataset.hasClickHandler) {
+            row.style.cursor = 'pointer';
+            row.dataset.hasClickHandler = 'true';
+            
+            row.addEventListener('click', function() {
+                handleAccountRowClick(this);
+            });
+            
+            // Add hover effect
+            row.addEventListener('mouseenter', function() {
+                this.classList.add('bg-blue-50');
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.classList.remove('bg-blue-50');
+            });
+        }
+    });
+}
+
+// Re-add click handlers after form submission (when new data is loaded)
+const form = document.querySelector('form');
+if (form) {
+    form.addEventListener('submit', function() {
+        // Add a small delay to ensure the new content is loaded
+        setTimeout(addClickHandlersToRows, 100);
+    });
+}
+
+// Client-side filtering and pagination
+let allRows = [];
+let filteredRows = [];
+let currentPage = 1;
+let rowsPerPage = 25;
+
+// Initialize filtering and pagination
+function initializeTableFeatures() {
+    // Get all table rows (excluding header and footer)
+    const tbody = document.querySelector('#trial-balance-table tbody');
+    if (tbody) {
+        allRows = Array.from(tbody.querySelectorAll('tr'));
+        filteredRows = [...allRows];
+        console.log('Initialized with', allRows.length, 'rows');
+        setupPagination();
+        setupInlineFilters();
+        calculateTotals();
+    } else {
+        console.log('Table body not found');
+    }
+}
+
+// Calculate totals for all numeric columns
+function calculateTotals() {
+    let totals = {
+        beginDebit: 0,
+        beginCredit: 0,
+        debitAmount: 0,
+        creditAmount: 0,
+        endDebit: 0,
+        endCredit: 0
+    };
+    
+    console.log('Calculating totals from ALL rows:', allRows.length, 'total rows');
+    
+    // Calculate totals from ALL rows (not filtered rows)
+    allRows.forEach((row, index) => {
+        const beginDebit = parseFloat(row.dataset.beginningBalanceDebit) || 0;
+        const beginCredit = parseFloat(row.dataset.beginningBalanceCredit) || 0;
+        const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
+        const creditAmount = parseFloat(row.dataset.creditAmount) || 0;
+        const endDebit = parseFloat(row.dataset.endingBalanceDebit) || 0;
+        const endCredit = parseFloat(row.dataset.endingBalanceCredit) || 0;
+        
+        totals.beginDebit += beginDebit;
+        totals.beginCredit += beginCredit;
+        totals.debitAmount += debitAmount;
+        totals.creditAmount += creditAmount;
+        totals.endDebit += endDebit;
+        totals.endCredit += endCredit;
+        
+        if (index < 3) { // Log first 3 rows for debugging
+            console.log(`Row ${index} raw dataset:`, row.dataset);
+            console.log(`Row ${index} parsed values:`, {
+                beginDebit, beginCredit, debitAmount, creditAmount, endDebit, endCredit
+            });
+        }
+    });
+    
+    console.log('Calculated totals from ALL rows:', totals);
+    
+    // Debug: Log totals to console
+    console.log('Final calculated totals:', totals);
+    
+    // Update total display elements
+    updateTotalDisplay('total-begin-debit', totals.beginDebit);
+    updateTotalDisplay('total-begin-credit', totals.beginCredit);
+    updateTotalDisplay('total-debit-amount', totals.debitAmount);
+    updateTotalDisplay('total-credit-amount', totals.creditAmount);
+    updateTotalDisplay('total-end-debit', totals.endDebit);
+    updateTotalDisplay('total-end-credit', totals.endCredit);
+}
+
+// Update individual total display
+function updateTotalDisplay(elementId, value) {
+    const element = document.getElementById(elementId);
+    console.log(`Updating ${elementId} with value ${value}`);
+    
+    if (element) {
+        const span = element.querySelector('span');
+        if (span) {
+            // Format number with commas and 2 decimal places
+            const formatted = value.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Apply styling based on value
+            if (value < 0) {
+                span.className = 'text-red-600';
+            } else if (value > 0) {
+                span.className = 'text-gray-900';
+            } else {
+                span.className = 'text-gray-500';
+            }
+            
+            span.textContent = formatted;
+            console.log(`Updated ${elementId} to display: ${formatted}`);
+        } else {
+            console.log(`No span found in ${elementId}`);
+        }
+    } else {
+        console.log(`Element ${elementId} not found`);
+    }
+}
+
+
+// Setup inline column filters
+function setupInlineFilters() {
+    const filterInputs = [
+        'filter-account-code',
+        'filter-account-name', 
+        'filter-begin-debit',
+        'filter-begin-credit',
+        'filter-debit-amount',
+        'filter-credit-amount',
+        'filter-end-debit',
+        'filter-end-credit'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const input = document.getElementById(filterId);
+        if (input) {
+            input.addEventListener('input', function() {
+                applyAllFilters();
+            });
+        }
+    });
+}
+
+// Apply all filters (inline column filters only)
+function applyAllFilters() {
+    filteredRows = allRows.filter(row => {
+        // Apply inline column filters
+        const filters = {
+            'filter-account-code': row.dataset.accountCode?.toLowerCase() || '',
+            'filter-account-name': row.dataset.accountName?.toLowerCase() || '',
+            'filter-begin-debit': parseFloat(row.dataset.beginningBalanceDebit) || 0,
+            'filter-begin-credit': parseFloat(row.dataset.beginningBalanceCredit) || 0,
+            'filter-debit-amount': parseFloat(row.dataset.debitAmount) || 0,
+            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0,
+            'filter-end-debit': parseFloat(row.dataset.endingBalanceDebit) || 0,
+            'filter-end-credit': parseFloat(row.dataset.endingBalanceCredit) || 0
+        };
+        
+        for (const [filterId, value] of Object.entries(filters)) {
+            const filterInput = document.getElementById(filterId);
+            if (filterInput && filterInput.value.trim()) {
+                const filterValue = filterInput.value.toLowerCase().trim();
+                
+                if (filterId.includes('account')) {
+                    // Text filters
+                    if (!value.includes(filterValue)) {
+                        return false;
+                    }
+                } else {
+                    // Numeric filters - support operators like >, <, =, >=, <=
+                    if (filterValue.startsWith('>=')) {
+                        const num = parseFloat(filterValue.substring(2));
+                        if (isNaN(num) || value < num) return false;
+                    } else if (filterValue.startsWith('<=')) {
+                        const num = parseFloat(filterValue.substring(2));
+                        if (isNaN(num) || value > num) return false;
+                    } else if (filterValue.startsWith('>')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value <= num) return false;
+                    } else if (filterValue.startsWith('<')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value >= num) return false;
+                    } else if (filterValue.startsWith('=')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value !== num) return false;
+                    } else {
+                        // Exact match or contains
+                        const num = parseFloat(filterValue);
+                        if (!isNaN(num)) {
+                            if (value !== num) return false;
+                        } else {
+                            if (!value.toString().includes(filterValue)) return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
+    });
+    
+    currentPage = 1;
+    displayRows();
+    setupPagination();
+    // Note: Totals are calculated from ALL rows, not filtered rows
+}
+
+// Clear all filters
+function clearAllFilters() {
+    // Clear all inline filters
+    const filterInputs = [
+        'filter-account-code',
+        'filter-account-name', 
+        'filter-begin-debit',
+        'filter-begin-credit',
+        'filter-debit-amount',
+        'filter-credit-amount',
+        'filter-end-debit',
+        'filter-end-credit'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const input = document.getElementById(filterId);
+        if (input) input.value = '';
+    });
+    
+    applyAllFilters();
+}
+
+
+// Display rows for current page
+function displayRows() {
+    const tbody = document.querySelector('#trial-balance-table tbody');
+    if (!tbody) return;
+    
+    // Clear current rows
+    tbody.innerHTML = '';
+    
+    // Calculate start and end indices
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const pageRows = filteredRows.slice(startIndex, endIndex);
+    
+    // Add rows to table
+    pageRows.forEach(row => {
+        tbody.appendChild(row);
+    });
+    
+    // Re-add click handlers to new rows
+    addClickHandlersToRows();
+}
+
+// Setup pagination
+function setupPagination() {
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    const paginationInfo = document.getElementById('pagination-info');
+    const prevButton = document.getElementById('prev-page');
+    const nextButton = document.getElementById('next-page');
+    const pageNumbers = document.getElementById('page-numbers');
+    
+    // Update pagination info
+    if (paginationInfo) {
+        paginationInfo.textContent = `Хуудас ${currentPage}, нийт ${totalPages} хуудас (${filteredRows.length} мөр)`;
+    }
+    
+    // Update prev/next buttons
+    if (prevButton) {
+        prevButton.disabled = currentPage <= 1;
+    }
+    if (nextButton) {
+        nextButton.disabled = currentPage >= totalPages;
+    }
+    
+    // Generate page numbers
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.className = `px-3 py-1 text-sm rounded ${
+                i === currentPage 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`;
+            pageButton.addEventListener('click', () => goToPage(i));
+            pageNumbers.appendChild(pageButton);
+        }
+    }
+}
+
+// Go to specific page
+function goToPage(page) {
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        displayRows();
+        setupPagination();
+    }
+}
+
+// Event listeners for pagination
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize table features after a short delay to ensure table is loaded
+    setTimeout(initializeTableFeatures, 100);
+    
+    // Previous page button
+    const prevButton = document.getElementById('prev-page');
+    if (prevButton) {
+        prevButton.addEventListener('click', () => goToPage(currentPage - 1));
+    }
+    
+    // Next page button
+    const nextButton = document.getElementById('next-page');
+    if (nextButton) {
+        nextButton.addEventListener('click', () => goToPage(currentPage + 1));
+    }
+    
+    // Rows per page selector
+    const rowsPerPageSelect = document.getElementById('rows-per-page');
+    if (rowsPerPageSelect) {
+        rowsPerPageSelect.addEventListener('change', function() {
+            rowsPerPage = parseInt(this.value);
+            currentPage = 1;
+            displayRows();
+            setupPagination();
+        });
+    }
+});
+})(); // End IIFE
+</script>
+{% endblock %}

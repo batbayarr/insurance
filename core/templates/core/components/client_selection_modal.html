@@ -1,0 +1,977 @@
+<!-- Client Selection Modal Component -->
+<div id="client-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-5xl min-w-[1100px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Харилцагчийн жагсаалт</h3>                
+            </div>
+            <button onclick="closeClientPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+
+        <!-- Add/Edit Client Form (Hidden by default) -->
+        <div id="client-form-container" class="mb-2 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 id="form-title" class="text-sm font-medium text-gray-900">Add New Client</h4>
+                    <button onclick="hideClientForm()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="client-form" onsubmit="submitClientForm(event)">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <label for="client-code" class="block text-xs font-medium text-gray-700 mb-1">Код *</label>
+                            <input type="text" id="client-code" name="ClientCode" required
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="client-name" class="block text-xs font-medium text-gray-700 mb-1">Нэр *</label>
+                            <input type="text" id="client-name" name="ClientName" required
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="client-type" class="block text-xs font-medium text-gray-700 mb-1">Төрөл</label>
+                            <select id="client-type" name="ClientType"
+                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="client-register" class="block text-xs font-medium text-gray-700 mb-1">Регистр</label>
+                            <input type="text" id="client-register" name="ClientRegister"
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-2 mt-2 pt-2 border-t border-blue-200">
+                        <button type="button" onclick="hideClientForm()" 
+                                class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" id="submit-btn"
+                                class="px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-500">
+                            <span id="submit-text">Add Client</span>
+                            <span id="submit-loading" class="hidden">
+                                <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Saving...
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" id="client-id" name="ClientId" value="">
+                </form>
+            </div>
+        </div>
+
+        <!-- Client List Container -->
+        <div id="client-list-container" class="border border-gray-200 rounded-lg min-w-[1000px]">
+            <!-- Client list will be loaded here -->
+        </div>
+        
+        <!-- Client Pagination -->
+        <div id="client-pagination" class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200" style="display: none;">
+            <div class="flex-1 flex justify-between lg:hidden">
+                <button id="prev-client-page-mobile" class="relative inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                    Previous
+                </button>
+                <button id="next-client-page-mobile" class="ml-3 relative inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                    Next
+                </button>
+            </div>
+            <div class="hidden lg:flex-1 lg:flex lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-xs text-gray-700">
+                        Showing <span id="client-page-start">1</span> to <span id="client-page-end">12</span> of <span id="client-total-records">0</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="client-pagination-buttons">
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Client Selection Modal Functions
+window.openClientPopup = function(inputElement = null, rowId = null) {
+    // Store the current input element and row ID for later use
+    window.currentClientInput = inputElement;
+    window.currentClientRowId = rowId;
+    
+    // Open client selection modal
+    const modal = document.getElementById('client-selection-modal');
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Load clients (no filtering needed for clients)
+        loadClientList();
+    } else {
+        console.error('Client selection modal not found!');
+    }
+}
+
+window.closeClientPopup = function() {
+    const modal = document.getElementById('client-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+window.selectClient = function(clientId, clientCode, clientName) {
+    // Check if we're in bulk manage mode (has currentClientInput and currentClientRowId)
+    if (window.currentClientInput && window.currentClientRowId) {
+        // Bulk manage mode - populate the specific row
+        const row = window.currentClientInput.closest('tr');
+        if (row) {
+            // Look for hidden input with name pattern that includes client_id
+            const hiddenInput = row.querySelector('input[name*="client_id"]');
+            const displayInput = row.querySelector('.client-display-input');
+            
+            if (hiddenInput && displayInput) {
+                hiddenInput.value = clientId;
+                displayInput.value = `${clientCode} - ${clientName}`;
+            } else {
+                console.error('Client input elements not found:', { hiddenInput, displayInput, row });
+            }
+        }
+    } else {
+        // Regular form mode - populate main form fields
+        const hiddenInput = document.getElementById('ClientId');
+        const displayInput = document.getElementById('ClientIdDisplay');
+        
+        if (hiddenInput && displayInput) {
+            hiddenInput.value = clientId;
+            displayInput.value = `${clientCode} - ${clientName}`;
+        }
+    }
+    
+    // Clear the stored references
+    window.currentClientInput = null;
+    window.currentClientRowId = null;
+    
+    closeClientPopup();
+}
+
+// Show add client form
+window.showAddClientForm = function() {
+    const formContainer = document.getElementById('client-form-container');
+    const formTitle = document.getElementById('form-title');
+    const submitText = document.getElementById('submit-text');
+    const clientIdInput = document.getElementById('client-id');
+    
+    // Reset form
+    document.getElementById('client-form').reset();
+    clientIdInput.value = '';
+    
+    // Update form title and button text
+    formTitle.textContent = 'Add New Client';
+    submitText.textContent = 'Add Client';
+    
+    // Load client types before showing form
+    populateClientTypes();
+    // Show form
+    formContainer.classList.remove('hidden');
+}
+
+// Show edit client form
+window.updateClient = function(clientId, clientCode, clientName) {
+    const formContainer = document.getElementById('client-form-container');
+    const formTitle = document.getElementById('form-title');
+    const submitText = document.getElementById('submit-text');
+    const clientIdInput = document.getElementById('client-id');
+    
+    // Populate form with existing data
+    clientIdInput.value = clientId;
+    document.getElementById('client-code').value = clientCode;
+    document.getElementById('client-name').value = clientName;
+    
+    // Update form title and button text
+    formTitle.textContent = 'Edit Client';
+    submitText.textContent = 'Update Client';
+    
+    // Load client types then show form and select current (if any)
+    populateClientTypes(clientId);
+    // Show form
+    formContainer.classList.remove('hidden');
+}
+
+// Hide client form
+window.hideClientForm = function() {
+    const formContainer = document.getElementById('client-form-container');
+    formContainer.classList.add('hidden');
+}
+
+// Submit client form
+window.submitClientForm = function(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('client-form');
+    const formData = new FormData(form);
+    const clientId = document.getElementById('client-id').value;
+    const isEdit = clientId !== '';
+    // Basic client-side validation to avoid silent server validation failures
+    const codeVal = (document.getElementById('client-code')?.value || '').trim();
+    const nameVal = (document.getElementById('client-name')?.value || '').trim();
+    const typeVal = (document.getElementById('client-type')?.value || '').trim();
+    if (!codeVal || !nameVal || !typeVal) {
+        showMessage('Please fill Client Code, Client Name and Client Type.', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submit-btn');
+    const submitText = document.getElementById('submit-text');
+    const submitLoading = document.getElementById('submit-loading');
+    
+    // Use shared component if available, otherwise fall back to manual implementation
+    if (typeof Silicon4Form !== 'undefined' && Silicon4Form.showLoading) {
+        Silicon4Form.showLoading(submitBtn, 'Saving...');
+    } else {
+        // Original implementation (fallback)
+        submitText.classList.add('hidden');
+        submitLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+    }
+    
+    // Determine URL and get CSRF token
+    const url = isEdit ? `/core/refclients/${clientId}/update/` : '/core/refclients/create/';
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Use fetch to submit and handle response
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken ? csrfToken.value : '',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // Handle JSON response (AJAX request)
+            const data = await response.json();
+            if (data.success) {
+                hideClientForm();
+                loadClientList();
+                showMessage(data.message, 'success');
+            } else {
+                showMessage(data.message + (data.errors ? ': ' + JSON.stringify(data.errors) : ''), 'error');
+            }
+        } else {
+            // Handle HTML response (regular form submission)
+            const text = await response.text();
+            if (!response.ok) throw new Error('Failed to save client');
+            // Heuristic: if returned HTML still contains the form with errorlist, treat as error
+            const hasError = /errorlist/gi.test(text) || /id=\"client-form\"/gi.test(text) && /error/gi.test(text);
+            if (hasError) throw new Error('Server validation failed. Check Client Type and fields.');
+            // Success - hide form and refresh client list
+            hideClientForm();
+            loadClientList();
+            showMessage(isEdit ? 'Client updated successfully!' : 'Client created successfully!', 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving client:', error);
+        showMessage('Error saving client. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset loading state
+        // Use shared component if available, otherwise fall back to manual implementation
+        if (typeof Silicon4Form !== 'undefined' && Silicon4Form.hideLoading) {
+            const originalHtml = isEdit ? 'Update Client' : 'Add Client';
+            Silicon4Form.hideLoading(submitBtn, originalHtml);
+        } else {
+            // Original implementation (fallback)
+            submitText.classList.remove('hidden');
+            submitLoading.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Show message to user
+window.showMessage = function(message, type) {
+    // Use shared component if available, otherwise fall back to original implementation
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.show) {
+        Silicon4Message.show(message, type);
+    } else {
+        // Original implementation (fallback)
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+        }`;
+        messageDiv.textContent = message;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+}
+
+// Delete client function
+window.deleteClient = function(clientId, clientCode, clientName) {
+    const deleteUrl = `/core/refclients/${clientId}/delete/`;
+    const itemName = `${clientCode} - ${clientName}`;
+    
+    // Use standardized delete modal
+    Silicon4Delete.showModal(deleteUrl, itemName, function() {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Add a callback to refresh the client list after successful deletion
+        form.addEventListener('submit', function() {
+            setTimeout(() => {
+                loadClientList();
+            }, 1000);
+        });
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+window.loadClientList = function() {
+    const clientListContainer = document.getElementById('client-list-container');
+    
+    if (!clientListContainer) {
+        console.error('Client list container not found!');
+        return;
+    }
+    
+    // Show loading
+    clientListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading clients...</p></div>';
+    
+    // Use shared component for loading message if available
+    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
+        Silicon4Message.info('Loading clients...');
+    }
+    
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+        clientListContainer.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Loading timeout</h3>
+                <p class="mt-1 text-sm text-gray-500">Please try again or contact support.</p>
+                <button onclick="loadClientList()" class="mt-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Retry
+                </button>
+            </div>
+        `;
+    }, 10000); // 10 second timeout
+    
+    // Fetch clients data and render custom modal
+    const url = `/core/refclients/?modal=true&select_mode=true`;
+    
+    fetch(url)
+        .then(response => {
+            return response.text();
+        })
+        .then(html => {
+            // Clear the timeout since we got a response
+            clearTimeout(loadingTimeout);
+            
+            // Parse the HTML to extract client data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const clientRows = doc.querySelectorAll('tbody tr');
+            
+            if (clientRows.length === 0) {
+                clientListContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No clients found</h3>
+                        <p class="mt-1 text-sm text-gray-500">No clients match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create custom client list HTML
+            let clientsHtml = `
+                <div class="space-y-0">
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div class="col-span-1 border-r border-gray-200 px-1 text-center">#</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Код</div>
+                        <div class="col-span-3 border-r border-gray-200 px-2">Нэр</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Регистр</div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">Төрөл</div>
+                        <div class="col-span-1 border-r border-gray-200 px-2">Үйлдэл</div>
+                        <div class="col-span-1 text-center">Сонгох</div>
+                    </div>
+                    <!-- Filter Row -->
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-100 border-b border-gray-200">
+                        <div class="col-span-1 border-r border-gray-200 px-1">
+                            <button id="clear-client-filters" class="w-full px-1 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-client-code" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-3 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-client-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-client-register" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-2 border-r border-gray-200 px-2">
+                            <input type="text" id="filter-client-type" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="col-span-1 border-r border-gray-200 px-2">
+                            <button onclick="showAddClientForm()" 
+                                    class="inline-flex items-center px-2 py-1 text-xs font-bold text-white bg-green-600 hover:bg-green-700 hover:text-white rounded shadow-sm transition-all duration-200 border border-green-600 hover:border-green-700"
+                                    title="Add New Client">
+                                <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                НЭМЭХ
+                            </button>
+                        </div>
+                        <div class="col-span-1 px-2">
+                            <!-- Empty cell for select column -->
+                        </div>
+                    </div>
+            `;
+            
+            clientRows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const clientCode = cells[0]?.textContent?.trim() || '';
+                    const clientName = cells[1]?.textContent?.trim() || '';
+                    const clientRegister = cells[2]?.textContent?.trim() || '';
+                    const clientType = cells[3]?.textContent?.trim() || '';
+                    
+                    // Extract client ID and client type name from the select button onclick
+                    const selectButton = row.querySelector('button[onclick*="selectClient"]');
+                    let clientId = '';
+                    let clientTypeName = clientType; // Default to the cell content
+                    
+                    if (selectButton) {
+                        const onclickAttr = selectButton.getAttribute('onclick');
+                        const matches = onclickAttr.match(/selectClient\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/);
+                        if (matches) {
+                            clientId = matches[1];
+                        }
+                    }
+                    
+                    // Try to get the full client type name from the row's data attributes or title
+                    const clientTypeCell = cells[3];
+                    if (clientTypeCell) {
+                        const title = clientTypeCell.getAttribute('title');
+                        if (title && title !== clientType) {
+                            clientTypeName = title;
+                        }
+                    }
+                    
+                    // Escape special characters to prevent XSS and onclick issues
+                    const escapedClientId = clientId.replace(/'/g, "\\'");
+                    const escapedClientCode = clientCode.replace(/'/g, "\\'");
+                    const escapedClientName = clientName.replace(/'/g, "\\'");
+                    
+                    clientsHtml += `
+                        <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer client-row" 
+                             data-client-code="${clientCode.toLowerCase()}" 
+                             data-client-name="${clientName.toLowerCase()}"
+                             data-client-register="${(clientRegister || '').toLowerCase()}"
+                             data-client-type="${clientTypeName.toLowerCase()}"
+                             data-row-index="${index}"
+                             data-client-id="${escapedClientId}"
+                             data-client-code-value="${escapedClientCode}"
+                             data-client-name-value="${escapedClientName}">
+                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
+                                <span class="text-xs text-gray-500">${index + 1}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${clientCode}</span>
+                            </div>
+                            <div class="col-span-3 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${clientName}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-600">${clientRegister || '-'}</span>
+                            </div>
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                                <span class="text-sm text-gray-900">${clientTypeName}</span>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-2">
+                                <div class="flex items-center space-x-1">
+                                    <button class="update-client-btn inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                            title="Update Client">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button class="delete-client-btn inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                            title="Delete Client">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center">
+                                <button class="select-client-btn inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                                    Сонгох
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            clientsHtml += '</div>';
+            clientListContainer.innerHTML = clientsHtml;
+            
+            // Add event listeners to the new buttons
+            addClientRowEventListeners();
+            
+            // Initialize client filtering and pagination
+            initializeClientFilters();
+            initializeClientPagination();
+        })
+        .catch(error => {
+            // Clear the timeout since we got an error
+            clearTimeout(loadingTimeout);
+            
+            // Use shared component for error message if available
+            if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error('load-clients-failed');
+            }
+            
+            clientListContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading clients</h3>
+                    <p class="mt-1 text-sm text-gray-500">Please try again or contact support.</p>
+                    <button onclick="loadClientList()" class="mt-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Client filtering and pagination variables
+const CLIENT_RECORDS_PER_PAGE = 12;
+let currentClientPage = 1;
+let totalClientRecords = 0;
+let filteredClientRecords = [];
+let allClientRows = [];
+
+// Add event listeners to client row buttons
+function addClientRowEventListeners() {
+    // Add click handlers to client rows
+    document.querySelectorAll('.client-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on buttons
+            if (e.target.closest('button')) {
+                return;
+            }
+            
+            const clientId = this.getAttribute('data-client-id');
+            const clientCode = this.getAttribute('data-client-code-value');
+            const clientName = this.getAttribute('data-client-name-value');
+            
+            if (clientId && clientCode && clientName) {
+                selectClient(clientId, clientCode, clientName);
+            }
+        });
+    });
+    
+    // Add click handlers to select buttons
+    document.querySelectorAll('.select-client-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const row = this.closest('.client-row');
+            const clientId = row.getAttribute('data-client-id');
+            const clientCode = row.getAttribute('data-client-code-value');
+            const clientName = row.getAttribute('data-client-name-value');
+            
+            if (clientId && clientCode && clientName) {
+                selectClient(clientId, clientCode, clientName);
+            }
+        });
+    });
+    
+    // Add click handlers to update buttons
+    document.querySelectorAll('.update-client-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const row = this.closest('.client-row');
+            const clientId = row.getAttribute('data-client-id');
+            const clientCode = row.getAttribute('data-client-code-value');
+            const clientName = row.getAttribute('data-client-name-value');
+            
+            if (clientId && clientCode && clientName) {
+                updateClient(clientId, clientCode, clientName);
+            }
+        });
+    });
+    
+    // Add click handlers to delete buttons
+    document.querySelectorAll('.delete-client-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const row = this.closest('.client-row');
+            const clientId = row.getAttribute('data-client-id');
+            const clientCode = row.getAttribute('data-client-code-value');
+            const clientName = row.getAttribute('data-client-name-value');
+            
+            if (clientId && clientCode && clientName) {
+                deleteClient(clientId, clientCode, clientName);
+            }
+        });
+    });
+}
+
+// Debounce utility function for client filtering
+function debounceClient(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Initialize client filters
+function initializeClientFilters() {
+    const filterInputs = [
+        'filter-client-code',
+        'filter-client-name', 
+        'filter-client-register',
+        'filter-client-type'
+    ];
+    
+    // Add event listeners to filter inputs
+    filterInputs.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('input', debounceClient(applyClientFilters, 200));
+        }
+    });
+    
+    // Add event listener to clear button
+    const clearButton = document.getElementById('clear-client-filters');
+    if (clearButton) {
+        clearButton.addEventListener('click', clearAllClientFilters);
+    }
+}
+
+// Apply client filters
+function applyClientFilters() {
+    const rows = document.querySelectorAll('.client-row');
+    filteredClientRecords = [];
+    
+    rows.forEach(row => {
+        let shouldShow = true;
+        
+        // Check client code filter
+        const codeFilter = document.getElementById('filter-client-code');
+        if (codeFilter && codeFilter.value.trim()) {
+            const filterValue = codeFilter.value.toLowerCase().trim();
+            const clientCode = row.getAttribute('data-client-code') || '';
+            if (!clientCode.includes(filterValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Check client name filter
+        const nameFilter = document.getElementById('filter-client-name');
+        if (nameFilter && nameFilter.value.trim()) {
+            const filterValue = nameFilter.value.toLowerCase().trim();
+            const clientName = row.getAttribute('data-client-name') || '';
+            if (!clientName.includes(filterValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Check client register filter
+        const registerFilter = document.getElementById('filter-client-register');
+        if (registerFilter && registerFilter.value.trim()) {
+            const filterValue = registerFilter.value.toLowerCase().trim();
+            const clientRegister = row.getAttribute('data-client-register') || '';
+            if (!clientRegister.includes(filterValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Check client type filter
+        const typeFilter = document.getElementById('filter-client-type');
+        if (typeFilter && typeFilter.value.trim()) {
+            const filterValue = typeFilter.value.toLowerCase().trim();
+            const clientType = row.getAttribute('data-client-type') || '';
+            if (!clientType.includes(filterValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        if (shouldShow) {
+            filteredClientRecords.push(row);
+        }
+    });
+    
+    // Reset to page 1 after filtering
+    showClientPage(1);
+}
+
+// Clear all client filters
+function clearAllClientFilters() {
+    const filterInputs = [
+        'filter-client-code',
+        'filter-client-name', 
+        'filter-client-register',
+        'filter-client-type'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) element.value = '';
+    });
+    
+    // Show all rows
+    document.querySelectorAll('.client-row').forEach(row => {
+        row.style.display = '';
+    });
+    
+    // Reset pagination to show all records
+    filteredClientRecords = allClientRows;
+    showClientPage(1);
+}
+
+// Initialize client pagination
+function initializeClientPagination() {
+    // Store all client rows
+    allClientRows = Array.from(document.querySelectorAll('.client-row'));
+    totalClientRecords = allClientRows.length;
+    filteredClientRecords = allClientRows;
+    
+    // Show pagination if we have more than one page
+    const totalPages = Math.ceil(totalClientRecords / CLIENT_RECORDS_PER_PAGE);
+    const paginationDiv = document.getElementById('client-pagination');
+    if (paginationDiv) {
+        paginationDiv.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+    
+    // Add event listeners to pagination buttons
+    const prevMobile = document.getElementById('prev-client-page-mobile');
+    const nextMobile = document.getElementById('next-client-page-mobile');
+    
+    if (prevMobile) {
+        // Remove existing event listeners to prevent duplicates
+        prevMobile.removeEventListener('click', prevMobile._clickHandler);
+        prevMobile._clickHandler = () => goToClientPage(currentClientPage - 1);
+        prevMobile.addEventListener('click', prevMobile._clickHandler);
+    }
+    if (nextMobile) {
+        // Remove existing event listeners to prevent duplicates
+        nextMobile.removeEventListener('click', nextMobile._clickHandler);
+        nextMobile._clickHandler = () => goToClientPage(currentClientPage + 1);
+        nextMobile.addEventListener('click', nextMobile._clickHandler);
+    }
+    
+    // Show first page
+    showClientPage(1);
+}
+
+// Show specific client page
+function showClientPage(pageNumber) {
+    const totalPages = Math.ceil(filteredClientRecords.length / CLIENT_RECORDS_PER_PAGE);
+    
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    
+    currentClientPage = pageNumber;
+    
+    // Hide all rows
+    allClientRows.forEach(row => row.style.display = 'none');
+    
+    // Show rows for current page
+    const startIndex = (pageNumber - 1) * CLIENT_RECORDS_PER_PAGE;
+    const endIndex = Math.min(startIndex + CLIENT_RECORDS_PER_PAGE, filteredClientRecords.length);
+    
+    for (let i = startIndex; i < endIndex; i++) {
+        filteredClientRecords[i].style.display = '';
+    }
+    
+    // Update pagination controls
+    updateClientPaginationControls(startIndex + 1, endIndex, filteredClientRecords.length, totalPages);
+}
+
+// Update client pagination controls
+function updateClientPaginationControls(start, end, total, totalPages) {
+    const pageStart = document.getElementById('client-page-start');
+    const pageEnd = document.getElementById('client-page-end');
+    const totalRecords = document.getElementById('client-total-records');
+    
+    if (pageStart) pageStart.textContent = total === 0 ? 0 : start;
+    if (pageEnd) pageEnd.textContent = end;
+    if (totalRecords) totalRecords.textContent = total;
+    
+    // Update mobile buttons
+    const prevMobile = document.getElementById('prev-client-page-mobile');
+    const nextMobile = document.getElementById('next-client-page-mobile');
+    
+    if (prevMobile && nextMobile) {
+        prevMobile.disabled = currentClientPage === 1;
+        nextMobile.disabled = currentClientPage === totalPages || totalPages === 0;
+        
+        prevMobile.classList.toggle('opacity-50', currentClientPage === 1);
+        prevMobile.classList.toggle('cursor-not-allowed', currentClientPage === 1);
+        nextMobile.classList.toggle('opacity-50', currentClientPage === totalPages || totalPages === 0);
+        nextMobile.classList.toggle('cursor-not-allowed', currentClientPage === totalPages || totalPages === 0);
+    }
+    
+    // Create page number buttons
+    createClientPageButtons(totalPages);
+}
+
+// Create client page number buttons
+function createClientPageButtons(totalPages) {
+    const container = document.getElementById('client-pagination-buttons');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Previous button
+    const prevBtn = createClientPaginationButton('‹', currentClientPage - 1, currentClientPage === 1);
+    container.appendChild(prevBtn);
+    
+    // Page number buttons (show 5 pages at a time)
+    const startPage = Math.max(1, currentClientPage - 2);
+    const endPage = Math.min(totalPages, startPage + 4);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = createClientPaginationButton(i.toString(), i, false, i === currentClientPage);
+        container.appendChild(btn);
+    }
+    
+    // Next button
+    const nextBtn = createClientPaginationButton('›', currentClientPage + 1, currentClientPage === totalPages);
+    container.appendChild(nextBtn);
+}
+
+// Create client pagination button
+function createClientPaginationButton(text, page, disabled, active = false) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.disabled = disabled;
+    
+    if (active) {
+        btn.className = 'relative inline-flex items-center px-2 py-1 border border-gray-300 bg-blue-600 text-xs font-medium text-white';
+    } else {
+        btn.className = 'relative inline-flex items-center px-2 py-1 border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50';
+    }
+    
+    if (disabled) {
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    if (!disabled && !active) {
+        btn.addEventListener('click', () => goToClientPage(page));
+    }
+    
+    return btn;
+}
+
+// Go to specific client page
+function goToClientPage(pageNumber) {
+    showClientPage(pageNumber);
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Only prefetch client types if we're on a page that needs it (add/edit client form)
+    // Don't prefetch on document forms that need client selection
+    if (document.getElementById('client-type') && !document.getElementById('ClientIdDisplay')) {
+        populateClientTypes(true);
+    }
+});
+
+// Populate client types select from API (expose globally)
+window.populateClientTypes = function(prefetchOnly = false) {
+    const select = document.getElementById('client-type');
+    if (!select) return;
+    
+    fetch('/core/api/refclienttypes/')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !data.success || !Array.isArray(data.client_types)) {
+                console.error('Invalid API response format:', data);
+                return;
+            }
+            // Clear existing
+            select.innerHTML = '';
+            // Placeholder
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Select Type';
+            select.appendChild(opt);
+            // Options
+            data.client_types.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t.ClientTypeId;
+                o.textContent = t.ClientTypeName;
+                select.appendChild(o);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching client types:', error);
+            // Fallback placeholder
+            if (!prefetchOnly) {
+                select.innerHTML = '<option value="">Select Type</option>';
+            }
+        });
+}
+</script>
