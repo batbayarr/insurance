@@ -7,9 +7,10 @@ echo "=========================================="
 echo "Starting deployment..."
 echo "=========================================="
 
-# Pull latest code
+# Pull latest code (force reset to match GitHub exactly)
 echo "Pulling latest code from GitHub..."
-git pull origin main
+git fetch origin
+git reset --hard origin/main
 
 # Activate virtual environment
 echo "Activating virtual environment..."
