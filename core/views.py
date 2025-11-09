@@ -79,6 +79,8 @@ def custom_login(request):
                 # Store selected database and company code in session
                 request.session['selected_database'] = selected_db
                 request.session['company_code'] = company_code
+                # Explicitly save session to default database BEFORE switching
+                request.session.save()
                 
                 # Set the database name in settings
                 set_database(selected_db)
@@ -90,6 +92,8 @@ def custom_login(request):
                 user = authenticate(username=username, password=password)
                 if user is not None:
                     login(request, user)
+                    # Save session again after login
+                    request.session.save()
                     return redirect('home')
                 else:
                     # Add error message for invalid credentials

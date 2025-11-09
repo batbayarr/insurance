@@ -10,10 +10,16 @@ class MultiTenantRouter:
     
     def db_for_read(self, model, **hints):
         """Route read queries to the tenant-specific database."""
+        # Always use default database for sessions
+        if model and model._meta.app_label == 'sessions':
+            return 'default'
         return self._get_tenant_db()
     
     def db_for_write(self, model, **hints):
         """Route write queries to the tenant-specific database."""
+        # Always use default database for sessions
+        if model and model._meta.app_label == 'sessions':
+            return 'default'
         return self._get_tenant_db()
     
     def allow_migrate(self, db, app_label, model_name=None, **hints):
