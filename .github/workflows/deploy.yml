@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
       - name: Deploy to Vultr Server
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -22,7 +19,9 @@ jobs:
           password: ${{ secrets.VULTR_PASSWORD }}
           script: |
             cd /var/www/silicon4_accounting
-            bash deploy.sh
+            git fetch origin
+            git reset --hard origin/main
+            git pull origin main
       
       - name: Deployment Status
         if: success()
