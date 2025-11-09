@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Asset Management{% endblock %}
+{% block title %}Үндсэн хөрөнгийн удирдлага - Silicon4 Accounting{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
     <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Asset Management</h1>
-        <p class="text-gray-600 mt-2">Manage assets and their cards with master-detail view</p>
+        <h1 class="text-3xl font-bold text-gray-900">ҮНДСЭН ХӨРӨНГИЙН УДИРДЛАГА</h1>
+        <p class="text-gray-600 mt-2">Үндсэн хөрөингийн мэдээлэл удирдах</p>
     </div>
 
     <!-- Asset Type Dropdown Filter -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900">Asset Type Filter</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Үндсэн хөрөнгийн төрлөөр шүүх</h2>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label for="asset_type_filter" class="block text-sm font-medium text-gray-700 mb-2">Asset Type</label>
+                <label for="asset_type_filter" class="block text-sm font-medium text-gray-700 mb-2">Төрөл</label>
                 <select id="asset_type_filter" name="asset_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm" onchange="filterAssets()">
-                    <option value="">All Asset Types</option>
+                    <option value="">Бүх төрөл</option>
                     {% for asset_type in asset_types %}
                         <option value="{{ asset_type.AssetTypeId }}" {% if selected_asset_type_id == asset_type.AssetTypeId|stringformat:"s" %}selected{% endif %}>
                             {{ asset_type.AssetTypeName }}
@@ -30,25 +30,25 @@
             </div>
             
             <div>
-                <label for="asset_code_filter" class="block text-sm font-medium text-gray-700 mb-2">Asset Code</label>
+                <label for="asset_code_filter" class="block text-sm font-medium text-gray-700 mb-2">Код</label>
                 <input type="text" id="asset_code_filter" name="asset_code" value="{{ filters.asset_code }}" 
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm" 
-                       placeholder="Filter by asset code" onkeyup="filterAssets()">
+                       placeholder="Кодоор шүүх" onkeyup="filterAssets()">
             </div>
             
             <div>
-                <label for="asset_name_filter" class="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
+                <label for="asset_name_filter" class="block text-sm font-medium text-gray-700 mb-2">Нэр</label>
                 <input type="text" id="asset_name_filter" name="asset_name" value="{{ filters.asset_name }}" 
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm" 
-                       placeholder="Filter by asset name" onkeyup="filterAssets()">
+                       placeholder="Нэрээр шүүх" onkeyup="filterAssets()">
             </div>
             
             <div>
-                <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-2">Төлөв</label>
                 <select id="status_filter" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm" onchange="filterAssets()">
-                    <option value="">All Status</option>
-                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-                    <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="">Бүх төлөв</option>
+                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Идэвхтэй</option>
+                    <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Идэвхгүй</option>
                 </select>
             </div>
         </div>
@@ -59,13 +59,13 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-gray-900">Assets (Master)</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">Үндсэн хөрөнгө (Мастер)</h2>
                     <a href="{% url 'core:refasset_create' %}" 
                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accounting-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
-                        Add New Asset
+                        Үндсэн хөрөнгө нэмэх
                     </a>
                 </div>
             </div>
@@ -74,11 +74,11 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Код</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Нэр</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төрөл</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдлүүд</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -96,27 +96,27 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if not asset.IsDelete %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                    {% if not asset.IsDelete %}Active{% else %}Deleted{% endif %}
+                                    {% if not asset.IsDelete %}Идэвхтэй{% else %}Устгасан{% endif %}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <a href="{% url 'core:refasset_update' asset.AssetId %}" 
-                                       class="text-indigo-600 hover:text-indigo-900" title="Edit">
+                                       class="text-indigo-600 hover:text-indigo-900" title="Засах">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                     </a>
                                     <button type="button" 
                                             class="text-red-600 hover:text-red-900" 
-                                            title="Delete"
+                                            title="Устгах"
                                             onclick="Silicon4Delete.showModal('{% url 'core:refasset_delete' asset.AssetId %}', '{{ asset.AssetCode }} - {{ asset.AssetName }}')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                         </svg>
                                     </button>
                                     <button onclick="printAsset({{ asset.AssetId }})" 
-                                            class="text-blue-600 hover:text-blue-900" title="Print">
+                                            class="text-blue-600 hover:text-blue-900" title="Хэвлэх">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                                         </svg>
@@ -127,7 +127,7 @@
                         {% empty %}
                         <tr>
                             <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                                No assets found
+                                Үндсэн хөрөнгө олдсонгүй
                             </td>
                         </tr>
                         {% endfor %}
@@ -140,12 +140,12 @@
             <div class="px-6 py-3 border-t border-gray-200">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-700">
-                        Showing {{ assets.start_index }} to {{ assets.end_index }} of {{ paginator.count }} results
+                        Нийт <span class="font-medium">{{ paginator.count }}</span> бичлэгээс <span class="font-medium">{{ assets.start_index }}</span> - <span class="font-medium">{{ assets.end_index }}</span> бичлэг харагдаж байна
                     </div>
                     <div class="flex space-x-2">
                         {% if assets.has_previous %}
                             <a href="?page={{ assets.previous_page_number }}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
-                               class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
+                               class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Өмнөх</a>
                         {% endif %}
                         
                         {% for num in paginator.page_range %}
@@ -159,7 +159,7 @@
                         
                         {% if assets.has_next %}
                             <a href="?page={{ assets.next_page_number }}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
-                               class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
+                               class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Дараа</a>
                         {% endif %}
                     </div>
                 </div>
@@ -171,19 +171,19 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-gray-900">Asset Cards (Detail)</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">Үндсэн хөрөнгийн карт (Дэлгэрэнгүй)</h2>
                     <a href="{% url 'core:ref_asset_card_create' %}" 
                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accounting-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
-                        Add New Asset Card
+                        Үндсэн хөрөнгө нэмэх
                     </a>
                 </div>
                 {% if selected_asset %}
-                    <p class="text-sm text-gray-600 mt-2">Showing cards for: <strong>{{ selected_asset.AssetCode }} - {{ selected_asset.AssetName }}</strong></p>
+                    <p class="text-sm text-gray-600 mt-2">Харуулж байна: <strong>{{ selected_asset.AssetCode }} - {{ selected_asset.AssetName }}</strong></p>
                 {% else %}
-                    <p class="text-sm text-gray-600 mt-2">Select an asset to view its cards</p>
+                    <p class="text-sm text-gray-600 mt-2">Үүсгэсэн хөрөнгө сонгоно уу</p>
                 {% endif %}
             </div>
             
@@ -191,14 +191,14 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufactured</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Картын код</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Картын нэр</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдвэрлэсэн</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хүлээн авсан</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Нэгж өртөг</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Нэгж үнэ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтан</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдлүүд</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -228,21 +228,21 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <a href="{% url 'core:ref_asset_card_update' card.AssetCardId %}" 
-                                       class="text-indigo-600 hover:text-indigo-900" title="Edit">
+                                       class="text-indigo-600 hover:text-indigo-900" title="Засах">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                     </a>
                                     <button type="button" 
                                             class="text-red-600 hover:text-red-900" 
-                                            title="Delete"
+                                            title="Устгах"
                                             onclick="Silicon4Delete.showModal('{% url 'core:ref_asset_card_delete' card.AssetCardId %}', '{{ card.AssetCardCode }} - {{ card.AssetId.AssetName }}')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                         </svg>
                                     </button>
                                     <button onclick="printAssetCard({{ card.AssetCardId }})" 
-                                            class="text-blue-600 hover:text-blue-900" title="Print">
+                                            class="text-blue-600 hover:text-blue-900" title="Хэвлэх">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                                         </svg>
@@ -252,8 +252,8 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                                {% if selected_asset %}No asset cards found for this asset{% else %}Select an asset to view its cards{% endif %}
+                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                                {% if selected_asset %}Энэ үндсэн хөрөнгийн карт олдсонгүй{% else %}Картуудыг харахын тулд үндсэн хөрөнгийг сонгоно уу{% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -302,13 +302,13 @@ function selectAsset(assetId) {
 function printAsset(assetId) {
     // Implement print functionality
     console.log('Print asset:', assetId);
-    alert('Print functionality will be implemented');
+    alert('Хэвлэх функц хэрэгжүүлэх шаардлагатай');
 }
 
 function printAssetCard(cardId) {
     // Implement print functionality
     console.log('Print asset card:', cardId);
-    alert('Print functionality will be implemented');
+    alert('Хэвлэх функц хэрэгжүүлэх шаардлагатай');
 }
 
 </script>

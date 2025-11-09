@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - Silicon4 Accounting{% endblock %}
+{% block title %}Хяналтын самбар - Silicon4 Accounting{% endblock %}
 
 {% block content %}
 <div class="space-y-2">
@@ -8,11 +8,9 @@
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-3">
             <h1 class="text-lg lg:text-xl xl:text-2xl font-medium text-gray-900">
-                Welcome to Silicon4 Accounting
+                Silicon4 Accounting - системд тавтай морил
             </h1>
-            <p class="text-xs lg:text-sm text-gray-600">
-                Manage your chart of accounts with ease.
-            </p>
+            
         </div>
     </div>
 
@@ -34,7 +32,7 @@
                     <div class="ml-6 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Chart of Accounts
+                                Дансны жагсаалт
                             </dt>
                             <dd class="text-xl font-medium text-gray-900">
                                 {{ accounts_count|default:"0" }}
@@ -46,7 +44,7 @@
             <div class="bg-gray-50 px-4 py-2">
                 <div class="text-sm flex justify-between items-center">
                     <a href="{% url 'core:refaccount_list' %}" class="font-medium text-accounting-blue hover:text-accounting-blue-dark">
-                        View all
+                        Бүгдийг харах
                     </a>
                     {% if perms.core.add_refaccount %}
                     <a href="{% url 'core:refaccount_create' %}" class="text-accounting-green hover:text-accounting-green-dark">
@@ -75,7 +73,7 @@
                     <div class="ml-6 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Asset Management
+                                Үндсэн хөрөнгийн удирдлага
                             </dt>
                             <dd class="text-xl font-medium text-gray-900">
                                 {{ assets_count|default:"0" }}
@@ -87,7 +85,7 @@
             <div class="bg-gray-50 px-4 py-2">
                 <div class="text-sm flex justify-between items-center">
                     <a href="{% url 'core:asset_master_detail' %}" class="font-medium text-accounting-blue hover:text-accounting-blue-dark">
-                        View all
+                        Бүгдийг харах
                     </a>
                     {% if perms.core.add_refasset %}
                     <a href="{% url 'core:refasset_create' %}" class="text-accounting-green hover:text-accounting-green-dark">
@@ -115,7 +113,7 @@
                     <div class="ml-6 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Quick Actions
+                                Шууд харах
                             </dt>
                             <dd class="text-xl font-medium text-gray-900">
                                 {{ quick_actions_count|default:"3" }}
@@ -126,7 +124,7 @@
             </div>
             <div class="bg-gray-50 px-4 py-2">
                 <div class="text-sm">
-                    <span class="font-medium text-gray-700">Available</span>
+                    <span class="font-medium text-gray-700">Боломжтой</span>
                 </div>
             </div>
         </div>
@@ -137,7 +135,7 @@
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-3">
             <h3 class="text-base lg:text-lg font-medium text-gray-900 mb-3">
-                Recent Activity
+                Сүүлийн үйлдэл
             </h3>
             <div class="space-y-2">
                 {% if perms.core.view_refaccount %}
@@ -146,10 +144,10 @@
                         <svg class="h-6 w-6 text-accounting-green mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
-                        <span class="text-base text-gray-700">Chart of Accounts</span>
+                        <span class="text-base text-gray-700">Дансны жагсаалт</span>
                     </div>
                     <a href="{% url 'core:refaccount_list' %}" class="text-sm font-medium text-accounting-blue hover:text-accounting-blue-dark">
-                        Manage →
+                        Удирдах →
                     </a>
                 </div>
                 {% endif %}
@@ -160,10 +158,10 @@
                         <svg class="h-6 w-6 text-accounting-blue mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                        <span class="text-base text-gray-700">Asset Management</span>
+                        <span class="text-base text-gray-700">Үндсэн хөрөнгийн удирдлага</span>
                     </div>
                     <a href="{% url 'core:asset_master_detail' %}" class="text-sm font-medium text-accounting-blue hover:text-accounting-blue-dark">
-                        Manage →
+                        Удирдах →
                     </a>
                 </div>
                 {% endif %}
@@ -183,14 +181,14 @@
             </div>
             <div class="ml-3">
                 <h3 class="text-sm font-medium text-yellow-800">
-                    Limited Access
+                    Хязгаарлагдсан хандалт
                 </h3>
                 <div class="mt-2 text-sm text-yellow-700">
-                    <p>You don't have permission to view account management features. Please contact your administrator for access.</p>
+                    <p>Та дансны удирдлагын функцүүдийг харах эрхгүй байна. Хандалт авахын тулд админтайгаа холбогдоно уу.</p>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
-{% endblock %} 
+{% endblock %}

@@ -6,15 +6,14 @@
 <div class="space-y-6">
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Clients</h1>
-            <p class="text-gray-600">Manage your client information</p>
+            <h1 class="text-2xl font-bold text-gray-900">ХАРИЛЦАГЧ</h1>            
         </div>
         {% if perms.core.add_refclient %}
-        <a href="{% url 'core:refclient_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <a href="{% url 'core:refclient_create' %}" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Add Client
+            Харилцагч нэмэх
         </a>
         {% endif %}
     </div>
@@ -22,70 +21,79 @@
         {% if clients %}
         <div class="overflow-x-auto">
             <form method="get" id="filter-form">
-                <table class="min-w-full divide-y divide-gray-200">
+                <input type="hidden" name="page_size" value="{{ page_size }}">
+                <table class="min-w-full border-collapse border border-gray-300">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Client Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Client Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Client Register</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Client Type</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Код</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-40">Харилцагчийн нэр</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-40">Регистр</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-40">Төрөл</th>
                             {% if not is_modal %}
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Created</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Modified By</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Төлөв</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20 hidden">Огноо</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Зассан</th>
                             {% endif %}
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Actions</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-11">Үйлдлүүд</th>
                         </tr>
                         {% if not is_modal %}
-                        <tr class="bg-gray-50">
-                            <th class="px-6 py-2 border-b border-gray-200"><input type="text" name="code" value="{{ filters.code }}" class="w-full text-xs border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500" placeholder="Filter code..." onchange="this.form.submit()"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"><input type="text" name="name" value="{{ filters.name }}" class="w-full text-xs border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500" placeholder="Filter name..." onchange="this.form.submit()"></th>
-                            <th class="px-6 py-2 border-b border-gray-200">
-                                <select name="type" class="w-full text-xs border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
-                                    <option value="">All Types</option>
+                        <tr class="bg-gray-100">
+                            <td class="px-1 py-1 border border-gray-300 w-20">
+                                <input type="text" name="code" value="{{ filters.code }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-40">
+                                <input type="text" name="name" value="{{ filters.name }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-40">
+                                <input type="text" name="register" value="{{ filters.register }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-40">
+                                <select name="type" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                    <option value="">Бүгд</option>
                                     {% for client_type in client_types %}
                                     <option value="{{ client_type.ClientTypeName }}" {% if filters.type == client_type.ClientTypeName %}selected{% endif %}>{{ client_type.ClientTypeName }}</option>
                                     {% endfor %}
                                 </select>
-                            </th>
-                            <th class="px-6 py-2 border-b border-gray-200"><input type="text" name="register" value="{{ filters.register }}" class="w-full text-xs border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500" placeholder="Filter register..." onchange="this.form.submit()"></th>
-                            <th class="px-6 py-2 border-b border-gray-200">
-                                <select name="status" class="w-full text-xs border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
-                                    <option value="">All</option>
-                                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-                                    <option value="deleted" {% if filters.status == 'deleted' %}selected{% endif %}>Deleted</option>
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-20">
+                                <select name="status" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                    <option value="">Бүгд</option>
+                                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Идэвхтэй</option>
+                                    <option value="deleted" {% if filters.status == 'deleted' %}selected{% endif %}>Устгасан</option>
                                 </select>
-                            </th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"><a href="{% url 'core:refclient_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">Clear</a></th>
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-20 hidden"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-20"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-11">
+                                <a href="{% url 'core:refclient_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">Clear</a>
+                            </td>
                         </tr>
                         {% endif %}
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white">
                         {% for client in clients %}
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">{{ client.ClientCode }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ client.ClientName }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ client.ClientRegister|default:"-" }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200" title="{{ client.ClientType.ClientTypeName|default:'-' }}">{{ client.ClientType.ClientTypeName|default:"-" }}</td>
+                            <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300">{{ client.ClientCode }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ClientName }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ClientRegister|default:"-" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ClientType.ClientTypeName|default:"-" }}</td>
                             {% if not is_modal %}
-                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">{% if not client.IsDelete %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>{% else %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Deleted</span>{% endif %}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-200">{{ client.CreatedDate|date:"M d, Y" }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ client.ModifiedBy.username|default:"-" }}</td>
+                            <td class="px-1 py-1 whitespace-nowrap border border-gray-300">{% if not client.IsDelete %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Идэвхтэй</span>{% else %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Устгасан</span>{% endif %}</td>
+                            <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-500 border border-gray-300 hidden">{{ client.CreatedDate|date:"M d, Y" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ModifiedBy.username|default:"-" }}</td>
                             {% endif %}
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td class="px-1 py-1 whitespace-nowrap text-right text-sm font-medium border border-gray-300 w-11">
                                 {% if is_modal and is_select_mode %}
                                 <button 
                                     type="button" 
-                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    class="text-accounting-blue hover:text-accounting-blue-dark font-medium px-3 py-1 rounded hover:bg-blue-50"
                                     onclick="selectClient('{{ client.ClientId }}', '{{ client.ClientCode }}', '{{ client.ClientName }}')">
-                                    Select
+                                    Сонгох
                                 </button>
                                 {% else %}
                                 <div class="flex items-center justify-end space-x-2">
                                     {% if perms.core.change_refclient %}
-                                    <a href="{% url 'core:refclient_update' client.ClientId %}" class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50">
+                                    <a href="{% url 'core:refclient_update' client.ClientId %}" class="text-accounting-blue hover:text-accounting-blue-dark p-1 rounded hover:bg-blue-50" title="Засах">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
@@ -95,12 +103,11 @@
                                     <button 
                                         type="button" 
                                         class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
-                                        title="Delete"
+                                        title="Устгах"
                                         data-soft-delete
                                         data-item-id="{{ client.ClientId }}"
                                         data-item-name="{{ client.ClientName }}"
-                                        data-delete-url="{% url 'core:refclient_delete' client.ClientId %}"
-                                        hx-swap="innerHTML">
+                                        data-delete-url="{% url 'core:refclient_delete' client.ClientId %}">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -115,21 +122,95 @@
                 </table>
             </form>
         </div>
+        
+        <!-- Pagination -->
+        {% if paginator %}
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            {% if clients.has_other_pages %}
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if clients.has_previous %}
+                <a href="?page={{ clients.previous_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.register %}&register={{ filters.register }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </a>
+                {% endif %}
+                {% if clients.has_next %}
+                <a href="?page={{ clients.next_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.register %}&register={{ filters.register }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Нийт <span class="font-medium">{{ paginator.count }}</span> бичлэгээс <span class="font-medium">{{ clients.start_index }}</span> - <span class="font-medium">{{ clients.end_index }}</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="15" {% if page_size == 15 %}selected{% endif %}>15</option>
+                            <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </div>
+                    {% if clients.has_other_pages %}
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if clients.has_previous %}
+                            <a href="?page={{ clients.previous_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.register %}&register={{ filters.register }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                            <span class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                {% for num in clients.paginator.page_range %}
+                                    {% if clients.number == num %}
+                                    <span class="px-2 py-1 text-sm rounded-md bg-blue-400 text-white hover:bg-blue-500">
+                                        {{ num }}
+                                    </span>
+                                    {% elif num > clients.number|add:'-3' and num < clients.number|add:'3' %}
+                                    <a href="?page={{ num }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.register %}&register={{ filters.register }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                                        {{ num }}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% if clients.has_next %}
+                            <a href="?page={{ clients.next_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.register %}&register={{ filters.register }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
         {% endif %}
         {% if not clients %}
         <div class="text-center py-12">
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No clients</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by creating a new client.</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Харилцагч байхгүй</h3>
+            <p class="mt-1 text-sm text-gray-500">Шинэ харилцагч үүсгэх.</p>
             <div class="mt-6">
                 {% if perms.core.add_refclient %}
-                <a href="{% url 'core:refclient_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                <a href="{% url 'core:refclient_create' %}" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark">
                     <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Add Client
+                    Харилцагч нэмэх
                 </a>
                 {% endif %}
             </div>
@@ -141,4 +222,26 @@
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
-{% endblock %} 
+<script>
+// Handle page size change
+document.addEventListener('DOMContentLoaded', function() {
+    const pageSizeSelect = document.getElementById('page-size-select');
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function(e) {
+            const newPageSize = e.target.value;
+            const currentUrl = new URL(window.location);
+            
+            // Update page_size parameter
+            currentUrl.searchParams.set('page_size', newPageSize);
+            
+            // Reset to page 1 when changing page size
+            currentUrl.searchParams.set('page', '1');
+            
+            // Reload page with new page size
+            window.location.href = currentUrl.toString();
+        });
+    }
+});
+</script>
+
+{% endblock %}

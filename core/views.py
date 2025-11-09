@@ -200,13 +200,23 @@ def refaccount_list(request):
     # Order by code
     accounts_list = accounts_list.order_by('AccountCode')
     
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
+    try:
+        page_size = int(page_size)
+        # Validate page size (allow 10, 15, 20, 25, 50)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
     # For modal/select mode, show more items and no pagination
     if is_modal or is_select_mode:
         accounts = accounts_list
         paginator = None
     else:
         # Pagination
-        paginator = Paginator(accounts_list, 15)  # Show 15 items per page
+        paginator = Paginator(accounts_list, page_size)
         page = request.GET.get('page')
         
         try:
@@ -225,6 +235,7 @@ def refaccount_list(request):
         'accounts': accounts,
         'paginator': paginator,
         'account_types': account_types,
+        'page_size': page_size,
         'filters': {
             'code': code_filter,
             'name': name_filter,
@@ -403,14 +414,32 @@ def refclient_list(request):
             pass
     
     clients_list = clients_list.order_by('ClientCode')
-    paginator = Paginator(clients_list, 20)  # Show 20 items per page
-    page = request.GET.get('page')
+    
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
     try:
-        clients = paginator.page(page)
-    except PageNotAnInteger:
-        clients = paginator.page(1)
-    except EmptyPage:
-        clients = paginator.page(paginator.num_pages)
+        page_size = int(page_size)
+        # Validate page size (allow 10, 15, 20, 25, 50)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
+    # For modal/select mode, show more items and no pagination
+    if is_modal or is_select_mode:
+        clients = clients_list
+        paginator = None
+    else:
+        # Pagination
+        paginator = Paginator(clients_list, page_size)
+        page = request.GET.get('page')
+        
+        try:
+            clients = paginator.page(page)
+        except PageNotAnInteger:
+            clients = paginator.page(1)
+        except EmptyPage:
+            clients = paginator.page(paginator.num_pages)
     
     # Get all client types for filter dropdown
     client_types = RefClientType.objects.all().order_by('ClientTypeName')
@@ -427,6 +456,7 @@ def refclient_list(request):
     return render(request, 'core/refclient_list.html', {
         'clients': clients,
         'paginator': paginator,
+        'page_size': page_size,
         'client_types': client_types,
         'filters': {
             'code': code_filter,
@@ -473,6 +503,7 @@ def refclient_create(request):
     client_types = RefClientType.objects.all()
     return render(request, 'core/refclient_form.html', {
         'form': form,
+        'title': 'Харилцагч нэмэх',
         'client_types': client_types
     })
 
@@ -513,7 +544,8 @@ def refclient_update(request, pk):
     client_types = RefClientType.objects.all()
     return render(request, 'core/refclient_form.html', {
         'form': form, 
-        'item': client,
+        'title': 'Харилцагчийн мэдээлэл шинэчлэх',
+        'client': client,
         'client_types': client_types
     })
 
@@ -740,13 +772,23 @@ def refinventory_list(request):
     # Order by name
     inventory_list = inventory_list.order_by('InventoryName')
     
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
+    try:
+        page_size = int(page_size)
+        # Validate page size (allow 10, 15, 20, 25, 50)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
     # For modal/select mode, show more items and no pagination
     if is_modal or is_select_mode:
         inventories = inventory_list
         paginator = None
     else:
         # Pagination
-        paginator = Paginator(inventory_list, 15)  # Show 15 items per page
+        paginator = Paginator(inventory_list, page_size)
         page = request.GET.get('page')
         
         try:
@@ -759,6 +801,7 @@ def refinventory_list(request):
     context = {
         'inventories': inventories,
         'paginator': paginator,
+        'page_size': page_size,
         'code_filter': code_filter,
         'name_filter': name_filter,
         'type_filter': type_filter,
@@ -785,7 +828,7 @@ def refinventory_create(request):
     else:
         form = RefInventoryForm()
     
-    return render(request, 'core/refinventory_form.html', {'form': form, 'title': 'Create Inventory Item'})
+    return render(request, 'core/refinventory_form.html', {'form': form, 'title': 'Бараа материал нэмэх'})
 
 
 @login_required
@@ -807,7 +850,7 @@ def refinventory_update(request, pk):
     
     return render(request, 'core/refinventory_form.html', {
         'form': form, 
-        'title': 'Update Inventory Item',
+        'title': 'Бараа материал шинэчлэх',
         'inventory': inventory
     })
 
@@ -2840,7 +2883,7 @@ def refasset_create(request):
     
     return render(request, 'core/refasset_form.html', {
         'form': form,
-        'title': 'Create Asset'
+        'title': 'Үндсэн хөрөнгө нэмэх'
     })
 
 
@@ -2863,7 +2906,7 @@ def refasset_update(request, pk):
     
     return render(request, 'core/refasset_form.html', {
         'form': form,
-        'title': 'Update Asset',
+        'title': 'Үндсэн хөрөнгө шинэчлэх',
         'asset': asset
     })
 
@@ -2925,20 +2968,36 @@ def ref_asset_card_list(request):
         elif status_filter == 'inactive':
             asset_cards = asset_cards.filter(IsDelete=True)
     
-    # Pagination
-    paginator = Paginator(asset_cards, 20)  # Show 20 asset cards per page
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
     try:
-        asset_cards = paginator.page(page)
-    except PageNotAnInteger:
-        asset_cards = paginator.page(1)
-    except EmptyPage:
-        asset_cards = paginator.page(paginator.num_pages)
+        page_size = int(page_size)
+        # Validate page size (allow 10, 15, 20, 25, 50)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
+    # For modal requests, show more items and no pagination
+    is_modal = request.GET.get('modal')
+    if is_modal:
+        paginator = None
+    else:
+        # Pagination
+        paginator = Paginator(asset_cards, page_size)
+        page = request.GET.get('page', 1)
+        try:
+            asset_cards = paginator.page(page)
+        except PageNotAnInteger:
+            asset_cards = paginator.page(1)
+        except EmptyPage:
+            asset_cards = paginator.page(paginator.num_pages)
     
     # Get all assets for dropdown filter
     assets = RefAsset.objects.filter(IsDelete=False).order_by('AssetName')
     
     # Check if this is a modal request
-    if request.GET.get('modal'):
+    if is_modal:
         return render(request, 'core/refassetcard_list.html', {
             'asset_cards': asset_cards,
             'assets': assets,
@@ -2962,6 +3021,7 @@ def ref_asset_card_list(request):
             'status': status_filter,
         },
         'paginator': paginator,
+        'page_size': page_size,
         'is_modal': False
     })
 
@@ -3008,7 +3068,7 @@ def ref_asset_card_create(request):
     
     return render(request, 'core/refassetcard_form.html', {
         'form': form,
-        'title': 'Create Asset Card'
+        'title': 'Үндсэн хөрөнгийн карт нэмэх'
     })
 
 
@@ -3055,7 +3115,7 @@ def ref_asset_card_update(request, pk):
     
     return render(request, 'core/refassetcard_form.html', {
         'form': form,
-        'title': 'Update Asset Card',
+        'title': 'Үндсэн хөрөнгийн карт шинэчлэх',
         'asset_card': asset_card
     })
 

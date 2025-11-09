@@ -1,215 +1,364 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title }} - Silicon4 Accounting{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
-                    <a href="{% url 'core:asset_master_detail' %}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Assets
-                    </a>
-                </div>
-            </div>
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+            <p class="text-gray-600">{% if asset_card %}Үндсэн хөрөнгийн карт шинэчлэх{% else %}Шинэ үндсэн хөрөнгийн карт нэмэх{% endif %}</p>
+        </div>
+        <a href="{% url 'core:asset_master_detail' %}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Жагсаалт руу буцах
+        </a>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <form method="post" class="space-y-6 p-6" novalidate>
+            {% csrf_token %}
             
-            <form method="post" class="p-6">
-                {% csrf_token %}
-                
-                {% if form.non_field_errors %}
-                    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
-                                <div class="mt-2 text-sm text-red-700">
-                                    {{ form.non_field_errors }}
-                                </div>
-                            </div>
+            {% if form.non_field_errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">
+                            Илгээлтэд алдаа гарлаа
+                        </h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
                     </div>
-                {% endif %}
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="{{ form.AssetId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.AssetId.label }}
-                        </label>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Asset -->
+                <div>
+                    <label for="{{ form.AssetId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Үндсэн хөрөнгө
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
                         {{ form.AssetId }}
                         {% if form.AssetId.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.AssetId.errors.0 }}</p>
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.AssetId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
                         {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.AssetCardCode.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.AssetCardCode.label }}
-                        </label>
-                        {{ form.AssetCardCode }}
-                        {% if form.AssetCardCode.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.AssetCardCode.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.AssetCardName.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.AssetCardName.label }}
-                        </label>
-                        {{ form.AssetCardName }}
-                        {% if form.AssetCardName.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.AssetCardName.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.ManufacturedDate.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.ManufacturedDate.label }}
-                        </label>
-                        {{ form.ManufacturedDate }}
-                        {% if form.ManufacturedDate.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.ManufacturedDate.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.ReceivedDate.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.ReceivedDate.label }}
-                        </label>
-                        {{ form.ReceivedDate }}
-                        {% if form.ReceivedDate.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.ReceivedDate.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.MonthsToUse.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.MonthsToUse.label }}
-                        </label>
-                        {{ form.MonthsToUse }}
-                        {% if form.MonthsToUse.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.MonthsToUse.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.UnitCost.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.UnitCost.label }}
-                        </label>
-                        {{ form.UnitCost }}
-                        {% if form.UnitCost.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.UnitCost.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.UnitPrice.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.UnitPrice.label }}
-                        </label>
-                        {{ form.UnitPrice }}
-                        {% if form.UnitPrice.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.UnitPrice.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.DailyExpense.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.DailyExpense.label }}
-                        </label>
-                        {{ form.DailyExpense }}
-                        {% if form.DailyExpense.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.DailyExpense.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.CumulatedDepreciation.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.CumulatedDepreciation.label }}
-                        </label>
-                        {{ form.CumulatedDepreciation }}
-                        {% if form.CumulatedDepreciation.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.CumulatedDepreciation.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.EmployeeId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.EmployeeId.label }}
-                        </label>
-                        {{ form.EmployeeId }}
-                        {% if form.EmployeeId.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.EmployeeId.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.AssetAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.AssetAccountId.label }}
-                        </label>
-                        {{ form.AssetAccountId }}
-                        {% if form.AssetAccountId.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.AssetAccountId.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.DepreciationAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.DepreciationAccountId.label }}
-                        </label>
-                        {{ form.DepreciationAccountId }}
-                        {% if form.DepreciationAccountId.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.DepreciationAccountId.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.ExpenseAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.ExpenseAccountId.label }}
-                        </label>
-                        {{ form.ExpenseAccountId }}
-                        {% if form.ExpenseAccountId.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.ExpenseAccountId.errors.0 }}</p>
-                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Үндсэн хөрөнгийг сонгоно уу</p>
                     </div>
                 </div>
                 
-                <div class="mt-6">
+                <!-- Asset Card Code -->
+                <div>
+                    <label for="{{ form.AssetCardCode.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Картын код
+                    </label>
+                    <div class="mt-1">
+                        {{ form.AssetCardCode }}
+                        {% if form.AssetCardCode.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.AssetCardCode.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Үндсэн хөрөнгийн картын кодыг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Asset Card Name -->
+                <div>
+                    <label for="{{ form.AssetCardName.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Картын нэр
+                    </label>
+                    <div class="mt-1">
+                        {{ form.AssetCardName }}
+                        {% if form.AssetCardName.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.AssetCardName.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Үндсэн хөрөнгийн картын нэрийг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Manufactured Date -->
+                <div>
+                    <label for="{{ form.ManufacturedDate.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Үйлдвэрлэсэн огноо
+                    </label>
+                    <div class="mt-1">
+                        {{ form.ManufacturedDate }}
+                        {% if form.ManufacturedDate.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.ManufacturedDate.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Үйлдвэрлэсэн огноог оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Received Date -->
+                <div>
+                    <label for="{{ form.ReceivedDate.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Хүлээн авсан огноо
+                    </label>
+                    <div class="mt-1">
+                        {{ form.ReceivedDate }}
+                        {% if form.ReceivedDate.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.ReceivedDate.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Хүлээн авсан огноог оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Months To Use -->
+                <div>
+                    <label for="{{ form.MonthsToUse.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Ашиглах сар
+                    </label>
+                    <div class="mt-1">
+                        {{ form.MonthsToUse }}
+                        {% if form.MonthsToUse.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.MonthsToUse.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Ашиглах сарын тоог оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Unit Cost -->
+                <div>
+                    <label for="{{ form.UnitCost.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Нэгж өртөг
+                    </label>
+                    <div class="mt-1">
+                        {{ form.UnitCost }}
+                        {% if form.UnitCost.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.UnitCost.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Нэгж өртгийг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Unit Price -->
+                <div>
+                    <label for="{{ form.UnitPrice.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Нэгж үнэ
+                    </label>
+                    <div class="mt-1">
+                        {{ form.UnitPrice }}
+                        {% if form.UnitPrice.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.UnitPrice.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Нэгж үнийг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Daily Expense -->
+                <div>
+                    <label for="{{ form.DailyExpense.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Өдрийн элэгдэл
+                    </label>
+                    <div class="mt-1">
+                        {{ form.DailyExpense }}
+                        {% if form.DailyExpense.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.DailyExpense.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Өдрийн элэгдлийг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Cumulated Depreciation -->
+                <div>
+                    <label for="{{ form.CumulatedDepreciation.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Нэгтгэсэн элэгдэл
+                    </label>
+                    <div class="mt-1">
+                        {{ form.CumulatedDepreciation }}
+                        {% if form.CumulatedDepreciation.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.CumulatedDepreciation.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Нэгтгэсэн элэгдлийг оруулна уу</p>
+                    </div>
+                </div>
+                
+                <!-- Employee -->
+                <div>
+                    <label for="{{ form.EmployeeId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Ажилтан
+                    </label>
+                    <div class="mt-1">
+                        {{ form.EmployeeId }}
+                        {% if form.EmployeeId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.EmployeeId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Ажилтныг сонгоно уу</p>
+                    </div>
+                </div>
+                
+                <!-- Asset Account -->
+                <div>
+                    <label for="{{ form.AssetAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Үндсэн хөрөнгийн данс
+                    </label>
+                    <div class="mt-1">
+                        {{ form.AssetAccountId }}
+                        {% if form.AssetAccountId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.AssetAccountId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Үндсэн хөрөнгийн дансыг сонгоно уу</p>
+                    </div>
+                </div>
+                
+                <!-- Depreciation Account -->
+                <div>
+                    <label for="{{ form.DepreciationAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Элэгдлийн данс
+                    </label>
+                    <div class="mt-1">
+                        {{ form.DepreciationAccountId }}
+                        {% if form.DepreciationAccountId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.DepreciationAccountId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Элэгдлийн дансыг сонгоно уу</p>
+                    </div>
+                </div>
+                
+                <!-- Expense Account -->
+                <div>
+                    <label for="{{ form.ExpenseAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Зардлын данс
+                    </label>
+                    <div class="mt-1">
+                        {{ form.ExpenseAccountId }}
+                        {% if form.ExpenseAccountId.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.ExpenseAccountId.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Зардлын дансыг сонгоно уу</p>
+                    </div>
+                </div>
+                
+                <!-- Is Delete -->
+                <div class="sm:col-span-2">
                     <div class="flex items-center">
                         {{ form.IsDelete }}
                         <label for="{{ form.IsDelete.id_for_label }}" class="ml-2 block text-sm text-gray-700">
-                            {{ form.IsDelete.label }}
+                            Устгасан
                         </label>
-                        {% if form.IsDelete.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.IsDelete.errors.0 }}</p>
-                        {% endif %}
                     </div>
+                    {% if form.IsDelete.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.IsDelete.errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Үндсэн хөрөнгийн картыг устгасан гэж тэмдэглэх</p>
                 </div>
-                
-                <div class="mt-6 flex items-center justify-end space-x-3">
-                    <a href="{% url 'core:asset_master_detail' %}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accounting-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Save Asset Card
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{% url 'core:asset_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    Цуцлах
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    {% if asset_card %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Хадгалах
+                    {% else %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Нэмэх
+                    {% endif %}
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on the first input field
+    const firstInput = document.querySelector('input[type="text"]');
+    if (firstInput) {
+        firstInput.focus();
+    }
+    
+    // Add loading state to submit button
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton && form) {
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Боловсруулж байна...';
+        });
+    }
+});
+</script>
 {% endblock %}
