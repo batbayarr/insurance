@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.unicode_middleware.UnicodeMiddleware',
     'core.middleware.DatabaseSelectionMiddleware',
+    'core.middleware.NoCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
