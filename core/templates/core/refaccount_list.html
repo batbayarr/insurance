@@ -58,6 +58,7 @@
         {% if accounts %}
         <div class="overflow-x-auto">
             <form method="get" id="filter-form">
+                <input type="hidden" name="page_size" value="{{ page_size }}">
                 <table class="min-w-full border-collapse border border-gray-300">
                     <thead class="bg-gray-50">
                         <tr>
@@ -151,12 +152,12 @@
         <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-between sm:hidden">
                 {% if accounts.has_previous %}
-                <a href="?page={{ accounts.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <a href="?page={{ accounts.previous_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Өмнөх
                 </a>
                 {% endif %}
                 {% if accounts.has_next %}
-                <a href="?page={{ accounts.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <a href="?page={{ accounts.next_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Дараа
                 </a>
                 {% endif %}
@@ -168,10 +169,20 @@
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="15" {% if page_size == 15 %}selected{% endif %}>15</option>
+                            <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </div>
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                             {% if accounts.has_previous %}
-                            <a href="?page={{ accounts.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <a href="?page={{ accounts.previous_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Previous</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -185,14 +196,14 @@
                                         {{ num }}
                                     </span>
                                     {% elif num > accounts.number|add:'-3' and num < accounts.number|add:'3' %}
-                                    <a href="?page={{ num }}" class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                                    <a href="?page={{ num }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                                         {{ num }}
                                     </a>
                                     {% endif %}
                                 {% endfor %}
                             </span>
                             {% if accounts.has_next %}
-                            <a href="?page={{ accounts.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <a href="?page={{ accounts.next_page_number }}&page_size={{ page_size }}{% if filters.code %}&code={{ filters.code }}{% endif %}{% if filters.name %}&name={{ filters.name }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Next</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
@@ -242,5 +253,27 @@
 <!-- Include soft delete modal -->
 {% include 'core/components/delete_modal.html' %}
 {% endif %}
+
+<script>
+// Handle page size change
+document.addEventListener('DOMContentLoaded', function() {
+    const pageSizeSelect = document.getElementById('page-size-select');
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function(e) {
+            const newPageSize = e.target.value;
+            const currentUrl = new URL(window.location);
+            
+            // Update page_size parameter
+            currentUrl.searchParams.set('page_size', newPageSize);
+            
+            // Reset to page 1 when changing page size
+            currentUrl.searchParams.set('page', '1');
+            
+            // Reload page with new page size
+            window.location.href = currentUrl.toString();
+        });
+    }
+});
+</script>
 
 {% endblock %}

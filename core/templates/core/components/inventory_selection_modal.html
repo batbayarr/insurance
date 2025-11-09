@@ -435,16 +435,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Check if we're in inventory modal context
                     if (isInventoryModalContext) {
                         // Refresh inventory list instead of reloading page
-                        setTimeout(() => {
+            setTimeout(() => {
                             if (typeof loadInventoryList === 'function') {
-                                loadInventoryList();
+                loadInventoryList();
                             }
                         }, 500);
                     } else {
                         // Normal page context - reload page
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1000);
+            }, 1000);
                     }
                     
                 } else {

@@ -7,13 +7,13 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
-            <p class="text-gray-600">{% if inventory %}Update inventory item{% else %}Create a new inventory item{% endif %}</p>
+            <p class="text-gray-600">{% if inventory %}Бараа материал шинэчлэх{% else %}Шинэ бараа материал нэмэх{% endif %}</p>
         </div>
         <a href="{% url 'core:refinventory_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to List
+            Жагсаалт руу буцах
         </a>
     </div>
     
@@ -31,7 +31,7 @@
                     </div>
                     <div class="ml-3">
                         <h3 class="text-sm font-medium text-red-800">
-                            There were errors with your submission
+                            Илгээлтэд алдаа гарлаа
                         </h3>
                         <div class="mt-2 text-sm text-red-700">
                             <ul class="list-disc pl-5 space-y-1">
@@ -49,7 +49,7 @@
                 <!-- Inventory Code -->
                 <div>
                     <label for="{{ form.InventoryCode.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.InventoryCode.label }}
+                        Барааны Код
                     </label>
                     <div class="mt-1">
                         {{ form.InventoryCode }}
@@ -60,14 +60,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Enter a unique code for the inventory item (max 5 characters)</p>
+                        <p class="mt-1 text-sm text-gray-500">Бараа материалын кодыг оруулна уу (хамгийн ихдээ 5 тэмдэгт)</p>
                     </div>
                 </div>
                 
                 <!-- Inventory Name -->
                 <div>
                     <label for="{{ form.InventoryName.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.InventoryName.label }}
+                        Бараа материалын нэр
                         <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1">
@@ -79,14 +79,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Enter the name of the inventory item (max 50 characters)</p>
+                        <p class="mt-1 text-sm text-gray-500">Бараа материалын нэрийг оруулна уу (хамгийн ихдээ 50 тэмдэгт)</p>
                     </div>
                 </div>
                 
                 <!-- Inventory Type -->
                 <div>
                     <label for="{{ form.InventoryTypeId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.InventoryTypeId.label }}
+                        Төрөл
                         <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1">
@@ -98,14 +98,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Select the type of inventory item</p>
+                        <p class="mt-1 text-sm text-gray-500">Бараа материалын төрөл сонгоно уу</p>
                     </div>
                 </div>
                 
                 <!-- Measurement Unit -->
                 <div>
                     <label for="{{ form.MeasurementId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.MeasurementId.label }}
+                        Нэгж
                         <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1">
@@ -117,14 +117,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Select the measurement unit</p>
+                        <p class="mt-1 text-sm text-gray-500">Хэмжих нэгж сонгоно уу</p>
                     </div>
                 </div>
                 
                 <!-- Unit Cost -->
                 <div>
                     <label for="{{ form.UnitCost.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.UnitCost.label }}
+                        Нэгж өртөг
                         <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1">
@@ -136,14 +136,14 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Enter the cost price per unit</p>
+                        <p class="mt-1 text-sm text-gray-500">Нэгжийн өртгийг оруулна уу</p>
                     </div>
                 </div>
                 
                 <!-- Unit Price -->
                 <div>
                     <label for="{{ form.UnitPrice.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.UnitPrice.label }}
+                        Нэгж үнэ
                         <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1">
@@ -155,7 +155,7 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <p class="mt-1 text-sm text-gray-500">Enter the selling price per unit</p>
+                        <p class="mt-1 text-sm text-gray-500">Нэгжийн үнийг оруулна уу</p>
                     </div>
                 </div>
                 
@@ -164,7 +164,7 @@
                     <div class="flex items-center">
                         {{ form.IsActive }}
                         <label for="{{ form.IsActive.id_for_label }}" class="ml-2 block text-sm text-gray-700">
-                            {{ form.IsActive.label }}
+                            Идэвхтэй
                         </label>
                     </div>
                     {% if form.IsActive.errors %}
@@ -174,26 +174,26 @@
                         {% endfor %}
                     </div>
                     {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">Check this box to make the inventory item active and available for use</p>
+                    <p class="mt-1 text-sm text-gray-500">Бараа материалыг идэвхтэй болгож ашиглах боломжтой болгохын тулд энэ хайрцгийг сонгоно уу</p>
                 </div>
             </div>
             
             <!-- Form Actions -->
             <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <a href="{% url 'core:refinventory_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                    Cancel
+                    Цуцлах
                 </a>
                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
                     {% if inventory %}
                     <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    Update Inventory Item
+                    Хадгалах
                     {% else %}
                     <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Create Inventory Item
+                    Нэмэх
                     {% endif %}
                 </button>
             </div>
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!inventoryName || !inventoryName.value.trim()) {
             e.preventDefault();
-            alert('Please enter an inventory name.');
+            alert('Бараа материалын нэрийг оруулна уу.');
             if (inventoryName) {
                 inventoryName.focus();
             }
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!inventoryType || !inventoryType.value) {
             e.preventDefault();
-            alert('Please select an inventory type.');
+            alert('Бараа материалын төрлийг сонгоно уу.');
             if (inventoryType) {
                 inventoryType.focus();
             }
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!measurement || !measurement.value) {
             e.preventDefault();
-            alert('Please select a measurement unit.');
+            alert('Хэмжих нэгжийг сонгоно уу.');
             if (measurement) {
                 measurement.focus();
             }
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!unitCost || !unitCost.value || parseFloat(unitCost.value) < 0) {
             e.preventDefault();
-            alert('Please enter a valid unit cost (must be 0 or greater).');
+            alert('Нэгж өртгийг зөв оруулна уу (0 эсвэл түүнээс их байх ёстой).');
             if (unitCost) {
                 unitCost.focus();
             }
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!unitPrice || !unitPrice.value || parseFloat(unitPrice.value) < 0) {
             e.preventDefault();
-            alert('Please enter a valid unit price (must be 0 or greater).');
+            alert('Нэгж үнийг зөв оруулна уу (0 эсвэл түүнээс их байх ёстой).');
             if (unitPrice) {
                 unitPrice.focus();
             }
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (submitButton) {
         form.addEventListener('submit', function() {
             submitButton.disabled = true;
-            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...';
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Боловсруулж байна...';
         });
     }
 });
