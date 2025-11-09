@@ -13,7 +13,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
-from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense
+from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
 from django.db import connection
 from .forms import Ref_AccountForm, RefClientForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
 from .utils import get_available_databases, set_database
@@ -202,7 +202,7 @@ def refaccount_list(request):
         paginator = None
     else:
         # Pagination
-        paginator = Paginator(accounts_list, 4)  # Show 4 items per page
+        paginator = Paginator(accounts_list, 15)  # Show 15 items per page
         page = request.GET.get('page')
         
         try:
@@ -256,7 +256,7 @@ def refaccount_create(request):
     else:
         form = Ref_AccountForm()
     
-    account_types = Ref_Account_Type.objects.all()
+    account_types = Ref_Account_Type.objects.all().order_by('AccountTypeCode')
     currencies = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
     return render(request, 'core/refaccount_form.html', {
         'form': form,
@@ -284,7 +284,7 @@ def refaccount_update(request, pk):
     else:
         form = Ref_AccountForm(instance=account)
     
-    account_types = Ref_Account_Type.objects.all()
+    account_types = Ref_Account_Type.objects.all().order_by('AccountTypeCode')
     currencies = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
     return render(request, 'core/refaccount_form.html', {
         'item': account,
@@ -374,6 +374,7 @@ def refclient_list(request):
     type_filter = request.GET.get('type', '')
     register_filter = request.GET.get('register', '')
     status_filter = request.GET.get('status', '')
+    client_type_id = request.GET.get('client_type_id', '')
     
     if code_filter:
         clients_list = clients_list.filter(ClientCode__icontains=code_filter)
@@ -388,6 +389,14 @@ def refclient_list(request):
             clients_list = clients_list.filter(IsDelete=False)
         elif status_filter == 'deleted':
             clients_list = clients_list.filter(IsDelete=True)
+    # Filter by explicit client_type_id(s) if provided (comma-separated ids)
+    if client_type_id:
+        try:
+            ids = [int(x) for x in client_type_id.split(',') if x.strip().isdigit()]
+            if ids:
+                clients_list = clients_list.filter(ClientType__ClientTypeId__in=ids)
+        except Exception:
+            pass
     
     clients_list = clients_list.order_by('ClientCode')
     paginator = Paginator(clients_list, 20)  # Show 20 items per page
@@ -530,6 +539,62 @@ def refclient_delete(request, pk):
                     'message': f'Client "{client.ClientCode} - {client.ClientName}" is already deleted.'
                 })
             
+            # Check if client exists in inv_document table
+            if Inv_Document.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in inv_document_detail table (non-null)
+            if Inv_Document_Detail.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in cash_document table
+            if Cash_Document.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in cash_document_detail table
+            if Cash_DocumentDetail.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in ast_document table
+            if Ast_Document.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in ast_document_detail table (non-null)
+            if Ast_Document_Detail.objects.filter(ClientId=client).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in cash_beginning_balance table (non-deleted records)
+            if CashBeginningBalance.objects.filter(ClientID=client, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
+            # Check if client exists in ast_beginning_balance table (non-null, non-deleted records)
+            if Ast_Beginning_Balance.objects.filter(ClientId=client, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                })
+            
             # Perform soft delete
             client.IsDelete = True
             if hasattr(client, 'ModifiedBy'):
@@ -553,6 +618,46 @@ def refclient_delete(request, pk):
             # Check if already deleted
             if client.IsDelete:
                 messages.warning(request, f'Client "{client.ClientCode} - {client.ClientName}" is already deleted.')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in inv_document table
+            if Inv_Document.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in inv_document_detail table (non-null)
+            if Inv_Document_Detail.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in cash_document table
+            if Cash_Document.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in cash_document_detail table
+            if Cash_DocumentDetail.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in ast_document table
+            if Ast_Document.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in ast_document_detail table (non-null)
+            if Ast_Document_Detail.objects.filter(ClientId=client).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in cash_beginning_balance table (non-deleted records)
+            if CashBeginningBalance.objects.filter(ClientID=client, IsDelete=False).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                return redirect('core:refclient_list')
+            
+            # Check if client exists in ast_beginning_balance table (non-null, non-deleted records)
+            if Ast_Beginning_Balance.objects.filter(ClientId=client, IsDelete=False).exists():
+                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
                 return redirect('core:refclient_list')
             
             # Perform soft delete
@@ -600,27 +705,32 @@ def refclient_delete(request, pk):
 @permission_required('core.view_refinventory', raise_exception=True)
 def refinventory_list(request):
     """List all inventory items with pagination and inline filtering"""
-    inventory_list = RefInventory.objects.all()
+    inventory_list = RefInventory.objects.filter(IsDelete=False)
     
     # Check if this is a modal request for inventory selection
     is_modal = request.GET.get('modal') == 'true'
     is_select_mode = request.GET.get('select_mode') == 'true'
     
     # Apply filters
+    code_filter = request.GET.get('code', '')
     name_filter = request.GET.get('name', '')
-    created_by_filter = request.GET.get('created_by', '')
+    type_filter = request.GET.get('type', '')
     status_filter = request.GET.get('status', '')
+    
+    if code_filter:
+        inventory_list = inventory_list.filter(InventoryCode__icontains=code_filter)
     
     if name_filter:
         inventory_list = inventory_list.filter(InventoryName__icontains=name_filter)
     
-    if created_by_filter:
-        inventory_list = inventory_list.filter(CreatedBy__username__icontains=created_by_filter)
+    if type_filter:
+        # Filter by InventoryTypeId - try to match by name if it's a related field
+        inventory_list = inventory_list.filter(InventoryTypeId__InventoryTypeName__icontains=type_filter)
     
     if status_filter:
-        if status_filter == 'active':
+        if status_filter == 'y':
             inventory_list = inventory_list.filter(IsActive=True)
-        elif status_filter == 'inactive':
+        elif status_filter == 'n':
             inventory_list = inventory_list.filter(IsActive=False)
     
     # Order by name
@@ -632,7 +742,7 @@ def refinventory_list(request):
         paginator = None
     else:
         # Pagination
-        paginator = Paginator(inventory_list, 10)  # Show 10 items per page
+        paginator = Paginator(inventory_list, 15)  # Show 15 items per page
         page = request.GET.get('page')
         
         try:
@@ -645,8 +755,9 @@ def refinventory_list(request):
     context = {
         'inventories': inventories,
         'paginator': paginator,
+        'code_filter': code_filter,
         'name_filter': name_filter,
-        'created_by_filter': created_by_filter,
+        'type_filter': type_filter,
         'status_filter': status_filter,
         'is_modal': is_modal,
         'is_select_mode': is_select_mode,
@@ -700,20 +811,92 @@ def refinventory_update(request, pk):
 @login_required
 @permission_required('core.delete_refinventory', raise_exception=True)
 def refinventory_delete(request, pk):
-    """Delete an inventory item"""
+    """Delete inventory item with soft delete"""
     inventory = get_object_or_404(RefInventory, pk=pk)
     
+    # Check if this is a modal request
+    if request.GET.get('modal'):
+        # Return modal content
+        return render(request, 'core/components/delete_modal.html', {
+            'item_name': f"{inventory.InventoryCode or ''} - {inventory.InventoryName}".strip(' - '),
+            'delete_url': reverse('core:refinventory_delete', args=[pk])
+        })
+    
+    # Handle API request (JSON)
+    if request.method == 'POST' and request.headers.get('Content-Type') == 'application/json':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            # Check if already deleted
+            if inventory.IsDelete:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Inventory item "{inventory.InventoryName}" is already deleted.'
+                })
+            
+            # Check if inventory exists in inv_document_item table
+            if Inv_Document_Item.objects.filter(InventoryId=inventory).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн материал эхний үлдэгдэлтэй эсвэл гүйлгээ хийгдсэн байна. Эхний үлдэгдэлгүй эсвэл гүйлгээ хийгдээгүй бол усгтах боломжтой'
+                })
+            
+            # Check if inventory exists in inv_beginning_balance table (non-deleted records)
+            if Inv_Beginning_Balance.objects.filter(InventoryId=inventory, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Тухайн материал эхний үлдэгдэлтэй эсвэл гүйлгээ хийгдсэн байна. Эхний үлдэгдэлгүй эсвэл гүйлгээ хийгдээгүй бол усгтах боломжтой'
+                })
+            
+            # Perform soft delete
+            inventory.IsDelete = True
+            if hasattr(inventory, 'ModifiedBy'):
+                inventory.ModifiedBy = request.user
+            inventory.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Inventory item "{inventory.InventoryName}" has been deleted successfully.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error deleting inventory item: {str(e)}'
+            })
+    
+    # Handle regular form POST
     if request.method == 'POST':
         try:
-            inventory.delete()
-            messages.success(request, 'Inventory item deleted successfully.')
+            # Check if already deleted
+            if inventory.IsDelete:
+                messages.warning(request, f'Inventory item "{inventory.InventoryName}" is already deleted.')
+                return redirect('core:refinventory_list')
+            
+            # Check if inventory exists in inv_document_item table
+            if Inv_Document_Item.objects.filter(InventoryId=inventory).exists():
+                messages.error(request, 'Тухайн материал эхний үлдэгдэлтэй эсвэл гүйлгээ хийгдсэн байна. Эхний үлдэгдэлгүй эсвэл гүйлгээ хийгдээгүй бол усгтах боломжтой')
+                return redirect('core:refinventory_list')
+            
+            # Check if inventory exists in inv_beginning_balance table (non-deleted records)
+            if Inv_Beginning_Balance.objects.filter(InventoryId=inventory, IsDelete=False).exists():
+                messages.error(request, 'Тухайн материал эхний үлдэгдэлтэй эсвэл гүйлгээ хийгдсэн байна. Эхний үлдэгдэлгүй эсвэл гүйлгээ хийгдээгүй бол усгтах боломжтой')
+                return redirect('core:refinventory_list')
+            
+            # Perform soft delete
+            inventory.IsDelete = True
+            if hasattr(inventory, 'ModifiedBy'):
+                inventory.ModifiedBy = request.user
+            inventory.save()
+            messages.success(request, f'Inventory item "{inventory.InventoryName}" has been deleted successfully.')
         except ProtectedError as e:
             messages.error(request, f'Cannot delete inventory item "{inventory.InventoryName}" because it is referenced by other records. Please remove all references first.')
         return redirect('core:refinventory_list')
     
     context = {
         'inventory': inventory,
-        'item_name': inventory.InventoryName,
+        'item_name': f"{inventory.InventoryCode or ''} - {inventory.InventoryName}".strip(' - '),
         'delete_url': reverse('core:refinventory_delete', kwargs={'pk': pk})
     }
     
@@ -790,7 +973,9 @@ def get_cash_documents_master(request):
             documents_data.append({
                 'DocumentId': doc.DocumentId,
                 'DocumentNo': doc.DocumentNo,
+                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
                 'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
+                'DocumentTypeName': doc.DocumentTypeId.Description if doc.DocumentTypeId else '',
                 'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
                 'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d') if doc.DocumentDate else '',
                 'Description': doc.Description or '',
@@ -803,6 +988,9 @@ def get_cash_documents_master(request):
                 'CurrencyMNT': float(doc.CurrencyMNT) if doc.CurrencyMNT else 0,
                 'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
                 'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
+                'ClientBankId': doc.ClientBankId.ClientBankId if doc.ClientBankId else None,
+                'BankAccount': doc.ClientBankId.BankAccount if doc.ClientBankId else '',
+                'BankName': doc.ClientBankId.BankName if doc.ClientBankId else '',
             })
         
         return JsonResponse({
@@ -842,11 +1030,130 @@ def api_check_period_lock(request):
         
         return JsonResponse({
             'is_locked': is_locked,
-            'message': 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.' if is_locked else ''
+            'message': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.' if is_locked else ''
         })
         
     except:
         return JsonResponse({'is_locked': False})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_validate_period_dates(request):
+    """API endpoint to validate that dates match a period from ref_period table"""
+    from datetime import datetime
+    from calendar import monthrange
+    from .models import Ref_Period
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'message': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Check if start date is first day of month
+        is_first_day = start_date.day == 1
+        
+        # Check if end date is last day of month
+        last_day = monthrange(end_date.year, end_date.month)[1]
+        is_last_day = end_date.day == last_day
+        
+        # Check if dates are in the same month
+        same_month = (start_date.year == end_date.year and 
+                     start_date.month == end_date.month)
+        
+        if not is_first_day or not is_last_day or not same_month:
+            # Try to find period that contains end_date
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=end_date,
+                EndDate__gte=end_date
+            ).first()
+            
+            if period:
+                # Return adjusted dates
+                return JsonResponse({
+                    'success': True,
+                    'adjusted': True,
+                    'adjusted_start': period.BeginDate.strftime('%Y-%m-%d'),
+                    'adjusted_end': period.EndDate.strftime('%Y-%m-%d'),
+                    'period': {
+                        'period_id': period.PeriodId,
+                        'period_name': period.PeriodName,
+                        'begin_date': period.BeginDate.strftime('%Y-%m-%d'),
+                        'end_date': period.EndDate.strftime('%Y-%m-%d'),
+                        'is_locked': period.IsLock
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Dates do not match a period. Start date must be first day of month and end date must be last day of month. No period found for the selected date.'
+                }, status=400)
+        
+        # Dates look correct, verify against period table
+        period = Ref_Period.objects.filter(
+            BeginDate=start_date,
+            EndDate=end_date
+        ).first()
+        
+        if not period:
+            # Try to find period that contains end_date
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=end_date,
+                EndDate__gte=end_date
+            ).first()
+            
+            if period:
+                # Return adjusted dates
+                return JsonResponse({
+                    'success': True,
+                    'adjusted': True,
+                    'adjusted_start': period.BeginDate.strftime('%Y-%m-%d'),
+                    'adjusted_end': period.EndDate.strftime('%Y-%m-%d'),
+                    'period': {
+                        'period_id': period.PeriodId,
+                        'period_name': period.PeriodName,
+                        'begin_date': period.BeginDate.strftime('%Y-%m-%d'),
+                        'end_date': period.EndDate.strftime('%Y-%m-%d'),
+                        'is_locked': period.IsLock
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'No period found in ref_period table for the selected dates'
+                }, status=400)
+        
+        # Period found and dates match
+        return JsonResponse({
+            'success': True,
+            'adjusted': False,
+            'period': {
+                'period_id': period.PeriodId,
+                'period_name': period.PeriodName,
+                'begin_date': period.BeginDate.strftime('%Y-%m-%d'),
+                'end_date': period.EndDate.strftime('%Y-%m-%d'),
+                'is_locked': period.IsLock
+            }
+        })
+        
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid date format. Please use YYYY-MM-DD format.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error validating period: {str(e)}'
+        }, status=500)
 
 
 @login_required
@@ -964,11 +1271,11 @@ def cashdocument_create(request):
                             # AJAX request - return JSON for modal
                             return JsonResponse({
                                 'success': False,
-                                'error': 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
+                                'error': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
                             })
                         else:
                             # Regular form submission - show Django message
-                            messages.error(request, 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                            messages.error(request, 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
                             form = CashDocumentForm(request.POST)
                             vat_accounts = {}
                             try:
@@ -1011,10 +1318,10 @@ def cashdocument_create(request):
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({
                             'success': True,
-                            'redirect_url': f'/core/cashdocuments/?selected_document={cash_document.DocumentId}'
+                            'redirect_url': '/core/cashdocuments/'
                         })
                     
-                    return redirect(f'/core/cashdocuments/?selected_document={cash_document.DocumentId}')
+                    return redirect('/core/cashdocuments/')
                 except UnicodeEncodeError as e:
                     messages.error(request, f'Unicode encoding error: {str(e)}. Please check your input for special characters.')
                 except Exception as e:
@@ -1085,11 +1392,11 @@ def cashdocument_update(request, pk):
                     # AJAX request - return JSON for modal
                     return JsonResponse({
                         'success': False,
-                        'error': 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
+                        'error': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
                     })
                 else:
                     # Regular form submission - show Django message
-                    messages.error(request, 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                    messages.error(request, 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
                     form = CashDocumentForm(request.POST, instance=document)
                     vat_accounts = {}
                     try:
@@ -1119,11 +1426,11 @@ def cashdocument_update(request, pk):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': f'/core/cashdocuments/?selected_document={pk}'
+                    'redirect_url': '/core/cashdocuments/'
                 })
             
-            # Preserve the selected document when redirecting
-            return redirect(f'/core/cashdocuments/?selected_document={pk}')
+            # Redirect to master detail page without selected_document parameter
+            return redirect('core:cashdocument_master_detail')
         else:
             # Debug: Print form errors
             print("Form errors:", form.errors)
@@ -1139,13 +1446,13 @@ def cashdocument_update(request, pk):
                 # AJAX request - return JSON for modal
                 return JsonResponse({
                     'success': False,
-                    'error': 'Тухайн сар түшжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.',
+                    'error': 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.',
                     'redirect': True
                 })
             else:
                 # Regular request - show Django message and redirect
-                messages.error(request, 'Тухайн сар түшжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.')
-                return redirect(f'/core/cashdocuments/?selected_document={pk}')
+                messages.error(request, 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                return redirect('core:cashdocument_master_detail')
         
         form = CashDocumentForm(instance=document)
     
@@ -1355,6 +1662,14 @@ def cashdocumentdetail_delete(request, pk):
 def bulk_manage_details(request, document_id):
     """Unified view for managing cash document details - add, update, and delete"""
     document = get_object_or_404(Cash_Document, pk=document_id)
+    
+    # Delete all existing details when accessing via GET (Manage Detail button clicked)
+    if request.method == 'GET':
+        existing_details = Cash_DocumentDetail.objects.filter(DocumentId=document)
+        deleted_count = existing_details.count()
+        if deleted_count > 0:
+            existing_details.delete()
+            print(f"Deleted {deleted_count} existing detail records for document {document.DocumentId}")
     
     # Get existing details
     document_details = Cash_DocumentDetail.objects.filter(DocumentId=document).select_related(
@@ -1876,7 +2191,7 @@ def invdocument_master_detail(request):
                 'DocumentTypeId', 'ClientId', 'AccountId', 'WarehouseId'
             ).filter(IsDelete=False).get(DocumentId=selected_document_id)
             
-            document_items = Inv_Document_Item.objects.select_related('InventoryId').filter(
+            document_items = Inv_Document_Item.objects.select_related('InventoryId__MeasurementId').filter(
                 DocumentId=selected_document
             ).order_by('DocumentItemId')
             
@@ -1918,10 +2233,10 @@ def invdocument_create(request, parentid=None):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
-                        'error': 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
+                        'error': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
                     })
                 else:
-                    messages.error(request, 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                    messages.error(request, 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
                     # Get required context data for re-rendering
                     inventory_account_types = Ref_Account_Type.objects.filter(
                         AccountTypeId__in=[8, 9, 10, 11], 
@@ -2041,10 +2356,10 @@ def invdocument_update(request, pk, parentid=None):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
-                        'error': 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
+                        'error': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
                     })
                 else:
-                    messages.error(request, 'Тухайн сар түшжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                    messages.error(request, 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
                     # Get required context data for re-rendering
                     inventory_account_types = Ref_Account_Type.objects.filter(
                         AccountTypeId__in=[8, 9, 10, 11], 
@@ -2100,11 +2415,11 @@ def invdocument_update(request, pk, parentid=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
-                    'error': 'Тухайн сар түшжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.',
+                    'error': 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.',
                     'redirect': True
                 })
             else:
-                messages.error(request, 'Тухайн сар түшжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                messages.error(request, 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.')
                 return redirect(f'/core/invdocuments/?selected_document={pk}')
         
         form = InvDocumentForm(instance=document, parentid=parentid)
@@ -2326,7 +2641,7 @@ def bulk_manage_inv_details(request, document_id):
     document = get_object_or_404(Inv_Document, pk=document_id, IsDelete=False)
     
     # Get existing document items
-    document_items = Inv_Document_Item.objects.select_related('InventoryId').filter(
+    document_items = Inv_Document_Item.objects.select_related('InventoryId__MeasurementId').filter(
         DocumentId=document
     ).order_by('DocumentItemId')
     
@@ -2829,16 +3144,22 @@ def cashbeginningbalance_list(request, balance_type='cash'):
         # Define balance type configurations
         balance_configs = {
             'cash': {
-                'title': 'Cash Beginning Balance',
+                'title': 'МӨНГӨН ХӨРӨНГИЙН ҮЛДЭГДЭЛ',
                 'subtitle': 'Manage initial cash balances for accounts',
                 'page_title': 'Cash Beginning Balance Management',
                 'section_name': 'Мөнгөн хөрөнгө'
             },
             'receivable': {
-                'title': 'Receivable Beginning Balance',
+                'title': 'АВЛАГА,ӨГЛӨГИЙН ҮЛДЭГДЭЛ',
                 'subtitle': 'Manage initial receivable balances for accounts',
                 'page_title': 'Receivable Beginning Balance Management',
                 'section_name': 'Авлага, өглөг'
+            },
+            'genledger': {
+                'title': 'ЕРӨНХИЙ ДЭВТРИЙН ДАНСНЫ ҮЛДЭГДЭЛ',
+                'subtitle': 'Manage initial general ledger balances for accounts',
+                'page_title': 'General Ledger Beginning Balance Management',
+                'section_name': 'ЕРӨНХИЙ ДЭВТЭР'
             }
         }
         
@@ -2846,10 +3167,33 @@ def cashbeginningbalance_list(request, balance_type='cash'):
         config = balance_configs.get(balance_type, balance_configs['cash'])
         
         # For now, we'll use the same CashBeginningBalance model for all types
-        # In the future, you can create separate models for different balance types
-        balances = CashBeginningBalance.objects.select_related(
+        # Filter balances by AccountType based on balance_type so the initial page shows pertinent accounts
+        base_qs = CashBeginningBalance.objects.select_related(
             'AccountID', 'ClientID', 'CurrencyID', 'CreatedBy', 'ModifiedBy'
-        ).filter(IsDelete=False).order_by('-CreatedDate')
+        ).filter(IsDelete=False)
+
+        if balance_type == 'cash':
+            # Cash accounts: AccountTypeId in (1, 2)
+            balances = base_qs.filter(
+                AccountID__AccountTypeId__AccountTypeId__in=[1, 2]
+            )
+        elif balance_type == 'receivable':
+            # Receivable and Payable accounts: AccountTypeId between 3-6 OR 42-58
+            balances = base_qs.filter(
+                Q(AccountID__AccountTypeId__AccountTypeId__range=(3, 6)) |
+                Q(AccountID__AccountTypeId__AccountTypeId__range=(42, 58))
+            )
+        elif balance_type == 'genledger':
+            # General ledger accounts: 33,37,38,39,40,41 OR between 59-68
+            balances = base_qs.filter(
+                Q(AccountID__AccountTypeId__AccountTypeId__in=[33, 37, 38, 39, 40, 41]) |
+                Q(AccountID__AccountTypeId__AccountTypeId__range=(59, 68))
+            )
+        else:
+            # Fallback to show all if an unknown balance_type is provided
+            balances = base_qs
+
+        balances = balances.order_by('-CreatedDate')
         
         return render(request, 'core/cashbeginningbalance_list.html', {
             'balances': balances,
@@ -2882,7 +3226,10 @@ def cashbeginningbalance_create(request, balance_type=None):
             # Validate required fields
             if not all([account_id, client_id, currency_id, currency_exchange, currency_amount]):
                 messages.error(request, 'All required fields must be filled')
-                return redirect('core:cashbeginningbalance_list')
+                if balance_type:
+                    return redirect('core:beginningbalance_list', balance_type=balance_type)
+                else:
+                    return redirect('core:cashbeginningbalance_list')
             
             # Get related objects
             account = get_object_or_404(Ref_Account, AccountId=account_id)
@@ -2901,13 +3248,22 @@ def cashbeginningbalance_create(request, balance_type=None):
             )
             
             messages.success(request, 'Beginning balance created successfully')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
             
         except Exception as e:
             messages.error(request, f'Error creating balance: {str(e)}')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
     
-    return redirect('core:cashbeginningbalance_list')
+    if balance_type:
+        return redirect('core:beginningbalance_list', balance_type=balance_type)
+    else:
+        return redirect('core:cashbeginningbalance_list')
 
 
 @login_required
@@ -2928,7 +3284,10 @@ def cashbeginningbalance_update(request, balance_id, balance_type=None):
             # Validate required fields
             if not all([account_id, client_id, currency_id, currency_exchange, currency_amount]):
                 messages.error(request, 'All required fields must be filled')
-                return redirect('core:cashbeginningbalance_list')
+                if balance_type:
+                    return redirect('core:beginningbalance_list', balance_type=balance_type)
+                else:
+                    return redirect('core:cashbeginningbalance_list')
             
             # Get related objects
             account = get_object_or_404(Ref_Account, AccountId=account_id)
@@ -2945,13 +3304,22 @@ def cashbeginningbalance_update(request, balance_id, balance_type=None):
             balance.save()
             
             messages.success(request, 'Beginning balance updated successfully')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
             
         except Exception as e:
             messages.error(request, f'Error updating balance: {str(e)}')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
     
-    return redirect('core:cashbeginningbalance_list')
+    if balance_type:
+        return redirect('core:beginningbalance_list', balance_type=balance_type)
+    else:
+        return redirect('core:cashbeginningbalance_list')
 
 
 @login_required
@@ -2966,13 +3334,22 @@ def cashbeginningbalance_delete(request, balance_id, balance_type=None):
             balance.save()
             
             messages.success(request, 'Beginning balance deleted successfully')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
             
         except Exception as e:
             messages.error(request, f'Error deleting balance: {str(e)}')
-            return redirect('core:cashbeginningbalance_list')
+            if balance_type:
+                return redirect('core:beginningbalance_list', balance_type=balance_type)
+            else:
+                return redirect('core:cashbeginningbalance_list')
     
-    return redirect('core:cashbeginningbalance_list')
+    if balance_type:
+        return redirect('core:beginningbalance_list', balance_type=balance_type)
+    else:
+        return redirect('core:cashbeginningbalance_list')
 
 
 # Inventory Beginning Balance Views
@@ -2993,7 +3370,7 @@ def invbeginningbalance_list(request):
             'balances': balances,
             'warehouses': warehouses,
             'config': {
-                'title': 'Inventory Beginning Balances',
+                'title': 'БАРАА МАТЕРИАЛЫН ҮЛДЭГДЭЛ',
                 'subtitle': 'Manage initial inventory balances for accounts',
                 'page_title': 'Inventory Beginning Balance Management'
             }
@@ -3158,6 +3535,49 @@ def clients_json(request):
 
 
 @login_required
+@permission_required('core.view_refclient', raise_exception=True)
+def api_client_lookup_by_name(request):
+    """API endpoint to lookup client by name (case-insensitive exact match)"""
+    try:
+        client_name = request.GET.get('client_name', '').strip()
+        
+        if not client_name:
+            return JsonResponse({
+                'success': False,
+                'message': 'client_name parameter is required'
+            }, status=400)
+        
+        # Try exact match first (case-insensitive)
+        client = RefClient.objects.filter(
+            ClientName__iexact=client_name,
+            IsDelete=False
+        ).first()
+        
+        if client:
+            return JsonResponse({
+                'success': True,
+                'found': True,
+                'client': {
+                    'ClientId': client.ClientId,
+                    'ClientName': client.ClientName,
+                    'ClientCode': client.ClientCode
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'found': False,
+                'client': None
+            })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error looking up client: {str(e)}'
+        }, status=500)
+
+
+@login_required
 @permission_required('core.view_refclienttype', raise_exception=True)
 def refclient_types_json(request):
     """Return client types as JSON for populating selects in modals"""
@@ -3231,7 +3651,7 @@ def astbeginningbalance_list(request):
         context = {
             'balances': balances,
             'config': {
-                'title': 'Asset Beginning Balances',
+                'title': 'ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ',
                 'subtitle': 'Manage initial asset balances for accounts',
                 'page_title': 'Asset Beginning Balance Management'
             }
@@ -3367,7 +3787,14 @@ def cash_documents(request):
         'cash_documents': cash_documents,
     }
     
-    return render(request, 'core/cash_journal_new.html', context)
+    return render(request, 'core/cashreport.html', context)
+
+
+@login_required
+@permission_required('core.view_cash_document', raise_exception=True)
+def cash_import(request):
+    """View for cash import page"""
+    return render(request, 'core/cash_import.html', {})
 
 
 @login_required
@@ -3496,6 +3923,535 @@ def get_cash_documents_filtered(request):
         }, status=500)
 
 
+# ==================== INVENTORY JOURNAL VIEWS ====================
+
+@login_required
+@permission_required('core.view_invdocument', raise_exception=True)
+def inv_documents(request):
+    """View for displaying inventory documents with new template"""
+    # Get inventory documents with related data (including deleted ones)
+    inv_documents = Inv_Document.objects.select_related(
+        'DocumentTypeId', 'ClientId', 'AccountId', 'CurrencyId', 'TemplateId'
+    ).order_by('-DocumentDate')
+    
+    context = {
+        'inv_documents': inv_documents,
+    }
+    
+    return render(request, 'core/invreport.html', context)
+
+
+@login_required
+@permission_required('core.view_cashdocument', raise_exception=True)
+def currency_journal(request):
+    """View for displaying currency journal with cash and receivable/payable balances"""
+    # Get date parameters from request (for balance calculation)
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+    
+    currency_data = []
+    if start_date and end_date:
+        try:
+            # Execute the currency balance function
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM calculate_currency_balance(%s, %s)",
+                    [start_date, end_date]
+                )
+                
+                # Get column names
+                columns = [col[0] for col in cursor.description]
+                
+                # Fetch all results
+                results = cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                currency_data = [
+                    dict(zip(columns, row)) for row in results
+                ]
+                
+                # Convert Decimal values to float for JSON serialization
+                from decimal import Decimal
+                for item in currency_data:
+                    for key, value in item.items():
+                        if isinstance(value, Decimal):
+                            item[key] = float(value)
+        except Exception as e:
+            currency_data = []
+    
+    # Convert currency_data to JSON for JavaScript
+    currency_data_json = json.dumps(currency_data) if currency_data else '[]'
+    
+    context = {
+        'currency_data': currency_data,
+        'currency_data_json': currency_data_json,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    
+    return render(request, 'core/currency_journal_new.html', context)
+
+
+@login_required
+@permission_required('core.view_invdocument', raise_exception=True)
+def get_inv_documents_filtered(request):
+    """API endpoint to get ALL inventory documents and details for all tabs in one call"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Only GET method allowed'}, status=405)
+    
+    try:
+        # Get filter parameters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        document_type_id = request.GET.get('document_type_id')
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 1000))  # Large page size to get all records
+        
+        # Limit page size to prevent abuse
+        if page_size > 2000:
+            page_size = 2000
+        
+        # Get ALL inventory documents (active only, exclude deleted) with related data
+        all_documents = Inv_Document.objects.select_related(
+            'DocumentTypeId', 'AccountId', 'ClientId', 'TemplateId', 'CreatedBy', 'WarehouseId'
+        ).prefetch_related('document_items__InventoryId').filter(IsDelete=False).order_by('-DocumentDate').distinct()
+        
+        # Apply date filtering if provided
+        if start_date:
+            all_documents = all_documents.filter(DocumentDate__gte=start_date)
+        if end_date:
+            all_documents = all_documents.filter(DocumentDate__lte=end_date)
+        
+        # Apply DocumentTypeId filter if provided
+        if document_type_id:
+            all_documents = all_documents.filter(DocumentTypeId=document_type_id)
+        
+        # Get ALL inventory document details for ЖУРНАЛ tab
+        all_details = Inv_Document_Detail.objects.select_related(
+            'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy'
+        ).order_by('DocumentId__DocumentNo')
+        
+        # Apply date filtering to details if provided
+        if start_date:
+            all_details = all_details.filter(DocumentId__DocumentDate__gte=start_date)
+        if end_date:
+            all_details = all_details.filter(DocumentId__DocumentDate__lte=end_date)
+        
+        # Apply DocumentTypeId filter to details if provided
+        if document_type_id:
+            all_details = all_details.filter(DocumentId__DocumentTypeId=document_type_id)
+        
+        # Format documents data for БАРИМТ and УСТГАСАН БАРИМТ tabs
+        # Create one row per document-item combination to enable item-by-item searching
+        documents_data = []
+        seen_documents = set()
+        
+        for doc in all_documents:
+            # Create a unique key for this document
+            doc_key = f"{doc.DocumentId}_{doc.DocumentNo}_{doc.DocumentDate}"
+            
+            # Skip if we've already seen this document
+            if doc_key in seen_documents:
+                continue
+                
+            seen_documents.add(doc_key)
+            
+            # Get document items
+            document_items = doc.document_items.all()
+            
+            # Base document data fields
+            base_doc_data = {
+                'DocumentId': doc.DocumentId,
+                'DocumentNo': doc.DocumentNo,
+                'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d'),
+                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
+                'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
+                'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
+                'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
+                'UserName': doc.CreatedBy.username if doc.CreatedBy else '',
+                'IsDelete': doc.IsDelete,  # Include delete status for frontend filtering
+            }
+            
+            # If document has items, create one row per item
+            if document_items:
+                for item in document_items:
+                    inventory = item.InventoryId
+                    quantity = float(item.Quantity) if item.Quantity else 0.0
+                    unit_cost = float(item.UnitCost) if item.UnitCost else 0.0
+                    unit_price = float(item.UnitPrice) if item.UnitPrice else 0.0
+                    
+                    row_data = base_doc_data.copy()
+                    row_data.update({
+                        'InventoryId': inventory.InventoryId if inventory else None,
+                        'InventoryCode': inventory.InventoryCode if inventory else '',
+                        'InventoryName': inventory.InventoryName if inventory else '',
+                        'Quantity': quantity,
+                        'UnitCost': unit_cost,
+                        'UnitPrice': unit_price,
+                        'TotalCost': quantity * unit_cost,
+                        'TotalPrice': quantity * unit_price,
+                    })
+                    documents_data.append(row_data)
+            else:
+                # Document has no items, create one row with empty inventory fields
+                row_data = base_doc_data.copy()
+                row_data.update({
+                    'InventoryId': None,
+                    'InventoryCode': '',
+                    'InventoryName': '',
+                    'Quantity': 0.0,
+                    'UnitCost': 0.0,
+                    'UnitPrice': 0.0,
+                    'TotalCost': 0.0,
+                    'TotalPrice': 0.0,
+                })
+                documents_data.append(row_data)
+        
+        # Format details data for ЖУРНАЛ tab
+        details_data = []
+        for detail in all_details:
+            details_data.append({
+                'document_no': detail.DocumentId.DocumentNo,
+                'document_date': detail.DocumentId.DocumentDate.strftime('%Y-%m-%d'),
+                'account_code': detail.AccountId.AccountCode if detail.AccountId else '',
+                'account_name': detail.AccountId.AccountName if detail.AccountId else '',
+                'client_name': detail.ClientId.ClientName if detail.ClientId else '',
+                'description': detail.DocumentId.Description,
+                'currency_code': detail.CurrencyId.CurrencyId if detail.CurrencyId else '',
+                'currency_name': detail.CurrencyId.Currency_name if detail.CurrencyId else '',
+                'currency_amount': float(detail.CurrencyAmount) if detail.CurrencyAmount else 0.0,
+                'currency_exchange': float(detail.CurrencyExchange) if detail.CurrencyExchange else 0.0,
+                'debit_amount': float(detail.DebitAmount) if detail.DebitAmount else 0.0,
+                'credit_amount': float(detail.CreditAmount) if detail.CreditAmount else 0.0,
+                'user_name': detail.DocumentId.CreatedBy.username if detail.DocumentId.CreatedBy else '',
+            })
+        
+        
+        return JsonResponse({
+            'success': True,
+            'documents': documents_data,  # For БАРИМТ and УСТГАСАН БАРИМТ tabs
+            'details': details_data,     # For ЖУРНАЛ tab
+            'documents_count': len(documents_data),
+            'details_count': len(details_data),
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading comprehensive data: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_invdocument', raise_exception=True)
+def get_inv_balance_data(request):
+    """API endpoint to get inventory account balance data"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Only GET method allowed'}, status=405)
+    
+    try:
+        # Get date parameters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        if not start_date or not end_date:
+            return JsonResponse({
+                'success': True,
+                'balance_data': [],
+                'message': 'Date range required'
+            })
+        
+        balance_data = []
+        try:
+            # Execute the inventory balance function
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM calculate_inventory_balance(%s, %s)",
+                    [start_date, end_date]
+                )
+                
+                # Get column names
+                columns = [col[0] for col in cursor.description]
+                
+                # Fetch all results
+                results = cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                balance_data = [
+                    dict(zip(columns, row)) for row in results
+                ]
+                
+                # Convert Decimal values to float for JSON serialization
+                from decimal import Decimal
+                for item in balance_data:
+                    for key, value in item.items():
+                        if isinstance(value, Decimal):
+                            item[key] = float(value)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error calculating inventory balance: {str(e)}'
+            }, status=500)
+        
+        return JsonResponse({
+            'success': True,
+            'balance_data': balance_data,
+            'balance_count': len(balance_data),
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading balance data: {str(e)}'
+        }, status=500)
+
+
+# ==================== ASSET JOURNAL VIEWS ====================
+
+@login_required
+@permission_required('core.view_ast_document', raise_exception=True)
+def ast_documents(request):
+    """View for displaying asset documents with new template"""
+    # Get asset documents with related data (including deleted ones)
+    ast_documents = Ast_Document.objects.select_related(
+        'DocumentTypeId', 'ClientId', 'AccountId', 'TemplateId'
+    ).order_by('-DocumentDate')
+    
+    context = {
+        'ast_documents': ast_documents,
+    }
+    
+    return render(request, 'core/ast_journal_new.html', context)
+
+
+@login_required
+@permission_required('core.view_ast_document', raise_exception=True)
+def get_ast_documents_filtered(request):
+    """API endpoint to get ALL asset documents and details for all tabs in one call"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Only GET method allowed'}, status=405)
+    
+    try:
+        # Get filter parameters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        document_type_id = request.GET.get('document_type_id')
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 1000))  # Large page size to get all records
+        
+        # Limit page size to prevent abuse
+        if page_size > 2000:
+            page_size = 2000
+        
+        # Get ALL asset documents (active only, exclude deleted) with related data
+        all_documents = Ast_Document.objects.select_related(
+            'DocumentTypeId', 'AccountId', 'ClientId', 'TemplateId', 'CreatedBy'
+        ).prefetch_related('document_items__AssetCardId').filter(IsDelete=False).order_by('-DocumentDate').distinct()
+        
+        # Apply date filtering if provided
+        if start_date:
+            all_documents = all_documents.filter(DocumentDate__gte=start_date)
+        if end_date:
+            all_documents = all_documents.filter(DocumentDate__lte=end_date)
+        
+        # Apply DocumentTypeId filter if provided
+        if document_type_id:
+            all_documents = all_documents.filter(DocumentTypeId=document_type_id)
+        
+        # Get ALL asset document details for ЖУРНАЛ tab
+        all_details = Ast_Document_Detail.objects.select_related(
+            'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy'
+        ).order_by('DocumentId__DocumentNo')
+        
+        # Apply date filtering to details if provided
+        if start_date:
+            all_details = all_details.filter(DocumentId__DocumentDate__gte=start_date)
+        if end_date:
+            all_details = all_details.filter(DocumentId__DocumentDate__lte=end_date)
+        
+        # Apply DocumentTypeId filter to details if provided
+        if document_type_id:
+            all_details = all_details.filter(DocumentId__DocumentTypeId=document_type_id)
+        
+        # Format documents data for БАРИМТ and УСТГАСАН БАРИМТ tabs
+        # Create one row per document-item combination to enable item-by-item searching
+        documents_data = []
+        seen_documents = set()
+        
+        for doc in all_documents:
+            # Create a unique key for this document
+            doc_key = f"{doc.DocumentId}_{doc.DocumentNo}_{doc.DocumentDate}"
+            
+            # Skip if we've already seen this document
+            if doc_key in seen_documents:
+                continue
+                
+            seen_documents.add(doc_key)
+            
+            # Get document items
+            document_items = doc.document_items.all()
+            
+            # Base document data fields
+            base_doc_data = {
+                'DocumentId': doc.DocumentId,
+                'DocumentNo': doc.DocumentNo,
+                'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d'),
+                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
+                'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
+                'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
+                'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
+                'UserName': doc.CreatedBy.username if doc.CreatedBy else '',
+                'IsDelete': doc.IsDelete,  # Include delete status for frontend filtering
+            }
+            
+            # If document has items, create one row per item
+            if document_items:
+                for item in document_items:
+                    asset_card = item.AssetCardId
+                    quantity = float(item.Quantity) if item.Quantity else 0.0
+                    unit_cost = float(item.UnitCost) if item.UnitCost else 0.0
+                    unit_price = float(item.UnitPrice) if item.UnitPrice else 0.0
+                    
+                    row_data = base_doc_data.copy()
+                    row_data.update({
+                        'AssetCardId': asset_card.AssetCardId if asset_card else None,
+                        'AssetCardCode': asset_card.AssetCardCode if asset_card else '',
+                        'AssetCardName': asset_card.AssetCardName if asset_card else '',
+                        'Quantity': quantity,
+                        'UnitCost': unit_cost,
+                        'UnitPrice': unit_price,
+                        'TotalCost': quantity * unit_cost,
+                        'TotalPrice': quantity * unit_price,
+                    })
+                    documents_data.append(row_data)
+            else:
+                # Document has no items, create one row with empty asset card fields
+                row_data = base_doc_data.copy()
+                row_data.update({
+                    'AssetCardId': None,
+                    'AssetCardCode': '',
+                    'AssetCardName': '',
+                    'Quantity': 0.0,
+                    'UnitCost': 0.0,
+                    'UnitPrice': 0.0,
+                    'TotalCost': 0.0,
+                    'TotalPrice': 0.0,
+                })
+                documents_data.append(row_data)
+        
+        # Format details data for ЖУРНАЛ tab
+        details_data = []
+        for detail in all_details:
+            details_data.append({
+                'document_no': detail.DocumentId.DocumentNo,
+                'document_date': detail.DocumentId.DocumentDate.strftime('%Y-%m-%d'),
+                'account_code': detail.AccountId.AccountCode if detail.AccountId else '',
+                'account_name': detail.AccountId.AccountName if detail.AccountId else '',
+                'client_name': detail.ClientId.ClientName if detail.ClientId else '',
+                'description': detail.DocumentId.Description,
+                'currency_code': detail.CurrencyId.CurrencyId if detail.CurrencyId else '',
+                'currency_name': detail.CurrencyId.Currency_name if detail.CurrencyId else '',
+                'currency_amount': float(detail.CurrencyAmount) if detail.CurrencyAmount else 0.0,
+                'currency_exchange': float(detail.CurrencyExchange) if detail.CurrencyExchange else 0.0,
+                'debit_amount': float(detail.DebitAmount) if detail.DebitAmount else 0.0,
+                'credit_amount': float(detail.CreditAmount) if detail.CreditAmount else 0.0,
+                'user_name': detail.DocumentId.CreatedBy.username if detail.DocumentId.CreatedBy else '',
+            })
+        
+        
+        return JsonResponse({
+            'success': True,
+            'documents': documents_data,  # For БАРИМТ and УСТГАСАН БАРИМТ tabs
+            'details': details_data,     # For ЖУРНАЛ tab
+            'documents_count': len(documents_data),
+            'details_count': len(details_data),
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading comprehensive data: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_ast_document', raise_exception=True)
+def get_ast_balance_data(request):
+    """API endpoint to get asset account balance data"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Only GET method allowed'}, status=405)
+    
+    try:
+        # Get date parameters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        if not start_date or not end_date:
+            return JsonResponse({
+                'success': True,
+                'balance_data': [],
+                'message': 'Date range required'
+            })
+        
+        balance_data = []
+        try:
+            # Execute the asset balance function (uses only end_date as asofdate)
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM calculate_ast_balance(%s)",
+                    [end_date]
+                )
+                
+                # Get column names
+                columns = [col[0] for col in cursor.description]
+                
+                # Fetch all results
+                results = cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                balance_data = [
+                    dict(zip(columns, row)) for row in results
+                ]
+                
+                # Convert Decimal values to float for JSON serialization
+                from decimal import Decimal
+                for item in balance_data:
+                    for key, value in item.items():
+                        if isinstance(value, Decimal):
+                            item[key] = float(value)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error calculating asset balance: {str(e)}'
+            }, status=500)
+        
+        return JsonResponse({
+            'success': True,
+            'balance_data': balance_data,
+            'balance_count': len(balance_data),
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading balance data: {str(e)}'
+        }, status=500)
 
 
 # ==================== TRIAL CLOSING ENTRY VIEWS ====================
@@ -3798,10 +4754,81 @@ def astdocument_update(request, pk, parentid=None):
         if form.is_valid():
             document = form.save(commit=False)
             document.ModifiedBy = request.user
+            
+            # Check period lock (server-side validation)
+            if Ref_Period.objects.filter(IsLock=True, BeginDate__lte=document.DocumentDate, EndDate__gte=document.DocumentDate).exists():
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.'
+                    })
+                else:
+                    messages.error(request, 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                    # Get VAT accounts for re-rendering
+                    vat_accounts = {}
+                    try:
+                        from .models import Ref_Constant, Ref_Account
+                        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
+                        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+                        vat_account_8 = Ref_Account.objects.get(AccountId=8)
+                        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+                        vat_accounts = {
+                            'vat_account_1_id': 8,
+                            'vat_account_2_id': 9,
+                            'vat_account_1_display': vat_account_8.AccountCode,
+                            'vat_account_2_display': vat_account_9.AccountCode,
+                        }
+                    except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
+                        vat_accounts = {
+                            'vat_account_1_id': 8,
+                            'vat_account_2_id': 9,
+                            'vat_account_1_display': '3403-01',
+                            'vat_account_2_display': '3403-02',
+                        }
+                    return render(request, 'core/astdocument_form.html', {
+                        'form': form,
+                        'item': document,
+                        'parentid': parentid,
+                        'vat_accounts': vat_accounts
+                    })
+            
             document.save()
             messages.success(request, 'Asset document updated successfully.')
+            
+            # Check if AJAX request and return JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse('core:astdocument_master_detail')
+                })
+            
             return redirect('core:astdocument_master_detail')
+        else:
+            # Form validation failed
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Validation failed',
+                    'errors': form.errors
+                }, status=400)
+            messages.error(request, 'Please correct the errors below.')
     else:
+        # Pre-edit check for GET requests
+        if Ref_Period.objects.filter(
+            IsLock=True, 
+            BeginDate__lte=document.DocumentDate, 
+            EndDate__gte=document.DocumentDate
+        ).exists():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.',
+                    'redirect': True
+                })
+            else:
+                messages.error(request, 'Тухайн сар түгжигдсэн байна. Засварлах боломжгүй. Админы зөвшөөрлөөр эрх нээгдэнэ.')
+                return redirect('core:astdocument_master_detail')
+        
         form = AstDocumentForm(instance=document, parentid=parentid)
     
     # Get VAT account IDs from ref_constant table and fetch actual account codes
@@ -3879,6 +4906,13 @@ def bulk_manage_ast_details(request, document_id):
     # Get currencies for the form
     currencies = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
     
+    # Get template details if TemplateId exists
+    template_details = []
+    if document.TemplateId:
+        template_details = Ref_Template_Detail.objects.select_related('AccountId', 'AccountId__AccountTypeId').filter(
+            TemplateId=document.TemplateId
+        ).order_by('TemplateDetailId')
+    
     # VAT rate is available globally via context processor (VAT_RATE_PERCENT)
     # No need to pass it explicitly in context
     
@@ -3887,6 +4921,7 @@ def bulk_manage_ast_details(request, document_id):
         'document_items': document_items,
         'document_details': document_details,
         'currencies': currencies,
+        'template_details': template_details,
     }
     
     return render(request, 'core/astdocumentdetail_bulk_manage.html', context)
@@ -4094,6 +5129,189 @@ def trial_balance(request):
 
 
 @login_required
+def y_balance(request):
+    """Y Balance Financial Statement Report View"""
+    try:
+        # Get date parameters from request
+        begin_date = request.GET.get('begin_date', '')
+        end_date = request.GET.get('end_date', '')
+        active_tab = request.GET.get('active_tab', 'balance')
+        
+        st_balance_data = []
+        st_income_data = []
+        st_cashflow_data = []
+        error_message = None
+        
+        # Check if this is a form submission (calculate parameter) or just tab switching
+        # Only call calculation functions when explicitly requested via form submission
+        calculate = request.GET.get('calculate', 'false').lower() == 'true'
+        
+        if begin_date and end_date and calculate:
+            # Execute stored procedures only when "ТООЦООЛОХ" button is clicked (form submitted)
+            # Functions now return data sets directly
+            with connection.cursor() as cursor:
+                # Column name mapping for St_Balance (PostgreSQL returns column names as defined in RETURNS TABLE)
+                # Since we use quoted identifiers, they preserve case, but we'll map to be safe
+                balance_column_mapping = {
+                    'stbalanceid': 'StbalanceId',
+                    'stbalancecode': 'StbalanceCode',
+                    'stbalancename': 'StbalanceName',
+                    'beginbalance': 'BeginBalance',
+                    'endbalance': 'EndBalance',
+                    'order': 'Order',
+                    # Also handle exact case matches
+                    'StbalanceId': 'StbalanceId',
+                    'StbalanceCode': 'StbalanceCode',
+                    'StbalanceName': 'StbalanceName',
+                    'BeginBalance': 'BeginBalance',
+                    'EndBalance': 'EndBalance',
+                    'Order': 'Order'
+                }
+                
+                # Calculate St_Balance and get data
+                cursor.execute(
+                    "SELECT * FROM calculate_st_balance(%s, %s)",
+                    [begin_date, end_date]
+                )
+                columns = [col[0] for col in cursor.description]
+                st_balance_data = []
+                for row in cursor.fetchall():
+                    row_dict = {}
+                    for i, col_name in enumerate(columns):
+                        # Remove quotes if present and normalize
+                        clean_col_name = col_name.strip('"').strip("'")
+                        # Map column names to expected format (try exact match first, then lowercase)
+                        mapped_name = balance_column_mapping.get(clean_col_name, balance_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                        row_dict[mapped_name] = row[i]
+                    st_balance_data.append(row_dict)
+                
+                # Column name mapping for St_Income
+                income_column_mapping = {
+                    'stincomeid': 'StIncomeId',
+                    'stincome': 'StIncome',
+                    'stincomename': 'StIncomeName',
+                    'endbalance': 'EndBalance',
+                    'order': 'Order',
+                    # Also handle exact case matches
+                    'StIncomeId': 'StIncomeId',
+                    'StIncome': 'StIncome',
+                    'StIncomeName': 'StIncomeName',
+                    'EndBalance': 'EndBalance',
+                    'Order': 'Order'
+                }
+                
+                # Calculate St_Income and get data
+                cursor.execute(
+                    "SELECT * FROM calculate_st_income(%s, %s)",
+                    [begin_date, end_date]
+                )
+                columns = [col[0] for col in cursor.description]
+                st_income_data = []
+                for row in cursor.fetchall():
+                    row_dict = {}
+                    for i, col_name in enumerate(columns):
+                        # Remove quotes if present and normalize
+                        clean_col_name = col_name.strip('"').strip("'")
+                        # Map column names to expected format
+                        mapped_name = income_column_mapping.get(clean_col_name, income_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                        row_dict[mapped_name] = row[i]
+                    st_income_data.append(row_dict)
+                
+                # Column name mapping for St_CashFlow
+                cashflow_column_mapping = {
+                    'stcashflowid': 'StCashFlowId',
+                    'stcashflowcode': 'StCashFlowCode',
+                    'stcashflowname': 'StCashFlowName',
+                    'endbalance': 'EndBalance',
+                    'order': 'Order',
+                    'isvisible': 'IsVisible',
+                    # Also handle exact case matches
+                    'StCashFlowId': 'StCashFlowId',
+                    'StCashFlowCode': 'StCashFlowCode',
+                    'StCashFlowName': 'StCashFlowName',
+                    'EndBalance': 'EndBalance',
+                    'Order': 'Order',
+                    'IsVisible': 'IsVisible'
+                }
+                
+                # Calculate St_CashFlow and get data
+                cursor.execute(
+                    "SELECT * FROM calculate_st_cash_flow(%s, %s)",
+                    [begin_date, end_date]
+                )
+                columns = [col[0] for col in cursor.description]
+                st_cashflow_data = []
+                for row in cursor.fetchall():
+                    row_dict = {}
+                    for i, col_name in enumerate(columns):
+                        # Remove quotes if present and normalize
+                        clean_col_name = col_name.strip('"').strip("'")
+                        # Map column names to expected format
+                        mapped_name = cashflow_column_mapping.get(clean_col_name, cashflow_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                        row_dict[mapped_name] = row[i]
+                    st_cashflow_data.append(row_dict)
+        elif begin_date and end_date:
+            # If just switching tabs, query existing data from models
+            # Convert QuerySet to list of dictionaries with proper field names
+            st_balance_data = [
+                {
+                    'StbalanceId': item['StbalanceId'],
+                    'StbalanceCode': item['StbalanceCode'],
+                    'StbalanceName': item['StbalanceName'],
+                    'BeginBalance': item['BeginBalance'],
+                    'EndBalance': item['EndBalance'],
+                    'Order': item['Order']
+                }
+                for item in St_Balance.objects.all().order_by('Order', 'StbalanceCode').values()
+            ]
+            st_income_data = [
+                {
+                    'StIncomeId': item['StIncomeId'],
+                    'StIncome': item['StIncome'],
+                    'StIncomeName': item['StIncomeName'],
+                    'EndBalance': item['EndBalance'],
+                    'Order': item['Order']
+                }
+                for item in St_Income.objects.all().order_by('Order', 'StIncome').values()
+            ]
+            st_cashflow_data = [
+                {
+                    'StCashFlowId': item['StCashFlowId'],
+                    'StCashFlowCode': item['StCashFlowCode'],
+                    'StCashFlowName': item['StCashFlowName'],
+                    'EndBalance': item['EndBalance'],
+                    'Order': item['Order'],
+                    'IsVisible': item['IsVisible']
+                }
+                for item in St_CashFlow.objects.filter(IsVisible=True).order_by('Order', 'StCashFlowCode').values()
+            ]
+        
+        context = {
+            'st_balance_data': st_balance_data,
+            'st_income_data': st_income_data,
+            'st_cashflow_data': st_cashflow_data,
+            'begin_date': begin_date,
+            'end_date': end_date,
+            'active_tab': active_tab,
+            'error_message': error_message,
+        }
+        
+        return render(request, 'core/y_balance.html', context)
+        
+    except Exception as e:
+        context = {
+            'st_balance_data': [],
+            'st_income_data': [],
+            'st_cashflow_data': [],
+            'begin_date': begin_date if 'begin_date' in locals() else '',
+            'end_date': end_date if 'end_date' in locals() else '',
+            'active_tab': active_tab if 'active_tab' in locals() else 'balance',
+            'error_message': f'Error generating report: {str(e)}',
+        }
+        return render(request, 'core/y_balance.html', context)
+
+
+@login_required
 def recpay_balance(request):
     """Receivable and Payable Balance Report View"""
     try:
@@ -4140,6 +5358,152 @@ def recpay_balance(request):
             'error_message': f'Error generating receivable/payable balance: {str(e)}',
         }
         return render(request, 'core/trial_recpay_balance.html', context)
+
+
+@login_required
+def account_statement(request):
+    """Account Statement Report View"""
+    try:
+        # Get parameters from request
+        account_id = request.GET.get('account_id')
+        begin_date = request.GET.get('begin_date', '')
+        end_date = request.GET.get('end_date', '')
+        begin_balance_debit = request.GET.get('begin_balance_debit', '0')
+        begin_balance_credit = request.GET.get('begin_balance_credit', '0')
+        debit_total = request.GET.get('debit_total', '0')
+        credit_total = request.GET.get('credit_total', '0')
+        end_balance_debit = request.GET.get('end_balance_debit', '0')
+        end_balance_credit = request.GET.get('end_balance_credit', '0')
+        
+        subsidiary_ledger_data = []
+        account_info = None
+        client_info = None  # Always None for account statement (no client filtering)
+        summary = {
+            'begin_balance_debit': 0,
+            'begin_balance_credit': 0,
+            'debit_total': 0,
+            'credit_total': 0,
+            'end_balance_debit': 0,
+            'end_balance_credit': 0
+        }
+        error_message = None
+        
+        # Validate required parameters
+        if not all([account_id, begin_date, end_date]):
+            error_message = 'Account ID, begin date, and end date are required'
+        else:
+            try:
+                account_id = int(account_id)
+                # Get all summary values from request parameters (already calculated in trial_balance)
+                summary['begin_balance_debit'] = float(begin_balance_debit or 0)
+                summary['begin_balance_credit'] = float(begin_balance_credit or 0)
+                summary['debit_total'] = float(debit_total or 0)
+                summary['credit_total'] = float(credit_total or 0)
+                summary['end_balance_debit'] = float(end_balance_debit or 0)
+                summary['end_balance_credit'] = float(end_balance_credit or 0)
+            except (ValueError, TypeError):
+                error_message = 'Invalid account_id parameter'
+            
+            if not error_message:
+                # Get account information
+                try:
+                    account_info = Ref_Account.objects.select_related('AccountTypeId').get(AccountId=account_id, IsDelete=False)
+                except Ref_Account.DoesNotExist:
+                    error_message = 'Account not found'
+                
+                # Execute the account statement function
+                if not error_message:
+                    try:
+                        with connection.cursor() as cursor:
+                            # Call SQL function with parameters (no ClientId)
+                            # Cast date parameters to DATE type explicitly
+                            cursor.execute(
+                                "SELECT * FROM report_account_statement(%s, %s::DATE, %s::DATE)",
+                                [account_id, begin_date, end_date]
+                            )
+                            
+                            # Get column names
+                            columns = [col[0] for col in cursor.description]
+                            
+                            # Fetch all results
+                            results = cursor.fetchall()
+                            
+                            # Convert to list of dictionaries with proper column name mapping
+                            # PostgreSQL returns column names in lowercase, but template expects mixed case
+                            column_mapping = {
+                                'documentdate': 'DocumentDate',
+                                'documentno': 'DocumentNo',
+                                'documentid': 'DocumentId',
+                                'documenttypeid': 'DocumentTypeId',
+                                'documentsource': 'DocumentSource',
+                                'clientname': 'ClientName',
+                                'description': 'Description',
+                                'currencyname': 'CurrencyName',
+                                'currencyexchange': 'CurrencyExchange',
+                                'currencyamount': 'CurrencyAmount',
+                                'debitamount': 'DebitAmount',
+                                'creditamount': 'CreditAmount',
+                                'accountcode': 'AccountCode'
+                            }
+                            
+                            subsidiary_ledger_data = []
+                            for row in results:
+                                row_dict = {}
+                                for i, col_name in enumerate(columns):
+                                    # Map lowercase column names to mixed case for template
+                                    mapped_name = column_mapping.get(col_name.lower(), col_name)
+                                    row_dict[mapped_name] = row[i]
+                                subsidiary_ledger_data.append(row_dict)
+                            
+                            # All summary values are already passed from trial_balance.html
+                            # No need to calculate them again
+                            
+                            # Convert Decimal values to float for JSON serialization
+                            from decimal import Decimal
+                            for item in subsidiary_ledger_data:
+                                for key, value in item.items():
+                                    if isinstance(value, Decimal):
+                                        item[key] = float(value)
+                                    
+                    except Exception as e:
+                        error_message = f'Error executing account statement query: {str(e)}'
+        
+        context = {
+            'subsidiary_ledger_data': subsidiary_ledger_data,
+            'account_info': account_info,
+            'client_info': client_info,
+            'summary': summary,
+            'account_id': account_id,
+            'client_id': '',  # Empty string for account statement
+            'begin_date': begin_date,
+            'end_date': end_date,
+            'error_message': error_message,
+            'report_title': 'ДАНСНЫ ТАЙЛАН',
+        }
+        
+        return render(request, 'core/trial_edit_account_and_sub_ledger.html', context)
+        
+    except Exception as e:
+        context = {
+            'subsidiary_ledger_data': [],
+            'account_info': None,
+            'client_info': None,
+            'summary': {
+                'begin_balance_debit': 0,
+                'begin_balance_credit': 0,
+                'debit_total': 0,
+                'credit_total': 0,
+                'end_balance_debit': 0,
+                'end_balance_credit': 0
+            },
+            'account_id': request.GET.get('account_id', ''),
+            'client_id': '',
+            'begin_date': request.GET.get('begin_date', ''),
+            'end_date': request.GET.get('end_date', ''),
+            'error_message': f'Error generating account statement: {str(e)}',
+            'report_title': 'ДАНСНЫ ТАЙЛАН',
+        }
+        return render(request, 'core/trial_edit_account_and_sub_ledger.html', context)
 
 
 @csrf_exempt
@@ -4193,6 +5557,8 @@ def account_statement_detail(request):
                     a."AccountName",
                     COALESCE(c."ClientCode", '') as ClientCode,
                     COALESCE(c."ClientName", '') as ClientName,
+                    COALESCE(cur."Currency_name", '') as currencyname,
+                    COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
                     cdd."CurrencyAmount",
                     cdd."DebitAmount",
                     cdd."CreditAmount",
@@ -4202,6 +5568,7 @@ def account_statement_detail(request):
                 INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
                 INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
                 LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
                 INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
                 WHERE cd."DocumentId" IN (
                     SELECT DISTINCT "DocumentId" 
@@ -4225,6 +5592,8 @@ def account_statement_detail(request):
                     a."AccountName",
                     COALESCE(c."ClientCode", '') as ClientCode,
                     COALESCE(c."ClientName", '') as ClientName,
+                    COALESCE(cur."Currency_name", '') as currencyname,
+                    COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
                     idd."CurrencyAmount",
                     idd."DebitAmount",
                     idd."CreditAmount",
@@ -4234,6 +5603,7 @@ def account_statement_detail(request):
                 INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
                 INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
                 LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
                 INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
                 WHERE id."DocumentId" IN (
                     SELECT DISTINCT "DocumentId" 
@@ -4257,6 +5627,8 @@ def account_statement_detail(request):
                     a."AccountName",
                     COALESCE(c."ClientCode", '') as ClientCode,
                     COALESCE(c."ClientName", '') as ClientName,
+                    COALESCE(cur."Currency_name", '') as currencyname,
+                    COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
                     add."CurrencyAmount",
                     add."DebitAmount",
                     add."CreditAmount",
@@ -4266,6 +5638,7 @@ def account_statement_detail(request):
                 INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
                 INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
                 LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
                 INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
                 WHERE ad."DocumentId" IN (
                     SELECT DISTINCT "DocumentId" 
@@ -4317,6 +5690,8 @@ def account_statement_detail(request):
                         'AccountName': detail['AccountName'],
                         'ClientCode': detail['clientcode'],
                         'ClientName': detail['clientname'],
+                        'CurrencyName': detail.get('currencyname') or '',
+                        'CurrencyExchange': float(detail.get('currencyexchange') or 1.0),
                         'CurrencyAmount': float(detail['CurrencyAmount'] or 0),
                         'DebitAmount': float(detail['DebitAmount'] or 0),
                         'CreditAmount': float(detail['CreditAmount'] or 0),
@@ -4374,6 +5749,791 @@ def account_statement_detail(request):
         return JsonResponse({
             'success': False,
             'error': f'Error generating account statement: {str(e)}'
+        }, status=500)
+
+
+@login_required
+def subsidiary_ledger(request):
+    """Subsidiary Ledger Report View"""
+    try:
+        # Get parameters from request
+        account_id = request.GET.get('account_id')
+        client_id = request.GET.get('client_id', '')
+        begin_date = request.GET.get('begin_date', '')
+        end_date = request.GET.get('end_date', '')
+        begin_balance_debit = request.GET.get('begin_balance_debit', '0')
+        begin_balance_credit = request.GET.get('begin_balance_credit', '0')
+        debit_total = request.GET.get('debit_total', '0')
+        credit_total = request.GET.get('credit_total', '0')
+        end_balance_debit = request.GET.get('end_balance_debit', '0')
+        end_balance_credit = request.GET.get('end_balance_credit', '0')
+        
+        subsidiary_ledger_data = []
+        account_info = None
+        client_info = None
+        summary = {
+            'begin_balance_debit': 0,
+            'begin_balance_credit': 0,
+            'debit_total': 0,
+            'credit_total': 0,
+            'end_balance_debit': 0,
+            'end_balance_credit': 0
+        }
+        error_message = None
+        
+        # Validate required parameters
+        if not all([account_id, begin_date, end_date]):
+            error_message = 'Account ID, begin date, and end date are required'
+        else:
+            try:
+                account_id = int(account_id)
+                # Convert client_id to integer if provided
+                if client_id:
+                    try:
+                        client_id = int(client_id)
+                    except (ValueError, TypeError):
+                        client_id = None
+                else:
+                    client_id = None
+                
+                # Get all summary values from request parameters (already calculated in trial_recpay_balance)
+                summary['begin_balance_debit'] = float(begin_balance_debit or 0)
+                summary['begin_balance_credit'] = float(begin_balance_credit or 0)
+                summary['debit_total'] = float(debit_total or 0)
+                summary['credit_total'] = float(credit_total or 0)
+                summary['end_balance_debit'] = float(end_balance_debit or 0)
+                summary['end_balance_credit'] = float(end_balance_credit or 0)
+            except (ValueError, TypeError):
+                error_message = 'Invalid account_id parameter'
+            
+            if not error_message:
+                # Get account information
+                try:
+                    account_info = Ref_Account.objects.select_related('AccountTypeId').get(AccountId=account_id, IsDelete=False)
+                except Ref_Account.DoesNotExist:
+                    error_message = 'Account not found'
+                
+                # Get client information if client_id is provided
+                if client_id and not error_message:
+                    try:
+                        client_info = RefClient.objects.get(ClientId=client_id, IsDelete=False)
+                    except RefClient.DoesNotExist:
+                        client_info = None
+                
+                # Execute the subsidiary ledger query
+                if not error_message:
+                    try:
+                        with connection.cursor() as cursor:
+                            # Use the same SQL query pattern as subsidiary_ledger_detail API
+                            if client_id:
+                                # With client filter
+                                cursor.execute("""
+                                SELECT 
+                                    cd."DocumentId",
+                                    cd."DocumentDate",
+                                    cd."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(cd."Description", '') as DocumentDescription,
+                                    cdd."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                                    cdd."CurrencyAmount",
+                                    cdd."DebitAmount",
+                                    cdd."CreditAmount",
+                                    cdd."IsDebit",
+                                    'Cash' as DocumentCategory
+                                FROM cash_document cd
+                                INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                                INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE cd."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM cash_document_detail 
+                                    WHERE "AccountId" = %s AND "ClientId" = %s
+                                )
+                                AND cd."DocumentDate" >= %s 
+                                AND cd."DocumentDate" <= %s 
+                                AND cd."IsDelete" = false
+                                AND cdd."ClientId" = %s
+                                
+                                UNION ALL
+                                
+                                SELECT 
+                                    id."DocumentId",
+                                    id."DocumentDate",
+                                    id."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(id."Description", '') as DocumentDescription,
+                                    idd."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                                    idd."CurrencyAmount",
+                                    idd."DebitAmount",
+                                    idd."CreditAmount",
+                                    idd."IsDebit",
+                                    'Inventory' as DocumentCategory
+                                FROM inv_document id
+                                INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                                INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE id."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM inv_document_detail 
+                                    WHERE "AccountId" = %s AND "ClientId" = %s
+                                )
+                                AND id."DocumentDate" >= %s 
+                                AND id."DocumentDate" <= %s 
+                                AND id."IsDelete" = false
+                                AND idd."ClientId" = %s
+                                
+                                UNION ALL
+                                
+                                SELECT 
+                                    ad."DocumentId",
+                                    ad."DocumentDate",
+                                    ad."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(ad."Description", '') as DocumentDescription,
+                                    add."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                                    add."CurrencyAmount",
+                                    add."DebitAmount",
+                                    add."CreditAmount",
+                                    add."IsDebit",
+                                    'Asset' as DocumentCategory
+                                FROM ast_document ad
+                                INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                                INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE ad."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM ast_document_detail 
+                                    WHERE "AccountId" = %s AND "ClientId" = %s
+                                )
+                                AND ad."DocumentDate" >= %s 
+                                AND ad."DocumentDate" <= %s 
+                                AND ad."IsDelete" = false
+                                AND add."ClientId" = %s
+                                
+                                ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                                """, 
+                                [account_id, client_id, begin_date, end_date, client_id,
+                                 account_id, client_id, begin_date, end_date, client_id,
+                                 account_id, client_id, begin_date, end_date, client_id])
+                            else:
+                                # Without client filter
+                                cursor.execute("""
+                                SELECT 
+                                    cd."DocumentId",
+                                    cd."DocumentDate",
+                                    cd."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(cd."Description", '') as DocumentDescription,
+                                    cdd."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                                    cdd."CurrencyAmount",
+                                    cdd."DebitAmount",
+                                    cdd."CreditAmount",
+                                    cdd."IsDebit",
+                                    'Cash' as DocumentCategory
+                                FROM cash_document cd
+                                INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                                INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE cd."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM cash_document_detail 
+                                    WHERE "AccountId" = %s
+                                )
+                                AND cd."DocumentDate" >= %s 
+                                AND cd."DocumentDate" <= %s 
+                                AND cd."IsDelete" = false
+                                
+                                UNION ALL
+                                
+                                SELECT 
+                                    id."DocumentId",
+                                    id."DocumentDate",
+                                    id."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(id."Description", '') as DocumentDescription,
+                                    idd."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                                    idd."CurrencyAmount",
+                                    idd."DebitAmount",
+                                    idd."CreditAmount",
+                                    idd."IsDebit",
+                                    'Inventory' as DocumentCategory
+                                FROM inv_document id
+                                INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                                INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE id."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM inv_document_detail 
+                                    WHERE "AccountId" = %s
+                                )
+                                AND id."DocumentDate" >= %s 
+                                AND id."DocumentDate" <= %s 
+                                AND id."IsDelete" = false
+                                
+                                UNION ALL
+                                
+                                SELECT 
+                                    ad."DocumentId",
+                                    ad."DocumentDate",
+                                    ad."DocumentNo",
+                                    dt."Description" as DocumentType,
+                                    COALESCE(ad."Description", '') as DocumentDescription,
+                                    add."DocumentDetailId",
+                                    a."AccountCode",
+                                    a."AccountName",
+                                    COALESCE(c."ClientCode", '') as ClientCode,
+                                    COALESCE(c."ClientName", '') as ClientName,
+                                    COALESCE(cur."Currency_name", '') as currencyname,
+                                    COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                                    add."CurrencyAmount",
+                                    add."DebitAmount",
+                                    add."CreditAmount",
+                                    add."IsDebit",
+                                    'Asset' as DocumentCategory
+                                FROM ast_document ad
+                                INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                                INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                                LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                                LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                                INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                                WHERE ad."DocumentId" IN (
+                                    SELECT DISTINCT "DocumentId" 
+                                    FROM ast_document_detail 
+                                    WHERE "AccountId" = %s
+                                )
+                                AND ad."DocumentDate" >= %s 
+                                AND ad."DocumentDate" <= %s 
+                                AND ad."IsDelete" = false
+                                
+                                ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                                """, 
+                                [account_id, begin_date, end_date,
+                                 account_id, begin_date, end_date,
+                                 account_id, begin_date, end_date])
+                            
+                            # Get column names
+                            columns = [col[0] for col in cursor.description]
+                            
+                            # Fetch all results
+                            results = cursor.fetchall()
+                            
+                            # Convert to list of dictionaries with proper column name mapping
+                            column_mapping = {
+                                'documentdate': 'DocumentDate',
+                                'documentno': 'DocumentNo',
+                                'documentid': 'DocumentId',
+                                'documenttype': 'DocumentType',
+                                'documentdescription': 'Description',
+                                'documentcategory': 'DocumentCategory',
+                                'clientname': 'ClientName',
+                                'currencyname': 'CurrencyName',
+                                'currencyexchange': 'CurrencyExchange',
+                                'currencyamount': 'CurrencyAmount',
+                                'debitamount': 'DebitAmount',
+                                'creditamount': 'CreditAmount'
+                            }
+                            
+                            # Map DocumentCategory to DocumentSource
+                            for row in results:
+                                row_dict = {}
+                                document_category = None
+                                for i, col_name in enumerate(columns):
+                                    mapped_name = column_mapping.get(col_name.lower(), col_name)
+                                    value = row[i]
+                                    
+                                    if mapped_name == 'DocumentCategory':
+                                        document_category = value
+                                        # Map category to source
+                                        if value == 'Cash':
+                                            row_dict['DocumentSource'] = 'cash'
+                                        elif value == 'Inventory':
+                                            row_dict['DocumentSource'] = 'inv'
+                                        elif value == 'Asset':
+                                            row_dict['DocumentSource'] = 'ast'
+                                        else:
+                                            row_dict['DocumentSource'] = value.lower() if value else 'cash'
+                                    else:
+                                        row_dict[mapped_name] = value
+                                
+                                # Add DocumentTypeId (not available in query, set to None)
+                                row_dict['DocumentTypeId'] = None
+                                
+                                subsidiary_ledger_data.append(row_dict)
+                            
+                            # Convert Decimal values to float for JSON serialization
+                            from decimal import Decimal
+                            for item in subsidiary_ledger_data:
+                                for key, value in item.items():
+                                    if isinstance(value, Decimal):
+                                        item[key] = float(value)
+                                    
+                    except Exception as e:
+                        error_message = f'Error executing subsidiary ledger query: {str(e)}'
+        
+        context = {
+            'subsidiary_ledger_data': subsidiary_ledger_data,
+            'account_info': account_info,
+            'client_info': client_info,
+            'summary': summary,
+            'account_id': account_id,
+            'client_id': client_id or '',
+            'begin_date': begin_date,
+            'end_date': end_date,
+            'error_message': error_message,
+            'report_title': 'АВЛАГА ӨГЛӨГИЙН ТУСЛАХ ДЭВТЭР',
+        }
+        
+        return render(request, 'core/trial_edit_account_and_sub_ledger.html', context)
+        
+    except Exception as e:
+        context = {
+            'subsidiary_ledger_data': [],
+            'account_info': None,
+            'client_info': None,
+            'summary': {
+                'begin_balance_debit': 0,
+                'begin_balance_credit': 0,
+                'debit_total': 0,
+                'credit_total': 0,
+                'end_balance_debit': 0,
+                'end_balance_credit': 0
+            },
+            'account_id': request.GET.get('account_id', ''),
+            'client_id': request.GET.get('client_id', ''),
+            'begin_date': request.GET.get('begin_date', ''),
+            'end_date': request.GET.get('end_date', ''),
+            'error_message': f'Error generating subsidiary ledger: {str(e)}',
+            'report_title': 'АВЛАГА ӨГЛӨГИЙН ТУСЛАХ ДЭВТЭР',
+        }
+        return render(request, 'core/trial_edit_account_and_sub_ledger.html', context)
+
+
+@csrf_exempt
+@login_required
+def subsidiary_ledger_detail(request):
+    """Subsidiary Ledger Detail API endpoint - Uses same pattern as account_statement_detail"""
+    try:
+        # Get parameters from request
+        account_id = request.GET.get('account_id')
+        client_id = request.GET.get('client_id', '')
+        begin_date = request.GET.get('begin_date')
+        end_date = request.GET.get('end_date')
+        
+        # Convert account_id to integer
+        try:
+            account_id = int(account_id)
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid account_id parameter'
+            }, status=400)
+        
+        # Convert client_id to integer if provided
+        if client_id:
+            try:
+                client_id = int(client_id)
+            except (ValueError, TypeError):
+                client_id = None
+        else:
+            client_id = None
+        
+        if not all([account_id, begin_date, end_date]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing required parameters: account_id, begin_date, end_date'
+            }, status=400)
+        
+        # Get account information
+        try:
+            account = Ref_Account.objects.select_related('AccountTypeId').get(AccountId=account_id, IsDelete=False)
+            account_type = account.AccountTypeId
+        except Ref_Account.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Account not found'
+            }, status=404)
+        
+        # Get client information if client_id is provided
+        client_info = None
+        if client_id:
+            try:
+                client = RefClient.objects.get(ClientId=client_id, IsDelete=False)
+                client_info = {
+                    'ClientId': client.ClientId,
+                    'ClientCode': client.ClientCode,
+                    'ClientName': client.ClientName
+                }
+            except RefClient.DoesNotExist:
+                client_info = None
+        
+        # Get documents with all their details where at least one detail matches the account and client (if provided)
+        try:
+            with connection.cursor() as cursor:
+                # Build the SQL query with proper client filtering
+                if client_id:
+                    # With client filter
+                    cursor.execute("""
+                    SELECT 
+                        cd."DocumentId",
+                        cd."DocumentDate",
+                        cd."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(cd."Description", '') as DocumentDescription,
+                        cdd."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                        cdd."CurrencyAmount",
+                        cdd."DebitAmount",
+                        cdd."CreditAmount",
+                        cdd."IsDebit",
+                        'Cash' as DocumentCategory
+                    FROM cash_document cd
+                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE cd."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM cash_document_detail 
+                        WHERE "AccountId" = %s AND "ClientId" = %s
+                    )
+                    AND cd."DocumentDate" >= %s 
+                    AND cd."DocumentDate" <= %s 
+                    AND cd."IsDelete" = false
+                    AND cdd."ClientId" = %s
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        id."DocumentId",
+                        id."DocumentDate",
+                        id."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(id."Description", '') as DocumentDescription,
+                        idd."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                        idd."CurrencyAmount",
+                        idd."DebitAmount",
+                        idd."CreditAmount",
+                        idd."IsDebit",
+                        'Inventory' as DocumentCategory
+                    FROM inv_document id
+                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE id."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM inv_document_detail 
+                        WHERE "AccountId" = %s AND "ClientId" = %s
+                    )
+                    AND id."DocumentDate" >= %s 
+                    AND id."DocumentDate" <= %s 
+                    AND id."IsDelete" = false
+                    AND idd."ClientId" = %s
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        ad."DocumentId",
+                        ad."DocumentDate",
+                        ad."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(ad."Description", '') as DocumentDescription,
+                        add."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                        add."CurrencyAmount",
+                        add."DebitAmount",
+                        add."CreditAmount",
+                        add."IsDebit",
+                        'Asset' as DocumentCategory
+                    FROM ast_document ad
+                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE ad."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM ast_document_detail 
+                        WHERE "AccountId" = %s AND "ClientId" = %s
+                    )
+                    AND ad."DocumentDate" >= %s 
+                    AND ad."DocumentDate" <= %s 
+                    AND ad."IsDelete" = false
+                    AND add."ClientId" = %s
+                    
+                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                    """, 
+                    [account_id, client_id, begin_date, end_date, client_id,
+                     account_id, client_id, begin_date, end_date, client_id,
+                     account_id, client_id, begin_date, end_date, client_id])
+                else:
+                    # Without client filter
+                    cursor.execute("""
+                    SELECT 
+                        cd."DocumentId",
+                        cd."DocumentDate",
+                        cd."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(cd."Description", '') as DocumentDescription,
+                        cdd."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                        cdd."CurrencyAmount",
+                        cdd."DebitAmount",
+                        cdd."CreditAmount",
+                        cdd."IsDebit",
+                        'Cash' as DocumentCategory
+                    FROM cash_document cd
+                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE cd."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM cash_document_detail 
+                        WHERE "AccountId" = %s
+                    )
+                    AND cd."DocumentDate" >= %s 
+                    AND cd."DocumentDate" <= %s 
+                    AND cd."IsDelete" = false
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        id."DocumentId",
+                        id."DocumentDate",
+                        id."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(id."Description", '') as DocumentDescription,
+                        idd."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                        idd."CurrencyAmount",
+                        idd."DebitAmount",
+                        idd."CreditAmount",
+                        idd."IsDebit",
+                        'Inventory' as DocumentCategory
+                    FROM inv_document id
+                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE id."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM inv_document_detail 
+                        WHERE "AccountId" = %s
+                    )
+                    AND id."DocumentDate" >= %s 
+                    AND id."DocumentDate" <= %s 
+                    AND id."IsDelete" = false
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        ad."DocumentId",
+                        ad."DocumentDate",
+                        ad."DocumentNo",
+                        dt."Description" as DocumentType,
+                        COALESCE(ad."Description", '') as DocumentDescription,
+                        add."DocumentDetailId",
+                        a."AccountCode",
+                        a."AccountName",
+                        COALESCE(c."ClientCode", '') as ClientCode,
+                        COALESCE(c."ClientName", '') as ClientName,
+                        COALESCE(cur."Currency_name", '') as currencyname,
+                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                        add."CurrencyAmount",
+                        add."DebitAmount",
+                        add."CreditAmount",
+                        add."IsDebit",
+                        'Asset' as DocumentCategory
+                    FROM ast_document ad
+                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                    WHERE ad."DocumentId" IN (
+                        SELECT DISTINCT "DocumentId" 
+                        FROM ast_document_detail 
+                        WHERE "AccountId" = %s
+                    )
+                    AND ad."DocumentDate" >= %s 
+                    AND ad."DocumentDate" <= %s 
+                    AND ad."IsDelete" = false
+                    
+                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                    """, 
+                    [account_id, begin_date, end_date,
+                     account_id, begin_date, end_date,
+                     account_id, begin_date, end_date])
+                
+                # Get column names
+                columns = [col[0] for col in cursor.description]
+                
+                # Fetch all results
+                results = cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                all_details = [
+                    dict(zip(columns, row)) for row in results
+                ]
+            
+                # Group details by document
+                documents = {}
+                total_debit = 0
+                total_credit = 0
+                
+                for detail in all_details:
+                    doc_id = detail['DocumentId']
+                    
+                    if doc_id not in documents:
+                        documents[doc_id] = {
+                            'DocumentId': doc_id,
+                            'DocumentNo': detail['DocumentNo'],
+                            'DocumentDate': detail['DocumentDate'],
+                            'DocumentType': detail['documenttype'],
+                            'DocumentDescription': detail['documentdescription'],
+                            'DocumentCategory': detail['documentcategory'],
+                            'TotalAmount': 0,
+                            'details': []
+                        }
+                    
+                    # Add detail to document (only include details that match the account)
+                    if detail['AccountCode'] == account.AccountCode:
+                        detail_info = {
+                            'DetailId': detail['DocumentDetailId'],
+                            'AccountCode': detail['AccountCode'],
+                            'AccountName': detail['AccountName'],
+                            'ClientCode': detail['clientcode'],
+                            'ClientName': detail['clientname'],
+                            'CurrencyName': detail.get('currencyname') or '',
+                            'CurrencyExchange': float(detail.get('currencyexchange') or 1.0),
+                            'CurrencyAmount': float(detail['CurrencyAmount'] or 0),
+                            'DebitAmount': float(detail['DebitAmount'] or 0),
+                            'CreditAmount': float(detail['CreditAmount'] or 0),
+                            'IsDebit': detail['IsDebit'],
+                            'IsMatchingAccount': detail['AccountCode'] == account.AccountCode
+                        }
+                        
+                        documents[doc_id]['details'].append(detail_info)
+                        
+                        # Add to totals (only for matching account details)
+                        if detail_info['IsMatchingAccount']:
+                            total_debit += detail_info['DebitAmount']
+                            total_credit += detail_info['CreditAmount']
+                
+                # Calculate document totals after processing all details
+                for doc_id, doc in documents.items():
+                    doc['TotalAmount'] = sum(
+                        detail['DebitAmount'] + detail['CreditAmount'] 
+                        for detail in doc['details'] 
+                        if detail['IsMatchingAccount']
+                    )
+                
+                # Convert to list and sort by date
+                documents_list = list(documents.values())
+                documents_list.sort(key=lambda x: (x['DocumentDate'], x['DocumentNo']))
+                
+                return JsonResponse({
+                    'success': True,
+                    'account': {
+                        'AccountId': account.AccountId,
+                        'AccountCode': account.AccountCode,
+                        'AccountName': account.AccountName,
+                        'AccountType': account_type.AccountTypeName,
+                        'IsActive': account_type.IsActive
+                    },
+                    'client': client_info,
+                    'total_debit': float(total_debit),
+                    'total_credit': float(total_credit),
+                    'documents': documents_list,
+                    'date_range': {
+                        'begin_date': begin_date,
+                        'end_date': end_date
+                    }
+                })
+                
+        except Exception as e:
+            print(f"SQL Error in subsidiary_ledger_detail: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Database error: {str(e)}'
+            }, status=500)
+        
+    except Exception as e:
+        print(f"Error in subsidiary_ledger_detail: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error generating subsidiary ledger: {str(e)}'
         }, status=500)
 
 
@@ -4552,6 +6712,65 @@ def api_templates_list(request):
 
 @login_required
 @permission_required('core.view_ref_template', raise_exception=True)
+def api_templates_by_account_code(request):
+    """API endpoint to get templates filtered by AccountCode (optional) and DocumentTypeIds (optional)"""
+    try:
+        account_code = request.GET.get('account_code')
+        document_type_ids_param = request.GET.get('document_type_ids')
+        
+        # Build query
+        templates_query = Ref_Template.objects.filter(IsDelete=False)
+        
+        # Filter by AccountCode if provided
+        if account_code:
+            try:
+                account = Ref_Account.objects.get(AccountCode=account_code, IsDelete=False)
+                templates_query = templates_query.filter(AccountId=account)
+            except Ref_Account.DoesNotExist:
+                # Account not found, return empty list
+                return JsonResponse({
+                    'success': True,
+                    'templates': []
+                })
+        
+        # Filter by DocumentTypeIds if provided
+        if document_type_ids_param:
+            try:
+                document_type_ids = [int(x.strip()) for x in document_type_ids_param.split(',') if x.strip().isdigit()]
+                if document_type_ids:
+                    templates_query = templates_query.filter(DocumentTypeId__DocumentTypeId__in=document_type_ids)
+            except (ValueError, AttributeError):
+                pass  # Ignore invalid document_type_ids parameter
+        
+        templates = templates_query.select_related('AccountId', 'DocumentTypeId').order_by('TemplateName')
+        
+        templates_data = []
+        for template in templates:
+            templates_data.append({
+                'TemplateId': template.TemplateId,
+                'TemplateName': template.TemplateName,
+                'AccountId': template.AccountId.AccountId if template.AccountId else None,
+                'AccountCode': template.AccountId.AccountCode if template.AccountId else None,
+                'AccountName': template.AccountId.AccountName if template.AccountId else None,
+                'DocumentTypeId': template.DocumentTypeId.DocumentTypeId,
+                'DocumentTypeName': template.DocumentTypeId.Description,
+                'IsVat': template.IsVat
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'templates': templates_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error fetching templates: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_ref_template', raise_exception=True)
 def api_template_details(request, template_id):
     """API endpoint to get template details for a specific template"""
     try:
@@ -4566,10 +6785,10 @@ def api_template_details(request, template_id):
         for detail in template_details:
             details_data.append({
                 'TemplateDetailId': detail.TemplateDetailId,
-                'AccountId': detail.AccountId.AccountId,
-                'AccountCode': detail.AccountId.AccountCode,
-                'AccountName': detail.AccountId.AccountName,
-                'AccountTypeId': detail.AccountId.AccountTypeId.AccountTypeId,
+                'AccountId': detail.AccountId.AccountId if detail.AccountId else None,
+                'AccountCode': detail.AccountId.AccountCode if detail.AccountId else None,
+                'AccountName': detail.AccountId.AccountName if detail.AccountId else None,
+                'AccountTypeId': detail.AccountId.AccountTypeId.AccountTypeId if detail.AccountId and detail.AccountId.AccountTypeId else None,
                 'IsDebit': detail.IsDebit
             })
         
@@ -4593,6 +6812,567 @@ def api_template_details(request, template_id):
         return JsonResponse({
             'success': False,
             'message': f'Error fetching template details: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.add_cash_document', raise_exception=True)
+@require_http_methods(["POST"])
+def api_cash_import_bulk(request):
+    """API endpoint for bulk importing cash documents"""
+    from django.db import transaction
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        rows = data.get('rows', [])
+        
+        if not rows or len(rows) == 0:
+            return JsonResponse({
+                'success': False,
+                'message': 'No rows provided for import'
+            }, status=400)
+        
+        # Pre-validation: Check all required fields before starting transaction
+        errors = []
+        validated_rows = []
+        
+        for i, row in enumerate(rows):
+            # Validate required fields
+            if not row.get('DocumentTypeId'):
+                errors.append(f'Row {i + 1}: DocumentTypeId is required')
+                continue
+            if not row.get('DocumentDate'):
+                errors.append(f'Row {i + 1}: DocumentDate is required')
+                continue
+            if not row.get('Description'):
+                errors.append(f'Row {i + 1}: Description is required')
+                continue
+            if not row.get('ClientId'):
+                errors.append(f'Row {i + 1}: ClientId is required')
+                continue
+            if not row.get('AccountCode'):
+                errors.append(f'Row {i + 1}: AccountCode is required')
+                continue
+            
+            # Lookup AccountId from AccountCode
+            try:
+                account = Ref_Account.objects.get(AccountCode=row['AccountCode'], IsDelete=False)
+                row['AccountId'] = account.AccountId
+            except Ref_Account.DoesNotExist:
+                errors.append(f'Row {i + 1}: AccountCode "{row["AccountCode"]}" not found')
+                continue
+            
+            # Validate DocumentTypeId exists
+            try:
+                doc_type = Ref_Document_Type.objects.get(DocumentTypeId=row['DocumentTypeId'])
+            except Ref_Document_Type.DoesNotExist:
+                errors.append(f'Row {i + 1}: DocumentTypeId {row["DocumentTypeId"]} not found')
+                continue
+            
+            # Validate ClientId exists
+            try:
+                client = RefClient.objects.get(ClientId=row['ClientId'], IsDelete=False)
+            except RefClient.DoesNotExist:
+                errors.append(f'Row {i + 1}: ClientId {row["ClientId"]} not found')
+                continue
+            
+            # Calculate amounts
+            debit_amount = float(row.get('DebitAmount', 0))
+            credit_amount = float(row.get('CreditAmount', 0))
+            currency_amount = debit_amount + credit_amount
+            currency_mnt = debit_amount + credit_amount
+            
+            # Get TemplateId (can be null)
+            template_id = row.get('TemplateId') if row.get('TemplateId') else None
+            if template_id:
+                try:
+                    template = Ref_Template.objects.get(TemplateId=template_id, IsDelete=False)
+                except Ref_Template.DoesNotExist:
+                    template_id = None  # Ignore invalid TemplateId
+            
+            validated_rows.append({
+                'row_index': i,
+                'DocumentTypeId': row['DocumentTypeId'],
+                'DocumentDate': row['DocumentDate'],
+                'Description': row['Description'],
+                'ClientId': row['ClientId'],
+                'AccountId': account.AccountId,
+                'TemplateId': template_id,
+                'IsVat': bool(row.get('IsVat', False)),
+                'CurrencyAmount': currency_amount,
+                'CurrencyMNT': currency_mnt
+            })
+        
+        # If any validation errors, return without creating any records
+        if errors:
+            return JsonResponse({
+                'success': False,
+                'message': 'Validation errors found',
+                'errors': errors
+            }, status=400)
+        
+        # All rows validated, proceed with transaction
+        imported_count = 0
+        document_numbers = []
+        
+        try:
+            with transaction.atomic():
+                for validated_row in validated_rows:
+                    # Generate DocumentNo
+                    document_type_id = validated_row['DocumentTypeId']
+                    last_counter = Ref_Document_Counter.objects.filter(
+                        DocumentTypeId=document_type_id
+                    ).order_by('-DocumentNo').first()
+                    
+                    if last_counter:
+                        import re
+                        match = re.search(r'(\d+)$', last_counter.DocumentNo)
+                        if match:
+                            next_number = int(match.group(1)) + 1
+                            prefix = last_counter.DocumentNo[:match.start()]
+                            next_document_no = f"{prefix}{next_number:04d}"
+                        else:
+                            next_document_no = f"{last_counter.DocumentNo}001"
+                    else:
+                        doc_type = Ref_Document_Type.objects.get(DocumentTypeId=document_type_id)
+                        prefix = doc_type.DocumentTypeCode[:4] if doc_type.DocumentTypeCode else "DOC"
+                        next_document_no = f"{prefix}0001"
+                    
+                    document_numbers.append(next_document_no)
+                    
+                    # Create Cash_Document
+                    cash_document = Cash_Document(
+                        DocumentNo=next_document_no,
+                        DocumentTypeId_id=validated_row['DocumentTypeId'],
+                        DocumentDate=validated_row['DocumentDate'],
+                        Description=validated_row['Description'],
+                        IsLock=False,
+                        IsDelete=False,
+                        ModifiedBy=request.user,
+                        CreatedBy=request.user,
+                        ClientBankId=None,
+                        CurrencyAmount=validated_row['CurrencyAmount'],
+                        IsVat=validated_row['IsVat'],
+                        IsPosted=False,
+                        CurrencyId_id=1,  # MNT currency
+                        ClientId_id=validated_row['ClientId'],
+                        PaidClientId=None,
+                        CurrencyExchange=1,
+                        CurrencyMNT=validated_row['CurrencyMNT'],
+                        AccountId_id=validated_row['AccountId'],
+                        TemplateId_id=validated_row['TemplateId']
+                    )
+                    cash_document.save()
+                    
+                    # Create Ref_Document_Counter
+                    Ref_Document_Counter.objects.create(
+                        DocumentNo=next_document_no,
+                        DocumentTypeId_id=document_type_id,
+                        CreatedBy=request.user
+                    )
+                    
+                    imported_count += 1
+                
+                # All rows imported successfully
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Successfully imported {imported_count} document(s)',
+                    'count': imported_count,
+                    'document_numbers': document_numbers
+                })
+                
+        except Exception as e:
+            # Transaction will rollback automatically
+            return JsonResponse({
+                'success': False,
+                'message': f'Error during import: {str(e)}'
+            }, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.add_cash_document', raise_exception=True)
+@require_http_methods(["POST"])
+def api_exchange_rate_adjustment_bulk(request):
+    """API endpoint for bulk creating exchange rate adjustment documents"""
+    from django.db import transaction
+    import json
+    import re
+    from .models import Ref_Constant, Ref_Account, RefClient, Ref_Document_Type, Ref_Document_Counter, Cash_Document, Cash_DocumentDetail
+    
+    try:
+        data = json.loads(request.body)
+        rows = data.get('rows', [])  # Array of selected rows
+        document_date = data.get('document_date')  # End date from filter
+        
+        if not rows or not document_date:
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing required data: rows and document_date are required'
+            }, status=400)
+        
+        # Parse document_date to ensure it's a date object
+        from datetime import datetime
+        try:
+            document_date_obj = datetime.strptime(document_date, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid document_date format. Use YYYY-MM-DD format.'
+            }, status=400)
+        
+        # Get exchange gain/loss accounts from ref_constant
+        try:
+            gain_constant = Ref_Constant.objects.get(ConstantID=11)
+            loss_constant = Ref_Constant.objects.get(ConstantID=12)
+            gain_account_id = int(gain_constant.ConstantName)  # Convert ConstantName to integer
+            loss_account_id = int(loss_constant.ConstantName)  # Convert ConstantName to integer
+        except (Ref_Constant.DoesNotExist, ValueError) as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error getting exchange accounts from constants: {str(e)}'
+            }, status=400)
+        
+        # Validate accounts exist
+        try:
+            gain_account = Ref_Account.objects.get(AccountId=gain_account_id, IsDelete=False)
+            loss_account = Ref_Account.objects.get(AccountId=loss_account_id, IsDelete=False)
+        except Ref_Account.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Exchange gain/loss accounts not found'
+            }, status=400)
+        
+        # Document type ID = 12 (no validation needed)
+        document_type_id = 12
+        
+        # Pre-validate all rows before transaction
+        validated_rows = []
+        errors = []
+        
+        for i, row in enumerate(rows):
+            # Validate required fields
+            if not row.get('accountcode'):
+                errors.append(f'Row {i + 1}: AccountCode is required')
+                continue
+            if not row.get('clientcode'):
+                errors.append(f'Row {i + 1}: ClientCode is required')
+                continue
+            if row.get('profit', 0) == 0 and row.get('loss', 0) == 0:
+                errors.append(f'Row {i + 1}: Both profit and loss are zero, skipping')
+                continue
+            
+            # Lookup AccountId from AccountCode
+            try:
+                account = Ref_Account.objects.get(AccountCode=row['accountcode'], IsDelete=False)
+            except Ref_Account.DoesNotExist:
+                errors.append(f'Row {i + 1}: AccountCode "{row["accountcode"]}" not found')
+                continue
+            
+            # Lookup ClientId from ClientCode
+            try:
+                client = RefClient.objects.get(ClientCode=row['clientcode'], IsDelete=False)
+            except RefClient.DoesNotExist:
+                errors.append(f'Row {i + 1}: ClientCode "{row["clientcode"]}" not found')
+                continue
+            
+            # Parse amounts
+            profit = float(row.get('profit', 0)) or 0
+            loss = float(row.get('loss', 0)) or 0
+            
+            if profit == 0 and loss == 0:
+                continue  # Skip rows with no adjustment
+            
+            validated_rows.append({
+                'row_index': i,
+                'AccountId': account.AccountId,
+                'AccountTypeId': int(row.get('accounttypeid')) if row.get('accounttypeid') else None,
+                'ClientId': client.ClientId,
+                'Profit': profit,
+                'Loss': loss
+            })
+        
+        # If any validation errors, return without creating any records
+        if errors:
+            return JsonResponse({
+                'success': False,
+                'message': 'Validation errors found',
+                'errors': errors
+            }, status=400)
+        
+        if not validated_rows:
+            return JsonResponse({
+                'success': False,
+                'message': 'No valid rows to process'
+            }, status=400)
+        
+        # All rows validated, proceed with transaction
+        created_count = 0
+        document_numbers = []
+        deleted_count = 0
+        
+        try:
+            with transaction.atomic():
+                # Check for existing currency adjustment records and HARD DELETE them
+                # DocumentTypeId=12 and DocumentDate=document_date
+                existing_documents = Cash_Document.objects.filter(
+                    DocumentTypeId=document_type_id,
+                    DocumentDate=document_date_obj,
+                    IsDelete=False  # Only check non-deleted records
+                )
+                
+                if existing_documents.exists():
+                    # Get document IDs for deletion
+                    existing_document_ids = list(existing_documents.values_list('DocumentId', flat=True))
+                    deleted_count = len(existing_document_ids)
+                    
+                    # Hard delete Cash_DocumentDetail records first (due to foreign key constraint)
+                    Cash_DocumentDetail.objects.filter(
+                        DocumentId__in=existing_document_ids
+                    ).delete()
+                    
+                    # Hard delete Cash_Document records
+                    existing_documents.delete()
+                
+                # Get document counter for this document type
+                last_counter = Ref_Document_Counter.objects.filter(
+                    DocumentTypeId=document_type_id
+                ).order_by('-DocumentNo').first()
+                
+                for idx, validated_row in enumerate(validated_rows):
+                    # Generate DocumentNo
+                    if last_counter:
+                        match = re.search(r'(\d+)$', last_counter.DocumentNo)
+                        if match:
+                            next_number = int(match.group(1)) + 1 + idx
+                            prefix = last_counter.DocumentNo[:match.start()]
+                            next_document_no = f"{prefix}{next_number:04d}"
+                        else:
+                            next_document_no = f"{last_counter.DocumentNo}{idx+1:03d}"
+                    else:
+                        # Get document type for prefix
+                        try:
+                            doc_type = Ref_Document_Type.objects.get(DocumentTypeId=document_type_id)
+                            prefix = doc_type.DocumentTypeCode[:4] if doc_type.DocumentTypeCode else "EXCH"
+                        except:
+                            prefix = "EXCH"
+                        next_document_no = f"{prefix}{idx+1:04d}"
+                    
+                    # Determine if profit or loss
+                    is_profit = validated_row['Profit'] > 0
+                    is_loss = validated_row['Loss'] > 0
+                    
+                    # Amount for document (Profit if profit, Loss if loss)
+                    amount = validated_row['Profit'] if is_profit else validated_row['Loss']
+                    is_debit = is_profit  # Profit = debit account, Loss = credit account
+                    
+                    # Create Cash_Document
+                    # currencyExchange = 1, currencyId = 1, CurrencyMNT = amount, CurrencyAmount = amount
+                    cash_document = Cash_Document(
+                        DocumentNo=next_document_no,
+                        DocumentTypeId_id=document_type_id,
+                        DocumentDate=document_date_obj,
+                        Description=f'Валютын ханшийн зөрүүний тохируулга',
+                        IsLock=False,
+                        IsDelete=False,
+                        ModifiedBy=request.user,
+                        CreatedBy=request.user,
+                        ClientId_id=validated_row['ClientId'],
+                        CurrencyId_id=1,  # Always 1 (MNT)
+                        CurrencyAmount=amount,
+                        CurrencyExchange=1.0,  # Always 1
+                        CurrencyMNT=amount,
+                        IsVat=False,
+                        IsPosted=False,
+                        AccountId_id=validated_row['AccountId'],
+                        TemplateId=None
+                    )
+                    cash_document.save()
+                    
+                    # Create Ref_Document_Counter
+                    Ref_Document_Counter.objects.create(
+                        DocumentNo=next_document_no,
+                        DocumentTypeId_id=document_type_id,
+                        CreatedBy=request.user
+                    )
+                    
+                    # Determine CashFlowId based on AccountTypeId
+                    cash_flow_id = None
+                    account_type_id = validated_row.get('AccountTypeId')
+                    if account_type_id in [1, 2]:  # Cash accounts
+                        if is_debit:
+                            cash_flow_id = 55
+                        else:
+                            cash_flow_id = 56
+                    
+                    # Prepare Cash_DocumentDetail entries
+                    details_to_create = []
+                    
+                    if is_profit:
+                        # Profit case: Debit Account, Credit Gain Account
+                        # Entry 1: Debit the account
+                        details_to_create.append(Cash_DocumentDetail(
+                            DocumentId=cash_document,
+                            AccountId_id=validated_row['AccountId'],
+                            ClientId_id=validated_row['ClientId'],
+                            CurrencyId_id=1,  # Always 1 (MNT)
+                            CurrencyExchange=1.0,  # Always 1
+                            CurrencyAmount=validated_row['Profit'],
+                            IsDebit=True,
+                            DebitAmount=validated_row['Profit'],
+                            CreditAmount=0,
+                            ContractId=None,
+                            CashFlowId_id=cash_flow_id
+                        ))
+                        # Entry 2: Credit gain account
+                        details_to_create.append(Cash_DocumentDetail(
+                            DocumentId=cash_document,
+                            AccountId_id=gain_account_id,
+                            ClientId_id=validated_row['ClientId'],
+                            CurrencyId_id=1,  # Always 1 (MNT)
+                            CurrencyExchange=1.0,  # Always 1
+                            CurrencyAmount=validated_row['Profit'],
+                            IsDebit=False,
+                            DebitAmount=0,
+                            CreditAmount=validated_row['Profit'],
+                            ContractId=None,
+                            CashFlowId=None
+                        ))
+                    elif is_loss:
+                        # Loss case: Credit Account, Debit Loss Account
+                        # Entry 1: Credit the account
+                        details_to_create.append(Cash_DocumentDetail(
+                            DocumentId=cash_document,
+                            AccountId_id=validated_row['AccountId'],
+                            ClientId_id=validated_row['ClientId'],
+                            CurrencyId_id=1,  # Always 1 (MNT)
+                            CurrencyExchange=1.0,  # Always 1
+                            CurrencyAmount=validated_row['Loss'],
+                            IsDebit=False,
+                            DebitAmount=0,
+                            CreditAmount=validated_row['Loss'],
+                            ContractId=None,
+                            CashFlowId_id=cash_flow_id
+                        ))
+                        # Entry 2: Debit loss account
+                        details_to_create.append(Cash_DocumentDetail(
+                            DocumentId=cash_document,
+                            AccountId_id=loss_account_id,
+                            ClientId_id=validated_row['ClientId'],
+                            CurrencyId_id=1,  # Always 1 (MNT)
+                            CurrencyExchange=1.0,  # Always 1
+                            CurrencyAmount=validated_row['Loss'],
+                            IsDebit=True,
+                            DebitAmount=validated_row['Loss'],
+                            CreditAmount=0,
+                            ContractId=None,
+                            CashFlowId=None
+                        ))
+                    
+                    # Bulk create document details
+                    if details_to_create:
+                        Cash_DocumentDetail.objects.bulk_create(details_to_create)
+                    
+                    created_count += 1
+                    document_numbers.append(next_document_no)
+                
+                # All rows imported successfully
+                message = f'Successfully created {created_count} document(s)'
+                if deleted_count > 0:
+                    message += f'. Deleted {deleted_count} existing document(s) for the same period.'
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': message,
+                    'count': created_count,
+                    'deleted_count': deleted_count,
+                    'document_numbers': document_numbers
+                })
+                
+        except Exception as e:
+            # Transaction will rollback automatically
+            import traceback
+            return JsonResponse({
+                'success': False,
+                'message': f'Error during creation: {str(e)}',
+                'traceback': traceback.format_exc()
+            }, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        import traceback
+        return JsonResponse({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}',
+            'traceback': traceback.format_exc()
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_ref_account', raise_exception=True)
+@require_http_methods(["GET"])
+def api_account_lookup_by_code(request):
+    """API endpoint to look up Ref_Account by AccountCode (case-insensitive exact match)"""
+    account_code = request.GET.get('account_code')
+    
+    if not account_code:
+        return JsonResponse({
+            'success': False,
+            'message': 'AccountCode is required'
+        }, status=400)
+    
+    try:
+        account = Ref_Account.objects.get(
+            AccountCode__iexact=account_code,
+            IsDelete=False
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'account': {
+                'AccountId': account.AccountId,
+                'AccountCode': account.AccountCode,
+                'AccountName': account.AccountName
+            }
+        })
+    except Ref_Account.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': f'Account with code "{account_code}" not found'
+        }, status=404)
+    except Ref_Account.MultipleObjectsReturned:
+        # Should not happen with unique constraint, but handle gracefully
+        account = Ref_Account.objects.filter(
+            AccountCode__iexact=account_code,
+            IsDelete=False
+        ).first()
+        return JsonResponse({
+            'success': True,
+            'account': {
+                'AccountId': account.AccountId,
+                'AccountCode': account.AccountCode,
+                'AccountName': account.AccountName
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error looking up account: {str(e)}'
         }, status=500)
 
 
@@ -4644,8 +7424,10 @@ def get_inventory_documents_master(request):
             documents_data.append({
                 'DocumentId': doc.DocumentId,
                 'DocumentNo': doc.DocumentNo,
+                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
                 'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
                 'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
+                'ClientRegister': doc.ClientId.ClientRegister if doc.ClientId else '',
                 'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d') if doc.DocumentDate else '',
                 'Description': doc.Description or '',
                 'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
@@ -4673,6 +7455,57 @@ def get_inventory_documents_master(request):
         }, status=500)
 
 
+@login_required
+@permission_required('core.view_ast_document', raise_exception=True)
+def get_asset_documents_master(request):
+    """API endpoint for asset documents master table with date range filtering"""
+    try:
+        start_date = request.GET.get('start_date', '')
+        end_date = request.GET.get('end_date', '')
+
+        documents_query = Ast_Document.objects.select_related(
+            'DocumentTypeId', 'ClientId', 'AccountId', 'CreatedBy'
+        ).filter(IsDelete=False)
+
+        if start_date:
+            documents_query = documents_query.filter(DocumentDate__gte=start_date)
+        if end_date:
+            documents_query = documents_query.filter(DocumentDate__lte=end_date)
+
+        documents_query = documents_query.order_by('-DocumentDate')
+
+        documents_data = []
+        for doc in documents_query:
+            documents_data.append({
+                'DocumentId': doc.DocumentId,
+                'DocumentNo': doc.DocumentNo,
+                'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
+                'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
+                'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d') if doc.DocumentDate else '',
+                'Description': doc.Description or '',
+                'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
+                'AccountName': doc.AccountId.AccountName if doc.AccountId else '',
+                'IsVat': bool(doc.IsVat),
+                'CostAmount': float(doc.CostAmount) if doc.CostAmount else 0,
+                'PriceAmount': float(doc.PriceAmount) if doc.PriceAmount else 0,
+                'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
+                'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'documents': documents_data,
+            'count': len(documents_data)
+        })
+
+    except Exception as e:
+        logger.error(f"Error in get_asset_documents_master: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
 # ==================== TEMPLATE MANAGEMENT VIEWS ====================
 
 @login_required
@@ -4682,7 +7515,7 @@ def template_master_detail(request):
     
     # Get all templates for the master table
     templates = Ref_Template.objects.select_related(
-        'DocumentTypeId', 'AccountId', 'CashFlowId', 'CreatedBy'
+        'DocumentTypeId', 'AccountId', 'CreatedBy'
     ).filter(IsDelete=False).order_by('-CreatedDate')
     
     # Get selected template ID for detail grids (AJAX request)
@@ -4693,7 +7526,7 @@ def template_master_detail(request):
     if selected_template_id:
         try:
             selected_template = Ref_Template.objects.select_related(
-                'DocumentTypeId', 'AccountId', 'CashFlowId', 'CreatedBy'
+                'DocumentTypeId', 'AccountId', 'CreatedBy'
             ).filter(IsDelete=False).get(TemplateId=selected_template_id)
             
             template_details = Ref_Template_Detail.objects.select_related(
@@ -4727,6 +7560,8 @@ def template_create(request):
         if form.is_valid():
             template = form.save(commit=False)
             template.CreatedBy = request.user
+            # Ensure hard default: keep active on create
+            template.IsDelete = False
             template.save()
             
             messages.success(request, 'Template created successfully.')
@@ -4756,6 +7591,8 @@ def template_update(request, pk):
         form = Ref_TemplateForm(request.POST, instance=template)
         if form.is_valid():
             template = form.save(commit=False)
+            # Ensure remains active unless explicitly deleted via delete action
+            template.IsDelete = False
             template.save()
             messages.success(request, 'Template updated successfully.')
             return redirect('core:template_master_detail')

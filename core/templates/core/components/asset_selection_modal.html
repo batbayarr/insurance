@@ -116,6 +116,13 @@
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
+                            <label for="daily-expense" class="block text-sm font-medium text-gray-700 mb-1">Daily Expense</label>
+                            <input type="number" id="daily-expense" name="DailyExpense" step="0.000001" readonly
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Auto-calculated">
+                            <p class="mt-1 text-xs text-gray-500">Calculated from Unit Cost and Months to Use</p>
+                        </div>
+                        <div>
                             <label for="employee-id" class="block text-sm font-medium text-gray-700 mb-1">Employee (Optional)</label>
                             <select id="employee-id" name="EmployeeId"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -200,24 +207,41 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
         // Bulk manage mode - populate the specific row
         const row = window.currentAssetInput.closest('tr');
         if (row) {
-            const hiddenInput = row.querySelector('.asset-card-id-input');
+            // Try multiple selectors to find the hidden input
+            const hiddenInput = row.querySelector('.asset-card-id-input') || 
+                               row.querySelector('input[name*="asset_card_id_"]') || 
+                               row.querySelector('input[name*="new_asset_card_id_"]');
             const displayInput = row.querySelector('.asset-card-display-input');
             const unitCostInput = row.querySelector('.unit-cost-input');
             const unitPriceInput = row.querySelector('.unit-price-input');
+            
+            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput, rowId: window.currentAssetRowId});
             
             if (hiddenInput && displayInput) {
                 hiddenInput.value = assetCardId;
                 // Format display value as "AssetCardCode - AssetCardName" to match template format
                 displayInput.value = assetCardName;
+                console.log('DEBUG: Set AssetCardId to:', assetCardId, 'and display to:', assetCardName);
+            } else {
+                console.error('DEBUG: Missing hiddenInput or displayInput', {hiddenInput, displayInput});
             }
             
             // Populate unit cost and unit price if inputs exist
             if (unitCostInput) {
                 unitCostInput.value = unitCost;
+                console.log('DEBUG: Set UnitCost to:', unitCost);
             }
             if (unitPriceInput) {
                 unitPriceInput.value = unitPrice;
+                console.log('DEBUG: Set UnitPrice to:', unitPrice);
             }
+            
+            // Trigger calculation if we're in bulk manage mode
+            if (typeof calculateAssetTotals === 'function') {
+                calculateAssetTotals(row);
+            }
+        } else {
+            console.error('DEBUG: Row not found for input element:', window.currentAssetInput);
         }
     } else {
         // Regular form mode - populate main form fields
@@ -274,6 +298,9 @@ function showAddAssetForm() {
     
     // Load assets and employees for dropdowns
     loadAssetFormData();
+    
+    // Initialize DailyExpense calculation
+    initializeDailyExpenseCalculation();
 }
 
 // Show edit asset form
@@ -296,6 +323,9 @@ function updateAsset(assetCardId, assetCardName) {
     
     // Load assets and employees for dropdowns
     loadAssetFormData();
+    
+    // Initialize DailyExpense calculation
+    initializeDailyExpenseCalculation();
 }
 
 // Hide asset form
@@ -337,9 +367,70 @@ function loadAssetFormData() {
         .catch(error => console.error('Error loading employees:', error));
 }
 
+// Calculate DailyExpense from UnitCost and MonthsToUse
+function calculateDailyExpense() {
+    const unitCostInput = document.getElementById('unit-cost');
+    const monthsToUseInput = document.getElementById('months-to-use');
+    const dailyExpenseInput = document.getElementById('daily-expense');
+    
+    if (!unitCostInput || !monthsToUseInput || !dailyExpenseInput) return;
+    
+    const unitCost = parseFloat(unitCostInput.value) || 0;
+    const monthsToUse = parseFloat(monthsToUseInput.value) || 0;
+    
+    if (unitCost > 0 && monthsToUse > 0) {
+        // DailyExpense = UnitCost / (MonthsToUse * 30 days per month)
+        const dailyExpense = unitCost / (monthsToUse * 30);
+        
+        // Round to 6 decimal places and ensure it fits within max_digits=24 constraint
+        // Format: round to 6 decimals, then convert to string and limit total digits
+        let roundedValue = parseFloat(dailyExpense.toFixed(6));
+        
+        // Ensure the value doesn't exceed 24 digits total (18 before decimal + 6 after)
+        const valueStr = roundedValue.toString();
+        const parts = valueStr.split('.');
+        const integerPart = parts[0];
+        const decimalPart = parts[1] || '';
+        
+        // If integer part has more than 18 digits, we need to adjust
+        if (integerPart.length > 18) {
+            // Round to fit within 18 digits before decimal
+            roundedValue = parseFloat(roundedValue.toExponential(17));
+            // Convert back and limit to 6 decimal places
+            roundedValue = parseFloat(roundedValue.toFixed(6));
+        }
+        
+        dailyExpenseInput.value = roundedValue.toFixed(6);
+    } else {
+        dailyExpenseInput.value = '';
+    }
+}
+
+// Initialize DailyExpense calculation listeners
+function initializeDailyExpenseCalculation() {
+    const unitCostInput = document.getElementById('unit-cost');
+    const monthsToUseInput = document.getElementById('months-to-use');
+    
+    if (unitCostInput) {
+        unitCostInput.addEventListener('input', calculateDailyExpense);
+        unitCostInput.addEventListener('change', calculateDailyExpense);
+    }
+    
+    if (monthsToUseInput) {
+        monthsToUseInput.addEventListener('input', calculateDailyExpense);
+        monthsToUseInput.addEventListener('change', calculateDailyExpense);
+    }
+    
+    // Calculate on initial load if values exist
+    calculateDailyExpense();
+}
+
 // Submit asset form
 function submitAssetForm(event) {
     event.preventDefault();
+    
+    // Calculate DailyExpense before submission
+    calculateDailyExpense();
     
     const form = document.getElementById('asset-form');
     const formData = new FormData(form);
@@ -374,22 +465,60 @@ function submitAssetForm(event) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // Handle JSON response (AJAX request)
+            const data = await response.json();
+            if (data.success) {
+                // Success - hide form and refresh asset list
+                hideAssetForm();
+                loadAssetList();
+                
+                // Show success message
+                showAssetMessage(data.message || (isEdit ? 'Asset card updated successfully!' : 'Asset card created successfully!'), 'success');
+            } else {
+                // Handle validation errors
+                let errorMessage = data.message || 'Please correct the errors below.';
+                if (data.errors) {
+                    // Format validation errors
+                    const errorList = [];
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        if (Array.isArray(errors)) {
+                            errors.forEach(err => {
+                                errorList.push(`${field}: ${err}`);
+                            });
+                        } else {
+                            errorList.push(`${field}: ${errors}`);
+                        }
+                    }
+                    if (errorList.length > 0) {
+                        errorMessage += ' ' + errorList.join('; ');
+                    }
+                }
+                showAssetMessage(errorMessage, 'error');
+            }
+        } else {
+            // Handle HTML response (regular form submission)
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error('Failed to save asset card');
+            }
+            // Heuristic: if returned HTML still contains the form with errorlist, treat as error
+            const hasError = /errorlist/gi.test(text) || /id=\"asset-form\"/gi.test(text) && /error/gi.test(text);
+            if (hasError) {
+                throw new Error('Server validation failed. Please check all required fields.');
+            }
             // Success - hide form and refresh asset list
             hideAssetForm();
             loadAssetList();
-            
-            // Show success message
-            showAssetMessage(data.message || (isEdit ? 'Asset card updated successfully!' : 'Asset card created successfully!'), 'success');
-        } else {
-            throw new Error(data.message || 'Failed to save asset card');
+            showAssetMessage(isEdit ? 'Asset card updated successfully!' : 'Asset card created successfully!', 'success');
         }
     })
     .catch(error => {
         console.error('Error saving asset card:', error);
-        showAssetMessage('Error saving asset card. Please try again.', 'error');
+        showAssetMessage(error.message || 'Error saving asset card. Please try again.', 'error');
     })
     .finally(() => {
         // Reset loading state

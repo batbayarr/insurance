@@ -4,186 +4,147 @@
 {% block title %}Asset Beginning Balances{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Header Section -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Asset Beginning Balances</h1>
-                        <p class="mt-1 text-sm text-gray-500">Manage initial asset balances for accounts</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <button onclick="refreshBalanceList()" 
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
-                        <button onclick="addNewBalance()" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            Add New Balance
-                        </button>
-                    </div>
-                </div>
-            </div>
+<div class="space-y-0">
+    <!-- Header Section (compact) -->
+    <div class="flex justify-between items-center pl-0 pr-3 py-2 lg:pl-0 lg:pr-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ</h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="refreshBalanceList()" 
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 border border-gray-300 bg-white text-gray-700 text-xs font-medium rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span class="text-xs">Сэргээх</span>
+            </button>
+            <button onclick="addNewBalance()" 
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs">Нэмэх</span>
+            </button>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Filters Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Filters</h3>
-            </div>
-            <div class="px-6 py-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label for="filter-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-                        <input type="text" 
-                               id="filter-account" 
-                               placeholder="Filter by account..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="filter-asset" class="block text-sm font-medium text-gray-700 mb-1">Asset Card</label>
-                        <input type="text" 
-                               id="filter-asset" 
-                               placeholder="Filter by asset card..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                            <div>
-                                <label for="filter-client" class="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                                <input type="text"
-                                       id="filter-client"
-                                       placeholder="Filter by client..."
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                    <div class="flex items-end">
-                        <button onclick="clearAllFilters()" 
-                                class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Clear Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div>
+        
 
         <!-- Balance List Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">Asset Beginning Balances</h3>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-500">Total Records:</span>
-                        <span id="total-records" class="text-sm font-medium text-gray-900">{{ balances|length }}</span>
-                    </div>
-                </div>
-            </div>
+        <div id="asset-beginning-container" class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
             
             <!-- Balance Grid -->
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <input type="checkbox" id="select-all" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Account
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Asset Card
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Quantity
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Unit Cost
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Unit Price
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Client
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created Date
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created By
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">#</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХӨРӨНГӨ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ТОО ХЭМЖЭЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ОГНОО</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЭЛ</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <td class="px-2 py-1 border-r border-gray-200 text-center text-xs text-gray-500">#</td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="ast-filter-account" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="ast-filter-asset" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1"></td>
                         </tr>
                     </thead>
                     <tbody id="balance-tbody" class="bg-white divide-y divide-gray-200">
                         {% for balance in balances %}
-                        <tr class="balance-row" 
-                            data-account="{{ balance.AccountId.AccountName|lower }}" 
-                            data-asset="{{ balance.AssetCardId.AssetCardName|lower }}" 
-                            data-client="{{ balance.ClientId.ClientName|lower|default:'' }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input type="checkbox" class="balance-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" value="{{ balance.BeginningBalanceId }}">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    <span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.AssetCardId.AssetCardCode }} - {{ balance.AssetCardId.AssetCardName }}</div>
-                                <div class="text-xs text-gray-500">{{ balance.AssetCardId.AssetId.AssetName }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.Quantity|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.UnitCost|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.UnitPrice|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.ClientId.ClientName|default:"-" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedDate|date:"Y-m-d" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedBy.username|default:"-" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-2">
-                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 transition-colors" 
-                                            data-balance-id="{{ balance.BeginningBalanceId }}" title="Edit">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
+                        <tr class="balance-row"
+                            data-account="{{ balance.AccountId.AccountCode|lower }} {{ balance.AccountId.AccountName|lower }}"
+                            data-asset="{{ balance.AssetCardId.AssetCardCode|lower }} {{ balance.AssetCardId.AssetCardName|lower }}"
+                            data-quantity="{{ balance.Quantity }}" data-unitcost="{{ balance.UnitCost }}" data-unitprice="{{ balance.UnitPrice }}">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center"><span class="row-index">1</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200"><span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.AssetCardId.AssetCardName }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="qty-val">{{ balance.Quantity|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="ucost-val">{{ balance.UnitCost|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="uprice-val">{{ balance.UnitPrice|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tcost-val">-</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tprice-val">-</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedDate|date:"Y-m-d" }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedBy.username|default:"-" }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors" data-balance-id="{{ balance.BeginningBalanceId }}" title="Edit">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                     </button>
-                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 transition-colors" 
-                                            data-balance-id="{{ balance.BeginningBalanceId }}" title="Delete">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
+                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" data-balance-id="{{ balance.BeginningBalanceId }}" title="Delete">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">No asset beginning balances found</td>
+                            <td colspan="11" class="px-4 py-4 text-center text-xs text-gray-500">No asset beginning balances found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="6"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-cost">-</span></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-price">-</span></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button id="ast-prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Өмнөх</button>
+                    <button id="ast-next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Дараа</button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p id="ast-pagination-info" class="text-sm text-gray-700">Нийт <span id="ast-total-count">0</span> бичлэгээс <span id="ast-showing-start">0</span> - <span id="ast-showing-end">0</span> бичлэг харагдаж байна</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="ast-page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                            <select id="ast-page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                            </select>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="ast-prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <span id="ast-page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700"></span>
+                                <button id="ast-next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Empty State -->
@@ -213,8 +174,8 @@
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
             <div>
-                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Add New Asset Balance</h3>
-                <p class="text-sm text-gray-500 mt-1">Enter the asset beginning balance details</p>
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">ҮНДСЭН ХӨРӨНГӨН ҮЛДЭГДЭЛ</h3>
+                
             </div>
             <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,13 +190,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Account Selection -->
                 <div>
-                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ДАНС *</label>
                     <div class="relative">
                         <input type="text" 
                                id="AccountIdDisplay" 
                                readonly
                                placeholder="Click to select account..."
-                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Asset Balance', modalSubtitle: 'Choose an account to set the asset beginning balance'})"
+                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Asset Balance', modalSubtitle: 'Choose an account to set the asset beginning balance', extraQueryParams: '&account_type=15,18,21,24,27,30'})"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
                         <input type="hidden" id="AccountId" name="AccountId">
                     </div>
@@ -243,7 +204,7 @@
 
                 <!-- Asset Card Selection -->
                 <div>
-                    <label for="AssetCardIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Asset Card *</label>
+                    <label for="AssetCardIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ҮНДСЭН ХӨРӨНГӨ *</label>
                     <div class="relative">
                         <input type="text" 
                                id="AssetCardIdDisplay" 
@@ -258,20 +219,20 @@
 
                 <!-- Quantity -->
                 <div>
-                    <label for="Quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <label for="Quantity" class="block text-sm font-medium text-gray-700 mb-1">ТОО ХЭМЖЭЭ *</label>
                     <input type="number" 
                            id="Quantity" 
                            name="Quantity" 
-                           step="0.000001" 
-                           min="0" 
+                           min="1" 
                            required
-                           placeholder="0.000000"
+                           readonly
+                           placeholder="1"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
                 <!-- Unit Cost -->
                 <div>
-                    <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                    <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ӨРТӨГ *</label>
                     <input type="number" 
                            id="UnitCost" 
                            name="UnitCost" 
@@ -284,7 +245,7 @@
 
                 <!-- Unit Price -->
                 <div>
-                    <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                    <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ҮНЭ *</label>
                     <input type="number" 
                            id="UnitPrice" 
                            name="UnitPrice" 
@@ -297,13 +258,13 @@
 
                 <!-- Client Selection -->
                 <div>
-                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ЭД ХАРИУЦАГЧ</label>
                     <div class="relative">
                         <input type="text" 
                                id="ClientIdDisplay" 
                                readonly
                                placeholder="Click to select client (optional)..."
-                               onclick="openClientPopup(this, null, {modalTitle: 'Select Client for Asset Balance', modalSubtitle: 'Choose a client (optional)'})"
+                               onclick="openClientPopup(this, null, {modalTitle: 'Select Client for Asset Balance', modalSubtitle: 'Choose a client (optional)', clientTypeId: 3})"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
                         <input type="hidden" id="ClientId" name="ClientId">
                     </div>
@@ -371,8 +332,11 @@ let isEditMode = false;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    setupFilters();
     setupActionButtons();
+    astFormatNumbersAndRows();
+    astSetupInlineFilters();
+    astRecalculateSummary();
+    initializeAstPagination();
 });
 
 // Setup action buttons with event listeners
@@ -394,43 +358,164 @@ function setupActionButtons() {
     });
 }
 
-// Setup filters
-function setupFilters() {
-    const accountFilter = document.getElementById('filter-account');
-    const assetFilter = document.getElementById('filter-asset');
-    const clientFilter = document.getElementById('filter-client');
-    
+function astFormatNumber(num, decimals = 2) {
+    const n = parseFloat(num);
+    if (isNaN(n) || n === 0) return '-';
+    return n.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function astFormatNumbersAndRows() {
+    document.querySelectorAll('.qty-val').forEach(el => {
+        const v = parseFloat((el.textContent || '').replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
+    });
+    document.querySelectorAll('.ucost-val').forEach(el => {
+        const v = parseFloat((el.textContent || '').replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
+    });
+    document.querySelectorAll('.uprice-val').forEach(el => {
+        const v = parseFloat((el.textContent || '').replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
+    });
+
+    document.querySelectorAll('tr.balance-row').forEach(row => {
+        const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
+        const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
+        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
+        const tcostEl = row.querySelector('.tcost-val');
+        const tpriceEl = row.querySelector('.tprice-val');
+        if (tcostEl) tcostEl.textContent = astFormatNumber(qty * ucost, 2);
+        if (tpriceEl) tpriceEl.textContent = astFormatNumber(qty * uprice, 2);
+    });
+}
+
+function astSetupInlineFilters() {
+    const accountFilter = document.getElementById('ast-filter-account');
+    const assetFilter = document.getElementById('ast-filter-asset');
+
     const applyFilters = () => {
-        const accountTerm = accountFilter.value.toLowerCase();
-        const assetTerm = assetFilter.value.toLowerCase();
-        const clientTerm = clientFilter.value.toLowerCase();
-        
+        const accountTerm = (accountFilter?.value || '').toLowerCase();
+        const assetTerm = (assetFilter?.value || '').toLowerCase();
+
         const rows = document.querySelectorAll('.balance-row');
-        let visibleCount = 0;
-        
         rows.forEach(row => {
             const account = row.dataset.account || '';
             const asset = row.dataset.asset || '';
-            const client = row.dataset.client || '';
-            
             const matchesAccount = !accountTerm || account.includes(accountTerm);
             const matchesAsset = !assetTerm || asset.includes(assetTerm);
-            const matchesClient = !clientTerm || client.includes(clientTerm);
-            
-            if (matchesAccount && matchesAsset && matchesClient) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (matchesAccount && matchesAsset) ? '' : 'none';
         });
-        
-        document.getElementById('total-records').textContent = visibleCount;
+
+        astRecalculateSummary();
+        astCurrentPage = 1;
+        astApplyPagination();
     };
-    
-    accountFilter.addEventListener('input', applyFilters);
-    assetFilter.addEventListener('input', applyFilters);
-    clientFilter.addEventListener('input', applyFilters);
+
+    if (accountFilter) accountFilter.addEventListener('input', applyFilters);
+    if (assetFilter) assetFilter.addEventListener('input', applyFilters);
+}
+
+function astRecalculateSummary() {
+    const rows = document.querySelectorAll('.balance-row');
+    let totalCost = 0;
+    let totalPrice = 0;
+    rows.forEach(row => {
+        if (row.style.display === 'none') return;
+        const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
+        const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
+        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
+        totalCost += qty * ucost;
+        totalPrice += qty * uprice;
+    });
+    const costEl = document.getElementById('ast-total-cost');
+    const priceEl = document.getElementById('ast-total-price');
+    if (costEl) costEl.textContent = astFormatNumber(totalCost, 2);
+    if (priceEl) priceEl.textContent = astFormatNumber(totalPrice, 2);
+}
+
+let astCurrentPage = 1;
+let astPageSize = 15;
+
+function astGetVisibleRows() {
+    const rows = Array.from(document.querySelectorAll('.balance-row'));
+    return rows.filter(r => r.style.display !== 'none');
+}
+
+function astRenderPage() {
+    const visible = astGetVisibleRows();
+    const total = visible.length;
+    const totalPages = Math.max(1, Math.ceil(total / astPageSize));
+    if (astCurrentPage > totalPages) astCurrentPage = totalPages;
+    const startIndex = (astCurrentPage - 1) * astPageSize;
+    const endIndex = Math.min(startIndex + astPageSize, total);
+
+    const allRows = document.querySelectorAll('.balance-row');
+    allRows.forEach(r => { if (r) r.style.visibility = 'hidden'; });
+    visible.forEach((row, idx) => {
+        const inPage = idx >= startIndex && idx < endIndex;
+        row.style.visibility = inPage ? '' : 'hidden';
+        const indexCell = row.querySelector('.row-index');
+        if (indexCell) indexCell.textContent = inPage ? (idx + 1) : '';
+    });
+
+    const showingStart = document.getElementById('ast-showing-start');
+    const showingEnd = document.getElementById('ast-showing-end');
+    const totalCount = document.getElementById('ast-total-count');
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : (startIndex + 1);
+    if (showingEnd) showingEnd.textContent = endIndex;
+    if (totalCount) totalCount.textContent = total;
+
+    astGeneratePageButtons(totalPages);
+}
+
+function astGeneratePageButtons(totalPages) {
+    const pageInfo = document.getElementById('ast-page-info');
+    if (!pageInfo) return;
+    pageInfo.innerHTML = '';
+    if (totalPages <= 1) return;
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, astCurrentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage < maxVisiblePages - 1) startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-2 py-1 text-sm rounded-md ${i === astCurrentPage ? 'bg-blue-400 text-white hover:bg-blue-500' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`;
+        btn.addEventListener('click', () => { astCurrentPage = i; astRenderPage(); });
+        pageInfo.appendChild(btn);
+    }
+}
+
+function astApplyPagination() { astRenderPage(); }
+
+function initializeAstPagination() {
+    const sizeSelect = document.getElementById('ast-page-size-select');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', (e) => {
+            astPageSize = parseInt(e.target.value) || 15;
+            astCurrentPage = 1;
+            astApplyPagination();
+        });
+    }
+
+    const prevMobile = document.getElementById('ast-prev-page-btn');
+    const nextMobile = document.getElementById('ast-next-page-btn');
+    const prevDesktop = document.getElementById('ast-prev-page-desktop');
+    const nextDesktop = document.getElementById('ast-next-page-desktop');
+
+    const goPrev = () => { if (astCurrentPage > 1) { astCurrentPage--; astApplyPagination(); } };
+    const goNext = () => {
+        const total = astGetVisibleRows().length;
+        const totalPages = Math.max(1, Math.ceil(total / astPageSize));
+        if (astCurrentPage < totalPages) { astCurrentPage++; astApplyPagination(); }
+    };
+
+    if (prevMobile) prevMobile.onclick = goPrev;
+    if (nextMobile) nextMobile.onclick = goNext;
+    if (prevDesktop) prevDesktop.onclick = goPrev;
+    if (nextDesktop) nextDesktop.onclick = goNext;
+
+    astApplyPagination();
 }
 
 // Clear all filters
@@ -451,7 +536,7 @@ function clearAllFilters() {
 function addNewBalance() {
     console.log('DEBUG: addNewBalance called');
     isEditMode = false;
-    document.getElementById('modal-title').textContent = 'Add New Asset Balance';
+    document.getElementById('modal-title').textContent = 'ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ';
     document.getElementById('submit-text').textContent = 'Add Balance';
     document.getElementById('balance-form').reset();
     document.getElementById('balance-id').value = '';
@@ -550,6 +635,35 @@ function handleFormSubmit(event) {
         console.log(`  ${key}: ${value}`);
     }
     
+    // Duplicate check (only on create): AssetCardId must be unique in table
+    try {
+        const isCreate = !isEditMode;
+        if (isCreate) {
+            const assetCardIdForDup = parseInt(document.getElementById('AssetCardId')?.value || '0');
+            if (assetCardIdForDup) {
+                const exists = Array.isArray(balanceData) && balanceData.some(b => parseInt(b.AssetCardId) === assetCardIdForDup);
+                if (exists) {
+                    event.preventDefault();
+                    if (typeof event.stopImmediatePropagation === 'function') {
+                        event.stopImmediatePropagation();
+                    }
+                    const msg = 'Энэ хөрөнгийн үлдэгдлийг оруулсан байна';
+                    if (typeof showMessageModal === 'function') {
+                        showMessageModal(msg, 'warning');
+                    } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.warning) {
+                        Silicon4Message.warning(msg);
+                    } else {
+                        alert(msg);
+                    }
+                    return false;
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Duplicate AssetCardId check failed:', e);
+        // fail-open; do not block submit on error
+    }
+
     // Check if required fields are filled
     const accountId = document.getElementById('AccountId').value;
     const assetCardId = document.getElementById('AssetCardId').value;
@@ -576,12 +690,6 @@ function handleFormSubmit(event) {
     return true;
 }
 
-// Select all checkbox functionality
-document.getElementById('select-all').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.balance-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = this.checked;
-    });
-});
+// No select-all checkbox in this compact grid
 </script>
 {% endblock %}

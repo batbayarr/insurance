@@ -81,6 +81,16 @@
                             <p class="mt-1 text-sm text-red-600">{{ form.IsDelete.errors.0 }}</p>
                         {% endif %}
                     </div>
+
+                    <!-- Template Selection (optional) -->
+                    <div>
+                        <label for="TemplateId" class="block text-sm font-medium text-gray-700">ХУУЛЬ (Template)</label>
+                        <select id="TemplateId" name="TemplateId"
+                                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                            <option value="">Template сонгоно уу?</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Сонголт хийх нь заавал биш. Баримтын хуулыг урьдчилан холбоно.</p>
+                    </div>
                 </div>
                 
                 <div class="mt-6 flex items-center justify-end space-x-3">
@@ -100,4 +110,24 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const templateSelect = document.getElementById('TemplateId');
+    if (!templateSelect) return;
+
+    // Load templates (unfiltered) similar to inventory form
+    fetch('/core/api/templates/')
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data || !data.success || !Array.isArray(data.templates)) return;
+            data.templates.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.TemplateId;
+                opt.textContent = t.TemplateName + (t.IsVat ? ' (VAT)' : '');
+                templateSelect.appendChild(opt);
+            });
+        })
+        .catch(() => { /* silently ignore */ });
+});
+</script>
 {% endblock %}

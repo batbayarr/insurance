@@ -62,7 +62,6 @@ logs/
 staticfiles/
 
 # Database files
-databases.txt
 database_*.json
 database_*.sql
 

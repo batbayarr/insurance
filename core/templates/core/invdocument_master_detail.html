@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Inventory Documents - Silicon4 Accounting{% endblock %}
 
@@ -51,11 +52,11 @@
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 80px;">Данс</th>
-                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">Н</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">НӨТ</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Агуулах</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Өртөг</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үнэ</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэн</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                     </tr>
                     <!-- Filter Row -->
@@ -175,6 +176,9 @@
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
+<!-- Inventory Document Print System -->
+<script src="{% static 'js/print-invdocument.js' %}"></script>
+
 <script>
 // Prevent script re-execution
 if (!window.invDocumentScriptLoaded) {
@@ -193,13 +197,39 @@ const currentUserId = {{ request.user.id }};
 const hasChangePermission = {% if perms.core.change_inv_document %}true{% else %}false{% endif %};
 const hasDeletePermission = {% if perms.core.delete_inv_document %}true{% else %}false{% endif %};
 
+// Helper function to save date range to localStorage
+function saveDateRangeToLocalStorage(startDate, endDate) {
+    try {
+        localStorage.setItem('invdocument_date_range', JSON.stringify({
+            startDate: startDate,
+            endDate: endDate
+        }));
+    } catch (e) {
+        console.warn('Failed to save date range to localStorage:', e);
+    }
+}
+
+// Helper function to load date range from localStorage
+function loadDateRangeFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('invdocument_date_range');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.startDate && parsed.endDate) {
+                return {
+                    startDate: parsed.startDate,
+                    endDate: parsed.endDate
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load date range from localStorage:', e);
+    }
+    return null;
+}
+
 // Initialize date inputs with local system date
 function initializeDateInputs() {
-    // Use user's local system date
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
     // Format dates for HTML date input (YYYY-MM-DD)
     const formatDateForInput = (date) => {
         const year = date.getFullYear();
@@ -207,6 +237,40 @@ function initializeDateInputs() {
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
+    
+    // Use user's local system date
+    const today = new Date();
+    let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Check localStorage for saved date range values
+    const savedDateRange = loadDateRangeFromLocalStorage();
+    if (savedDateRange) {
+        // Use saved date range values
+        firstDay = new Date(savedDateRange.startDate);
+        lastDay = new Date(savedDateRange.endDate);
+    } else {
+        // Check if selected_document is in URL and adjust date range if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedDocumentId = urlParams.get('selected_document');
+        {% if selected_document %}
+        if (selectedDocumentId) {
+            // Get document date from server-side context
+            const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
+            // If document date is outside current month, adjust date range to include it
+            if (docDate < firstDay || docDate > lastDay) {
+                // Use document date ± 1 month, or use document date's month
+                const docYear = docDate.getFullYear();
+                const docMonth = docDate.getMonth();
+                firstDay = new Date(docYear, docMonth, 1);
+                lastDay = new Date(docYear, docMonth + 1, 0);
+                // Ensure we include at least the document date
+                if (docDate < firstDay) firstDay = new Date(docDate);
+                if (docDate > lastDay) lastDay = new Date(docDate);
+            }
+        }
+        {% endif %}
+    }
     
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
@@ -217,8 +281,37 @@ function initializeDateInputs() {
         startDateInput.value = formatDateForInput(firstDay);
         endDateInput.value = formatDateForInput(lastDay);
         
-        // Remove automatic date change listeners - only search button should trigger API call
-        // Date inputs are now passive until user clicks "ХАЙХ" button
+        // Save initial date range to localStorage
+        saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+        
+        // Helper function to save and fetch documents
+        const saveAndFetch = (startDate, endDate) => {
+            saveDateRangeToLocalStorage(startDate, endDate);
+            fetchDocuments(startDate, endDate);
+        };
+        
+        // Add event listeners
+        if (applyButton) {
+            applyButton.addEventListener('click', () => {
+                saveAndFetch(startDateInput.value, endDateInput.value);
+            });
+        }
+        
+        // Save on date input change
+        startDateInput.addEventListener('change', () => {
+            saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+        });
+        endDateInput.addEventListener('change', () => {
+            saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+        });
+        
+        // Also trigger on Enter key
+        startDateInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+        });
+        endDateInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+        });
     }
     
     if (pageSizeSelect) {
@@ -226,12 +319,6 @@ function initializeDateInputs() {
             pageSize = parseInt(pageSizeSelect.value);
             currentPage = 1;
             applyFrontendFilter();
-        });
-    }
-    
-    if (applyButton) {
-        applyButton.addEventListener('click', () => {
-            fetchDocuments(startDateInput.value, endDateInput.value);
         });
     }
     
@@ -274,6 +361,27 @@ function fetchDocuments(startDate, endDate) {
         if (data.success) {
             allDocumentsData = data.documents;
             currentPage = 1;
+            
+            // If selected_document is in URL, optionally set document number filter for visual feedback
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedDocumentId = urlParams.get('selected_document');
+            if (selectedDocumentId) {
+                const selectedDoc = data.documents.find(doc => doc.DocumentId == selectedDocumentId);
+                const documentNoFilter = document.getElementById('filter-document-no');
+                if (selectedDoc && documentNoFilter && !documentNoFilter.value) {
+                    documentNoFilter.value = selectedDoc.DocumentNo || '';
+                }
+            }
+            
+            // If filter_document_no is in URL, set document number filter
+            const filterDocumentNo = urlParams.get('filter_document_no');
+            if (filterDocumentNo) {
+                const documentNoFilter = document.getElementById('filter-document-no');
+                if (documentNoFilter) {
+                    documentNoFilter.value = filterDocumentNo;
+                }
+            }
+            
             applyFrontendFilter();
         } else {
             tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
@@ -309,8 +417,27 @@ function applyFrontendFilter() {
         createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
     };
     
+    // Check if there are any active filters
+    const hasActiveFilters = Object.values(filters).some(value => value !== '');
+    
+    // Check for selected_document in URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    let selectedDocumentId = urlParams.get('selected_document');
+    
+    // If all filters are cleared and selected_document exists in URL, remove it
+    if (!hasActiveFilters && selectedDocumentId) {
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.delete('selected_document');
+        window.history.pushState({}, '', currentUrl.toString());
+        selectedDocumentId = null; // Clear the variable so filtering doesn't apply
+    }
+    
     // Filter data with null-safe operations
     filteredData = allDocumentsData.filter(doc => {
+        // If selected_document is in URL and no filters are active, filter to only that document
+        // If filters are active, ignore selected_document to allow filtering
+        if (selectedDocumentId && !hasActiveFilters && doc.DocumentId != selectedDocumentId) return false;
+        
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
         if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
         if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
@@ -354,20 +481,25 @@ function renderDocumentsTable(documents) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50 cursor-pointer';
         tr.setAttribute('data-document-id', doc.DocumentId);
+        tr.setAttribute('data-document-type-id', doc.DocumentTypeId || '');
+        tr.setAttribute('data-client-register', doc.ClientRegister || '');
+        tr.setAttribute('data-account-code', doc.AccountCode || '');
+        tr.setAttribute('data-account-name', doc.AccountName || '');
+        tr.setAttribute('data-warehouse-name', doc.WarehouseName || '');
         
         // Build action buttons based on permissions
         let actionButtons = '';
         
         // Manage Details button
         actionButtons += `
-            <a href="/core/invdocuments/${doc.DocumentId}/bulk-manage-details/" 
-                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                   onclick="event.stopPropagation();"
-                                   title="Manage Details">
+            <button class="manage-details-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                    data-document-id="${doc.DocumentId}"
+                    data-document-date="${doc.DocumentDate}"
+                    title="Manage Details">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                     </svg>
-                                </a>
+                                </button>
         `;
                                 
         // Print button
@@ -574,6 +706,15 @@ function initializeFilterListeners() {
                 const input = document.getElementById(filterId);
                 if (input) input.value = '';
             });
+            currentPage = 1;
+            
+            // Remove selected_document from URL when filters are cleared
+            const currentUrl = new URL(window.location);
+            if (currentUrl.searchParams.has('selected_document')) {
+                currentUrl.searchParams.delete('selected_document');
+                window.history.pushState({}, '', currentUrl.toString());
+            }
+            
             applyFrontendFilter();
         });
     }
@@ -596,6 +737,22 @@ function initializeEventHandlers() {
             if (documentId) {
                 loadDocumentDetails(documentId);
             }
+            return;
+        }
+        
+        // Handle manage details buttons
+        const manageDetailsBtn = e.target.closest('.manage-details-btn');
+        if (manageDetailsBtn) {
+            console.log('Manage Details button clicked!', manageDetailsBtn);
+            e.stopPropagation();
+            
+            const documentId = manageDetailsBtn.getAttribute('data-document-id');
+            const documentDate = manageDetailsBtn.getAttribute('data-document-date');
+            
+            console.log('Document ID:', documentId, 'Date:', documentDate);
+            
+            // Check period lock before allowing manage details
+            checkPeriodLockForManageDetails(documentId, documentDate);
             return;
         }
         
@@ -743,10 +900,191 @@ function renderCachedDetails(documentId) {
 }
 
 // Print document
-function printDocument(documentId) {
-    // This would integrate with your print system
-    console.log('Printing document:', documentId);
-    // You can implement the actual print functionality here
+async function printDocument(documentId) {
+    // Build minimal document data from the selected row
+    const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
+    if (!row) return;
+    const cells = row.querySelectorAll('td');
+    const documentNo = cells[0]?.textContent?.trim() || '';
+    const clientName = cells[2]?.textContent?.trim() || '';
+    const documentDate = cells[3]?.textContent?.trim() || '';
+    const description = cells[4]?.textContent?.trim() || '';
+    const documentTypeId = parseInt(row.getAttribute('data-document-type-id') || '0');
+    // Extract IsVat from column 6 (index 6) - it shows 'Y' or 'N'
+    const isVat = cells[6]?.textContent?.trim() === 'Y';
+    // Extract ClientRegister from data attribute
+    const clientRegister = row.getAttribute('data-client-register') || '';
+    // Extract WarehouseName from data attribute or fallback to cell title attribute
+    let warehouseName = row.getAttribute('data-warehouse-name') || '';
+    // Extract AccountCode and AccountName from data attributes or fallback to cell title attribute
+    let accountCode = row.getAttribute('data-account-code') || '';
+    let accountName = row.getAttribute('data-account-name') || '';
+    
+    // Fallback: extract warehouse name from warehouse cell title attribute if not in data attribute
+    if (!warehouseName) {
+        const warehouseCell = cells[7]; // Warehouse column is typically at index 7
+        if (warehouseCell) {
+            const warehouseSpan = warehouseCell.querySelector('span[title]');
+            if (warehouseSpan) {
+                const title = warehouseSpan.getAttribute('title') || '';
+                // Title format: "WarehouseCode - WarehouseName"
+                const titleParts = title.split(' - ');
+                if (titleParts.length > 1) {
+                    warehouseName = titleParts[1].trim();
+                }
+            }
+        }
+    }
+    
+    // Fallback: extract from account cell title attribute if not in data attributes
+    if (!accountCode || !accountName) {
+        const accountCell = cells[5];
+        if (accountCell) {
+            const accountSpan = accountCell.querySelector('span[title]');
+            if (accountSpan) {
+                const title = accountSpan.getAttribute('title') || '';
+                // Title format: "AccountCode - AccountName"
+                const titleParts = title.split(' - ');
+                if (!accountCode && titleParts.length > 0) {
+                    accountCode = titleParts[0].trim();
+                }
+                if (!accountName && titleParts.length > 1) {
+                    accountName = titleParts[1].trim();
+                }
+            }
+            // Final fallback to cell text content for accountCode
+            if (!accountCode) {
+                accountCode = accountCell.textContent?.trim() || '';
+            }
+        }
+    }
+
+    // Collect items from live DOM first (if the selected detail is already rendered)
+    let items = [];
+    const liveDetail = document.getElementById('detail-grid-container');
+    if (liveDetail) {
+        const liveTbody = liveDetail.querySelector('#items-tbody');
+        if (liveTbody) {
+            const liveRows = liveTbody.querySelectorAll('tr');
+            liveRows.forEach((r, idx) => {
+                const tds = r.querySelectorAll('td');
+                // Extract from data attributes (preferred) or fallback to cell content
+                const inventoryCode = r.getAttribute('data-inventory-code') || tds[0]?.textContent.trim() || '';
+                const inventoryName = r.getAttribute('data-inventory-name') || '';
+                const measurementName = r.getAttribute('data-measurement-name') || '';
+                
+                // Extract inventoryName from title attribute if not in data attribute
+                let extractedInventoryName = inventoryName;
+                if (!extractedInventoryName && tds[0]) {
+                    const titleSpan = tds[0].querySelector('span[title]');
+                    if (titleSpan) {
+                        const title = titleSpan.getAttribute('title') || '';
+                        // Title format: "InventoryCode - InventoryName"
+                        const titleParts = title.split(' - ');
+                        if (titleParts.length > 1) {
+                            extractedInventoryName = titleParts[1].trim();
+                        }
+                    }
+                }
+                
+                // Table structure: InventoryCode (col 0), Quantity (col 1), UnitCost (col 2), UnitPrice (col 3), TotalCost (col 4), TotalPrice (col 5)
+                if (tds.length >= 6) {
+                    items.push({
+                        no: String(idx + 1),
+                        inventoryCode: inventoryCode,
+                        name: extractedInventoryName,
+                        unit: measurementName,
+                        qty: tds[1]?.textContent.trim() || '',
+                        unitPrice: tds[3]?.textContent.trim() || '',
+                        total: tds[5]?.textContent.trim() || '',
+                        vat: '', // Not in the detail grid
+                        totalNoVat: '' // Not in the detail grid
+                    });
+                }
+            });
+        }
+    }
+
+    // If no items from live DOM, try to get cached/fetched detail HTML and parse
+    if (items.length === 0) {
+        let detailHtml = detailCache.get(documentId);
+        if (!detailHtml) {
+            try {
+                const resp = await fetch(`?selected_document=${documentId}&ajax=1`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (resp.ok) {
+                    detailHtml = await resp.text();
+                    detailCache.set(documentId, detailHtml);
+                }
+            } catch (e) {
+                console.warn('Failed to fetch detail for printing:', e);
+            }
+        }
+        if (detailHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(detailHtml, 'text/html');
+            // Prefer #items-tbody if present, else first tbody under detail
+            let itemsTbody = doc.getElementById('items-tbody');
+            if (!itemsTbody) {
+                const detailRoot = doc.getElementById('detail-grid-container') || doc;
+                itemsTbody = detailRoot.querySelector('tbody');
+            }
+            if (itemsTbody) {
+                const rows = itemsTbody.querySelectorAll('tr');
+                rows.forEach((r, idx) => {
+                    const tds = r.querySelectorAll('td');
+                    // Extract from data attributes (preferred) or fallback to cell content
+                    const inventoryCode = r.getAttribute('data-inventory-code') || tds[0]?.textContent.trim() || '';
+                    const inventoryName = r.getAttribute('data-inventory-name') || '';
+                    const measurementName = r.getAttribute('data-measurement-name') || '';
+                    
+                    // Extract inventoryName from title attribute if not in data attribute
+                    let extractedInventoryName = inventoryName;
+                    if (!extractedInventoryName && tds[0]) {
+                        const titleSpan = tds[0].querySelector('span[title]');
+                        if (titleSpan) {
+                            const title = titleSpan.getAttribute('title') || '';
+                            // Title format: "InventoryCode - InventoryName"
+                            const titleParts = title.split(' - ');
+                            if (titleParts.length > 1) {
+                                extractedInventoryName = titleParts[1].trim();
+                            }
+                        }
+                    }
+                    
+                    // Table structure: InventoryCode (col 0), Quantity (col 1), UnitCost (col 2), UnitPrice (col 3), TotalCost (col 4), TotalPrice (col 5)
+                    if (tds.length >= 6) {
+                        items.push({
+                            no: String(idx + 1),
+                            inventoryCode: inventoryCode,
+                            name: extractedInventoryName,
+                            unit: measurementName,
+                            qty: tds[1]?.textContent.trim() || '',
+                            unitPrice: tds[3]?.textContent.trim() || '',
+                            total: tds[5]?.textContent.trim() || '',
+                            vat: '', // Not in the detail grid
+                            totalNoVat: '' // Not in the detail grid
+                        });
+                    }
+                });
+            }
+        }
+    }
+
+    window.InvDocPrint.print({
+        documentId,
+        documentNo,
+        documentDate,
+        description,
+        clientName,
+        clientRegister,
+        accountCode,
+        accountName,
+        warehouseName,
+        documentTypeId,
+        isVat,
+        items,
+        createdBy: '{{ request.user.username|default:"" }}'
+    });
 }
 
 // Initialize everything when DOM is loaded
@@ -926,6 +1264,45 @@ function checkPeriodLockForEdit(documentId, documentDate) {
             console.error('Period lock check failed:', error);
             // On error, allow edit (fail open)
             window.location.href = `/core/invdocuments/${documentId}/update/`;
+        });
+}
+
+// Check period lock before allowing manage details
+function checkPeriodLockForManageDetails(documentId, documentDate) {
+    console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
+    
+    if (!documentDate) {
+        console.log('No date, proceeding to manage details');
+        // No date, proceed to manage details
+        window.location.href = `/core/invdocuments/${documentId}/bulk-manage-details/`;
+        return;
+    }
+    
+    console.log('Checking period lock for date:', documentDate);
+    
+    // Check period lock via API
+    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Period lock API response:', data);
+            if (data.is_locked) {
+                console.log('Period is locked, showing modal');
+                // Show modal for locked period
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                console.log('Period not locked, proceeding to manage details');
+                // Not locked, proceed to manage details
+                window.location.href = `/core/invdocuments/${documentId}/bulk-manage-details/`;
+            }
+        })
+        .catch(error => {
+            console.error('Period lock check failed:', error);
+            // On error, allow manage details (fail open)
+            window.location.href = `/core/invdocuments/${documentId}/bulk-manage-details/`;
         });
 }
 

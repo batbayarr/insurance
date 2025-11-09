@@ -36,11 +36,12 @@ def get_available_databases(company_code=None):
 
 def set_database(db_name):
     """
-    Set the database name in Django settings
+    Set the database name for the current request context only.
+    No global settings mutation; safe for concurrent users.
+    Uses thread-local storage to ensure per-request isolation.
     """
-    settings.DATABASES['default']['NAME'] = db_name
-    # Also update the DB_NAME variable
-    settings.DB_NAME = db_name
+    from .thread_local import set_current_db
+    set_current_db(db_name)
 
 def get_database_description(company_code, db_name):
     """

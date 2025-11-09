@@ -10,6 +10,7 @@
 {% block title %}Cash Journal{% endblock %}
 
 {% block content %}
+<script src="{% static 'js/print-journal.js' %}"></script>
 <div class="">
     <!-- Date Filter Section -->
     <div class="bg-white shadow rounded-lg p-1 mb-2">
@@ -23,7 +24,7 @@
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button id="filter-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                Шүүх
+                СЭРГЭЭХ
             </button>
         </div>
     </div>
@@ -32,20 +33,14 @@
     <div class="bg-white shadow rounded-lg mb-4">
         <div class="border-b-2 border-gray-300">
             <nav class="flex space-x-2 px-6 p-3">
-                <button onclick="switchToDocumentsView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-documents" onclick="switchToDocumentsView()" class="border border-blue-500 text-blue-600 bg-blue-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     БАРИМТ
                 </button>
-                <button onclick="switchToDetailView()" class="border border-blue-500 text-blue-600 bg-blue-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-detail" onclick="switchToDetailView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     ЖУРНАЛ
                 </button>
-                <button onclick="showDeletedDocuments()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-deleted" onclick="showDeletedDocuments()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     УСТГАСАН БАРИМТ
-                </button>
-                <button onclick="printCashJournal()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
-                    ХЭВЛЭХ
-                </button>
-                <button onclick="exportToExcel()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
-                    EXCEL
                 </button>
             </nav>
         </div>
@@ -57,18 +52,18 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Баримт</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Огноо</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">БТ</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НӨТ</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-8">НӨТ</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-16">Валют</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют.дүн</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дүн(₮)</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Хэрэглэгч</th>
                     </tr>
                     <!-- Filter Row -->
                     <tr class="bg-gray-100">
@@ -77,7 +72,7 @@
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
-                            <input type="date" id="filter-date" placeholder="Filter..."
+                            <input type="text" id="filter-date" placeholder="Filter..."
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
@@ -139,6 +134,15 @@
                         </td>
                     </tr>
                 </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr class="border-t-2 border-gray-300">
+                        <td colspan="8" class="px-2 py-2 text-xs text-gray-900 border-r border-gray-200 text-right">НИЙТ:</td>
+                        <td id="total-currency-amount" class="px-1 py-2 text-xs text-gray-900 border-r border-gray-200 text-right">0.00</td>
+                        <td class="px-1 py-2 text-xs text-gray-900 border-r border-gray-200"></td>
+                        <td id="total-amount-mnt" class="px-1 py-2 text-xs text-gray-900 border-r border-gray-200 text-right">0.00</td>
+                        <td class="px-1 py-2 text-xs text-gray-900"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         
@@ -168,6 +172,14 @@
                             <option value="100">100</option>
                         </select>
                     </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="printDocumentsView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                            ХЭВЛЭХ
+                        </button>
+                        <button onclick="exportDocumentsToExcel()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                            EXCEL
+                        </button>
+                    </div>
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                             <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
@@ -196,7 +208,7 @@
     <div id="cash-journal-detail-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
                 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
@@ -212,11 +224,65 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
                     </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-document-no" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-document-date" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="9">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-account-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-client-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-description" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="70">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-currency" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="3">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-currency-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-currency-exchange" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-debit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-credit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-detail-user-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                    </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white">
                     <!-- Detail data will be loaded here via AJAX -->
                     <tr>
-                        <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -246,8 +312,17 @@
                         Нийт <span id="total-count-detail">0</span> бичлэгээс <span id="showing-start-detail">0</span> - <span id="showing-end-detail">0</span> бичлэг харагдаж байна
                     </p>
                 </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="printDetailView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                            ХЭВЛЭХ
+                        </button>
+                        <button onclick="exportDetailToExcel()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                            EXCEL
+                        </button>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                         <button id="prev-page-desktop-detail" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <span class="sr-only">Previous</span>
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -281,6 +356,7 @@
     let totalPages = 1;
     let isDeleteFilter = false;
     let isRendering = false;
+    let currentActiveTab = 'documents'; // Track which tab is currently active
     
     // Pagination variables for ЖУРНАЛ tab
     let currentPageDetail = 1;
@@ -345,10 +421,28 @@
     }
     
     function initializeFilters() {
-        const filterInputs = document.querySelectorAll('input[placeholder="Filter..."]');
+        // Initialize filters for БАРИМТ tab
+        const filterInputs = document.querySelectorAll('#cash-documents-view input[placeholder="Filter..."]');
         filterInputs.forEach((input, index) => {
             input.addEventListener('input', applyFilters);
         });
+        
+        // Initialize filters for ЖУРНАЛ tab
+        const detailFilterInputs = document.querySelectorAll('#cash-journal-detail-view input[placeholder="Filter..."]');
+        detailFilterInputs.forEach((input, index) => {
+            input.addEventListener('input', applyDetailFiltersAndRender);
+        });
+    }
+    
+    function applyDetailFiltersAndRender() {
+        // Debounce the filter application
+        clearTimeout(window.detailFilterTimeout);
+        window.detailFilterTimeout = setTimeout(() => {
+            if (detailsData && detailsData.length > 0) {
+                currentPageDetail = 1; // Reset to first page when filtering
+                renderDetailsTableWithPagination(detailsData);
+            }
+        }, 300);
     }
     
     function initializePagination() {
@@ -378,12 +472,8 @@
     function loadInitialDocuments() {
         setDefaultDateValues();
         
-        const startDate = document.getElementById('start-date').value;
-        const endDate = document.getElementById('end-date').value;
-        
-        if (startDate && endDate) {
-            applyDateFilter();
-        }
+        // Only set default dates - user must click СЭРГЭЭХ button to load data
+        // This ensures only the СЭРГЭЭХ button triggers data loading
     }
     
     function setDefaultDateValues() {
@@ -412,12 +502,30 @@
     }
     
     function applyDateFilter() {
+        // This is the ONLY function that triggers data loading from server
+        // Called only when СЭРГЭЭХ button is clicked
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         
         if (!startDate || !endDate) {
             alert('Please select both start and end dates');
             return;
+        }
+        
+        // Store current active tab before refreshing
+        const detailView = document.getElementById('cash-journal-detail-view');
+        const documentsView = document.getElementById('cash-documents-view');
+        
+        if (detailView && detailView.style.display !== 'none') {
+            currentActiveTab = 'detail';
+        } else if (documentsView && documentsView.style.display !== 'none') {
+            // Check if deleted tab is active
+            const tabDeleted = document.getElementById('tab-deleted');
+            if (tabDeleted && tabDeleted.classList.contains('border-blue-500')) {
+                currentActiveTab = 'deleted';
+            } else {
+                currentActiveTab = 'documents';
+            }
         }
         
         // Clear cache before new API call
@@ -432,7 +540,8 @@
             filterButton.disabled = true;
         }
         
-        // Fetch ALL documents (both active and deleted) from server
+        // Fetch ALL data for ALL tabs (documents + details) in one call
+        // This is the ONLY place that makes server requests
         fetchAllDocumentsFromServer();
     }
     
@@ -454,7 +563,9 @@
             const cachedData = apiCache.get(cacheKey);
             documentsData = cachedData.documents;
             detailsData = cachedData.details;
-            applyFrontendFilter();
+            
+            // Restore active tab after loading from cache
+            restoreActiveTab();
             return;
         }
         
@@ -472,7 +583,8 @@
                     documentsData = data.documents;
                     detailsData = data.details;
                     
-                    applyFrontendFilter();
+                    // Restore active tab after loading
+                    restoreActiveTab();
                 } else {
                     showDocumentsError(data.error || 'Failed to load comprehensive data');
                 }
@@ -484,10 +596,42 @@
                 // Reset filter button
                 const filterButton = document.getElementById('filter-button');
                 if (filterButton) {
-                    filterButton.textContent = 'Filter';
+                    filterButton.textContent = 'СЭРГЭЭХ';
                     filterButton.disabled = false;
                 }
             });
+    }
+    
+    function restoreActiveTab() {
+        const detailView = document.getElementById('cash-journal-detail-view');
+        const documentsView = document.getElementById('cash-documents-view');
+        
+        if (currentActiveTab === 'detail') {
+            if (detailView && documentsView) {
+                detailView.style.display = 'block';
+                documentsView.style.display = 'none';
+                updateTabStyling('detail');
+            }
+            if (detailsData && detailsData.length > 0) {
+                renderDetailsTable(detailsData);
+            }
+        } else if (currentActiveTab === 'deleted') {
+            if (documentsView && detailView) {
+                documentsView.style.display = 'block';
+                detailView.style.display = 'none';
+                updateTabStyling('deleted');
+            }
+            isDeleteFilter = true;
+            applyFrontendFilter();
+        } else { // Default to 'documents'
+            if (documentsView && detailView) {
+                documentsView.style.display = 'block';
+                detailView.style.display = 'none';
+                updateTabStyling('documents');
+            }
+            isDeleteFilter = false;
+            applyFrontendFilter();
+        }
     }
     
     function applyFrontendFilter() {
@@ -533,6 +677,14 @@
             });
         }
         
+        // Calculate totals for ALL filtered data (not just current page)
+        let totalCurrencyAmount = 0;
+        let totalAmountMNT = 0;
+        filteredData.forEach(doc => {
+            totalCurrencyAmount += parseFloat(doc.CurrencyAmount || 0);
+            totalAmountMNT += parseFloat(doc.CurrencyMNT || 0);
+        });
+        
         // Calculate pagination
         totalPages = Math.ceil(filteredData.length / pageSize);
         if (currentPage > totalPages) currentPage = 1;
@@ -547,6 +699,9 @@
         
         // Use normal rendering with paginated data
         renderDocumentsTable(paginatedData);
+        
+        // Update summary totals with ALL filtered data totals
+        updateSummaryTotals(totalCurrencyAmount, totalAmountMNT);
         
         updateFilterCount(filteredData.length);
     }
@@ -597,9 +752,14 @@
         // Use DocumentFragment for better performance
         const fragment = document.createDocumentFragment();
         
+        // Calculate totals for summary row
+        let totalCurrencyAmount = 0;
+        let totalAmountMNT = 0;
+        
         documents.forEach((doc, index) => {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50';
+            row.className = 'hover:bg-gray-50 cursor-pointer';
+            row.setAttribute('data-document-id', doc.DocumentId);
             
             // Pre-format data for better performance
             const documentNo = doc.DocumentNo || '';
@@ -610,10 +770,14 @@
             const description = truncateText(doc.Description || '', 50);
             const vat = doc.IsVat ? 'Y' : 'N';
             const currencyName = doc.CurrencyName || '';
-            const currencyAmount = formatNumber(doc.CurrencyAmount || 0, 2);
+            const currencyAmount = parseFloat(doc.CurrencyAmount || 0);
             const currencyExchange = formatNumber(doc.CurrencyExchange || 0, 4);
-            const amount = formatNumber(doc.CurrencyMNT || 0, 2);
+            const amount = parseFloat(doc.CurrencyMNT || 0);
             const userName = doc.UserName || doc.CreatedBy || 'N/A';
+            
+            // Accumulate totals
+            totalCurrencyAmount += currencyAmount;
+            totalAmountMNT += amount;
             
             row.innerHTML = `
                 <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${documentNo}</td>
@@ -624,9 +788,9 @@
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${description}</td>
                 <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${vat}</td>
                 <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${currencyName}</td>
-                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${currencyAmount}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(currencyAmount, 2)}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${currencyExchange}</td>
-                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${amount}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(amount, 2)}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${userName}</td>
             `;
             
@@ -634,6 +798,21 @@
         });
         
         tbody.appendChild(fragment);
+        
+        // Update summary row totals
+        updateSummaryTotals(totalCurrencyAmount, totalAmountMNT);
+    }
+    
+    function updateSummaryTotals(totalCurrencyAmount, totalAmountMNT) {
+        const totalCurrencyAmountEl = document.getElementById('total-currency-amount');
+        const totalAmountMNTEl = document.getElementById('total-amount-mnt');
+        
+        if (totalCurrencyAmountEl) {
+            totalCurrencyAmountEl.textContent = formatNumber(totalCurrencyAmount, 2);
+        }
+        if (totalAmountMNTEl) {
+            totalAmountMNTEl.textContent = formatNumber(totalAmountMNT, 2);
+        }
     }
     
     
@@ -709,11 +888,27 @@
         if (newPage < 1 || newPage > totalPages) return;
         
         currentPage = newPage;
-        // Use frontend filtering instead of server call for better performance
+        // Only use cached data - no server calls
         if (documentsData && documentsData.length > 0) {
             applyFrontendFilter();
         } else {
-            fetchDocumentsFromServer();
+            // Show empty state if no cached data
+            const tbody = document.getElementById('documents-tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">No data loaded</h3>
+                                <p class="text-sm text-gray-500">Please select date range and click СЭРГЭЭХ to load data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
         }
     }
     
@@ -761,6 +956,7 @@
     }
     
     function switchToDetailView() {
+        // Switch to detail view - uses ONLY cached data, no server calls
         // Show the detail view
         document.getElementById('cash-journal-detail-view').style.display = 'block';
         
@@ -770,7 +966,10 @@
         // Update tab styling
         updateTabStyling('detail');
         
-        // Check if we have cached details data
+        // Set current active tab
+        currentActiveTab = 'detail';
+        
+        // Display cached details data (loaded by СЭРГЭЭХ button)
         if (detailsData && detailsData.length > 0) {
             renderDetailsTable(detailsData);
         } else {
@@ -778,7 +977,7 @@
             if (tbody) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 012-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -798,6 +997,9 @@
         renderDetailsTableWithPagination(details);
     }
     
+    // Global variable to store filtered details data
+    let filteredDetailsData = [];
+    
     function renderDetailsTableWithPagination(details) {
         const tbody = document.querySelector('#cash-journal-detail-view tbody');
         if (!tbody) {
@@ -807,7 +1009,7 @@
         if (!details || details.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -821,56 +1023,162 @@
             return;
         }
         
+        // Apply filters first
+        filteredDetailsData = applyDetailFilters(details);
+        
         // Calculate pagination
-        totalPagesDetail = Math.ceil(details.length / pageSizeDetail);
+        totalPagesDetail = Math.ceil(filteredDetailsData.length / pageSizeDetail);
         if (currentPageDetail > totalPagesDetail) currentPageDetail = 1;
         
         // Get paginated data
         const startIndex = (currentPageDetail - 1) * pageSizeDetail;
         const endIndex = startIndex + pageSizeDetail;
-        const paginatedDetails = details.slice(startIndex, endIndex);
+        const paginatedDetails = filteredDetailsData.slice(startIndex, endIndex);
         
         // Update pagination info
-        updatePaginationInfoDetail(details.length, paginatedDetails.length, startIndex);
+        updatePaginationInfoDetail(filteredDetailsData.length, paginatedDetails.length, startIndex);
+        
+        // Group details by document (document_no + document_date)
+        const groupedByDocument = {};
+        paginatedDetails.forEach((item) => {
+            const docKey = `${item.document_no}_${item.document_date}`;
+            if (!groupedByDocument[docKey]) {
+                groupedByDocument[docKey] = [];
+            }
+            groupedByDocument[docKey].push(item);
+        });
         
         let htmlContent = '';
         let totalDebit = 0;
         let totalCredit = 0;
         
-        paginatedDetails.forEach((item, index) => {
-            // Calculate totals
-            totalDebit += parseFloat(item.debit_amount) || 0;
-            totalCredit += parseFloat(item.credit_amount) || 0;
+        // Render grouped by document with borders
+        Object.keys(groupedByDocument).forEach((docKey, docIndex) => {
+            const docItems = groupedByDocument[docKey];
+            const isLastDocument = docIndex === Object.keys(groupedByDocument).length - 1;
             
-            htmlContent += `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_name || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.client_name || ''}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.description || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currency_name || ''}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.currency_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.currency_exchange.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.debit_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.credit_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.user_name || ''}</td>
-                </tr>
-            `;
+            docItems.forEach((item, itemIndex) => {
+                // Calculate totals
+                totalDebit += parseFloat(item.debit_amount) || 0;
+                totalCredit += parseFloat(item.credit_amount) || 0;
+                
+                const isLastItem = itemIndex === docItems.length - 1;
+                // Add border only after the last row of each document batch (except the last document)
+                // No borders between rows within the same document batch
+                // Use same style as column borders (border-b border-gray-200)
+                const rowBorderClass = isLastItem && !isLastDocument 
+                    ? 'border-b border-gray-200' 
+                    : '';
+                
+                htmlContent += `
+                    <tr class="hover:bg-gray-50 ${rowBorderClass}">
+                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_name || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.client_name || ''}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.description || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currency_name || ''}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.currency_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.currency_exchange.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.debit_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.credit_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.user_name || ''}</td>
+                    </tr>
+                `;
+            });
         });
         
         // Add totals row
         htmlContent += `
-            <tr class="bg-gray-100 font-semibold">
+            <tr class="bg-gray-100 border-t border-gray-200">
                 <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="9">НИЙТ:</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalDebit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalCredit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="px-1 py-1 text-xs text-gray-900"></td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
             </tr>
         `;
         
         tbody.innerHTML = htmlContent;
+    }
+    
+    function applyDetailFilters(details) {
+        if (!details || details.length === 0) {
+            return [];
+        }
+        
+        let filtered = details;
+        
+        // Get filter values
+        const filters = {
+            documentNo: document.getElementById('filter-detail-document-no')?.value.toLowerCase().trim() || '',
+            documentDate: document.getElementById('filter-detail-document-date')?.value.toLowerCase().trim() || '',
+            accountCode: document.getElementById('filter-detail-account-code')?.value.toLowerCase().trim() || '',
+            accountName: document.getElementById('filter-detail-account-name')?.value.toLowerCase().trim() || '',
+            clientName: document.getElementById('filter-detail-client-name')?.value.toLowerCase().trim() || '',
+            description: document.getElementById('filter-detail-description')?.value.toLowerCase().trim() || '',
+            currency: document.getElementById('filter-detail-currency')?.value.toLowerCase().trim() || '',
+            currencyAmount: document.getElementById('filter-detail-currency-amount')?.value.toLowerCase().trim() || '',
+            currencyExchange: document.getElementById('filter-detail-currency-exchange')?.value.toLowerCase().trim() || '',
+            debitAmount: document.getElementById('filter-detail-debit-amount')?.value.toLowerCase().trim() || '',
+            creditAmount: document.getElementById('filter-detail-credit-amount')?.value.toLowerCase().trim() || '',
+            userName: document.getElementById('filter-detail-user-name')?.value.toLowerCase().trim() || ''
+        };
+        
+        // Apply filters
+        if (Object.values(filters).some(f => f.length > 0)) {
+            filtered = details.filter(item => {
+                const values = {
+                    documentNo: String(item.document_no || '').toLowerCase(),
+                    documentDate: String(item.document_date || '').toLowerCase(),
+                    accountCode: String(item.account_code || '').toLowerCase(),
+                    accountName: String(item.account_name || '').toLowerCase(),
+                    clientName: String(item.client_name || '').toLowerCase(),
+                    description: String(item.description || '').toLowerCase(),
+                    currency: String(item.currency_name || '').toLowerCase(),
+                    currencyAmount: String(item.currency_amount || '').toLowerCase(),
+                    currencyExchange: String(item.currency_exchange || '').toLowerCase(),
+                    debitAmount: String(item.debit_amount || '').toLowerCase(),
+                    creditAmount: String(item.credit_amount || '').toLowerCase(),
+                    userName: String(item.user_name || '').toLowerCase()
+                };
+                
+                return Object.keys(filters).every(key => {
+                    const filterValue = filters[key];
+                    if (!filterValue) return true;
+                    
+                    // Handle numeric filters
+                    if (key.includes('Amount') || key.includes('Exchange')) {
+                        if (filterValue.startsWith('>=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) >= num;
+                        } else if (filterValue.startsWith('<=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) <= num;
+                        } else if (filterValue.startsWith('>')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) > num;
+                        } else if (filterValue.startsWith('<')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) < num;
+                        } else if (filterValue.startsWith('=')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) === num;
+                        } else {
+                            const num = parseFloat(filterValue);
+                            if (!isNaN(num)) {
+                                return parseFloat(values[key]) === num;
+                            }
+                        }
+                    }
+                    
+                    // Text filters
+                    return values[key].includes(filterValue);
+                });
+            });
+        }
+        
+        return filtered;
     }
     
     function updatePaginationInfoDetail(totalRecords, currentRecords, startIndex) {
@@ -922,6 +1230,7 @@
     }
     
     function switchToDocumentsView() {
+        // Switch to documents view - uses ONLY cached data, no server calls
         // Show the documents view
         document.getElementById('cash-documents-view').style.display = 'block';
         
@@ -934,7 +1243,10 @@
         // Set to active documents filter
         isDeleteFilter = false;
         
-        // Check if we have data to display
+        // Set current active tab
+        currentActiveTab = 'documents';
+        
+        // Display cached documents data (loaded by СЭРГЭЭХ button)
         if (documentsData && documentsData.length > 0) {
             applyFrontendFilter();
         } else {
@@ -959,6 +1271,7 @@
     
     
     function showDeletedDocuments() {
+        // Switch to deleted documents view - uses ONLY cached data, no server calls
         // Show the documents view
         document.getElementById('cash-documents-view').style.display = 'block';
         
@@ -971,7 +1284,10 @@
         // Set to deleted documents filter
         isDeleteFilter = true;
         
-        // Check if we have data to display
+        // Set current active tab
+        currentActiveTab = 'deleted';
+        
+        // Display cached documents data filtered by deleted status (loaded by СЭРГЭЭХ button)
         if (documentsData && documentsData.length > 0) {
             applyFrontendFilter();
         } else {
@@ -996,21 +1312,29 @@
     
     
     function updateTabStyling(activeTab) {
-        const tabs = document.querySelectorAll('nav button');
-        tabs.forEach(tab => {
-            tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
-            tab.classList.add('border-gray-300', 'text-gray-500');
+        // Use IDs for more reliable tab selection
+        const tabDocuments = document.getElementById('tab-documents');
+        const tabDetail = document.getElementById('tab-detail');
+        const tabDeleted = document.getElementById('tab-deleted');
+        
+        // Reset all tabs
+        [tabDocuments, tabDetail, tabDeleted].forEach(tab => {
+            if (tab) {
+                tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
+                tab.classList.add('border-gray-300', 'text-gray-500');
+            }
         });
         
-        if (activeTab === 'documents') {
-            tabs[0].classList.remove('border-gray-300', 'text-gray-500');
-            tabs[0].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
-        } else if (activeTab === 'detail') {
-            tabs[1].classList.remove('border-gray-300', 'text-gray-500');
-            tabs[1].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
-        } else if (activeTab === 'deleted') {
-            tabs[2].classList.remove('border-gray-300', 'text-gray-500');
-            tabs[2].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        // Set active tab
+        if (activeTab === 'documents' && tabDocuments) {
+            tabDocuments.classList.remove('border-gray-300', 'text-gray-500');
+            tabDocuments.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'detail' && tabDetail) {
+            tabDetail.classList.remove('border-gray-300', 'text-gray-500');
+            tabDetail.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'deleted' && tabDeleted) {
+            tabDeleted.classList.remove('border-gray-300', 'text-gray-500');
+            tabDeleted.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
         }
     }
     
@@ -1027,14 +1351,116 @@
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
     
-    function printCashJournal() {
+    // Print function for БАРИМТ and УСТГАСАН БАРИМТ tabs
+    function printDocumentsView() {
+        // Hide other views before printing
+        const detailView = document.getElementById('cash-journal-detail-view');
+        if (detailView) {
+            detailView.style.display = 'none';
+        }
+        const documentsView = document.getElementById('cash-documents-view');
+        if (documentsView) {
+            documentsView.style.display = 'block';
+        }
         window.print();
     }
     
-    function exportToExcel() {
+    // Print function for ЖУРНАЛ tab
+    function printDetailView() {
+        // Check if we have data to print
+        if (!detailsData || detailsData.length === 0) {
+            alert('No data to print. Please load data first.');
+            return;
+        }
         
-        // Create CSV content from the table
-        const table = document.querySelector('table');
+        // Get date range from filter inputs
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        
+        // Calculate grand totals from ALL filtered data (not just current page)
+        let totalDebit = 0;
+        let totalCredit = 0;
+        
+        detailsData.forEach((item) => {
+            totalDebit += parseFloat(item.debit_amount) || 0;
+            totalCredit += parseFloat(item.credit_amount) || 0;
+        });
+        
+        // Define column headers (excluding AccountName and User columns)
+        const columnHeaders = [
+            'Баримт',
+            'Огноо',
+            'Данс',
+            'Харилцагч',
+            'Гүйлгээний утга',
+            'Валют',
+            'Валютын дүн',
+            'Ханш',
+            'Дебит дүн',
+            'Кредит дүн'
+        ];
+        
+        // Call the generic print function
+        if (typeof window.printJournalTable === 'function') {
+            window.printJournalTable({
+                title: 'Cash Journal - ЖУРНАЛ',
+                startDate: startDate,
+                endDate: endDate,
+                allData: detailsData, // All filtered rows, not just current page
+                columnHeaders: columnHeaders,
+                totals: {
+                    debit: totalDebit,
+                    credit: totalCredit
+                }
+            });
+        } else {
+            alert('Print system not loaded. Please refresh the page.');
+        }
+    }
+    
+    // Export function for БАРИМТ and УСТГАСАН БАРИМТ tabs
+    function exportDocumentsToExcel() {
+        const table = document.querySelector('#cash-documents-view table');
+        if (!table) {
+            alert('No data to export');
+            return;
+        }
+        
+        let csvContent = '';
+        const rows = table.querySelectorAll('tr');
+        
+        rows.forEach(function(row) {
+            const cells = row.querySelectorAll('th, td');
+            const rowData = [];
+            
+            cells.forEach(function(cell) {
+                let cellText = cell.textContent.trim();
+                // Clean up the text and handle commas
+                cellText = cellText.replace(/,/g, '');
+                rowData.push('"' + cellText + '"');
+            });
+            
+            csvContent += rowData.join(',') + '\n';
+        });
+        
+        // Create and download the file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'cash_documents_' + new Date().toISOString().split('T')[0] + '.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        alert('Documents exported to Excel successfully!');
+    }
+    
+    // Export function for ЖУРНАЛ tab
+    function exportDetailToExcel() {
+        const table = document.querySelector('#cash-journal-detail-view table');
         if (!table) {
             alert('No data to export');
             return;
@@ -1069,10 +1495,26 @@
         document.body.removeChild(link);
         
         // Show success message
-        alert('Cash journal exported to Excel successfully!');
+        alert('Journal details exported to Excel successfully!');
     }
     
     // Event listeners
     document.getElementById('filter-button').addEventListener('click', applyDateFilter);
+    
+    // Add click handler for table rows in БАРИМТ tab
+    document.addEventListener('DOMContentLoaded', function() {
+        const tbody = document.getElementById('documents-tbody');
+        if (tbody) {
+            tbody.addEventListener('click', function(e) {
+                const row = e.target.closest('tr[data-document-id]');
+                if (row) {
+                    const documentId = row.getAttribute('data-document-id');
+                    if (documentId) {
+                        window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
+                    }
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

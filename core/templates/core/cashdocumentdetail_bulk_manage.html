@@ -183,7 +183,7 @@
                         </svg>
                         <span>НЭМЭХ</span>
                     </button>
-                    <a href="{% url 'core:cashdocument_master_detail' %}?selected_document={{ document.DocumentId }}" 
+                    <a href="{% url 'core:cashdocument_master_detail' %}" 
                        class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         БУЦАХ
                     </a>
@@ -260,6 +260,18 @@
         
         // Temporarily disable event listeners to prevent override
         window.disableEventListeners = true;
+    
+    // Check CurrencyId before processing
+    const documentDataElement = document.getElementById('document-data');
+    if (documentDataElement) {
+        const docData = JSON.parse(documentDataElement.textContent);
+        if (docData.CurrencyId && docData.CurrencyId > 1) {
+            console.log('FillAccountingDetails: CurrencyId is', docData.CurrencyId, '(> 1), skipping automatic fill.');
+            window.disableEventListeners = false;
+            return;
+        }
+    }
+    
     // Configuration for cash documents
     const config = {
         documentDataId: 'document-data',
@@ -276,6 +288,10 @@
     // Call the cash-specific generic function
     if (typeof window.FillAccountingDetailsCashGeneric === 'function') {
         window.FillAccountingDetailsCashGeneric(config);
+        // After table is filled, run bulk row adjustments
+        if (typeof window.bulkAdjustRows === 'function') {
+            window.bulkAdjustRows();
+        }
     } else {
         console.error('FillAccountingDetailsCashGeneric function not found');
     }
@@ -300,11 +316,12 @@ function addNewDetailRowForCash(rowData) {
     const row = document.createElement('tr');
     row.className = 'hover:bg-gray-50 new-row';
     
-    // Use the currencyAmount directly from FillAccountingDetails (already calculated)
+    // Use currency amount from FillAccountingDetails and convert to base currency (MNT)
     const currencyAmount = parseFloat(rowData.currencyAmount) || 0;
     const currencyExchange = parseFloat(rowData.currencyExchange) || 1.0;
-    // Don't recalculate - use the amount as provided by FillAccountingDetails
-    const calculatedAmount = currencyAmount.toFixed(2);
+    // Calculate base currency amount (MNT) = foreign currency amount * exchange rate
+    // For MNT (exchange=1.0), this stays the same
+    const calculatedAmount = (currencyAmount * currencyExchange).toFixed(2);
     
     console.log('addNewDetailRowForCash - Setting currency amount:', {
         originalCurrencyAmount: rowData.currencyAmount,
@@ -418,12 +435,86 @@ function addNewDetailRowForCash(rowData) {
     tbody.appendChild(row);
     addEventListenersToRow(row);
     ensureDebitCreditRule(row);
+    // Force select values that depend on equality quirks (string vs number)
+    try {
+        const cashflowSel = row.querySelector('select[name*="new_cashflow_id_"]');
+        if (cashflowSel && rowData.cashFlowId) {
+            cashflowSel.value = String(rowData.cashFlowId);
+            cashflowSel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    } catch (e) { console.warn('CashFlow select set error:', e); }
     
     // Force update the balance display after adding the row
     setTimeout(() => {
         updateBalanceDisplay();
     }, 100);
 }
+
+// Exposed hook called by FillAccountingDetailsCashGeneric on completion
+window.onCashFillComplete = function() {
+    if (typeof window.bulkAdjustRows === 'function') {
+        window.bulkAdjustRows();
+    }
+};
+
+// Bulk adjustment after table is populated: enforce base currency where rules require
+window.bulkAdjustRows = function() {
+    try {
+        const tbody = document.getElementById('details-tbody');
+        if (!tbody) return;
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row) => {
+            if (row.dataset.baseCurrencyLocked === 'true') return;
+            const accountId = row.querySelector('input[name*="account_id"]')?.value || row.querySelector('input[name*="new_account_id"]')?.value;
+            const isDebitVal = row.querySelector('select[name*="is_debit"]')?.value || row.querySelector('select[name*="new_is_debit"]')?.value;
+            const currencyIdSel = row.querySelector('select[name*="currency_id"]');
+            const exchangeInput = row.querySelector('input[name*="currency_exchange"]');
+            if (!currencyIdSel || !exchangeInput || !accountId) return;
+            const isDebit = (isDebitVal === 'true');
+            const docType = documentData.documentTypeId;
+            const isVat = {{ document.IsVat|yesno:"true,false" }};
+            const mainAccountId = String(documentData.accountId);
+            const vatAccountId = documentData.vatAccountId ? String(documentData.vatAccountId) : null;
+
+            let forceBase = false;
+            if ((docType === 1 || docType === 3)) {
+                if (!isVat && String(accountId) !== mainAccountId) {
+                    forceBase = true;
+                } else if (isVat && !isDebit && vatAccountId && String(accountId) === vatAccountId) {
+                    forceBase = true;
+                } else if (isVat && !isDebit && vatAccountId && String(accountId) !== vatAccountId && String(accountId) !== mainAccountId) {
+                    forceBase = true;
+                }
+            } else if ((docType === 2 || docType === 4)) {
+                if (!isVat && String(accountId) !== mainAccountId) {
+                    forceBase = true;
+                } else if (isVat && isDebit && vatAccountId && String(accountId) === vatAccountId) {
+                    forceBase = true;
+                } else if (isVat && isDebit && vatAccountId && String(accountId) !== vatAccountId && String(accountId) !== mainAccountId) {
+                    forceBase = true;
+                }
+            }
+
+            if (forceBase) {
+                currencyIdSel.value = '1';
+                exchangeInput.value = '1.0000';
+                row.dataset.baseCurrencyLocked = 'true';
+                currencyIdSel.dispatchEvent(new Event('change', { bubbles: true }));
+                exchangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Explicitly recalculate debit/credit amounts after forcing to MNT
+                const currencyAmountInput = row.querySelector('input[name*="currency_amount"]');
+                if (currencyAmountInput && typeof updateDebitCreditAmounts === 'function') {
+                    updateDebitCreditAmounts(currencyAmountInput);
+                }
+            }
+        });
+        // Recalculate totals after bulk adjustments
+        if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay();
+    } catch (e) {
+        console.error('bulkAdjustRows error:', e);
+    }
+};
 
 // Document data from master document for auto-population
 const documentData = {
@@ -579,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data.success) {
                     // Redirect to master detail page
-                    window.location.href = `/core/cashdocuments/?selected_document=${documentId}`;
+                    window.location.href = `/core/cashdocuments/`;
                 } else {
                     alert(`Error: ${data.error || data.message}`);
                 }

@@ -29,34 +29,16 @@ BEGIN
     starting_balances AS (
         SELECT 
             ra."AccountId",
-            COALESCE(cash_bb.starting_balance, 0) + 
-            COALESCE(inv_bb.starting_balance, 0) + 
-            COALESCE(ast_bb.starting_balance, 0) AS starting_balance
+            COALESCE(SUM(
+                COALESCE(cash_bb."CurrencyAmount" * cash_bb."CurrencyExchange", 0) +
+                COALESCE(inv_bb."Quantity" * inv_bb."UnitCost", 0) +
+                COALESCE(ast_bb."Quantity" * ast_bb."UnitCost", 0)
+            ), 0) AS starting_balance
         FROM ref_account ra
-        LEFT JOIN (
-            SELECT 
-                "AccountId",
-                SUM("CurrencyAmount" * "CurrencyExchange") AS starting_balance
-            FROM cash_beginning_balance 
-            WHERE "IsDelete" = false
-            GROUP BY "AccountId"
-        ) cash_bb ON ra."AccountId" = cash_bb."AccountId"
-        LEFT JOIN (
-            SELECT 
-                "AccountId",
-                SUM("Quantity" * "UnitCost") AS starting_balance
-            FROM inv_beginning_balance 
-            WHERE "IsDelete" = false
-            GROUP BY "AccountId"
-        ) inv_bb ON ra."AccountId" = inv_bb."AccountId"
-        LEFT JOIN (
-            SELECT 
-                "AccountId",
-                SUM("Quantity" * "UnitCost") AS starting_balance
-            FROM ast_beginning_balance 
-            WHERE "IsDelete" = false
-            GROUP BY "AccountId"
-        ) ast_bb ON ra."AccountId" = ast_bb."AccountId"
+        LEFT JOIN cash_beginning_balance cash_bb ON ra."AccountId" = cash_bb."AccountId" AND cash_bb."IsDelete" = false
+        LEFT JOIN inv_beginning_balance inv_bb ON ra."AccountId" = inv_bb."AccountId" AND inv_bb."IsDelete" = false
+        LEFT JOIN ast_beginning_balance ast_bb ON ra."AccountId" = ast_bb."AccountId" AND ast_bb."IsDelete" = false
+        GROUP BY ra."AccountId"
     ),
     
     -- 2. Transactions Before Begin Date
@@ -100,8 +82,8 @@ BEGIN
     aggregated_before_begin AS (
         SELECT 
             "AccountId",
-            SUM(debit_before) AS total_debit_before,
-            SUM(credit_before) AS total_credit_before
+            COALESCE(SUM(debit_before), 0) AS total_debit_before,
+            COALESCE(SUM(credit_before), 0) AS total_credit_before
         FROM transactions_before_begin
         GROUP BY "AccountId"
     ),
@@ -150,8 +132,8 @@ BEGIN
     aggregated_period AS (
         SELECT 
             "AccountId",
-            SUM(period_debit) AS total_period_debit,
-            SUM(period_credit) AS total_period_credit
+            COALESCE(SUM(period_debit), 0) AS total_period_debit,
+            COALESCE(SUM(period_credit), 0) AS total_period_credit
         FROM period_transactions
         GROUP BY "AccountId"
     )
@@ -167,18 +149,20 @@ BEGIN
         CASE 
             WHEN rat."IsActive" = true THEN 
                 -- Active accounts: StartingBalance + DebitBefore - CreditBefore
-                GREATEST(0, COALESCE(sb.starting_balance, 0) + 
-                           COALESCE(abb.total_debit_before, 0) - 
-                           COALESCE(abb.total_credit_before, 0))
+                -- Show actual balance (can be negative for active accounts)
+                COALESCE(sb.starting_balance, 0) + 
+                COALESCE(abb.total_debit_before, 0) - 
+                COALESCE(abb.total_credit_before, 0)
             ELSE 0
         END AS BeginningBalanceDebit,
         
         CASE 
             WHEN rat."IsActive" = false THEN 
                 -- Passive accounts: StartingBalance - DebitBefore + CreditBefore
-                GREATEST(0, COALESCE(sb.starting_balance, 0) - 
-                           COALESCE(abb.total_debit_before, 0) + 
-                           COALESCE(abb.total_credit_before, 0))
+                -- Show actual balance (can be negative for passive accounts)
+                COALESCE(sb.starting_balance, 0) - 
+                COALESCE(abb.total_debit_before, 0) + 
+                COALESCE(abb.total_credit_before, 0)
             ELSE 0
         END AS BeginningBalanceCredit,
         
@@ -190,7 +174,7 @@ BEGIN
         CASE 
             WHEN rat."IsActive" = true THEN 
                 -- Active accounts: BeginningBalance + DebitAmount - CreditAmount
-                -- Show positive balance in debit column, negative balance stays negative
+                -- Show actual balance (can be negative)
                 COALESCE(sb.starting_balance, 0) + 
                 COALESCE(abb.total_debit_before, 0) - 
                 COALESCE(abb.total_credit_before, 0) +
@@ -202,7 +186,7 @@ BEGIN
         CASE 
             WHEN rat."IsActive" = false THEN 
                 -- Passive accounts: BeginningBalance - DebitAmount + CreditAmount
-                -- Show positive balance in credit column, negative balance stays negative
+                -- Show actual balance (can be negative)
                 COALESCE(sb.starting_balance, 0) - 
                 COALESCE(abb.total_debit_before, 0) + 
                 COALESCE(abb.total_credit_before, 0) -

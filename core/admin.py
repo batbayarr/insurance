@@ -461,9 +461,9 @@ class Ast_Document_ItemAdmin(admin.ModelAdmin):
 
 @admin.register(Ref_Template)
 class Ref_TemplateAdmin(admin.ModelAdmin):
-    list_display = ('TemplateId', 'TemplateName', 'DocumentTypeId', 'AccountId', 'CashFlowId', 'IsVat', 'IsDelete', 'CreatedBy', 'CreatedDate')
-    list_filter = ('DocumentTypeId', 'AccountId', 'CashFlowId', 'IsVat', 'IsDelete', 'CreatedDate')
-    search_fields = ('TemplateName', 'DocumentTypeId__Description', 'AccountId__AccountName', 'CashFlowId__Description')
+    list_display = ('TemplateId', 'TemplateName', 'DocumentTypeId', 'AccountId', 'IsDelete', 'CreatedBy', 'CreatedDate')
+    list_filter = ('DocumentTypeId', 'AccountId', 'IsDelete', 'CreatedDate')
+    search_fields = ('TemplateName', 'DocumentTypeId__Description', 'AccountId__AccountName')
     ordering = ('TemplateName',)
     readonly_fields = ('TemplateId', 'CreatedDate')
     

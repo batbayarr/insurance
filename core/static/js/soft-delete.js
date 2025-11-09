@@ -45,7 +45,7 @@ class Silicon4SoftDelete {
         const deleteForm = document.getElementById('delete-form');
         
         if (modalText) {
-            modalText.textContent = `Are you sure you want to delete "${itemName}"? The item will be marked as deleted and hidden from the list.`;
+            modalText.textContent = `Та "${itemName}" устгахдаа итгэлтэй байна уу?.`;
         }
         
         if (deleteForm) {
@@ -88,7 +88,7 @@ class Silicon4SoftDelete {
             
             if (result.success) {
                 // Show success message
-                this.showSuccessMessage(`"${itemName}" has been deleted successfully.`);
+                this.showSuccessMessage(`"${itemName}" Амжилттай устгагдлаа.`);
                 
                 // Remove item from list or refresh
                 this.removeItemFromList(itemId);
@@ -129,18 +129,18 @@ class Silicon4SoftDelete {
     }
 
     showSuccessMessage(message) {
-        // Use Silicon4Message for success messages
-        if (typeof Silicon4Message !== 'undefined') {
-            Silicon4Message.success(message);
+        // Use message modal for success messages
+        if (typeof showMessageModal === 'function') {
+            showMessageModal(message, 'success', 'Амжилттай');
         } else {
             alert(message);
         }
     }
 
     showErrorMessage(message) {
-        // Use Silicon4Message for error messages
-        if (typeof Silicon4Message !== 'undefined') {
-            Silicon4Message.error(message);
+        // Use message modal for error messages
+        if (typeof showMessageModal === 'function') {
+            showMessageModal(message, 'error', 'Алдаа');
         } else {
             alert(message);
         }
@@ -167,8 +167,32 @@ class Silicon4SoftDelete {
     }
 
     getCSRFToken() {
+        // Try meta tag first
         const token = document.querySelector('meta[name="csrf-token"]');
-        return token ? token.getAttribute('content') : '';
+        if (token) {
+            return token.getAttribute('content');
+        }
+        
+        // Fallback to cookie
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
+            }
+        }
+        
+        // Last resort - try to get from form
+        const form = document.querySelector('form');
+        if (form) {
+            const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                return csrfInput.value;
+            }
+        }
+        
+        console.warn('CSRF token not found');
+        return '';
     }
 
     // Static method to close modal (for template onclick handlers)

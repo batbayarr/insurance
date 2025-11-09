@@ -15,32 +15,30 @@
     </div>
 
     <!-- Date Filter Form -->
-    <div class="bg-white shadow rounded-lg border border-gray-200 p-4 mb-4">
-        <form method="get" class="flex flex-col lg:flex-row gap-4 items-end">
-            <div class="flex-1">
-                <label for="begin_date" class="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
+    <div class="bg-white border-b border-gray-200 px-3 py-2 lg:px-6">
+        <form method="get" class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center space-x-2">
+                <label for="begin_date" class="text-sm font-medium text-gray-700">Эхлэх огноо:</label>
                 <input type="date" 
                        id="begin_date" 
                        name="begin_date" 
                        value="{{ begin_date }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                        required>
             </div>
-            <div class="flex-1">
-                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
+            <div class="flex items-center space-x-2">
+                <label for="end_date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
                 <input type="date" 
                        id="end_date" 
                        name="end_date" 
                        value="{{ end_date }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                        required>
             </div>
-            <div>
-                <button type="submit" 
-                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Тайлан үүсгэх
-                </button>
-            </div>
+            <button type="submit" 
+                    class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
+                Тайлан үүсгэх
+            </button>
         </form>
     </div>
 
@@ -76,63 +74,63 @@
             <table id="recpay-balance-table" class="min-w-full border border-gray-300">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны код</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны нэр</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Харилцагчийн код</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Харилцагчийн нэр</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Дт)</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Кт)</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дт гүйлгээ</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Кт гүйлгээ</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эцсийн үлдэгдэл (Дт)</th>
-                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эцсийн үлдэгдэл (Кт)</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны код</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагчийн код</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагчийн нэр</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхний үлдэгдэл (Дт)</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхний үлдэгдэл (Кт)</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дт гүйлгээ</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кт гүйлгээ</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эцсийн үлдэгдэл (Дт)</th>
+                        <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эцсийн үлдэгдэл (Кт)</th>
                     </tr>
                     <tr class="bg-gray-100">
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-account-code" placeholder="Код..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-account-name" placeholder="Нэр..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-account-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-client-code" placeholder="Код..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-client-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-client-name" placeholder="Нэр..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-client-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-begin-debit" placeholder="Дт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-begin-debit" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-begin-credit" placeholder="Кт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-begin-credit" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-debit-amount" placeholder="Дт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-debit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-credit-amount" placeholder="Кт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-credit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-end-debit" placeholder="Дт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-end-debit" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-end-credit" placeholder="Кт..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <th class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-end-credit" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white">
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for row in recpay_balance_data %}
-                    <tr class="hover:bg-gray-50 border-b border-gray-300" 
+                    <tr class="hover:bg-gray-50" 
                         data-account-id="{{ row.accountid }}"
                         data-account-code="{{ row.accountcode }}"
                         data-account-name="{{ row.accountname }}"
@@ -146,19 +144,19 @@
                         data-credit-amount="{{ row.creditamount }}"
                         data-ending-balance-debit="{{ row.endingbalancedebit }}"
                         data-ending-balance-credit="{{ row.endingbalancecredit }}">
-                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border border-gray-300">
+                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                             {{ row.accountcode }}
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">
                             {{ row.accountname }}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                             {{ row.clientcode|default:"-" }}
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">
                             {{ row.clientname|default:"-" }}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-right border-r border-gray-200">
                             {% if row.beginningbalancedebit != 0 %}
                                 {% if row.beginningbalancedebit < 0 %}
                                     <span class="text-red-600 font-medium">{{ row.beginningbalancedebit|floatformat:2|intcomma }}</span>
@@ -169,7 +167,7 @@
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-right border-r border-gray-200">
                             {% if row.beginningbalancecredit != 0 %}
                                 {% if row.beginningbalancecredit < 0 %}
                                     <span class="text-red-600 font-medium">{{ row.beginningbalancecredit|floatformat:2|intcomma }}</span>
@@ -180,21 +178,21 @@
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 text-right border-r border-gray-200">
                             {% if row.debitamount != 0 %}
                                 {{ row.debitamount|floatformat:2|intcomma }}
                             {% else %}
                                 -
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 text-right border-r border-gray-200">
                             {% if row.creditamount != 0 %}
                                 {{ row.creditamount|floatformat:2|intcomma }}
                             {% else %}
                                 -
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-right border-r border-gray-200">
                             {% if row.endingbalancedebit != 0 %}
                                 {% if row.endingbalancedebit < 0 %}
                                     <span class="text-red-600 font-medium">{{ row.endingbalancedebit|floatformat:2|intcomma }}</span>
@@ -205,7 +203,7 @@
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right border border-gray-300">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-right border-r border-gray-200">
                             {% if row.endingbalancecredit != 0 %}
                                 {% if row.endingbalancecredit < 0 %}
                                     <span class="text-red-600 font-medium">{{ row.endingbalancecredit|floatformat:2|intcomma }}</span>
@@ -221,23 +219,23 @@
                 </tbody>
                 <tfoot class="bg-gray-50">
                     <tr class="border-t border-gray-300">
-                        <td colspan="4" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-begin-debit">
+                        <td colspan="4" class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">НИЙТ:</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-begin-debit">
                             <span>0.00</span>
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-begin-credit">
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-begin-credit">
                             <span>0.00</span>
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-debit-amount">
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-debit-amount">
                             <span>0.00</span>
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-credit-amount">
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-credit-amount">
                             <span>0.00</span>
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-end-debit">
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-end-debit">
                             <span>0.00</span>
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-end-credit">
+                        <td class="px-1 py-1 text-xs text-gray-900 text-right border-r border-gray-200" id="total-end-credit">
                             <span>0.00</span>
                         </td>
                     </tr>
@@ -290,6 +288,20 @@
     {% endif %}
 </div>
 
+<!-- Include Subsidiary Ledger Modal -->
+{% include 'core/components/print_subsidiary_ledger_modal.html' %}
+
+<!-- Context Menu -->
+<div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
+    <button id="menu-subsidiary-ledger" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        ТАЙЛАН ХЭВЛЭХ
+        </button>
+    <button id="menu-edit-subsidiary-ledger" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        ТАЙЛАН ЗАСАХ
+    </button>
+    
+</div>
+
 <script>
 (function() {
 // Set default dates if not provided
@@ -325,6 +337,7 @@ function initializeTableFeatures() {
         setupPagination();
         setupInlineFilters();
         calculateTotals();
+        setupContextMenu();
     } else {
         console.log('Table body not found');
     }
@@ -341,8 +354,8 @@ function calculateTotals() {
         endCredit: 0
     };
     
-    // Calculate totals from ALL rows (not filtered rows)
-    allRows.forEach((row) => {
+    // Calculate totals from filtered rows
+    filteredRows.forEach((row) => {
         const beginDebit = parseFloat(row.dataset.beginningBalanceDebit) || 0;
         const beginCredit = parseFloat(row.dataset.beginningBalanceCredit) || 0;
         const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
@@ -478,6 +491,8 @@ function applyAllFilters() {
     currentPage = 1;
     displayRows();
     setupPagination();
+    // Recalculate totals based on filtered rows
+    calculateTotals();
 }
 
 // Display rows for current page
@@ -494,6 +509,11 @@ function displayRows() {
     pageRows.forEach(row => {
         tbody.appendChild(row);
     });
+    
+    // Re-setup context menu for new rows
+    setupContextMenu();
+    // Re-add click handlers to new rows
+    addClickHandlersToRecpayRows();
 }
 
 // Setup pagination
@@ -549,9 +569,247 @@ function goToPage(page) {
     }
 }
 
+// Subsidiary Ledger Modal Functions
+function handleRecpayRowClick(row) {
+    // Get the account data from the row
+    const accountId = row.dataset.accountId;
+    const clientId = row.dataset.clientId;
+    const beginDate = document.getElementById('begin_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const beginningBalanceDebit = parseFloat(row.dataset.beginningBalanceDebit) || 0;
+    const beginningBalanceCredit = parseFloat(row.dataset.beginningBalanceCredit) || 0;
+    const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
+    const creditAmount = parseFloat(row.dataset.creditAmount) || 0;
+    const endingBalanceDebit = parseFloat(row.dataset.endingBalanceDebit) || 0;
+    const endingBalanceCredit = parseFloat(row.dataset.endingBalanceCredit) || 0;
+    
+    if (!beginDate || !endDate) {
+        alert('Please select a date range first');
+        return;
+    }
+    
+    // Show modal and loading state
+    showPrintSubsidiaryLedgerModal();
+    showModalLedgerLoading();
+    
+    // Prepare balance data from the row
+    const balanceData = {
+        beginningBalanceDebit: beginningBalanceDebit,
+        beginningBalanceCredit: beginningBalanceCredit,
+        debitAmount: debitAmount,
+        creditAmount: creditAmount,
+        endingBalanceDebit: endingBalanceDebit,
+        endingBalanceCredit: endingBalanceCredit
+    };
+    
+    // Make AJAX call to get subsidiary ledger details
+    const url = `/core/api/subsidiary-ledger/?account_id=${accountId}&client_id=${clientId || ''}&begin_date=${beginDate}&end_date=${endDate}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                populateSubsidiaryLedgerModal(data, balanceData);
+            } else {
+                showModalLedgerError(data.error || 'Failed to load subsidiary ledger');
+            }
+        })
+        .catch(error => {
+            showModalLedgerError(`Network error: ${error.message}`);
+        });
+}
+
+// Add click event listeners to recpay balance table rows
+function addClickHandlersToRecpayRows() {
+    const recpayBalanceRows = document.querySelectorAll('#recpay-balance-table tbody tr');
+    recpayBalanceRows.forEach(row => {
+        if (!row.dataset.hasClickHandler) {
+            row.style.cursor = 'pointer';
+            row.dataset.hasClickHandler = 'true';
+            
+            row.addEventListener('click', function() {
+                handleRecpayRowClick(this);
+            });
+            
+            // Add hover effect
+            row.addEventListener('mouseenter', function() {
+                this.classList.add('bg-blue-50');
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.classList.remove('bg-blue-50');
+            });
+        }
+    });
+}
+
+// Context menu functionality
+let selectedRow = null;
+
+function setupContextMenu() {
+    const tbody = document.querySelector('#recpay-balance-table tbody');
+    if (!tbody) return;
+    
+    // Use event delegation on tbody to handle all rows
+    // Remove existing listener if any
+    if (tbody.dataset.contextMenuSetup) return;
+    tbody.dataset.contextMenuSetup = 'true';
+    
+    tbody.addEventListener('contextmenu', function(e) {
+        const row = e.target.closest('tr');
+        if (row && row.dataset.accountId) {
+            e.preventDefault();
+            selectedRow = row;
+            showContextMenu(e.clientX, e.clientY);
+        }
+    });
+}
+
+function showContextMenu(x, y) {
+    const menu = document.getElementById('context-menu');
+    if (!menu) return;
+    
+    // Show menu first to get its dimensions
+    menu.classList.remove('hidden');
+    
+    // Get menu dimensions
+    const menuRect = menu.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Adjust position if menu goes off-screen
+    let left = x;
+    let top = y;
+    
+    if (x + menuRect.width > windowWidth) {
+        left = windowWidth - menuRect.width - 10;
+    }
+    if (y + menuRect.height > windowHeight) {
+        top = windowHeight - menuRect.height - 10;
+    }
+    
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    
+    // Hide menu when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', hideContextMenu, { once: true });
+    }, 0);
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('context-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
+}
+
+function handleSubsidiaryLedger() {
+    if (!selectedRow) return;
+    
+    const accountId = selectedRow.dataset.accountId;
+    const clientId = selectedRow.dataset.clientId;
+    const beginDate = document.getElementById('begin_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const beginBalanceDebit = parseFloat(selectedRow.dataset.beginningBalanceDebit) || 0;
+    const beginBalanceCredit = parseFloat(selectedRow.dataset.beginningBalanceCredit) || 0;
+    const debitTotal = parseFloat(selectedRow.dataset.debitAmount) || 0;
+    const creditTotal = parseFloat(selectedRow.dataset.creditAmount) || 0;
+    const endBalanceDebit = parseFloat(selectedRow.dataset.endingBalanceDebit) || 0;
+    const endBalanceCredit = parseFloat(selectedRow.dataset.endingBalanceCredit) || 0;
+    
+    if (!accountId || !beginDate || !endDate) {
+        alert('Мэдээлэл дутуу байна');
+        return;
+    }
+    
+    // Show modal and loading state
+    showPrintSubsidiaryLedgerModal();
+    showModalLedgerLoading();
+    
+    // Prepare balance data from the row
+    const balanceData = {
+        beginningBalanceDebit: beginBalanceDebit,
+        beginningBalanceCredit: beginBalanceCredit,
+        debitAmount: debitTotal,
+        creditAmount: creditTotal,
+        endingBalanceDebit: endBalanceDebit,
+        endingBalanceCredit: endBalanceCredit
+    };
+    
+    // Make AJAX call to get subsidiary ledger details
+    const url = `/core/api/subsidiary-ledger/?account_id=${accountId}&client_id=${clientId || ''}&begin_date=${beginDate}&end_date=${endDate}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                populateSubsidiaryLedgerModal(data, balanceData);
+            } else {
+                showModalLedgerError(data.error || 'Failed to load subsidiary ledger');
+            }
+        })
+        .catch(error => {
+            showModalLedgerError(`Network error: ${error.message}`);
+        });
+    
+    hideContextMenu();
+}
+
+function handleEditSubsidiaryLedger() {
+    if (!selectedRow) return;
+    
+    const accountId = selectedRow.dataset.accountId;
+    const clientId = selectedRow.dataset.clientId;
+    const beginDate = document.getElementById('begin_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const beginBalanceDebit = parseFloat(selectedRow.dataset.beginningBalanceDebit) || 0;
+    const beginBalanceCredit = parseFloat(selectedRow.dataset.beginningBalanceCredit) || 0;
+    const debitTotal = parseFloat(selectedRow.dataset.debitAmount) || 0;
+    const creditTotal = parseFloat(selectedRow.dataset.creditAmount) || 0;
+    const endBalanceDebit = parseFloat(selectedRow.dataset.endingBalanceDebit) || 0;
+    const endBalanceCredit = parseFloat(selectedRow.dataset.endingBalanceCredit) || 0;
+    
+    if (!accountId || !beginDate || !endDate) {
+        alert('Мэдээлэл дутуу байна');
+        return;
+    }
+    
+    // Navigate to subsidiary ledger view with all summary values
+    const url = `/core/reports/subsidiary-ledger/?account_id=${accountId}&client_id=${clientId || ''}&begin_date=${beginDate}&end_date=${endDate}&begin_balance_debit=${beginBalanceDebit}&begin_balance_credit=${beginBalanceCredit}&debit_total=${debitTotal}&credit_total=${creditTotal}&end_balance_debit=${endBalanceDebit}&end_balance_credit=${endBalanceCredit}`;
+    window.location.href = url;
+    hideContextMenu();
+}
+
 // Event listeners for pagination
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initializeTableFeatures, 100);
+    // Add click handlers to existing rows
+    setTimeout(addClickHandlersToRecpayRows, 150);
     
     const prevButton = document.getElementById('prev-page');
     if (prevButton) {
@@ -571,6 +829,17 @@ document.addEventListener('DOMContentLoaded', function() {
             displayRows();
             setupPagination();
         });
+    }
+    
+    // Context menu item click handlers
+    const menuSubsidiaryLedger = document.getElementById('menu-subsidiary-ledger');
+    if (menuSubsidiaryLedger) {
+        menuSubsidiaryLedger.addEventListener('click', handleSubsidiaryLedger);
+    }
+    
+    const menuEditSubsidiaryLedger = document.getElementById('menu-edit-subsidiary-ledger');
+    if (menuEditSubsidiaryLedger) {
+        menuEditSubsidiaryLedger.addEventListener('click', handleEditSubsidiaryLedger);
     }
 });
 })();

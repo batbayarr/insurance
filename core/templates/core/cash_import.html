@@ -1,0 +1,914 @@
+{% extends 'base.html' %}
+{% load static %}
+<!-- FORCE NO CACHE - New File -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+{% load humanize %}
+
+{% block title %}Cash Import{% endblock %}
+
+{% block content %}
+<div class="">
+    <!-- Instructions Section -->
+    <div class="bg-white shadow rounded-lg p-4 mb-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">Импорт</h2>
+                <p class="text-sm text-gray-600">Excel-оос мэдээллийг хуулахдаа 6 баганатай мэдээлэл шаардлагатай: Огноо, Гүйлгээний утга, Дебит дүн, Кредит дүн, Данс, Харилцагч</p>
+            </div>
+            <div class="flex space-x-2">
+                <button id="import-button" onclick="importCashDocuments()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    ИМПОРТЛОХ
+                </button>
+                <button onclick="clearTable()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    ЦЭВЭРЛЭХ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Table -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full border-collapse border border-gray-300" id="import-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-16">№</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Огноо</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-100">Гүйлгээний утга</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Дебит дүн</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Кредит дүн</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-16">Данс</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Сонгох</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-60">Загварын нэр</th>
+                    </tr>
+                </thead>
+                <tbody id="import-table-body" class="bg-white">
+                    <tr id="empty-state">
+                        <td colspan="9" class="px-2 py-2 text-center text-gray-500 border border-gray-300">
+                            Excel-оос мэдээллийг хуулж, энд дараад (Ctrl+V) тавина уу
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination-container" class="bg-white shadow rounded-lg p-4 mt-4" style="display: none;">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                Нийт: <span id="total-rows">0</span> мөр
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="prev-page" onclick="goToPage(currentPage - 1)" class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Өмнөх
+                </button>
+                <span class="text-sm text-gray-700">
+                    Хуудас <span id="current-page">1</span> / <span id="total-pages">1</span>
+                </span>
+                <button id="next-page" onclick="goToPage(currentPage + 1)" class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Дараах
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Selection Modal -->
+<div id="template-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-5xl min-w-[800px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Загвар сонгох</h3>
+                <p id="modal-account-info" class="text-sm text-gray-600"></p>
+            </div>
+            <button onclick="closeTemplateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="px-4 py-3 border-b border-gray-200">
+            <input type="text" id="template-search" placeholder="Загварын нэрээр хайх..." 
+                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Template List Table -->
+        <div class="overflow-x-auto max-h-96">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Загварын ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Загварын нэр</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Данс</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дансны нэр</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баримтын төрөл</th>
+                    </tr>
+                </thead>
+                <tbody id="template-list-body" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">Ачааллаж байна...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let importedData = [];
+    let currentPage = 1;
+    const rowsPerPage = 20;
+    let currentRowIndex = null;
+    let allTemplates = [];
+    let filteredTemplates = [];
+
+    // Initialize paste handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableContainer = document.getElementById('import-table');
+        
+        // Listen for paste events anywhere in the document
+        document.addEventListener('paste', handlePaste);
+        
+        // Also handle paste on the table specifically
+        if (tableContainer) {
+            tableContainer.addEventListener('paste', handlePaste);
+        }
+
+        // Template search handler
+        const templateSearch = document.getElementById('template-search');
+        if (templateSearch) {
+            templateSearch.addEventListener('input', function() {
+                filterTemplates(this.value);
+            });
+        }
+    });
+
+    // Convert date to YYYY-MM-DD format
+    function convertDateToYYYYMMDD(dateString) {
+        if (!dateString) return '';
+        
+        // Handle various date formats
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            // Try parsing different formats
+            const parts = dateString.split(/[-\/\.]/);
+            if (parts.length === 3) {
+                // Assume MM/DD/YYYY or DD/MM/YYYY
+                let year, month, day;
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD or YYYY/MM/DD
+                    year = parts[0];
+                    month = parts[1].padStart(2, '0');
+                    day = parts[2].padStart(2, '0');
+                } else {
+                    // Try MM/DD/YYYY first
+                    const testDate1 = new Date(`${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`);
+                    // Try DD/MM/YYYY
+                    const testDate2 = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+                    
+                    if (!isNaN(testDate1.getTime())) {
+                        year = parts[2];
+                        month = parts[0].padStart(2, '0');
+                        day = parts[1].padStart(2, '0');
+                    } else if (!isNaN(testDate2.getTime())) {
+                        year = parts[2];
+                        month = parts[1].padStart(2, '0');
+                        day = parts[0].padStart(2, '0');
+                    } else {
+                        return dateString; // Return as-is if can't parse
+                    }
+                }
+                return `${year}-${month}-${day}`;
+            }
+            return dateString; // Return as-is if can't parse
+        }
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Handle paste event
+    function handlePaste(e) {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text');
+        parseAndRenderData(pasteData);
+    }
+
+    // Parse and render pasted data
+    function parseAndRenderData(data) {
+        if (!data || !data.trim()) {
+            console.warn('No data to parse');
+            return;
+        }
+
+        const rows = data.trim().split(/\r?\n/); // Handle both \n and \r\n
+        const tbody = document.getElementById('import-table-body');
+        const emptyState = document.getElementById('empty-state');
+        
+        // Remove empty state if it exists
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        // Reset data when pasting new data
+        importedData = [];
+        currentPage = 1;
+
+        // Check if first row looks like headers (common header keywords)
+        const headerKeywords = ['огноо', 'дата', 'date', 'гүйлгээний', 'description', 'дебит', 'дебет', 'debit', 'кредит', 'credit', 'дэнс', 'дэн', 'account', 'данс', 'харилцагч', 'client'];
+        let startIndex = 0;
+        if (rows.length > 0) {
+            const firstRowCells = rows[0].split('\t').map(cell => cell.trim().toLowerCase());
+            const looksLikeHeader = firstRowCells.some(cell => headerKeywords.some(keyword => cell.includes(keyword)));
+            if (looksLikeHeader) {
+                startIndex = 1; // Skip header row
+                console.log('Skipping header row');
+            }
+        }
+
+        rows.forEach((rowData, rowIndex) => {
+            // Skip header row if detected
+            if (rowIndex < startIndex) {
+                return;
+            }
+
+            // Split by tab and trim each cell
+            const cells = rowData.split('\t').map(cell => cell.trim());
+            
+            // Skip if row is empty or has no meaningful data
+            if (cells.length === 0 || cells.every(cell => !cell || cell === '')) {
+                return;
+            }
+
+            // Validate we have at least 6 columns, pad if needed
+            while (cells.length < 6) {
+                cells.push('');
+            }
+
+            // Convert date to YYYY-MM-DD format
+            const dateString = convertDateToYYYYMMDD(cells[0]);
+
+            // Store data - expecting 6 columns: Огноо, Гүйлгээний утга, Кредит дүн, Дебит дүн, Данс, Харилцагч
+            // Note: Excel column 2 is Кредит дүн, column 3 is Дебит дүн (swapped in Excel)
+            // Append ":имп" to Description
+            const description = (cells[1] || '').trim();
+            const descriptionWithImport = description ? description + ':имп' : '';
+            
+            importedData.push({
+                DocumentDate: dateString,
+                Description: descriptionWithImport,
+                DebitAmount: parseFloat(cells[3].replace(/,/g, '')) || 0, // Excel column 3 is Дебит дүн
+                CreditAmount: Math.abs(parseFloat(cells[2].replace(/,/g, '')) || 0), // Excel column 2 is Кредит дүн, ensure non-negative
+                AccountCode: cells[4] || '',
+                ClientCode: cells[5] || '', // Excel column 5 is Харилцагч (ClientName)
+                ClientId: null, // Will be populated after lookup
+                ClientMatched: false, // Flag to track if client was matched
+                DocumentTypeId: null, // Hidden field
+                TemplateId: null, // Hidden field (will be populated when user selects template)
+                TemplateName: '', // Hidden field (will be populated when user selects template)
+                IsVat: false // Hidden boolean field (will be populated when user selects template)
+            });
+        });
+
+        console.log(`Imported ${importedData.length} rows`);
+        if (importedData.length > 0) {
+            console.log('First row sample:', importedData[0]);
+        }
+        
+        // Lookup clients for all rows
+        lookupClientsForAllRows();
+    }
+
+    // Lookup clients for all imported rows
+    async function lookupClientsForAllRows() {
+        const lookupPromises = importedData.map(async (rowData, index) => {
+            if (!rowData.ClientCode || rowData.ClientCode.trim() === '') {
+                return; // Skip empty client codes
+            }
+            
+            try {
+                const response = await fetch(`/core/api/client-lookup-by-name/?client_name=${encodeURIComponent(rowData.ClientCode.trim())}`);
+                const data = await response.json();
+                
+                if (data.success && data.found && data.client) {
+                    importedData[index].ClientId = data.client.ClientId;
+                    importedData[index].ClientMatched = true;
+                    console.log(`Matched client: ${rowData.ClientCode} -> ClientId: ${data.client.ClientId}`);
+                } else {
+                    importedData[index].ClientId = null;
+                    importedData[index].ClientMatched = false;
+                    console.log(`No match found for client: ${rowData.ClientCode}`);
+                }
+            } catch (error) {
+                console.error(`Error looking up client ${rowData.ClientCode}:`, error);
+                importedData[index].ClientId = null;
+                importedData[index].ClientMatched = false;
+            }
+        });
+        
+        // Wait for all lookups to complete
+        await Promise.all(lookupPromises);
+        
+        // Render table after all lookups are done
+        renderTable();
+    }
+
+    // Render table with pagination
+    function renderTable() {
+        const tbody = document.getElementById('import-table-body');
+        
+        if (!importedData || importedData.length === 0) {
+            tbody.innerHTML = '<tr id="empty-state"><td colspan="9" class="px-2 py-2 text-center text-gray-500 border border-gray-300">Excel-оос мэдээллийг хуулж, энд дараад (Ctrl+V) тавина уу</td></tr>';
+            document.getElementById('pagination-container').style.display = 'none';
+            return;
+        }
+
+        // Calculate pagination
+        const totalPages = Math.ceil(importedData.length / rowsPerPage);
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, importedData.length);
+        const pageData = importedData.slice(startIndex, endIndex);
+
+        // Clear and populate table
+        tbody.innerHTML = '';
+
+        pageData.forEach((rowData, index) => {
+            const actualRowIndex = startIndex + index; // Use 0-based index for array
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+
+            // Row number
+            const rowNumCell = document.createElement('td');
+            rowNumCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            rowNumCell.textContent = actualRowIndex + 1;
+            row.appendChild(rowNumCell);
+
+            // DocumentDate - as plain text
+            const dateCell = document.createElement('td');
+            dateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            dateCell.textContent = rowData.DocumentDate || '';
+            row.appendChild(dateCell);
+
+            // Description
+            const descCell = document.createElement('td');
+            descCell.className = 'px-2 py-1 text-sm text-gray-900 border border-gray-300';
+            descCell.textContent = rowData.Description || '';
+            row.appendChild(descCell);
+
+            // DebitAmount - format to 2 decimal places with thousands separator
+            const debitCell = document.createElement('td');
+            debitCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300';
+            debitCell.textContent = parseFloat(rowData.DebitAmount || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            row.appendChild(debitCell);
+
+            // CreditAmount - format to 2 decimal places with thousands separator
+            const creditCell = document.createElement('td');
+            creditCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300';
+            creditCell.textContent = parseFloat(rowData.CreditAmount || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            row.appendChild(creditCell);
+
+            // AccountCode (Данс)
+            const accountCell = document.createElement('td');
+            accountCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            accountCell.textContent = rowData.AccountCode || '';
+            row.appendChild(accountCell);
+
+            // ClientCode (Харилцагч) - show red if not matched, add action button
+            const clientCell = document.createElement('td');
+            clientCell.className = 'px-2 py-1 whitespace-nowrap text-sm border border-gray-300';
+            
+            const clientContainer = document.createElement('div');
+            clientContainer.className = 'flex items-center space-x-2';
+            
+            // Client name/text
+            const clientTextSpan = document.createElement('span');
+            if (rowData.ClientCode && !rowData.ClientMatched) {
+                clientTextSpan.classList.add('text-red-600', 'font-semibold');
+                clientTextSpan.textContent = rowData.ClientCode || '';
+            } else {
+                clientTextSpan.classList.add('text-gray-900');
+                clientTextSpan.textContent = rowData.ClientCode || '';
+            }
+            clientContainer.appendChild(clientTextSpan);
+            
+            // Action button (small icon)
+            const actionButton = document.createElement('button');
+            actionButton.className = 'text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors';
+            actionButton.title = 'Харилцагч сонгох';
+            actionButton.onclick = (e) => {
+                e.stopPropagation();
+                openClientPopupForImport(actualRowIndex, clientCell);
+            };
+            
+            // Add user/selection icon
+            actionButton.innerHTML = `
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            `;
+            clientContainer.appendChild(actionButton);
+            
+            // Add hidden ClientId input
+            const hiddenClientId = document.createElement('input');
+            hiddenClientId.type = 'hidden';
+            hiddenClientId.className = 'client-id-input';
+            hiddenClientId.value = rowData.ClientId || '';
+            clientContainer.appendChild(hiddenClientId);
+            
+            clientCell.appendChild(clientContainer);
+            row.appendChild(clientCell);
+
+            // TemplateId (Загвар) - with Edit button
+            const templateCell = document.createElement('td');
+            templateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            
+            const templateContainer = document.createElement('div');
+            templateContainer.className = 'flex items-center space-x-2';
+            
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Засах';
+            editButton.className = 'px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors';
+            editButton.onclick = () => openTemplateModal(actualRowIndex, rowData.AccountCode, rowData.DebitAmount, rowData.CreditAmount);
+            templateContainer.appendChild(editButton);
+            
+            if (rowData.TemplateId) {
+                const templateIdSpan = document.createElement('span');
+                templateIdSpan.textContent = rowData.TemplateId;
+                templateIdSpan.className = 'text-gray-700';
+                templateContainer.appendChild(templateIdSpan);
+            }
+            
+            // Add hidden DocumentTypeId input
+            const hiddenDocumentTypeId = document.createElement('input');
+            hiddenDocumentTypeId.type = 'hidden';
+            hiddenDocumentTypeId.className = 'document-type-id-input';
+            hiddenDocumentTypeId.value = rowData.DocumentTypeId || '';
+            templateContainer.appendChild(hiddenDocumentTypeId);
+            
+            // Add hidden TemplateId input
+            const hiddenTemplateId = document.createElement('input');
+            hiddenTemplateId.type = 'hidden';
+            hiddenTemplateId.className = 'template-id-input';
+            hiddenTemplateId.value = rowData.TemplateId || '';
+            templateContainer.appendChild(hiddenTemplateId);
+            
+            // Add hidden IsVat input
+            const hiddenIsVat = document.createElement('input');
+            hiddenIsVat.type = 'hidden';
+            hiddenIsVat.className = 'isvat-input';
+            hiddenIsVat.value = rowData.IsVat ? 'true' : 'false';
+            templateContainer.appendChild(hiddenIsVat);
+            
+            templateCell.appendChild(templateContainer);
+            row.appendChild(templateCell);
+
+            // TemplateName (Загварын нэр)
+            const templateNameCell = document.createElement('td');
+            templateNameCell.className = 'px-2 py-1 text-sm text-gray-900 border border-gray-300';
+            templateNameCell.textContent = rowData.TemplateName || '';
+            row.appendChild(templateNameCell);
+
+            tbody.appendChild(row);
+        });
+
+        // Update pagination controls
+        updatePagination(totalPages);
+        updateImportButtonState();
+    }
+
+    // Update pagination controls
+    function updatePagination(totalPages) {
+        const paginationContainer = document.getElementById('pagination-container');
+        const totalRowsEl = document.getElementById('total-rows');
+        const currentPageEl = document.getElementById('current-page');
+        const totalPagesEl = document.getElementById('total-pages');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+
+        if (importedData.length === 0) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+
+        paginationContainer.style.display = 'block';
+        
+        if (totalRowsEl) totalRowsEl.textContent = importedData.length;
+        if (currentPageEl) currentPageEl.textContent = currentPage;
+        if (totalPagesEl) totalPagesEl.textContent = totalPages;
+
+        // Enable/disable pagination buttons
+        if (prevButton) {
+            prevButton.disabled = currentPage <= 1;
+        }
+        if (nextButton) {
+            nextButton.disabled = currentPage >= totalPages;
+        }
+    }
+
+    // Go to specific page
+    function goToPage(page) {
+        const totalPages = Math.ceil(importedData.length / rowsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderTable();
+        }
+    }
+
+    // Clear table function
+    function clearTable() {
+        importedData = [];
+        currentPage = 1;
+        renderTable();
+        updateImportButtonState();
+    }
+
+    // Open template selection modal
+    function openTemplateModal(rowIndex, accountCode, debitAmount, creditAmount) {
+        currentRowIndex = rowIndex;
+        const modal = document.getElementById('template-selection-modal');
+        const modalAccountInfo = document.getElementById('modal-account-info');
+        
+        if (modalAccountInfo) {
+            if (accountCode) {
+                modalAccountInfo.textContent = `Данс: ${accountCode}`;
+            } else {
+                modalAccountInfo.textContent = 'Бүх загвар';
+            }
+        }
+        
+        // Determine document type IDs based on debit/credit amounts
+        let documentTypeIds = null;
+        if (debitAmount > 0 && creditAmount === 0) {
+            // Debit > 0 and Credit = 0: show templates with DocumentTypeId in (1, 3)
+            documentTypeIds = [1, 3];
+        } else if (creditAmount > 0 && debitAmount === 0) {
+            // Credit > 0 and Debit = 0: show templates with DocumentTypeId in (2, 4)
+            documentTypeIds = [2, 4];
+        }
+        
+        // Fetch templates with document type filter
+        fetchTemplates(accountCode, documentTypeIds);
+        
+        // Show modal
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    // Close template selection modal
+    function closeTemplateModal() {
+        const modal = document.getElementById('template-selection-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        currentRowIndex = null;
+        
+        // Clear search
+        const searchInput = document.getElementById('template-search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+    }
+
+    // Fetch templates from API
+    function fetchTemplates(accountCode, documentTypeIds) {
+        const tbody = document.getElementById('template-list-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Ачааллаж байна...</td></tr>';
+        
+        let url = '/core/api/templates-by-account-code/';
+        const params = [];
+        if (accountCode) {
+            params.push(`account_code=${encodeURIComponent(accountCode)}`);
+        }
+        if (documentTypeIds && documentTypeIds.length > 0) {
+            params.push(`document_type_ids=${documentTypeIds.join(',')}`);
+        }
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.templates) {
+                    // Filter by document type IDs if provided
+                    let templates = data.templates;
+                    if (documentTypeIds && documentTypeIds.length > 0) {
+                        templates = templates.filter(template => 
+                            documentTypeIds.includes(template.DocumentTypeId)
+                        );
+                    }
+                    allTemplates = templates;
+                    filteredTemplates = [...allTemplates];
+                    renderTemplateList();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Загвар олдсонгүй</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching templates:', error);
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Алдаа гарлаа</td></tr>';
+            });
+    }
+
+    // Filter templates by search term
+    function filterTemplates(searchTerm) {
+        if (!searchTerm || searchTerm.trim() === '') {
+            filteredTemplates = [...allTemplates];
+        } else {
+            const searchLower = searchTerm.toLowerCase();
+            filteredTemplates = allTemplates.filter(template => {
+                return template.TemplateName.toLowerCase().includes(searchLower) ||
+                       (template.AccountCode && template.AccountCode.toLowerCase().includes(searchLower)) ||
+                       (template.AccountName && template.AccountName.toLowerCase().includes(searchLower)) ||
+                       String(template.TemplateId).includes(searchLower);
+            });
+        }
+        renderTemplateList();
+    }
+
+    // Render template list
+    function renderTemplateList() {
+        const tbody = document.getElementById('template-list-body');
+        tbody.innerHTML = '';
+        
+        if (filteredTemplates.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Загвар олдсонгүй</td></tr>';
+            return;
+        }
+        
+        filteredTemplates.forEach(template => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-blue-50 cursor-pointer';
+            row.onclick = () => selectTemplate(template.TemplateId, template.TemplateName, template.DocumentTypeId, template.IsVat);
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${template.TemplateId}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${template.TemplateName}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${template.AccountCode || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${template.AccountName || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">${template.DocumentTypeName || '-'}</td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+    }
+
+    // Select template and update row
+    function selectTemplate(templateId, templateName, documentTypeId, isVat) {
+        if (currentRowIndex === null || currentRowIndex < 0 || currentRowIndex >= importedData.length) {
+            console.error('Invalid row index');
+            return;
+        }
+        
+        // Update importedData
+        importedData[currentRowIndex].TemplateId = templateId;
+        importedData[currentRowIndex].TemplateName = templateName;
+        if (documentTypeId) {
+            importedData[currentRowIndex].DocumentTypeId = documentTypeId;
+        }
+        importedData[currentRowIndex].IsVat = isVat || false; // Populate IsVat from template
+        
+        // Re-render table to show updated values
+        renderTable();
+        updateImportButtonState();
+        
+        // Close modal
+        closeTemplateModal();
+    }
+
+    // Store current row index being edited for client selection
+    let currentClientRowIndex = null;
+
+    // Open client popup for import (when clicking red client name)
+    function openClientPopupForImport(rowIndex, cellElement) {
+        currentClientRowIndex = rowIndex;
+        
+        // Store reference to cell element for later use
+        window.currentClientInput = cellElement;
+        window.currentClientRowId = `import-row-${rowIndex}`;
+        
+        // Use existing openClientPopup function from modal
+        if (typeof window.openClientPopup === 'function') {
+            window.openClientPopup(cellElement, `import-row-${rowIndex}`, {});
+        } else {
+            // Fallback: open modal directly
+            const modal = document.getElementById('client-selection-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (typeof window.loadClientList === 'function') {
+                    window.loadClientList({});
+                }
+            }
+        }
+    }
+
+    // Override selectClient to handle our import case
+    // This will run after the modal component is loaded
+    let clientSelectionOverrideSetup = false;
+    function setupClientSelectionOverride() {
+        if (clientSelectionOverrideSetup) return; // Already setup
+        
+        if (typeof window.selectClient === 'function') {
+            clientSelectionOverrideSetup = true;
+            const originalSelectClient = window.selectClient;
+            window.selectClient = function(clientId, clientCode, clientName) {
+                // Check if we're in import mode (currentClientRowIndex is set)
+                if (currentClientRowIndex !== null && currentClientRowIndex >= 0 && currentClientRowIndex < importedData.length) {
+                    // Update importedData
+                    importedData[currentClientRowIndex].ClientId = clientId;
+                    importedData[currentClientRowIndex].ClientCode = `${clientCode} - ${clientName}`; // Update to show code and name
+                    importedData[currentClientRowIndex].ClientMatched = true;
+                    
+                    // Clear the stored reference
+                    currentClientRowIndex = null;
+                    window.currentClientInput = null;
+                    window.currentClientRowId = null;
+                    
+                    // Re-render table to show updated values
+                    renderTable();
+                    
+                    // Close modal
+                    if (typeof window.closeClientPopup === 'function') {
+                        window.closeClientPopup();
+                    }
+                    
+                    return; // Don't call original function
+                }
+                
+                // Call original function for other cases
+                return originalSelectClient(clientId, clientCode, clientName);
+            };
+        } else {
+            // If selectClient not yet defined, try again after a short delay
+            setTimeout(setupClientSelectionOverride, 100);
+        }
+    }
+    
+    // Setup override when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        setupClientSelectionOverride();
+        updateImportButtonState();
+    });
+
+    // Update import button state based on data availability
+    function updateImportButtonState() {
+        const importButton = document.getElementById('import-button');
+        if (importButton) {
+            importButton.disabled = importedData.length === 0;
+        }
+    }
+
+    // Import cash documents
+    async function importCashDocuments() {
+        if (importedData.length === 0) {
+            alert('Импортлох мэдээлэл байхгүй байна');
+            return;
+        }
+
+        // Validate all rows have required fields
+        const validationErrors = [];
+        for (let i = 0; i < importedData.length; i++) {
+            const row = importedData[i];
+            if (!row.ClientId) {
+                validationErrors.push(`Мөр ${i + 1}: Харилцагч сонгоогүй байна`);
+            }
+            if (!row.DocumentTypeId) {
+                validationErrors.push(`Мөр ${i + 1}: Загвар сонгоогүй байна`);
+            }
+            if (!row.AccountCode || row.AccountCode.trim() === '') {
+                validationErrors.push(`Мөр ${i + 1}: Данс заавал шаардлагатай`);
+            }
+            if (!row.DocumentDate) {
+                validationErrors.push(`Мөр ${i + 1}: Огноо заавал шаардлагатай`);
+            }
+            if (!row.Description || row.Description.trim() === '') {
+                validationErrors.push(`Мөр ${i + 1}: Гүйлгээний утга заавал шаардлагатай`);
+            }
+        }
+
+        if (validationErrors.length > 0) {
+            alert('Дараах алдаанууд байна:\n\n' + validationErrors.join('\n'));
+            return;
+        }
+
+        // Lookup AccountId for all rows
+        const rowsToImport = [];
+        const accountLookupErrors = [];
+        
+        for (let i = 0; i < importedData.length; i++) {
+            const row = importedData[i];
+            const accountCode = row.AccountCode.trim();
+            
+            try {
+                const response = await fetch(`/core/api/account-lookup-by-code/?account_code=${encodeURIComponent(accountCode)}`);
+                const data = await response.json();
+                
+                if (data.success && data.account) {
+                    rowsToImport.push({
+                        DocumentTypeId: row.DocumentTypeId,
+                        DocumentDate: row.DocumentDate,
+                        Description: row.Description.trim(),
+                        ClientId: row.ClientId,
+                        AccountCode: accountCode,
+                        TemplateId: row.TemplateId || null,
+                        IsVat: row.IsVat || false,
+                        DebitAmount: parseFloat(row.DebitAmount) || 0,
+                        CreditAmount: parseFloat(row.CreditAmount) || 0
+                    });
+                } else {
+                    accountLookupErrors.push(`Мөр ${i + 1}: Данс "${accountCode}" олдсонгүй`);
+                }
+            } catch (error) {
+                accountLookupErrors.push(`Мөр ${i + 1}: Данс "${accountCode}" шалгахад алдаа гарлаа: ${error.message}`);
+            }
+        }
+
+        if (accountLookupErrors.length > 0) {
+            alert('Дараах дансууд олдсонгүй:\n\n' + accountLookupErrors.join('\n'));
+            return;
+        }
+
+        if (rowsToImport.length === 0) {
+            alert('Импортлох мэдээлэл байхгүй байна');
+            return;
+        }
+
+        // Disable button during import
+        const importButton = document.getElementById('import-button');
+        if (importButton) {
+            importButton.disabled = true;
+            importButton.textContent = 'ИМПОРТЛОЖ БАЙНА...';
+        }
+
+        try {
+            const response = await fetch('/core/api/cash-import-bulk/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ rows: rowsToImport })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`Амжилттай! ${result.count} бичиг импортлогдлоо.\n\nБичигүүдийн дугаар:\n${result.document_numbers.join('\n')}`);
+                // Optionally clear table after successful import
+                // clearTable();
+            } else {
+                let errorMessage = result.message || 'Импорт хийхэд алдаа гарлаа';
+                if (result.errors && result.errors.length > 0) {
+                    errorMessage += '\n\n' + result.errors.join('\n');
+                }
+                alert(errorMessage);
+            }
+        } catch (error) {
+            alert(`Импорт хийхэд алдаа гарлаа: ${error.message}`);
+        } finally {
+            // Re-enable button
+            if (importButton) {
+                importButton.disabled = false;
+                importButton.textContent = 'ИМПОРТЛОХ';
+                updateImportButtonState();
+            }
+        }
+    }
+
+    // Get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<!-- Include Client Selection Modal Component -->
+{% include 'core/components/client_selection_modal.html' %}
+
+{% endblock %}

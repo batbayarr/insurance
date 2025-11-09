@@ -1,13 +1,13 @@
 <!-- Account Statement Modal -->
-<div id="account-statement-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+<div id="print-account-statement-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-4 border-b border-gray-200">
             <div>
-                <h3 class="text-lg font-medium text-gray-900" id="modal-account-title">Account Statement</h3>
+                <h3 class="text-lg font-medium text-gray-900" id="modal-account-title">ДАНСНЫ ТАЙЛАН</h3>
                 <p class="text-sm text-gray-600" id="modal-date-range"></p>
             </div>
-            <button onclick="closeAccountStatementModal()" class="text-gray-400 hover:text-gray-600">
+            <button onclick="closePrintAccountStatementModal()" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -20,15 +20,15 @@
             <div class="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Account Code</label>
+                        <label class="block text-sm font-medium text-gray-700">Код</label>
                         <p class="text-sm text-gray-900" id="modal-account-code"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Account Name</label>
+                        <label class="block text-sm font-medium text-gray-700">Дансны Нэр</label>
                         <p class="text-sm text-gray-900" id="modal-account-name"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Account Type</label>
+                        <label class="block text-sm font-medium text-gray-700">Төрөл</label>
                         <p class="text-sm text-gray-900" id="modal-account-type"></p>
                     </div>
                 </div>
@@ -38,19 +38,19 @@
             <div class="mb-4 p-4 bg-blue-50 rounded-lg">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Beginning Balance</label>
+                        <label class="block text-sm font-medium text-gray-700">Эхний үлдэгдэл</label>
                         <p class="text-sm font-semibold text-gray-900" id="modal-beginning-balance"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Total Debit</label>
+                        <label class="block text-sm font-medium text-gray-700">Дебит гүйлгээ</label>
                         <p class="text-sm font-semibold text-gray-900" id="modal-total-debit"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Total Credit</label>
+                        <label class="block text-sm font-medium text-gray-700">Кредит гүйлгээ</label>
                         <p class="text-sm font-semibold text-gray-900" id="modal-total-credit"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Ending Balance</label>
+                        <label class="block text-sm font-medium text-gray-700">Эцсийн үлдэгдэл</label>
                         <p class="text-sm font-semibold text-gray-900" id="modal-ending-balance"></p>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
             <!-- Loading State -->
             <div id="modal-loading" class="text-center py-8 hidden">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p class="mt-2 text-sm text-gray-600">Loading account statement...</p>
+                <p class="mt-2 text-sm text-gray-600">уншиж байна...</p>
             </div>
 
             <!-- Error State -->
@@ -68,7 +68,7 @@
                     <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading account statement</h3>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">сүлжээний алдаа гарлаа</h3>
                     <p class="mt-1 text-sm text-gray-500" id="modal-error-message"></p>
                 </div>
             </div>
@@ -78,8 +78,8 @@
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No transactions found</h3>
-                <p class="mt-1 text-sm text-gray-500">No transactions were found for this account in the selected date range.</p>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Гүйлгээ оруулаагүй байна.</h3>
+                <p class="mt-1 text-sm text-gray-500">Гүйлгээ оруулаагүй байна.</p>
             </div>
 
             <!-- Documents Table -->
@@ -90,11 +90,11 @@
                     <div class="flex space-x-2">
                         <button id="expand-all-btn" 
                                 class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Expand All
+                            Дэлгэрэнгүй үзүүлэх
                         </button>
                         <button id="collapse-all-btn" 
                                 class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                            Collapse All
+                            Хураангуй үзүүлэх
                         </button>
                     </div>
                 </div>
@@ -109,10 +109,10 @@
                 <div class="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
                     <div class="flex-1 flex justify-between sm:hidden">
                         <button id="prev-page-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Previous
+                            өмнөх
                         </button>
                         <button id="next-page-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Next
+                            дараах
                         </button>
                     </div>
                     <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
@@ -147,7 +147,7 @@
 
         <!-- Modal Footer -->
         <div class="flex justify-end pt-4 border-t border-gray-200">
-            <button onclick="closeAccountStatementModal()" 
+            <button onclick="closePrintAccountStatementModal()" 
                     class="px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
                 Close
             </button>
@@ -157,13 +157,13 @@
 
 <script>
 // Cache bust: Updated 2025-10-19 20:30 - Added Expand All / Collapse All buttons
-function showAccountStatementModal() {
-    document.getElementById('account-statement-modal').classList.remove('hidden');
+function showPrintAccountStatementModal() {
+    document.getElementById('print-account-statement-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
-function closeAccountStatementModal() {
-    document.getElementById('account-statement-modal').classList.add('hidden');
+function closePrintAccountStatementModal() {
+    document.getElementById('print-account-statement-modal').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
 
@@ -281,19 +281,14 @@ function createDocumentGroup(doc) {
         <div class="flex items-center justify-between">
             <div class="flex-1">
                 <div class="flex items-center space-x-4">
-                    <span class="font-medium text-gray-900">${doc.DocumentNo}</span>
-                    <span class="text-sm text-gray-600">${formatDate(doc.DocumentDate)}</span>
-                    <span class="text-sm text-gray-600">${doc.DocumentType}</span>
+                    <span class="text-gray-900">Баримт:${doc.DocumentNo}</span>
+                    <span class="text-sm text-gray-600">Огноо:${formatDate(doc.DocumentDate)}</span>
+                    <span class="text-sm text-gray-600">Загвар:${doc.DocumentType}</span>
                     <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${doc.DocumentCategory}</span>
                 </div>
-                <div class="text-sm text-gray-600 mt-1">${doc.DocumentDescription || 'No description'}</div>
+                <div class="text-sm text-gray-600 mt-1">Гүйлгээний утга:${doc.DocumentDescription || 'No description'}</div>
             </div>
-            <div class="flex items-center space-x-4">
-                <span class="text-sm font-medium text-gray-900">Total: ${formatCurrency(doc.TotalAmount)}</span>
-                <svg class="h-5 w-5 text-gray-400 transition-transform" id="icon-${doc.DocumentId}" style="transform: rotate(180deg);">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </div>
+            
         </div>
     `;
     
@@ -302,34 +297,51 @@ function createDocumentGroup(doc) {
     details.className = 'border-t border-gray-200 border-l-2 border-r-2 border-b-2 border-blue-200 bg-blue-50';
     details.id = `details-${doc.DocumentId}`;
     
+    // Calculate totals for this document
+    const docTotalDebit = doc.details.reduce((sum, detail) => sum + (detail.DebitAmount || 0), 0);
+    const docTotalCredit = doc.details.reduce((sum, detail) => sum + (detail.CreditAmount || 0), 0);
+    
     const table = document.createElement('div');
     table.className = 'overflow-x-auto';
     table.innerHTML = `
         <table class="min-w-full">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Debit</th>
-                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дансны Код</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Харилцагч</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Валют нэр</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ханш</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Валют дүн</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Дебит</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Кредит</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 ${doc.details.map(detail => `
                     <tr class="${detail.IsMatchingAccount ? 'bg-yellow-50' : 'hover:bg-gray-50'}">
                         <td class="px-4 py-2 text-sm text-gray-900">
-                            <span class="font-medium">${detail.AccountCode}</span>
+                            <span class="text-gray-900">${detail.AccountCode}</span>
                             <span class="text-gray-600">- ${detail.AccountName}</span>
                             ${detail.IsMatchingAccount ? '<span class="ml-2 text-xs bg-yellow-200 text-yellow-800 px-1 py-0.5 rounded">Target</span>' : ''}
                         </td>
                         <td class="px-4 py-2 text-sm text-gray-900">
                             ${detail.ClientCode ? `${detail.ClientCode} - ${detail.ClientName}` : '-'}
                         </td>
+                        <td class="px-4 py-2 text-sm text-gray-900">${detail.CurrencyName || '-'}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${detail.CurrencyExchange ? Number(detail.CurrencyExchange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : '-'}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(detail.CurrencyAmount)}</td>
                         <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(detail.DebitAmount)}</td>
                         <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(detail.CreditAmount)}</td>
                     </tr>
                 `).join('')}
             </tbody>
+            <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                <tr class="font-medium">
+                    <td colspan="5" class="px-4 py-2 text-sm text-gray-900">НИЙТ:</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(docTotalDebit)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900 text-right">${formatCurrency(docTotalCredit)}</td>
+                </tr>
+            </tfoot>
         </table>
     `;
     
@@ -457,16 +469,16 @@ function showModalError(message) {
 }
 
 // Close modal when clicking outside
-document.getElementById('account-statement-modal').addEventListener('click', function(e) {
+document.getElementById('print-account-statement-modal').addEventListener('click', function(e) {
     if (e.target === this) {
-        closeAccountStatementModal();
+        closePrintAccountStatementModal();
     }
 });
 
 // Close modal with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeAccountStatementModal();
+        closePrintAccountStatementModal();
     }
 });
 

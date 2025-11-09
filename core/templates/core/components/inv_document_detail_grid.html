@@ -22,10 +22,13 @@
                 </thead>
                 <tbody id="items-tbody" class="bg-white divide-y divide-gray-200">
                     {% for item in document_items %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50"
+                        data-inventory-code="{% if item.InventoryId %}{{ item.InventoryId.InventoryCode }}{% endif %}"
+                        data-inventory-name="{% if item.InventoryId %}{{ item.InventoryId.InventoryName }}{% endif %}"
+                        data-measurement-name="{% if item.InventoryId.MeasurementId %}{{ item.InventoryId.MeasurementId.MeasurementName }}{% endif %}">
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
                             {% if item.InventoryId %}
-                                <span title="{{ item.InventoryId.InventoryCode }} - {{ item.InventoryId.InventoryName }}">{{ item.InventoryId.InventoryCode }}</span>
+                                <span title="{{ item.InventoryId.InventoryName }}">{% if item.InventoryId.InventoryCode %}{{ item.InventoryId.InventoryCode }} - {% endif %}{{ item.InventoryId.InventoryName }}</span>
                             {% else %}
                                 -
                             {% endif %}

@@ -1,12 +1,12 @@
-from .utils import set_database
+from .thread_local import set_current_db, clear_current_db
 import logging
 
 logger = logging.getLogger('core')
 
 class DatabaseSelectionMiddleware:
     """
-    Middleware to set the selected database based on user session
-    Enhanced with connection pooling support and audit logging
+    Middleware to set the selected database based on user session (per-request).
+    Uses thread-local storage to ensure each request is isolated to its correct database.
     """
     
     def __init__(self, get_response):
@@ -17,8 +17,8 @@ class DatabaseSelectionMiddleware:
         selected_db = request.session.get('selected_database', 'silicon4')
         company_code = request.session.get('company_code', '')
         
-        # Set the database name in settings
-        set_database(selected_db)
+        # Set per-request DB context (thread-local)
+        set_current_db(selected_db)
         
         # Log database switches for monitoring
         if hasattr(request, 'user') and request.user.is_authenticated:
@@ -26,7 +26,10 @@ class DatabaseSelectionMiddleware:
                 logger.debug(f"User {request.user.username} using database {selected_db} for company {company_code}")
                 request._db_logged = True
         
-        # Process the request
-        response = self.get_response(request)
-        
-        return response 
+        try:
+            # Process the request
+            response = self.get_response(request)
+            return response
+        finally:
+            # Ensure cleanup of thread-local to avoid any leakage
+            clear_current_db() 

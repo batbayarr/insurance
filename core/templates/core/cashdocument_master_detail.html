@@ -25,11 +25,11 @@
     <div class="bg-white border-b border-gray-200 px-3 py-2 lg:px-6">
         <div class="flex flex-wrap items-center gap-3">
             <div class="flex items-center space-x-2">
-                <label for="start-date" class="text-sm font-medium text-gray-700">Эхлэх огноо:</label>
+                <label for="start-date" class="text-sm font-medium text-gray-700">Эхний огноо:</label>
                 <input type="date" id="start-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="flex items-center space-x-2">
-                <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
+                <label for="end-date" class="text-sm font-medium text-gray-700">Эцсийн огноо:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button id="apply-date-filter" class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
@@ -47,22 +47,26 @@
             <table class="min-w-full divide-y divide-gray-200 table-auto">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Огноо</th>
                         <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Баримт</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 hidden">Б</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Огноо</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-60">Гүйлгээний утга</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-8">Н</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-8">НӨТ</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-60">Гүйлгээний утга</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-8">Вал</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют.дүн</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-28">Ханш</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дүн(₮)</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэн</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                     </tr>
                     <!-- Filter Row -->
                     <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-date" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
                         <td class="px-4 py-1 border-r border-gray-200" >
                             <input type="text" id="filter-document-no" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -72,15 +76,11 @@
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-account" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
                             <input type="text" id="filter-client" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-date" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-description" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200 w-8">
@@ -88,7 +88,7 @@
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-account" placeholder="Filter..." 
+                            <input type="text" id="filter-description" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200 w-16">
@@ -183,7 +183,7 @@
 {% include 'core/components/delete_modal.html' %}
 
 <!-- Include Document Print System -->
-<script src="{% static 'js/document-print-system.js' %}"></script>
+<script src="{% static 'js/print-cash-document.js' %}"></script>
 
 <script>
 // Prevent script re-execution
@@ -204,13 +204,39 @@ const hasViewDetailPermission = {% if perms.core.view_cash_documentdetail %}true
 const hasAddDetailPermission = {% if perms.core.add_cash_documentdetail %}true{% else %}false{% endif %};
 const hasChangeDetailPermission = {% if perms.core.change_cash_documentdetail %}true{% else %}false{% endif %};
 
+// Helper function to save date range to localStorage
+function saveDateRangeToLocalStorage(startDate, endDate) {
+    try {
+        localStorage.setItem('cashdocument_date_range', JSON.stringify({
+            startDate: startDate,
+            endDate: endDate
+        }));
+    } catch (e) {
+        console.warn('Failed to save date range to localStorage:', e);
+    }
+}
+
+// Helper function to load date range from localStorage
+function loadDateRangeFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('cashdocument_date_range');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.startDate && parsed.endDate) {
+                return {
+                    startDate: parsed.startDate,
+                    endDate: parsed.endDate
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load date range from localStorage:', e);
+    }
+    return null;
+}
+
 // Initialize date inputs with default values (current month)
 function initializeDateInputs() {
-    // Use user's local system date
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
     // Format dates for HTML date input (YYYY-MM-DD)
     const formatDateForInput = (date) => {
         const year = date.getFullYear();
@@ -218,6 +244,40 @@ function initializeDateInputs() {
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
+    
+    // Use user's local system date
+    const today = new Date();
+    let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Check localStorage for saved date range values
+    const savedDateRange = loadDateRangeFromLocalStorage();
+    if (savedDateRange) {
+        // Use saved date range values
+        firstDay = new Date(savedDateRange.startDate);
+        lastDay = new Date(savedDateRange.endDate);
+    } else {
+        // Check if selected_document is in URL and adjust date range if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedDocumentId = urlParams.get('selected_document');
+        {% if selected_document %}
+        if (selectedDocumentId) {
+            // Get document date from server-side context
+            const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
+            // If document date is outside current month, adjust date range to include it
+            if (docDate < firstDay || docDate > lastDay) {
+                // Use document date ± 1 month, or use document date's month
+                const docYear = docDate.getFullYear();
+                const docMonth = docDate.getMonth();
+                firstDay = new Date(docYear, docMonth, 1);
+                lastDay = new Date(docYear, docMonth + 1, 0);
+                // Ensure we include at least the document date
+                if (docDate < firstDay) firstDay = new Date(docDate);
+                if (docDate > lastDay) lastDay = new Date(docDate);
+            }
+        }
+        {% endif %}
+    }
     
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
@@ -228,17 +288,34 @@ function initializeDateInputs() {
         startDateInput.value = formatDateForInput(firstDay);
         endDateInput.value = formatDateForInput(lastDay);
         
+        // Save initial date range to localStorage
+        saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+        
+        // Helper function to save and fetch documents
+        const saveAndFetch = (startDate, endDate) => {
+            saveDateRangeToLocalStorage(startDate, endDate);
+            fetchDocuments(startDate, endDate);
+        };
+        
         // Add event listeners
         applyButton.addEventListener('click', () => {
-            fetchDocuments(startDateInput.value, endDateInput.value);
+            saveAndFetch(startDateInput.value, endDateInput.value);
+        });
+        
+        // Save on date input change
+        startDateInput.addEventListener('change', () => {
+            saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+        });
+        endDateInput.addEventListener('change', () => {
+            saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
         });
         
         // Also trigger on Enter key
         startDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') fetchDocuments(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
         });
         endDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') fetchDocuments(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
         });
     }
     
@@ -289,6 +366,18 @@ function fetchDocuments(startDate, endDate) {
         if (data.success) {
             allDocumentsData = data.documents;
             currentPage = 1;
+            
+            // If selected_document is in URL, optionally set document number filter for visual feedback
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedDocumentId = urlParams.get('selected_document');
+            if (selectedDocumentId) {
+                const selectedDoc = data.documents.find(doc => doc.DocumentId == selectedDocumentId);
+                const documentNoFilter = document.getElementById('filter-document-no');
+                if (selectedDoc && documentNoFilter && !documentNoFilter.value) {
+                    documentNoFilter.value = selectedDoc.DocumentNo || '';
+                }
+            }
+            
             applyFrontendFilter();
         } else {
             tbody.innerHTML = '<tr><td colspan="13" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
@@ -325,8 +414,27 @@ function applyFrontendFilter() {
         createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
     };
     
+    // Check if there are any active filters
+    const hasActiveFilters = Object.values(filters).some(value => value !== '');
+    
+    // Check for selected_document in URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    let selectedDocumentId = urlParams.get('selected_document');
+    
+    // If all filters are cleared and selected_document exists in URL, remove it
+    if (!hasActiveFilters && selectedDocumentId) {
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.delete('selected_document');
+        window.history.pushState({}, '', currentUrl.toString());
+        selectedDocumentId = null; // Clear the variable so filtering doesn't apply
+    }
+    
     // Filter data with null-safe operations
     filteredData = allDocumentsData.filter(doc => {
+        // If selected_document is in URL and no filters are active, filter to only that document
+        // If filters are active, ignore selected_document to allow filtering
+        if (selectedDocumentId && !hasActiveFilters && doc.DocumentId != selectedDocumentId) return false;
+        
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
         if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
         if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
@@ -378,6 +486,12 @@ function renderDocumentsTable(documents) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50 cursor-pointer';
         tr.setAttribute('data-document-id', doc.DocumentId);
+        tr.setAttribute('data-document-type-id', doc.DocumentTypeId || '');
+        tr.setAttribute('data-document-type-name', doc.DocumentTypeName || '');
+        tr.setAttribute('data-bank-account', doc.BankAccount || '');
+        tr.setAttribute('data-bank-name', doc.BankName || '');
+        tr.setAttribute('data-account-code', doc.AccountCode || '');
+        tr.setAttribute('data-account-name', doc.AccountName || '');
         
         // Check permissions for action buttons
         const canManageDetails = (doc.CreatedById === currentUserId) && (hasViewDetailPermission || hasAddDetailPermission || hasChangeDetailPermission);
@@ -385,16 +499,16 @@ function renderDocumentsTable(documents) {
         const canDelete = hasDeletePermission && (doc.CreatedById === currentUserId);
         
         tr.innerHTML = `
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || ''}</td>
             <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || ''}</td>
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 hidden">${doc.DocumentTypeCode || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span class="text-left inline-block w-full text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
+                        </td>
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || ''}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-8">${doc.IsVat ? 'Y' : 'N'}</td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
                 <span title="${doc.Description || ''}">${truncateText(doc.Description || '', 50)}</span>
-                        </td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-8">${doc.IsVat ? 'Y' : 'N'}</td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
-                <span class="text-left inline-block w-full text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
                         </td>
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 w-16">
                 <span title="${doc.CurrencyName || ''}">${truncateText(doc.CurrencyName || '', 3)}</span>
@@ -406,14 +520,14 @@ function renderDocumentsTable(documents) {
                         <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
                             <div class="flex items-center justify-end space-x-1 lg:space-x-2">
                     ${canManageDetails ? `
-                    <a href="/core/cashdocuments/${doc.DocumentId}/bulk-manage-details/" 
-                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                   onclick="event.stopPropagation();"
-                                   title="Manage Details">
+                    <button class="manage-details-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                            data-document-id="${doc.DocumentId}"
+                            data-document-date="${doc.DocumentDate}"
+                            title="Manage Details">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                     </svg>
-                                </a>
+                                </button>
                     ` : ''}
                                 <button class="print-document-btn" 
                             data-document-id="${doc.DocumentId}"
@@ -572,6 +686,14 @@ function initializeFilterListeners() {
                 if (element) element.value = '';
             });
             currentPage = 1;
+            
+            // Remove selected_document from URL when filters are cleared
+            const currentUrl = new URL(window.location);
+            if (currentUrl.searchParams.has('selected_document')) {
+                currentUrl.searchParams.delete('selected_document');
+                window.history.pushState({}, '', currentUrl.toString());
+            }
+            
             applyFrontendFilter();
         });
     }
@@ -605,9 +727,25 @@ function initializeEventHandlers() {
         const row = e.target.closest('tr[data-document-id]');
         if (row && !e.target.closest('button') && !e.target.closest('a')) {
             const documentId = row.getAttribute('data-document-id');
-                if (documentId) {
-                    loadDocumentDetails(documentId);
-                }
+            if (documentId) {
+                loadDocumentDetails(documentId);
+            }
+            return;
+        }
+    
+    // Handle manage details buttons
+        const manageDetailsBtn = e.target.closest('.manage-details-btn');
+        if (manageDetailsBtn) {
+            console.log('Manage Details button clicked!', manageDetailsBtn);
+            e.stopPropagation();
+            
+            const documentId = manageDetailsBtn.getAttribute('data-document-id');
+            const documentDate = manageDetailsBtn.getAttribute('data-document-date');
+            
+            console.log('Document ID:', documentId, 'Date:', documentDate);
+            
+            // Check period lock before allowing manage details
+            checkPeriodLockForManageDetails(documentId, documentDate);
             return;
         }
     
@@ -642,28 +780,54 @@ function initializeEventHandlers() {
                 return;
             }
             
-            // Extract data from table cells
+            // Extract data from table cells and row data attributes
             const cells = row.querySelectorAll('td');
+            const documentTypeId = parseInt(row.getAttribute('data-document-type-id')) || 1;
+            const documentTypeName = row.getAttribute('data-document-type-name') || '';
+            const bankAccount = row.getAttribute('data-bank-account') || '';
+            const bankName = row.getAttribute('data-bank-name') || '';
+            let accountName = row.getAttribute('data-account-name') || '';
+            let accountCode = row.getAttribute('data-account-code') || '';
+            
+            if (!accountName || !accountCode) {
+                const accountCell = cells[3]; // Account is now at index 3
+                const accountTitle = accountCell?.querySelector('span')?.getAttribute('title') || '';
+                
+                if (accountTitle) {
+                    // Title format: "AccountCode - AccountName"
+                    const titleParts = accountTitle.split(' - ');
+                    if (!accountCode) accountCode = titleParts[0]?.trim() || '';
+                    if (!accountName) accountName = titleParts[1]?.trim() || '';
+                }
+                
+                // Final fallback to cell text content for accountCode
+                if (!accountCode) {
+                    accountCode = cells[3]?.textContent?.trim() || '';
+                }
+            }
                 const documentData = {
                 documentId: documentId,
-                documentNo: cells[0]?.textContent?.trim() || '',
-                documentDate: cells[3]?.textContent?.trim() || '',
-                description: cells[4]?.textContent?.trim() || '',
+                documentNo: cells[1]?.textContent?.trim() || '', // Document is now at index 1
+                documentDate: cells[0]?.textContent?.trim() || '', // Date is now at index 0
+                description: cells[6]?.textContent?.trim() || '', // Description is now at index 6
                 createdBy: cells[11]?.textContent?.trim() || '',
-                documentTypeId: 1, // Default to type 1, could be enhanced to extract from cell[1]
-                clientName: cells[2]?.textContent?.trim() || '',
-                accountName: cells[6]?.textContent?.trim() || '',
-                currencyName: cells[7]?.textContent?.trim() || '',
-                currencyAmount: cells[8]?.textContent?.trim() || '',
-                currencyExchange: cells[9]?.textContent?.trim() || '',
-                currencyMNT: cells[10]?.textContent?.trim() || '',
-                isVat: cells[5]?.textContent?.trim() === 'Y',
-                vatAmount: '', // Not available in table, would need to be fetched separately
-                details: getDocumentDetails(documentId)
+                documentTypeId: documentTypeId,
+                documentTypeName: documentTypeName,
+                bankAccount: bankAccount,
+                bankName: bankName,
+                accountName: accountName,//print changes
+                accountCode: accountCode,//print changes
+                clientName: cells[4]?.textContent?.trim() || '', // Client is now at index 4
+                currencyName: cells[7]?.textContent?.trim() || '', // Currency is still at index 7
+                currencyAmount: cells[8]?.textContent?.trim() || '', // Currency Amount is still at index 8
+                currencyExchange: cells[9]?.textContent?.trim() || '', // Exchange is still at index 9
+                currencyMNT: cells[10]?.textContent?.trim() || '', // MNT Amount is still at index 10
+                isVat: cells[5]?.textContent?.trim() === 'Y', // VAT is still at index 5
+                vatAmount: '' // Not available in table, would need to be fetched separately
                 };
                 
-                // Call the generic print function
-                printDocument(
+                // Call the print function from print-cash-document.js
+                window.printDocument(
                     documentData.documentId,
                     documentData.documentNo,
                     documentData.documentDate,
@@ -1000,6 +1164,45 @@ function showDetailErrorState() {
         `;
         detailContainer.innerHTML = errorHtml;
     }
+}
+
+// Check period lock before allowing manage details
+function checkPeriodLockForManageDetails(documentId, documentDate) {
+    console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
+    
+    if (!documentDate) {
+        console.log('No date, proceeding to manage details');
+        // No date, proceed to manage details
+        window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
+        return;
+    }
+    
+    console.log('Checking period lock for date:', documentDate);
+    
+    // Check period lock via API
+    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Period lock API response:', data);
+            if (data.is_locked) {
+                console.log('Period is locked, showing modal');
+                // Show modal for locked period
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                console.log('Period not locked, proceeding to manage details');
+                // Not locked, proceed to manage details
+                window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
+            }
+        })
+        .catch(error => {
+            console.error('Period lock check failed:', error);
+            // On error, allow manage details (fail open)
+            window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
+        });
 }
 
 // Check period lock before allowing edit

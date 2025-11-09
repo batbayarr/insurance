@@ -9,9 +9,27 @@ class Ref_Account_Type(models.Model):
     AccountTypeCode = models.CharField(max_length=4, unique=True)
     AccountTypeName = models.CharField(max_length=100, unique=True)    
     IsActive = models.BooleanField(default=True)
-    CT1 = models.SmallIntegerField(default=0)
-    CT2 = models.SmallIntegerField(default=0)
+    StBalanceId = models.ForeignKey(
+        'St_Balance',
+        on_delete=models.PROTECT,
+        db_column='StBalanceId',
+        related_name='account_types',
+        null=True,
+        blank=True
+    )
+    StIncomeId = models.ForeignKey(
+        'St_Income',
+        on_delete=models.PROTECT,
+        db_column='StIncomeId',
+        related_name='account_types',
+        null=True,
+        blank=True
+    )
 
+
+
+
+    
     class Meta:
         db_table = 'ref_account_type'
         verbose_name = 'Account Type'
@@ -595,6 +613,7 @@ class RefInventory(models.Model):
     CreatedBy = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='created_inventories', db_column='CreatedBy')
     ModifiedBy = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='modified_inventories', db_column='ModifiedBy')
     IsActive = models.BooleanField(default=True)
+    IsDelete = models.BooleanField(default=False)
     CreatedDate = models.DateField(auto_now_add=True)
     ModifiedDate = models.DateField(auto_now=True)
 
@@ -985,6 +1004,14 @@ class Ast_Document(models.Model):
         db_column='ClientId',
         related_name='ast_documents'
     )
+    TemplateId = models.ForeignKey(
+        'Ref_Template',
+        on_delete=models.PROTECT,
+        db_column='TemplateId',
+        related_name='ast_documents',
+        null=True,
+        blank=True
+    )
     Description = models.CharField(max_length=200)
     IsVat = models.BooleanField(default=False, null=True, blank=True)
     VatAccountId = models.ForeignKey(
@@ -1168,7 +1195,7 @@ class AstDepreciationExpense(models.Model):
 class Ref_Template(models.Model):
     """Template model for document templates"""
     TemplateId = models.SmallAutoField(primary_key=True)
-    TemplateName = models.CharField(max_length=55)
+    TemplateName = models.CharField(max_length=70)
     DocumentTypeId = models.ForeignKey(
         Ref_Document_Type,
         on_delete=models.PROTECT,
@@ -1180,18 +1207,11 @@ class Ref_Template(models.Model):
         on_delete=models.PROTECT,
         db_column='AccountId',
         related_name='templates',
-        null=True,
-        blank=True
+        
     )
-    IsVat = models.BooleanField(default=False)
-    CashFlowId = models.ForeignKey(
-        Ref_CashFlow,
-        on_delete=models.PROTECT,
-        db_column='CashFlowId',
-        related_name='templates',
-        null=True,
-        blank=True
-    )
+    # Keep IsVat to satisfy existing DB NOT NULL constraint; default to False
+    IsVat = models.BooleanField(default=False, db_column='IsVat')
+    
     IsDelete = models.BooleanField(default=False)
     CreatedBy = models.ForeignKey(
         User,
@@ -1249,4 +1269,55 @@ class Ref_Template_Detail(models.Model):
             models.Index(fields=['AccountId']),
             models.Index(fields=['IsDebit']),
         ]
-    
+
+
+class St_Balance(models.Model):
+    """Stock Balance model for managing stock balances"""
+    StbalanceId = models.SmallIntegerField(primary_key=True)
+    StbalanceCode = models.CharField(max_length=30)
+    StbalanceName = models.CharField(max_length=150)
+    BeginBalance = models.DecimalField(max_digits=24, decimal_places=6, default=0)
+    EndBalance = models.DecimalField(max_digits=24, decimal_places=6, default=0)
+    Order = models.SmallIntegerField()
+
+    class Meta:
+        db_table = 'st_balance'
+        verbose_name = 'Stock Balance'
+        verbose_name_plural = 'Stock Balances'
+        ordering = ['Order', 'StbalanceCode']
+
+    def __str__(self):
+        return f"{self.StbalanceCode} - {self.StbalanceName}"
+
+
+class St_Income(models.Model):
+    StIncomeId = models.SmallIntegerField(primary_key=True)
+    StIncome = models.CharField(max_length=30)
+    StIncomeName = models.CharField(max_length=150)
+    EndBalance = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    Order = models.SmallIntegerField()
+
+    class Meta:
+        db_table = 'st_income'
+        verbose_name = 'Stock Income'
+        verbose_name_plural = 'Stock Incomes'
+        ordering = ['Order', 'StIncome']
+
+
+class St_CashFlow(models.Model):
+    """Cash Flow Statement model for managing cash flow categories"""
+    StCashFlowId = models.SmallIntegerField(primary_key=True, db_column='StCashFlowId')
+    StCashFlowCode = models.CharField(max_length=30, db_column='StCashFlowCode')
+    StCashFlowName = models.CharField(max_length=150, db_column='StCashFlowName')
+    EndBalance = models.DecimalField(max_digits=24, decimal_places=6, default=0, db_column='EndBalance')
+    Order = models.SmallIntegerField(db_column='Order')
+    IsVisible = models.BooleanField(default=True, db_column='IsVisible')
+ 
+    class Meta:
+        db_table = 'st_cashflow'
+        verbose_name = 'Cash Flow Category'
+        verbose_name_plural = 'Cash Flow Categories'
+        ordering = ['Order', 'StCashFlowCode']
+ 
+    def __str__(self):
+        return f"{self.StCashFlowCode} - {self.StCashFlowName}"         

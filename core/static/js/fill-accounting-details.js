@@ -84,6 +84,7 @@ function FillAccountingDetailsGeneric(config) {
     console.log(`${debugPrefix}: VAT Rate from docData.VatPercent:`, docData.VatPercent, 'Parsed:', vatRate);
     
     // Only apply VAT when IsVat is true; choose basis by document type
+    // Asset documents (6, 11) use totalPrice, Inventory documents (5, 10) use totalCost
     const vatBasis = [6, 11].includes(docData.DocumentTypeId) ? totalPrice : totalCost;
     const vatAmount = docData.IsVat ? (vatBasis * vatRate) / 100 : 0;
     
@@ -142,6 +143,7 @@ function FillAccountingDetailsGeneric(config) {
         }
         
         // Apply logic based on document type
+        // Asset documents (6, 11) use asset logic, Inventory documents (5, 10) use inventory logic
         if ([6, 11].includes(docData.DocumentTypeId)) {
             // Asset document logic
             const accountTypeId = templateDetail.AccountTypeId;

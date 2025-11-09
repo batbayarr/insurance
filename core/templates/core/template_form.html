@@ -8,7 +8,7 @@
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
             <p class="text-gray-600">
-                {% if 'Create' in title %}Add a new template to your system{% else %}Update the template information{% endif %}
+                {% if 'Create' in title %}Шинэ загвар үүсгэнэ{% else %}Загварын мэдээллийг шинэчлэх{% endif %}
             </p>
         </div>
         <div class="bg-white shadow sm:rounded-lg">
@@ -29,7 +29,7 @@
                                     {% endfor %}
                                 </div>
                                 {% endif %}
-                                <p class="mt-1 text-sm text-gray-500">Enter a unique template name (max 55 characters)</p>
+                                <p class="mt-1 text-sm text-gray-500">Давтагдашгүй загварын нэр оруулна уу (ихдээ 55 тэмдэгт)</p>
                             </div>
                         </div>
                         <div>
@@ -45,14 +45,14 @@
                                     {% endfor %}
                                 </div>
                                 {% endif %}
-                                <p class="mt-1 text-sm text-gray-500">Select the document type for this template</p>
+                                <p class="mt-1 text-sm text-gray-500">Энэ загварт тохирох баримтын төрлийг сонгоно уу</p>
                             </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="{{ form.AccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.AccountId.label }}
+                                {{ form.AccountId.label }} <span class="text-red-500">*</span>
                             </label>
                             <div class="mt-1">
                                 {{ form.AccountId }}
@@ -63,61 +63,15 @@
                                     {% endfor %}
                                 </div>
                                 {% endif %}
-                                <p class="mt-1 text-sm text-gray-500">Select an account for this template (optional)</p>
+                                <p class="mt-1 text-sm text-gray-500">Энэ загварт тохирох дансыг сонгоно уу</p>
                             </div>
                         </div>
-                        <div>
-                            <label for="{{ form.CashFlowId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.CashFlowId.label }}
-                            </label>
-                            <div class="mt-1">
-                                {{ form.CashFlowId }}
-                                {% if form.CashFlowId.errors %}
-                                <div class="mt-1 text-sm text-red-600">
-                                    {% for error in form.CashFlowId.errors %}
-                                    <p>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <p class="mt-1 text-sm text-gray-500">Select a cash flow category for this template (optional)</p>
-                            </div>
-                        </div>
+                        
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <div class="flex items-center">
-                                {{ form.IsVat }}
-                                <label for="{{ form.IsVat.id_for_label }}" class="ml-2 block text-sm text-gray-900">
-                                    {{ form.IsVat.label }}
-                                </label>
-                            </div>
-                            {% if form.IsVat.errors %}
-                            <div class="mt-1 text-sm text-red-600">
-                                {% for error in form.IsVat.errors %}
-                                <p>{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            <p class="mt-1 text-sm text-gray-500">Check if this template should include VAT</p>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex items-center">
-                            {{ form.IsDelete }}
-                            <label for="{{ form.IsDelete.id_for_label }}" class="ml-2 block text-sm text-gray-900">
-                                {{ form.IsDelete.label }}
-                            </label>
-                        </div>
-                        {% if form.IsDelete.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.IsDelete.errors %}
-                            <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
+                    
+                    
                     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                        <a href="{% url 'core:template_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">Cancel</a>
+                        <a href="{% url 'core:template_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">Буцах</a>
                         <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             <i class="fas fa-save mr-2"></i>{{ submit_text }}
                         </button>
@@ -126,7 +80,7 @@
             </div>
         </div>
         <div class="text-center">
-            <a href="{% url 'core:template_master_detail' %}" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Templates</a>
+            <a href="{% url 'core:template_master_detail' %}" class="text-blue-600 hover:text-blue-800 text-sm">← Загварууд руу буцах</a>
         </div>
     </div>
 </div>

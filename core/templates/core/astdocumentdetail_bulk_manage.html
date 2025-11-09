@@ -25,6 +25,33 @@ input[type="number"] {
         </div>
     </div>
 
+    <!-- Document Data for JavaScript (align with inventory generic hooks) -->
+    <script id="document-data" type="application/json">
+    {
+        "DocumentId": {{ document.DocumentId }},
+        "DocumentTypeId": {{ document.DocumentTypeId.DocumentTypeId }},
+        "AccountId": {% if document.AccountId %}{{ document.AccountId.AccountId }}{% else %}null{% endif %},
+        "TemplateId": {% if document.TemplateId %}{{ document.TemplateId.TemplateId }}{% else %}null{% endif %},
+        "IsVat": {% if document.IsVat %}true{% else %}false{% endif %},
+        "ClientId": {{ document.ClientId.ClientId }},
+        "VatAccountId": {% if document.VatAccountId %}{{ document.VatAccountId.AccountId }}{% else %}null{% endif %},
+        "VatPercent": {{ VAT_RATE_PERCENT }},
+        "template_details": [
+            {% for td in template_details %}
+            {
+                "AccountId": {{ td.AccountId.AccountId }},
+                "AccountCode": "{{ td.AccountId.AccountCode }}",
+                "AccountName": "{{ td.AccountId.AccountName }}",
+                "AccountTypeId": {{ td.AccountId.AccountTypeId.AccountTypeId }},
+                "IsDebit": {% if td.IsDebit %}true{% else %}false{% endif %}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        "ClientCode": "{{ document.ClientId.ClientCode }}",
+        "ClientName": "{{ document.ClientId.ClientName }}"
+    }
+    </script>
+
     <!-- Main Form -->
     <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
         <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
@@ -181,7 +208,7 @@ input[type="number"] {
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                     </tr>
                 </thead>
-                <tbody id="detail-tbody" class="bg-white divide-y divide-gray-200">
+                <tbody id="details-accounting-tbody" class="bg-white divide-y divide-gray-200">
                     {% for detail in document_details %}
                     <tr class="hover:bg-gray-50 existing-detail-row" data-detail-id="{{ detail.DocumentDetailId }}">
                         <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
@@ -362,6 +389,41 @@ input[type="number"] {
 // VAT Rate from global constants (available via context processor)
 const VAT_RATE = {{ VAT_RATE }};
 
+// Local wrapper so generic listeners can trigger recalculation like inventory
+// Must be defined before DOMContentLoaded so setupFillAccountingDetailsListeners can find it
+window.FillAccountingDetails = function() {
+    console.log('FillAccountingDetails called');
+    
+    // Call the generic FillAccountingDetails function with asset-specific config
+    if (typeof window.FillAccountingDetailsGeneric === 'function') {
+        console.log('FillAccountingDetailsGeneric function found');
+        
+        // Ensure functions are available
+        if (typeof addDetailRow !== 'function') {
+            console.error('addDetailRow function not defined');
+            return;
+        }
+        if (typeof updateBalanceDisplay !== 'function') {
+            console.error('updateBalanceDisplay function not defined');
+            return;
+        }
+        
+        console.log('All required functions available, calling FillAccountingDetailsGeneric...');
+        
+        window.FillAccountingDetailsGeneric({
+            documentDataId: 'document-data',
+            firstTableId: 'details-tbody',
+            secondTableId: 'details-accounting-tbody',
+            documentTypes: [10, 11],
+            debugPrefix: 'Asset',
+            addDetailRowFunction: addDetailRow,
+            updateBalanceDisplayFunction: updateBalanceDisplay
+        });
+    } else {
+        console.error('Generic FillAccountingDetailsGeneric function not loaded');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get document's default exchange rate from data attribute
     window.documentExchangeRate = parseFloat(document.querySelector('[data-exchange-rate]').getAttribute('data-exchange-rate') || '1.0');
@@ -369,7 +431,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Flag to track if automatic records have been generated
     window.autoRecordsGenerated = false;
     
-    
+    // Set up listeners to trigger recalculation similar to inventory
+    if (typeof setupFillAccountingDetailsListeners === 'function') {
+        setupFillAccountingDetailsListeners({
+            documentDataId: 'document-data',
+            firstTableId: 'details-tbody',
+            secondTableId: 'details-accounting-tbody',
+            documentTypes: [10, 11],
+            debugPrefix: 'Asset'
+        });
+    }
+
     // Add new asset row when button is clicked
     const addNewAssetRowBtn = document.getElementById('add-new-asset-row-btn');
     if (addNewAssetRowBtn) {
@@ -458,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Collect accounting details data (second table) - exclude deleted rows
             const details = [];
-            const detailRows = document.querySelectorAll('#detail-tbody tr:not([style*="display: none"])');
+            const detailRows = document.querySelectorAll('#details-accounting-tbody tr:not([style*="display: none"])');
             
             detailRows.forEach((row, index) => {
                 // Look for both existing and new row patterns
@@ -467,20 +539,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currencyId = row.querySelector('select[name*="detail_currency_id"]')?.value || row.querySelector('select[name*="new_detail_currency_id"]')?.value;
                 const currencyExchange = row.querySelector('input[name*="detail_currency_exchange"]')?.value || row.querySelector('input[name*="new_detail_currency_exchange"]')?.value;
                 const currencyAmount = row.querySelector('input[name*="detail_currency_amount"]')?.value || row.querySelector('input[name*="new_detail_currency_amount"]')?.value;
-                const isDebit = row.querySelector('select[name*="detail_is_debit"]')?.value || row.querySelector('select[name*="new_detail_is_debit"]')?.value;
+                const isDebitVal = row.querySelector('select[name*="detail_is_debit"]')?.value || row.querySelector('select[name*="new_detail_is_debit"]')?.value;
                 
                 // Enforce currency required
                 if (!currencyId) {
                     throw new Error('Currency is required for all accounting rows.');
                 }
 
-                if (accountId && currencyAmount && isDebit) {
+                if (accountId && currencyAmount && isDebitVal) {
+                    // Convert string "true"/"false" to boolean true/false
+                    const isDebit = isDebitVal === 'true';
+                    
                     // Get the calculated debit/credit amounts from the form
                     const debitAmount = row.querySelector('input[name*="detail_debit_amount"]')?.value || row.querySelector('input[name*="new_detail_debit_amount"]')?.value || '0';
                     const creditAmount = row.querySelector('input[name*="detail_credit_amount"]')?.value || row.querySelector('input[name*="new_detail_credit_amount"]')?.value || '0';
-                    
-                    // Convert string boolean to actual boolean
-                    const isDebitBoolean = isDebit === 'true';
                     
                     details.push({
                         account_id: accountId,
@@ -488,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         currency_id: currencyId,
                         currency_exchange: currencyExchange || '1.0',
                         currency_amount: currencyAmount,
-                        is_debit: isDebitBoolean,
+                        is_debit: isDebit,
                         debit_amount: debitAmount,
                         credit_amount: creditAmount
                     });
@@ -568,36 +640,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize asset totals summary
     updateAssetTotalsSummary();
+    
+    // Call FillAccountingDetails on page load if template is selected
+    if (typeof window.FillAccountingDetails === 'function') {
+        console.log('Page loaded, calling FillAccountingDetails...');
+        window.FillAccountingDetails();
+    }
 });
 
-// Global variables
-let newItemCounter = 0;
-let newDetailCounter = 0;
-
-// Add new asset item row
-function addNewRow() {
+// Function to add a new row
+window.addNewRow = function() {
     const tbody = document.getElementById('details-tbody');
-    if (!tbody) return;
-    
-    newItemCounter++;
-    const newRowId = `new_${newItemCounter}`;
-    
-    const newRow = document.createElement('tr');
-    newRow.className = 'hover:bg-gray-50 new-row';
-    newRow.setAttribute('data-new-id', newRowId);
-    
-    newRow.innerHTML = `
+    if (!tbody) {
+        return;
+    }
+    const newRowCounter = tbody.querySelectorAll('tr.new-row').length;
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 new-row';
+    row.innerHTML = `
         <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
             <span class="text-green-600 font-medium">NEW</span>
         </td>
         <td class="px-2 py-1 border-r border-gray-200">
             <div class="relative">
-                <input type="hidden" name="new_asset_card_id_${newRowId}" value="" class="asset-card-id-input" required>
-                <input type="text" 
-                       class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
+                <input type="hidden" name="new_asset_card_id_${newRowCounter}" class="asset-card-id-input" required>
+                <input type="text" class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
                        placeholder="Click to select asset card" 
                        readonly 
-                       onclick="openAssetPopup(this, '${newRowId}')">
+                       onclick="openAssetPopup(this, 'new_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -606,33 +676,33 @@ function addNewRow() {
             </div>
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_quantity_${newRowId}" min="0" required
+            <input type="number" name="new_quantity_${newRowCounter}" min="0" required
                    class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_unit_cost_${newRowId}" min="0" required
+            <input type="number" name="new_unit_cost_${newRowCounter}" min="0" required
                    class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_unit_price_${newRowId}" min="0" required
+            <input type="number" name="new_unit_price_${newRowCounter}" min="0" required
                    class="unit-price-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_total_cost_${newRowId}" min="0" readonly
-                   class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
+            <input type="number" name="new_total_cost_${newRowCounter}" min="0" readonly
+                   class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_total_price_${newRowId}" min="0" readonly
-                   class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
+            <input type="number" name="new_total_price_${newRowCounter}" min="0" readonly
+                   class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                    placeholder="0.000000">
         </td>
         <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
             <div class="flex items-center justify-end space-x-1 lg:space-x-2">
-                <button type="button" onclick="removeRow(this)" 
+                <button type="button" onclick="removeNewRow(this)" 
                         class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -641,23 +711,124 @@ function addNewRow() {
             </div>
         </td>
     `;
-    
-    tbody.appendChild(newRow);
-    
-    // Add event listeners to new row
-    const quantityInput = newRow.querySelector('.quantity-input');
-    const unitCostInput = newRow.querySelector('.unit-cost-input');
-    const unitPriceInput = newRow.querySelector('.unit-price-input');
-    
-    if (quantityInput) quantityInput.addEventListener('input', calculateAssetTotals);
-    if (unitCostInput) unitCostInput.addEventListener('input', calculateAssetTotals);
-    if (unitPriceInput) unitPriceInput.addEventListener('input', calculateAssetTotals);
-    
-    // Update row counter
-    updateRowCounter();
-    
-    // Recalculate totals
-    recalculateAllAssetTotals();
+    tbody.appendChild(row);
+    addAssetCalculationListeners(row);
+}
+
+// Function to remove a new row
+window.removeNewRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        row.remove();
+        updateAssetTotalsSummary();
+    }
+}
+
+// Function to remove an existing row (mark for deletion)
+window.removeRow = function(button) {
+    const row = button.closest('tr');
+    if (row) {
+        const itemId = row.querySelector('input[name^="asset_card_id_"]').name.replace('asset_card_id_', '');
+        const deleteInput = document.getElementById('delete_' + itemId);
+        if (deleteInput) {
+            deleteInput.value = 'true';
+        }
+        // Hide the row visually but keep it in DOM so delete flag is submitted
+        row.style.display = 'none';
+        updateAssetTotalsSummary();
+    }
+}
+
+// Helper function to add a detail row to the second table (asset)
+function addDetailRow(data) {
+    const detailsTbody = document.getElementById('details-accounting-tbody');
+    if (!detailsTbody) {
+        console.error('details-accounting-tbody not found');
+        return;
+    }
+    const rowId = data.rowId || `auto_${Date.now()}`;
+    const newRow = document.createElement('tr');
+    newRow.className = 'hover:bg-gray-50 new-detail-row';
+    newRow.setAttribute('data-row-id', rowId);
+    newRow.innerHTML = `
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${rowId}</td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <div class="relative">
+                <input type="hidden" name="new_detail_account_id_${rowId}" value="${data.accountId}" required>
+                <input type="text" value="${data.accountDisplay}" 
+                       class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
+                       readonly 
+                       onclick="openAccountPopup(this, 'new_detail_${rowId}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for asset transactions' })">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <div class="relative">
+                <input type="hidden" name="new_detail_client_id_${rowId}" value="${data.clientId ?? ''}">
+                <input type="text" value="${data.clientDisplay ?? ''}" 
+                       class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
+                       readonly 
+                       onclick="openClientPopup(this, 'new_detail_${rowId}')">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </td>
+        <td class="px-2 py-1 border-r border-gray-200">
+            <select name="new_detail_currency_id_${rowId}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="${data.currencyId ?? 1}" selected>${data.currencyId ?? 1} - MNT</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_exchange_${rowId}" min="0"
+                   value="${data.currencyExchange ?? 1}"
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="1.000000">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_currency_amount_${rowId}" min="0" required
+                   value="${data.currencyAmount ?? '0.000000'}"
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1 text-left border-r border-gray-200">
+            <select name="new_detail_is_debit_${rowId}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="true" ${data.isDebit ? 'selected' : ''}>Debit</option>
+                <option value="false" ${!data.isDebit ? 'selected' : ''}>Credit</option>
+            </select>
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_debit_amount_${rowId}" min="0"
+                   value="${data.isDebit ? (data.currencyAmount ?? '0.000000') : '0.000000'}"
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_detail_credit_amount_${rowId}" min="0"
+                   value="${!data.isDebit ? (data.currencyAmount ?? '0.000000') : '0.000000'}"
+                   class="w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                   placeholder="0.00">
+        </td>
+        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                <button type="button" onclick="removeNewDetailRow(this)" 
+                        class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </td>`;
+
+    detailsTbody.appendChild(newRow);
+    addEventListenersToDetailRow(newRow);
+    updateBalanceDisplay();
 }
 
 // Add new accounting detail row
@@ -675,7 +846,7 @@ function addNewDetailRow() {
         return;
     }
     
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) {
         return;
     }
@@ -913,7 +1084,7 @@ function autoPopulateDetailRow(row, documentType, isVat, totalCostAmount) {
 
 // Add VAT credit record
 function addVatCreditRecord(vatAmount) {
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) return;
     
     // Get master document information
@@ -1061,7 +1232,7 @@ function addVatCreditRecord(vatAmount) {
 
 // Add VAT debit record (for Asset Issue with VAT)
 function addVatDebitRecord(vatAmount) {
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) return;
     
     // Get master document information
@@ -1343,31 +1514,6 @@ window.removeNewDetailRow = function(button) {
     }
 }
 
-// Remove asset item row
-function removeRow(button) {
-    const row = button.closest('tr');
-    if (!row) return;
-    
-    // Check if it's an existing row (has data-item-id)
-    const itemId = row.getAttribute('data-item-id');
-    if (itemId) {
-        // Mark for deletion instead of removing
-        const deleteInput = row.querySelector('input[name*="delete_"]');
-        if (deleteInput) {
-            deleteInput.value = 'true';
-        }
-        row.style.display = 'none';
-    } else {
-        // Remove new row completely
-        row.remove();
-    }
-    
-    // Update row counter
-    updateRowCounter();
-    
-    // Recalculate totals
-    recalculateAllAssetTotals();
-}
 
 // Remove accounting detail row
 function removeDetailRow(button) {
@@ -1380,11 +1526,33 @@ function removeDetailRow(button) {
     updateBalanceDisplay();
 }
 
-// Calculate asset totals for a specific row
-function calculateAssetTotals(event) {
-    const row = event.target.closest('tr');
-    if (!row) return;
+// Add calculation event listeners to asset row
+function addAssetCalculationListeners(row) {
+    const quantityInput = row.querySelector('.quantity-input');
+    const unitCostInput = row.querySelector('.unit-cost-input');
+    const unitPriceInput = row.querySelector('.unit-price-input');
     
+    if (quantityInput) {
+        quantityInput.addEventListener('input', function() {
+            calculateAssetTotals(row);
+        });
+    }
+    
+    if (unitCostInput) {
+        unitCostInput.addEventListener('input', function() {
+            calculateAssetTotals(row);
+        });
+    }
+    
+    if (unitPriceInput) {
+        unitPriceInput.addEventListener('input', function() {
+            calculateAssetTotals(row);
+        });
+    }
+}
+
+// Calculate total cost and total price for asset row
+function calculateAssetTotals(row) {
     const quantityInput = row.querySelector('.quantity-input');
     const unitCostInput = row.querySelector('.unit-cost-input');
     const unitPriceInput = row.querySelector('.unit-price-input');
@@ -1403,8 +1571,8 @@ function calculateAssetTotals(event) {
     totalCostDisplay.value = totalCost.toFixed(6);
     totalPriceDisplay.value = totalPrice.toFixed(6);
     
-    // Recalculate all totals
-    recalculateAllAssetTotals();
+    // Update summary totals
+    updateAssetTotalsSummary();
 }
 
 // Recalculate all asset totals
@@ -1434,31 +1602,19 @@ function recalculateAllAssetTotals() {
     if (sumTotalPriceElement) sumTotalPriceElement.textContent = sumTotalPrice.toFixed(2);
 }
 
-// Initialize asset calculations
+// Initialize asset calculations for existing rows
 function initializeAssetCalculations() {
     const tbody = document.getElementById('details-tbody');
     if (!tbody) return;
     
-    const quantityInputs = tbody.querySelectorAll('.quantity-input');
-    const unitCostInputs = tbody.querySelectorAll('.unit-cost-input');
-    const unitPriceInputs = tbody.querySelectorAll('.unit-price-input');
-    
-    quantityInputs.forEach(input => {
-        input.addEventListener('input', calculateAssetTotals);
-    });
-    
-    unitCostInputs.forEach(input => {
-        input.addEventListener('input', calculateAssetTotals);
-    });
-    
-    unitPriceInputs.forEach(input => {
-        input.addEventListener('input', calculateAssetTotals);
+    tbody.querySelectorAll('tr').forEach(row => {
+        addAssetCalculationListeners(row);
     });
 }
 
 // Initialize detail event listeners
 function initializeDetailEventListeners() {
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) return;
     
     const rows = tbody.querySelectorAll('tr');
@@ -1518,7 +1674,7 @@ function calculateAmountsForRow(row) {
 
 // Force recalculate all amounts
 function forceRecalculateAllAmounts() {
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) return;
     
     const rows = tbody.querySelectorAll('tr');
@@ -1529,7 +1685,7 @@ function forceRecalculateAllAmounts() {
 
 // Update balance display
 function updateBalanceDisplay() {
-    const tbody = document.getElementById('detail-tbody');
+    const tbody = document.getElementById('details-accounting-tbody');
     if (!tbody) return;
     
     let totalDebit = 0;
@@ -1576,19 +1732,6 @@ function updateBalanceDisplay() {
     
     if (sumDebitElement) sumDebitElement.textContent = totalDebit.toFixed(2);
     if (sumCreditElement) sumCreditElement.textContent = totalCredit.toFixed(2);
-}
-
-// Update row counter
-function updateRowCounter() {
-    const tbody = document.getElementById('details-tbody');
-    if (!tbody) return;
-    
-    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
-    const rowCounterElement = document.getElementById('row-counter');
-    
-    if (rowCounterElement) {
-        rowCounterElement.textContent = visibleRows.length;
-    }
 }
 
 // Update asset totals summary

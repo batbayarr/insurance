@@ -31,7 +31,7 @@ class Ref_AccountForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         # Configure foreign key fields with proper querysets
-        self.fields['AccountTypeId'].queryset = Ref_Account_Type.objects.filter(IsActive=True).order_by('AccountTypeId')
+        self.fields['AccountTypeId'].queryset = Ref_Account_Type.objects.all().order_by('AccountTypeCode')
         self.fields['CurrencyId'].queryset = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
         
         # Add empty choice for optional fields
@@ -615,6 +615,44 @@ class Ref_Asset_CardForm(forms.ModelForm):
         self.fields['ClientId'].required = False
         self.fields['ClientId'].empty_label = "Select Client (Optional)"
     
+    def clean(self):
+        """Calculate DailyExpense before validation if UnitCost and MonthsToUse are provided"""
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        cleaned_data = super().clean()
+        unit_cost = cleaned_data.get('UnitCost')
+        months_to_use = cleaned_data.get('MonthsToUse')
+        daily_expense = cleaned_data.get('DailyExpense')
+        
+        # Calculate DailyExpense if UnitCost and MonthsToUse are provided
+        if unit_cost is not None and months_to_use is not None and months_to_use > 0:
+            # DailyExpense = UnitCost / (MonthsToUse * 30 days per month)
+            # Use Decimal for precise calculation and rounding
+            unit_cost_decimal = Decimal(str(unit_cost))
+            months_to_use_decimal = Decimal(str(months_to_use))
+            calculated_daily_expense = unit_cost_decimal / (months_to_use_decimal * Decimal('30'))
+            
+            # Round to 6 decimal places to match the model field's decimal_places=6
+            # This ensures it fits within max_digits=24, decimal_places=6 constraint
+            calculated_daily_expense = calculated_daily_expense.quantize(
+                Decimal('0.000001'), 
+                rounding=ROUND_HALF_UP
+            )
+            
+            cleaned_data['DailyExpense'] = calculated_daily_expense
+        elif unit_cost is not None and months_to_use is not None and months_to_use <= 0:
+            raise forms.ValidationError({
+                'MonthsToUse': 'Months to Use must be greater than 0 to calculate Daily Expense.'
+            })
+        elif daily_expense is None or daily_expense == 0:
+            # If DailyExpense is not provided and cannot be calculated, raise an error
+            if unit_cost is None or months_to_use is None:
+                raise forms.ValidationError({
+                    'DailyExpense': 'Daily expense should be calculated before submit. Please provide Unit Cost and Months to Use, or enter Daily Expense manually.'
+                })
+        
+        return cleaned_data
+    
     class Meta:
         model = Ref_Asset_Card
         fields = ['AssetId', 'AssetCardCode', 'AssetCardName', 'ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'ClientId']
@@ -685,7 +723,7 @@ class InvBeginningBalanceForm(forms.ModelForm):
         
         # Configure foreign key fields with proper querysets
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
-        self.fields['InventoryId'].queryset = RefInventory.objects.filter(IsActive=True).order_by('InventoryName')
+        self.fields['InventoryId'].queryset = RefInventory.objects.filter(IsActive=True, IsDelete=False).order_by('InventoryName')
         self.fields['WarehouseId'].queryset = Ref_Warehouse.objects.filter(IsDelete=False).order_by('WarehouseCode')
         
         # Set required fields
@@ -779,10 +817,13 @@ class AstDocumentForm(forms.ModelForm):
         self.fields['ClientId'].queryset = RefClient.objects.filter(IsDelete=False).order_by('ClientCode')
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         self.fields['VatAccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
+        self.fields['TemplateId'].queryset = Ref_Template.objects.filter(IsDelete=False).order_by('TemplateName')
         
         # Add empty choice for optional fields
         self.fields['VatAccountId'].empty_label = "Select VAT Account (Optional)"
         self.fields['VatAccountId'].required = False
+        self.fields['TemplateId'].empty_label = "Select Template (Optional)"
+        self.fields['TemplateId'].required = False
         
         # Add HTMX attributes for dynamic form handling
         self.fields['DocumentNo'].widget.attrs.update({
@@ -794,7 +835,7 @@ class AstDocumentForm(forms.ModelForm):
     
     class Meta:
         model = Ast_Document
-        fields = ['DocumentNo', 'DocumentTypeId', 'DocumentDate', 'AccountId', 'ClientId', 'Description', 'IsVat', 'VatAccountId', 'VatPercent', 'IsLock', 'CostAmount', 'PriceAmount']
+        fields = ['DocumentNo', 'DocumentTypeId', 'DocumentDate', 'AccountId', 'ClientId', 'TemplateId', 'Description', 'IsVat', 'VatAccountId', 'VatPercent', 'IsLock', 'CostAmount', 'PriceAmount']
         widgets = {
             'DocumentNo': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
@@ -904,12 +945,12 @@ class Ref_TemplateForm(forms.ModelForm):
     
     class Meta:
         model = Ref_Template
-        fields = ['TemplateName', 'DocumentTypeId', 'AccountId', 'CashFlowId', 'IsVat', 'IsDelete']
+        fields = ['TemplateName', 'DocumentTypeId', 'AccountId', 'IsDelete']
         widgets = {
             'TemplateName': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Enter template name',
-                'maxlength': '55'
+                'maxlength': '70'
             }),
             'DocumentTypeId': forms.Select(attrs={
                 'class': 'form-control'
@@ -917,23 +958,15 @@ class Ref_TemplateForm(forms.ModelForm):
             'AccountId': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'CashFlowId': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'IsVat': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
             'IsDelete': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             })
         }
         labels = {
-            'TemplateName': 'Template Name',
-            'DocumentTypeId': 'Document Type',
-            'AccountId': 'Account',
-            'CashFlowId': 'Cash Flow',
-            'IsVat': 'Include VAT',
-            'IsDelete': 'Is Deleted'
+            'TemplateName': 'ЗАГВАРЫН НЭР',
+            'DocumentTypeId': 'БАРИМТЫН ТӨРӨЛ',
+            'AccountId': 'ДАНС',
+            'IsDelete': 'Идэвхитэй'
         }
 
     def __init__(self, *args, **kwargs):
@@ -942,13 +975,7 @@ class Ref_TemplateForm(forms.ModelForm):
         self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False)
         # Filter active accounts
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False)
-        # Set empty label for AccountId
-        self.fields['AccountId'].empty_label = "Select Account (Optional)"
-        # Filter active cash flows
-        from .models import Ref_CashFlow
-        self.fields['CashFlowId'].queryset = Ref_CashFlow.objects.filter(IsActive=True)
-        # Set empty label for CashFlowId
-        self.fields['CashFlowId'].empty_label = "Select Cash Flow (Optional)"
+        # AccountId is required - no empty_label needed
 
 
 class Ref_Template_DetailForm(forms.ModelForm):
@@ -969,9 +996,9 @@ class Ref_Template_DetailForm(forms.ModelForm):
             })
         }
         labels = {
-            'AccountId': 'Account',
-            'IsDebit': 'Is Debit',
-            'CashFlowId': 'Cash Flow'
+            'AccountId': 'ДАНС',
+            'IsDebit': 'ДЕБИТ/КРЕДИТ',
+            'CashFlowId': 'МӨНГӨН ГҮЙЛГЭЭНИЙ МӨР'
         }
 
     def __init__(self, *args, **kwargs):
@@ -981,6 +1008,6 @@ class Ref_Template_DetailForm(forms.ModelForm):
         # Filter active cash flows
         self.fields['CashFlowId'].queryset = Ref_CashFlow.objects.filter(IsActive=True)
         # Set empty label for CashFlowId
-        self.fields['CashFlowId'].empty_label = "Select Cash Flow (Optional)"
+        self.fields['CashFlowId'].empty_label = "Мөнгөн гүйлгээний төрөл сонгоно уу"
 
 

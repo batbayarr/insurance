@@ -102,7 +102,8 @@ input[type="number"] {
                                            class="inventory-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
                                            placeholder="Click to select inventory" 
                                            readonly 
-                                           onclick="openInventoryPopup(this, '{{ item.DocumentItemId }}')">
+                                           onclick="openInventoryPopup(this, '{{ item.DocumentItemId }}')"
+                                           title="{% if item.InventoryId %}{{ item.InventoryId.InventoryName }}{% endif %}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                         <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />

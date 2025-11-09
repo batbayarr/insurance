@@ -4,176 +4,108 @@
 {% block title %}Inventory Beginning Balances{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Header Section -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Inventory Beginning Balances</h1>
-                        <p class="mt-1 text-sm text-gray-500">Manage initial inventory balances for accounts</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <button onclick="refreshBalanceList()" 
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
-                        <button onclick="addNewBalance()" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            Add New Balance
-                        </button>
-                    </div>
-                </div>
-            </div>
+<div class="space-y-0">
+    <!-- Header Section (compact, consistent with cash module) -->
+    <div class="flex justify-between items-center pl-0 pr-3 py-2 lg:pl-0 lg:pr-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">БАРАА,МАТЕРИАЛЫН ҮЛДЭГДЭЛ</h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="refreshBalanceList()" 
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 border border-gray-300 bg-white text-gray-700 text-xs font-medium rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span class="text-xs">Сэргээх</span>
+            </button>
+            <button onclick="addNewBalance()" 
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs">Нэмэх</span>
+            </button>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Filters Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Filters</h3>
-            </div>
-            <div class="px-6 py-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label for="filter-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-                        <input type="text" 
-                               id="filter-account" 
-                               placeholder="Filter by account..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="filter-inventory" class="block text-sm font-medium text-gray-700 mb-1">Inventory</label>
-                        <input type="text" 
-                               id="filter-inventory" 
-                               placeholder="Filter by inventory..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="filter-warehouse" class="block text-sm font-medium text-gray-700 mb-1">Warehouse</label>
-                        <input type="text" 
-                               id="filter-warehouse" 
-                               placeholder="Filter by warehouse..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex items-end">
-                        <button onclick="clearAllFilters()" 
-                                class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Clear Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div>
+        
 
         <!-- Balance List Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">Inventory Beginning Balances</h3>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-500">Total Records:</span>
-                        <span id="total-records" class="text-sm font-medium text-gray-900">{{ balances|length }}</span>
-                    </div>
-                </div>
-            </div>
+        <div id="inventory-beginning-container" class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
             
             <!-- Balance Grid -->
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <input type="checkbox" id="select-all" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Account
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Inventory
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Quantity
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Unit Cost
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Unit Price
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Warehouse
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Employee
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created Date
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created By
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">#</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">БАРАА</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АГУУЛАХ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Тоо хэмжээ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЭЛ</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <td class="px-2 py-1 border-r border-gray-200 text-center text-xs text-gray-500">#</td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="inv-filter-account" placeholder="Filter..."
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="inv-filter-inventory" placeholder="Filter..."
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1"></td>
                         </tr>
                     </thead>
                     <tbody id="balance-tbody" class="bg-white divide-y divide-gray-200">
                         {% for balance in balances %}
                         <tr class="balance-row" 
-                            data-account="{{ balance.AccountId.AccountName|lower }}" 
-                            data-inventory="{{ balance.InventoryId.InventoryName|lower }}" 
-                            data-warehouse="{{ balance.WarehouseId.WarehouseName|lower }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input type="checkbox" class="balance-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" value="{{ balance.BeginningBalanceId }}">
+                            data-account="{{ balance.AccountId.AccountCode|lower }} {{ balance.AccountId.AccountName|lower }}" 
+                            data-inventory="{{ balance.InventoryId.InventoryName|lower }}"
+                            data-quantity="{{ balance.Quantity }}"
+                            data-unitcost="{{ balance.UnitCost }}"
+                            data-unitprice="{{ balance.UnitPrice }}">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center">
+                                <span class="row-index">1</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    <span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span>
-                                </div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                <span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.InventoryId.InventoryName }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.Quantity|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.UnitCost|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.UnitPrice|floatformat:2 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.WarehouseId.WarehouseName|default:"-" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.EmployeeId|default:"-" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedDate|date:"Y-m-d" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedBy.username|default:"-" }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-2">
-                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 transition-colors" 
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.InventoryId.InventoryName }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.WarehouseId.WarehouseCode }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="qty-val">{{ balance.Quantity|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="ucost-val">{{ balance.UnitCost|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="uprice-val">{{ balance.UnitPrice|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tcost-val">-</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tprice-val">-</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedDate|date:"Y-m-d" }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedBy.username|default:"-" }}</td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors" 
                                             data-balance-id="{{ balance.BeginningBalanceId }}" title="Edit">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
-                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 transition-colors" 
+                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" 
                                             data-balance-id="{{ balance.BeginningBalanceId }}" title="Delete">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -184,13 +116,75 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="11" class="px-6 py-4 text-center text-gray-500">No inventory beginning balances found</td>
+                            <td colspan="9" class="px-4 py-4 text-center text-xs text-gray-500">No inventory beginning balances found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="4"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right border-r border-gray-200">
+                                <span id="inv-total-quantity">-</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right border-r border-gray-200">
+                                <span id="inv-total-cost">-</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right border-r border-gray-200">
+                                <span id="inv-total-price">-</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
-            
+
+            <!-- Pagination -->
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button id="ib-prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Өмнөх
+                    </button>
+                    <button id="ib-next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Дараа
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p id="ib-pagination-info" class="text-sm text-gray-700">
+                            Нийт <span id="ib-total-count">0</span> бичлэгээс <span id="ib-showing-start">0</span> - <span id="ib-showing-end">0</span> бичлэг харагдаж байна
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="ib-page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                            <select id="ib-page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                            </select>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="ib-prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <span id="ib-page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700"></span>
+                                <button id="ib-next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty State -->
             <div id="empty-state" class="text-center py-12 hidden">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,8 +212,8 @@
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
             <div>
-                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Add New Inventory Balance</h3>
-                <p class="text-sm text-gray-500 mt-1">Enter the inventory beginning balance details</p>
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Бараа материалын үлдэгдэл оруулах</h3>
+                
             </div>
             <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -234,13 +228,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Account Selection -->
                 <div>
-                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ДАНС *</label>
                     <div class="relative">
                         <input type="text" 
                                id="AccountIdDisplay" 
                                readonly
                                placeholder="Click to select account..."
-                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Inventory Balance', modalSubtitle: 'Choose an account to set the inventory beginning balance'})"
+                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Inventory Balance', modalSubtitle: 'Choose an account to set the inventory beginning balance', extraQueryParams: '&account_type=8,9,11'})"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
                         <input type="hidden" id="AccountId" name="AccountId">
                     </div>
@@ -248,7 +242,7 @@
 
                 <!-- Inventory Selection -->
                 <div>
-                    <label for="InventoryIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Inventory *</label>
+                    <label for="InventoryIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">БАРАА МАТЕРИАЛ *</label>
                     <div class="relative">
                         <input type="text" 
                                id="InventoryIdDisplay" 
@@ -263,7 +257,7 @@
 
                 <!-- Quantity -->
                 <div>
-                    <label for="Quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <label for="Quantity" class="block text-sm font-medium text-gray-700 mb-1">ТОО ХЭМЖЭЭ *</label>
                     <input type="number" 
                            id="Quantity" 
                            name="Quantity" 
@@ -276,7 +270,7 @@
 
                 <!-- Unit Cost -->
                 <div>
-                    <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                    <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ӨРТӨГ *</label>
                     <input type="number" 
                            id="UnitCost" 
                            name="UnitCost" 
@@ -289,7 +283,7 @@
 
                 <!-- Unit Price -->
                 <div>
-                    <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                    <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ҮНЭ *</label>
                     <input type="number" 
                            id="UnitPrice" 
                            name="UnitPrice" 
@@ -302,7 +296,7 @@
 
                 <!-- Warehouse Selection -->
                 <div>
-                    <label for="WarehouseId" class="block text-sm font-medium text-gray-700 mb-1">Warehouse *</label>
+                    <label for="WarehouseId" class="block text-sm font-medium text-gray-700 mb-1">АГУУЛАХ *</label>
                     <select id="WarehouseId" name="WarehouseId" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Select Warehouse</option>
@@ -312,14 +306,16 @@
                     </select>
                 </div>
 
-                <!-- Employee ID -->
+                <!-- Employee (Client Type = 3) -->
                 <div>
-                    <label for="EmployeeId" class="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-                    <input type="number" 
-                           id="EmployeeId" 
-                           name="EmployeeId" 
-                           placeholder="Optional"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ЭД ХАРИУЦАГЧ </label>
+                    <input type="text"
+                           id="ClientIdDisplay"
+                           readonly
+                           placeholder="Click to select employee (client type 3)..."
+                           onclick="openClientPopup(this, null, { clientTypeId: 3 })"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
+                    <input type="hidden" id="ClientId" name="EmployeeId">
                 </div>
             </div>
 
@@ -350,6 +346,8 @@
 <!-- Include Selection Modals -->
 {% include 'core/components/account_selection_modal.html' %}
 {% include 'core/components/inventory_selection_modal.html' %}
+{% include 'core/components/client_selection_modal.html' %}
+{% include 'core/components/delete_modal.html' %}
 
 <!-- Initialize balance data from server -->
 <script type="application/json" id="balance-data">
@@ -382,86 +380,281 @@ let isEditMode = false;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    setupFilters();
     setupActionButtons();
+    // Format numbers
+    formatInventoryNumbers();
+    // Filters and totals
+    setupInlineFilters();
+    recalculateInventorySummary();
+    // Pagination
+    initializeInvPagination();
+
+    // Prevent duplicate combination on create (AccountId, InventoryId, WarehouseId must be unique)
+    const balanceForm = document.getElementById('balance-form');
+    if (balanceForm) {
+        balanceForm.addEventListener('submit', function(e) {
+            try {
+                // Only enforce on create
+                const isCreate = !isEditMode;
+                if (!isCreate) return; // allow updates
+
+                const accountId = parseInt(document.getElementById('AccountId')?.value || '0');
+                const inventoryId = parseInt(document.getElementById('InventoryId')?.value || '0');
+                const warehouseId = parseInt(document.getElementById('WarehouseId')?.value || '0');
+
+                if (!accountId || !inventoryId || !warehouseId) return; // let required validation handle empties
+
+                const exists = Array.isArray(balanceData) && balanceData.some(b =>
+                    parseInt(b.AccountId) === accountId &&
+                    parseInt(b.InventoryId) === inventoryId &&
+                    parseInt(b.WarehouseId) === warehouseId
+                );
+
+                if (exists) {
+                    e.preventDefault();
+                    if (typeof e.stopImmediatePropagation === 'function') {
+                        e.stopImmediatePropagation();
+                    }
+                    const msg = 'Энэ барааны үлдэгдэл оруулсан байна';
+                    if (typeof showMessageModal === 'function') {
+                        showMessageModal(msg, 'warning');
+                    } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.warning) {
+                        Silicon4Message.warning(msg);
+                    } else {
+                        alert(msg);
+                    }
+                    return false;
+                }
+            } catch (err) {
+                // Fail open: do not block submit if check fails
+                console.error('Duplicate check failed:', err);
+            }
+        });
+    }
 });
 
-// Setup action buttons with event listeners
+// Setup action buttons with event listeners using event delegation
 function setupActionButtons() {
-    // Edit buttons
-    document.querySelectorAll('.edit-balance-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const balanceId = parseInt(this.getAttribute('data-balance-id'));
-            editBalance(balanceId);
-        });
-    });
+    // Use event delegation on the tbody to handle clicks on edit/delete buttons
+    // This works even when rows are hidden/shown by pagination
+    const tbody = document.getElementById('balance-tbody');
+    if (tbody) {
+        // Add event listener using delegation
+        // Note: We don't remove previous listeners as they're automatically replaced
+        // when we add a new one with the same handler function reference
+        tbody.addEventListener('click', handleActionButtonClick);
+    }
+}
+
+// Handle clicks on action buttons using event delegation
+function handleActionButtonClick(event) {
+    const target = event.target.closest('.edit-balance-btn, .delete-balance-btn');
+    if (!target) return;
     
-    // Delete buttons
-    document.querySelectorAll('.delete-balance-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const balanceId = parseInt(this.getAttribute('data-balance-id'));
-            deleteBalance(balanceId);
-        });
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const balanceId = parseInt(target.getAttribute('data-balance-id'));
+    if (!balanceId) return;
+    
+    if (target.classList.contains('edit-balance-btn')) {
+        editBalance(balanceId);
+    } else if (target.classList.contains('delete-balance-btn')) {
+        deleteBalance(balanceId);
+    }
+}
+
+// Number formatting (reuse cash pattern)
+function formatNumber(num, decimals = 2) {
+    const n = parseFloat(num);
+    if (isNaN(n) || n === 0) return '-';
+    return n.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function formatInventoryNumbers() {
+    document.querySelectorAll('.qty-val').forEach(el => {
+        const v = parseFloat(el.textContent.replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = formatNumber(v, 2);
+    });
+    document.querySelectorAll('.ucost-val').forEach(el => {
+        const v = parseFloat(el.textContent.replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = formatNumber(v, 2);
+    });
+    document.querySelectorAll('.uprice-val').forEach(el => {
+        const v = parseFloat(el.textContent.replace(/,/g, ''));
+        if (!isNaN(v)) el.textContent = formatNumber(v, 2);
+    });
+
+    // Compute row totals (quantity * unit cost/price)
+    document.querySelectorAll('tr.balance-row').forEach(row => {
+        const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
+        const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
+        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
+        const tcostEl = row.querySelector('.tcost-val');
+        const tpriceEl = row.querySelector('.tprice-val');
+        if (tcostEl) tcostEl.textContent = formatNumber(qty * ucost, 2);
+        if (tpriceEl) tpriceEl.textContent = formatNumber(qty * uprice, 2);
     });
 }
 
-// Setup filters
-function setupFilters() {
-    const accountFilter = document.getElementById('filter-account');
-    const inventoryFilter = document.getElementById('filter-inventory');
-    const warehouseFilter = document.getElementById('filter-warehouse');
-    
+// Inline filters for Account and Inventory only
+function setupInlineFilters() {
+    const accountFilter = document.getElementById('inv-filter-account');
+    const inventoryFilter = document.getElementById('inv-filter-inventory');
+
     const applyFilters = () => {
-        const accountTerm = accountFilter.value.toLowerCase();
-        const inventoryTerm = inventoryFilter.value.toLowerCase();
-        const warehouseTerm = warehouseFilter.value.toLowerCase();
-        
+        const accountTerm = (accountFilter?.value || '').toLowerCase();
+        const inventoryTerm = (inventoryFilter?.value || '').toLowerCase();
+
         const rows = document.querySelectorAll('.balance-row');
-        let visibleCount = 0;
-        
         rows.forEach(row => {
             const account = row.dataset.account || '';
             const inventory = row.dataset.inventory || '';
-            const warehouse = row.dataset.warehouse || '';
-            
             const matchesAccount = !accountTerm || account.includes(accountTerm);
             const matchesInventory = !inventoryTerm || inventory.includes(inventoryTerm);
-            const matchesWarehouse = !warehouseTerm || warehouse.includes(warehouseTerm);
-            
-            if (matchesAccount && matchesInventory && matchesWarehouse) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (matchesAccount && matchesInventory) ? '' : 'none';
         });
-        
-        document.getElementById('total-records').textContent = visibleCount;
+
+        recalculateInventorySummary();
+        // Reset to first page on filter change and re-render
+        invCurrentPage = 1;
+        invApplyPagination();
     };
-    
-    accountFilter.addEventListener('input', applyFilters);
-    inventoryFilter.addEventListener('input', applyFilters);
-    warehouseFilter.addEventListener('input', applyFilters);
+
+    if (accountFilter) accountFilter.addEventListener('input', applyFilters);
+    if (inventoryFilter) inventoryFilter.addEventListener('input', applyFilters);
+}
+
+// Compute totals for Quantity, Total Cost and Total Price across visible rows
+function recalculateInventorySummary() {
+    const rows = document.querySelectorAll('.balance-row');
+    let totalQuantity = 0;
+    let totalCost = 0;
+    let totalPrice = 0;
+    rows.forEach(row => {
+        if (row.style.display === 'none') return;
+        const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
+        const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
+        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
+        totalQuantity += qty;
+        totalCost += qty * ucost;
+        totalPrice += qty * uprice;
+    });
+    const quantityEl = document.getElementById('inv-total-quantity');
+    const costEl = document.getElementById('inv-total-cost');
+    const priceEl = document.getElementById('inv-total-price');
+    if (quantityEl) quantityEl.textContent = formatNumber(totalQuantity, 2);
+    if (costEl) costEl.textContent = formatNumber(totalCost, 2);
+    if (priceEl) priceEl.textContent = formatNumber(totalPrice, 2);
+}
+
+// Pagination (inventory)
+let invCurrentPage = 1;
+let invPageSize = 15;
+
+function invGetVisibleRows() {
+    const rows = Array.from(document.querySelectorAll('.balance-row'));
+    return rows.filter(r => r.style.display !== 'none');
+}
+
+function invRenderPage() {
+    const visible = invGetVisibleRows();
+    const total = visible.length;
+    const totalPages = Math.max(1, Math.ceil(total / invPageSize));
+    if (invCurrentPage > totalPages) invCurrentPage = totalPages;
+    const startIndex = (invCurrentPage - 1) * invPageSize;
+    const endIndex = Math.min(startIndex + invPageSize, total);
+
+    const allRows = document.querySelectorAll('.balance-row');
+    allRows.forEach(r => { if (r) r.style.visibility = 'hidden'; });
+    visible.forEach((row, idx) => {
+        const inPage = idx >= startIndex && idx < endIndex;
+        row.style.visibility = inPage ? '' : 'hidden';
+        const indexCell = row.querySelector('.row-index');
+        if (indexCell) indexCell.textContent = inPage ? (idx + 1) : '';
+    });
+
+    const showingStart = document.getElementById('ib-showing-start');
+    const showingEnd = document.getElementById('ib-showing-end');
+    const totalCount = document.getElementById('ib-total-count');
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : (startIndex + 1);
+    if (showingEnd) showingEnd.textContent = endIndex;
+    if (totalCount) totalCount.textContent = total;
+
+    invGeneratePageButtons(totalPages);
+}
+
+function invGeneratePageButtons(totalPages) {
+    const pageInfo = document.getElementById('ib-page-info');
+    if (!pageInfo) return;
+    pageInfo.innerHTML = '';
+    if (totalPages <= 1) return;
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, invCurrentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage < maxVisiblePages - 1) startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-2 py-1 text-sm rounded-md ${
+            i === invCurrentPage ? 'bg-blue-400 text-white hover:bg-blue-500' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        btn.addEventListener('click', () => { invCurrentPage = i; invRenderPage(); });
+        pageInfo.appendChild(btn);
+    }
+}
+
+function invApplyPagination() { invRenderPage(); }
+
+function initializeInvPagination() {
+    const sizeSelect = document.getElementById('ib-page-size-select');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', (e) => {
+            invPageSize = parseInt(e.target.value) || 15;
+            invCurrentPage = 1;
+            invApplyPagination();
+        });
+    }
+
+    const prevMobile = document.getElementById('ib-prev-page-btn');
+    const nextMobile = document.getElementById('ib-next-page-btn');
+    const prevDesktop = document.getElementById('ib-prev-page-desktop');
+    const nextDesktop = document.getElementById('ib-next-page-desktop');
+
+    const goPrev = () => { if (invCurrentPage > 1) { invCurrentPage--; invApplyPagination(); } };
+    const goNext = () => {
+        const total = invGetVisibleRows().length;
+        const totalPages = Math.max(1, Math.ceil(total / invPageSize));
+        if (invCurrentPage < totalPages) { invCurrentPage++; invApplyPagination(); }
+    };
+
+    if (prevMobile) prevMobile.onclick = goPrev;
+    if (nextMobile) nextMobile.onclick = goNext;
+    if (prevDesktop) prevDesktop.onclick = goPrev;
+    if (nextDesktop) nextDesktop.onclick = goNext;
+
+    invApplyPagination();
 }
 
 // Clear all filters
 function clearAllFilters() {
-    document.getElementById('filter-account').value = '';
-    document.getElementById('filter-inventory').value = '';
-    document.getElementById('filter-warehouse').value = '';
-    
+    const account = document.getElementById('inv-filter-account');
+    const inventory = document.getElementById('inv-filter-inventory');
+    if (account) account.value = '';
+    if (inventory) inventory.value = '';
+
     const rows = document.querySelectorAll('.balance-row');
-    rows.forEach(row => {
-        row.style.display = '';
-    });
-    
-    document.getElementById('total-records').textContent = balanceData.length;
+    rows.forEach(row => { row.style.display = ''; });
+
+    recalculateInventorySummary();
+    invCurrentPage = 1;
+    invApplyPagination();
 }
 
 // Add new balance
 function addNewBalance() {
     isEditMode = false;
-    document.getElementById('modal-title').textContent = 'Add New Inventory Balance';
+    document.getElementById('modal-title').textContent = 'БАРАА МАТЕРИАЛЫН ҮЛДЭГДЭЛ ОРУУЛАХ';
     document.getElementById('submit-text').textContent = 'Add Balance';
     document.getElementById('balance-form').reset();
     document.getElementById('balance-id').value = '';
@@ -484,25 +677,56 @@ function editBalance(balanceId) {
     if (!balance) return;
     
     isEditMode = true;
-    document.getElementById('modal-title').textContent = 'Edit Inventory Balance';
-    document.getElementById('submit-text').textContent = 'Update Balance';
     
-    // Set form action for update
-    document.getElementById('balance-form').action = `/core/invbeginningbalances/${balanceId}/update/`;
+    // Update modal title and submit button text
+    const modalTitleEl = document.getElementById('modal-title');
+    const submitTextEl = document.getElementById('submit-text');
+    const balanceFormEl = document.getElementById('balance-form');
     
-    // Populate form
-    document.getElementById('balance-id').value = balance.BeginningBalanceId;
-    document.getElementById('AccountId').value = balance.AccountId;
-    document.getElementById('AccountIdDisplay').value = `${balance.account_code} - ${balance.account_name}`;
-    document.getElementById('InventoryId').value = balance.InventoryId;
-    document.getElementById('InventoryIdDisplay').value = balance.inventory_name;
-    document.getElementById('Quantity').value = balance.Quantity;
-    document.getElementById('UnitCost').value = balance.UnitCost;
-    document.getElementById('UnitPrice').value = balance.UnitPrice;
-    document.getElementById('WarehouseId').value = balance.WarehouseId;
-    document.getElementById('EmployeeId').value = balance.EmployeeId || '';
+    if (modalTitleEl) modalTitleEl.textContent = 'Edit Inventory Balance';
+    if (submitTextEl) submitTextEl.textContent = 'Update Balance';
+    if (balanceFormEl) balanceFormEl.action = `/core/invbeginningbalances/${balanceId}/update/`;
     
-    document.getElementById('balance-modal').classList.remove('hidden');
+    // Populate form - add null checks to prevent errors
+    const balanceIdEl = document.getElementById('balance-id');
+    const accountIdEl = document.getElementById('AccountId');
+    const accountIdDisplayEl = document.getElementById('AccountIdDisplay');
+    const inventoryIdEl = document.getElementById('InventoryId');
+    const inventoryIdDisplayEl = document.getElementById('InventoryIdDisplay');
+    const quantityEl = document.getElementById('Quantity');
+    const unitCostEl = document.getElementById('UnitCost');
+    const unitPriceEl = document.getElementById('UnitPrice');
+    const warehouseIdEl = document.getElementById('WarehouseId');
+    
+    if (balanceIdEl) balanceIdEl.value = balance.BeginningBalanceId;
+    if (accountIdEl) accountIdEl.value = balance.AccountId;
+    if (accountIdDisplayEl) accountIdDisplayEl.value = `${balance.account_code} - ${balance.account_name}`;
+    if (inventoryIdEl) inventoryIdEl.value = balance.InventoryId;
+    if (inventoryIdDisplayEl) inventoryIdDisplayEl.value = balance.inventory_name;
+    if (quantityEl) quantityEl.value = balance.Quantity;
+    if (unitCostEl) unitCostEl.value = balance.UnitCost;
+    if (unitPriceEl) unitPriceEl.value = balance.UnitPrice;
+    if (warehouseIdEl) warehouseIdEl.value = balance.WarehouseId;
+    
+    // Handle EmployeeId (stored as ClientId in the form)
+    const clientIdEl = document.getElementById('ClientId');
+    const clientIdDisplayEl = document.getElementById('ClientIdDisplay');
+    if (clientIdEl) {
+        clientIdEl.value = balance.EmployeeId || '';
+    }
+    if (clientIdDisplayEl && balance.EmployeeId) {
+        // If there's employee data, populate the display field
+        // Note: The balance data might need to include employee name for display
+        clientIdDisplayEl.value = balance.employee_name || '';
+    } else if (clientIdDisplayEl) {
+        clientIdDisplayEl.value = '';
+    }
+    
+    // Show modal
+    const balanceModalEl = document.getElementById('balance-modal');
+    if (balanceModalEl) {
+        balanceModalEl.classList.remove('hidden');
+    }
 }
 
 // Delete balance
@@ -513,25 +737,36 @@ function deleteBalance(balanceId) {
     const accountName = `${balance.account_code} - ${balance.account_name}`;
     const inventoryName = balance.inventory_name;
     const quantity = parseFloat(balance.Quantity).toFixed(2);
+    const itemName = `${accountName} - ${inventoryName} (Qty: ${quantity})`;
+    const deleteUrl = `/core/invbeginningbalances/${balanceId}/delete/`;
     
-    if (confirm(`Are you sure you want to delete the inventory beginning balance for ${accountName} - ${inventoryName} (Qty: ${quantity})?`)) {
-        // Create and submit a form for deletion
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/core/invbeginningbalances/${balanceId}/delete/`;
-        
-        // Add CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken.value;
-            form.appendChild(csrfInput);
+    // Use standardized delete modal if available, otherwise fallback to confirm
+    if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+        Silicon4Delete.showModal(deleteUrl, itemName, function() {
+            // Reload page after successful deletion
+            window.location.reload();
+        });
+    } else {
+        // Fallback to confirm dialog if Silicon4Delete is not available
+        if (confirm(`Are you sure you want to delete the inventory beginning balance for ${itemName}?`)) {
+            // Create and submit a form for deletion
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteUrl;
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
         }
-        
-        document.body.appendChild(form);
-        form.submit();
     }
 }
 

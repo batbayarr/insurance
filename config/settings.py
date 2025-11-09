@@ -89,6 +89,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Database Router for Multi-Tenant Support
+DATABASE_ROUTERS = ['core.db_router.MultiTenantRouter']
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -106,7 +108,7 @@ DATABASES = {
             'client_encoding': 'UTF8',
             'connect_timeout': 10,
         },
-        'CONN_MAX_AGE': 3600,  # Keep connections alive for 1 hour
+        'CONN_MAX_AGE': 0,  # Disable connection pooling to allow dynamic db switching
         'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
     }
 }

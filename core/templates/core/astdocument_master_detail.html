@@ -20,11 +20,31 @@
     </div>
 
     <!-- Master Grid (Asset Documents) -->
+    <!-- Date Range Filter -->
+    <div class="bg-white border-b border-gray-200 px-3 py-2 lg:px-6">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center space-x-2">
+                <label for="start-date" class="text-sm font-medium text-gray-700">Эхлэх огноо:</label>
+                <input type="date" id="start-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
+                <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="apply-date-filter" class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
+                Хайх
+            </button>
+            <div class="flex items-center space-x-2">
+                <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="10" selected>10</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div id="asset-document-container" 
          class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
-        
-        {% if documents %}
-        <!-- Responsive table with horizontal scroll -->
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -35,171 +55,75 @@
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 80px;">Данс</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">Н</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Өртөг</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үнэ</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэн</th>
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                     </tr>
-                    <!-- Filter Row -->
                     <tr class="bg-gray-100">
-                        <td class="px-4 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-document-no" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-document-type" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-client" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-date" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-description" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200" style="min-width: 80px;">
-                            <input type="text" id="filter-account" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="number" id="filter-cost-amount" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   step="0.000001">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="number" id="filter-price-amount" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   step="0.000001">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-created-by" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1">
-                            <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
-                                Clear
-                            </button>
-                        </td>
+                        <td class="px-4 py-1 border-r border-gray-200"><input type="text" id="filter-document-no" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="text" id="filter-document-type" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="text" id="filter-client" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="text" id="filter-date" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="text" id="filter-description" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200" style="min-width: 80px;"><input type="text" id="filter-account" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200" style="width: 40px; max-width: 40px;"><input type="text" id="filter-isvat" placeholder="Filter..." class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="number" id="filter-cost-amount" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" step="0.000001"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="number" id="filter-price-amount" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" step="0.000001"></td>
+                        <td class="px-2 py-1 border-r border-gray-200"><input type="text" id="filter-created-by" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-1"><button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">Clear</button></td>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for document in documents %}
-                    <tr class="hover:bg-gray-50 cursor-pointer {% if selected_document_id == document.DocumentId|stringformat:'s' %}bg-blue-50{% endif %}" 
-                        data-document-id="{{ document.DocumentId }}">
-                        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ document.DocumentNo }}</td>
-                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                            {% if document.DocumentTypeId %}
-                                {{ document.DocumentTypeId.DocumentTypeCode }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                            {% if document.ClientId %}
-                                {{ document.ClientId.ClientName }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ document.DocumentDate|date:"Y-m-d" }}</td>
-                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                            <span title="{{ document.Description }}">{{ document.Description|truncatechars:50 }}</span>
-                        </td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 80px;">
-                            {% if document.AccountId %}
-                                <span class="account-format" title="{{ document.AccountId.AccountCode }} - {{ document.AccountId.AccountName }}">{{ document.AccountId.AccountCode }}</span>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                            {% if document.CostAmount %}
-                                {{ document.CostAmount|floatformat:2|intcomma }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                            {% if document.PriceAmount %}
-                                {{ document.PriceAmount|floatformat:2|intcomma }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ document.CreatedBy.username|default:"-" }}</td>
-                        <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
-                            <div class="flex items-center justify-center space-x-2">
-                                {% if perms.core.view_ast_document_detail or user.groups.all.0.name == 'baraa_nyarav' %}
-                                <a href="{% url 'core:bulk_manage_ast_details' document.DocumentId %}" 
-                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                   onclick="event.stopPropagation();"
-                                   title="Manage Details">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                    </svg>
-                                </a>
-                                {% endif %}
-                                
-                                <button class="print-document-btn" 
-                                        data-document-id="{{ document.DocumentId }}"
-                                        class="inline-flex items-center p-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                        title="Print Document">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                </button>
-                                
-                                {% if perms.core.change_ast_document and document.CreatedBy == request.user %}
-                                <a href="{% url 'core:astdocument_update' document.DocumentId %}" class="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50" onclick="event.stopPropagation()" title="Simple Edit">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </a>
-                                {% endif %}
-                                {% if perms.core.delete_ast_document and document.CreatedBy == request.user %}
-                                <button class="delete-document-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
-                                        data-delete-url="{% url 'core:astdocument_delete' document.DocumentId %}"
-                                        data-document-name="Document {{ document.DocumentNo }}" 
-                                        title="Delete Document">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tbody id="documents-tbody" class="bg-white divide-y divide-gray-200"></tbody>
             </table>
         </div>
-        
-        {% endif %}
-        
-        {% if not documents %}
-        <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </div>
+
+    <!-- Pagination -->
+    <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            <button id="prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Өмнөх
+                                </button>
+            <button id="next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Дараа
+                                </button>
+                            </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p id="pagination-info" class="text-sm text-gray-700">
+                    Нийт <span id="total-count">0</span> бичлэгээс <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                </p>
+        </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                    <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="10" selected>10</option>
+                    </select>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
-            <h3 class="mt-2 text-xs font-medium text-gray-900">No asset documents</h3>
-            <p class="mt-1 text-xs text-gray-500">Get started by creating a new asset document.</p>
-            <div class="mt-6">
-                {% if perms.core.add_ast_document %}
-                <a href="{% url 'core:astdocument_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">
-                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </button>
+                        <span id="page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            <!-- Dynamic page buttons will be generated here -->
+                        </span>
+                        <button id="next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                     </svg>
-                    Баримт нэмэх
-                </a>
-                {% endif %}
+                        </button>
+                    </nav>
             </div>
         </div>
-        {% endif %}
+        </div>
     </div>
 
     <!-- Detail Grid will be loaded here via AJAX -->
@@ -216,572 +140,413 @@
 if (!window.astDocumentScriptLoaded) {
     window.astDocumentScriptLoaded = true;
 
-// Initialize event handlers
-function initializeEventHandlers() {
-    // Handle row clicks for document selection
-    const documentRows = document.querySelectorAll('tr[data-document-id]');
-    documentRows.forEach(function(row) {
-        row.addEventListener('click', function(e) {
-            if (e.target.closest('button') || e.target.closest('a')) return;
-            
-            const documentId = this.getAttribute('data-document-id');
-            if (documentId) {
-                // Load detail records via AJAX instead of page refresh
-                loadDocumentDetails(documentId);
-            }
-        });
-    });
-    
-    // Handle print document buttons
-    const printButtons = document.querySelectorAll('.print-document-btn');
-    printButtons.forEach(function(button) {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const documentId = this.getAttribute('data-document-id');
-            
-            // Use shared component if available
-            if (typeof Silicon4Print !== 'undefined' && Silicon4Print.document) {
-                Silicon4Print.document(documentId, '', '', '', '', 'Хөрөнгийн баримт');
-            }
-        });
-    });
-    
-    // Handle delete document buttons
-    const deleteButtons = document.querySelectorAll('.delete-document-btn');
-    deleteButtons.forEach(function(button) {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const deleteUrl = this.getAttribute('data-delete-url');
-            const documentName = this.getAttribute('data-document-name');
-            
-            Silicon4Delete.showModal(deleteUrl, documentName);
-        });
-    });
-}
-
-// Define filter inputs array once
-const FILTER_INPUTS = [
-    'filter-document-no', 'filter-document-type', 'filter-client', 'filter-date',
-    'filter-description', 'filter-account', 'filter-cost-amount', 'filter-price-amount', 'filter-created-by'
-];
-
-// Global variables to track current AJAX request and cache
+// API-Based Data Management (mirror inventory pattern)
+let allDocumentsData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+let currentApiRequest = null;
 let currentDetailRequest = null;
 const detailCache = new Map();
+const currentUserId = {{ request.user.id }};
+const hasChangePermission = {% if perms.core.change_ast_document %}true{% else %}false{% endif %};
+const hasDeletePermission = {% if perms.core.delete_ast_document %}true{% else %}false{% endif %};
 
-// Asset Document Calculation Functions (using exact inventory pattern)
-function calculateAssetItemTotals() {
-    const itemsTbody = document.getElementById('items-tbody');
-    if (!itemsTbody) {
-        console.warn('Asset: No items tbody found');
-        return;
-    }
-    
-    const totalCostCells = itemsTbody.querySelectorAll('td.total-cost');
-    const totalPriceCells = itemsTbody.querySelectorAll('td.total-price');
-    
-    let totalCost = 0;
-    let totalPrice = 0;
-    
-    // Calculate total cost
-    totalCostCells.forEach((cell) => {
-        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
-        totalCost += value;
+// Safe HTML escaper for dynamic content
+function escapeHtml(value) {
+    const str = String(value == null ? '' : value);
+    return str.replace(/[&<>"'`=\\/]/g, function (s) {
+        return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        })[s];
     });
-    
-    // Calculate total price
-    totalPriceCells.forEach((cell) => {
-        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
-        totalPrice += value;
-    });
-    
-    // Update display elements
-    const totalCostElement = document.getElementById('asset-total-cost');
-    const totalPriceElement = document.getElementById('asset-total-price');
-    
-    if (totalCostElement) {
-        const formattedCost = totalCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        totalCostElement.textContent = formattedCost;
-    }
-    
-    if (totalPriceElement) {
-        const formattedPrice = totalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        totalPriceElement.textContent = formattedPrice;
-    }
 }
 
-function calculateAssetAccountingTotals() {
-    const tbody = document.getElementById('detail-tbody');
-    if (!tbody) {
-        console.warn('Asset: No detail tbody found');
-        return;
-    }
+function initializeDateInputs() {
+    const today = new Date();
+    let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    const rows = tbody.querySelectorAll('tr');
-    let totalDebit = 0;
-    let totalCredit = 0;
-    
-    // Calculate totals from existing debit/credit amounts (exact inventory pattern)
-    rows.forEach((row) => {
-        const debitCell = row.querySelector('td.debit-amount');
-        const creditCell = row.querySelector('td.credit-amount');
-        
-        if (debitCell) {
-            const value = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
-            totalDebit += value;
-        }
-        if (creditCell) {
-            const value = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
-            totalCredit += value;
-        }
-    });
-    
-    // Update display elements
-    const totalDebitElement = document.getElementById('display-total-debit');
-    const totalCreditElement = document.getElementById('display-total-credit');
-    
-    if (totalDebitElement) {
-        const formattedDebit = totalDebit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        totalDebitElement.textContent = formattedDebit;
-    }
-    
-    if (totalCreditElement) {
-        const formattedCredit = totalCredit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        totalCreditElement.textContent = formattedCredit;
-    }
-}
-
-// Make functions globally available
-window.calculateAssetItemTotals = calculateAssetItemTotals;
-window.calculateAssetAccountingTotals = calculateAssetAccountingTotals;
-
-// Client-side pagination variables
-const RECORDS_PER_PAGE = 12;
-let currentClientPage = 1;
-let totalRecords = 0;
-let filteredRecords = [];
-let allRows = [];
-
-// Debounce utility function for smooth filtering
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Initialize filters using the enhanced generic filter system
-function initializeFilters() {
-    // Use Silicon4Filter if available for advanced filtering
-    if (typeof Silicon4Filter !== 'undefined') {
-        Silicon4Filter.setDebug(false);
-        
-        // Use the enhanced filter system with auto-detection
-        const originalApplyFunction = Silicon4Filter.initializeWithAutoDetection(
-            'table',
-            FILTER_INPUTS,
-            null
-        );
-        
-        // Wrap the apply function to also update pagination
-        const applyWithPagination = function() {
-            originalApplyFunction();
-            applyFiltersWithPagination();
-        };
-        
-        // Create debounced version for smooth performance
-        const debouncedApplyFunction = debounce(applyWithPagination, 200);
-        
-        // Initialize with debounced function
-        Silicon4Filter.initialize(FILTER_INPUTS, debouncedApplyFunction);
-        
-        // Store functions for manual calls
-        window.astDocumentApplyFilters = debouncedApplyFunction;
-        window.astDocumentApplyFiltersImmediate = applyWithPagination;
-    }
-    
-    // Initialize clear button
-    const clearButton = document.getElementById('clear-filters');
-    if (clearButton) {
-        clearButton.addEventListener('click', clearAllFilters);
-    }
-}
-
-// Clear all filters
-function clearAllFilters() {
-    if (typeof Silicon4Filter !== 'undefined') {
-        Silicon4Filter.clear(FILTER_INPUTS);
-        
-        // Re-apply filters to show all rows immediately (deleted records already filtered at database level)
-        if (window.astDocumentApplyFiltersImmediate) {
-            window.astDocumentApplyFiltersImmediate();
-        } else if (window.astDocumentApplyFilters) {
-            window.astDocumentApplyFilters();
-        } else {
-            // Fallback: show all rows manually
-            document.querySelectorAll('tbody tr[data-document-id]').forEach(function(row) {
-                row.style.display = '';
-            });
+    // Check if selected_document is in URL and adjust date range if needed
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDocumentId = urlParams.get('selected_document');
+    {% if selected_document %}
+    if (selectedDocumentId) {
+        // Get document date from server-side context
+        const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
+        // If document date is outside current month, adjust date range to include it
+        if (docDate < firstDay || docDate > lastDay) {
+            // Use document date ± 1 month, or use document date's month
+            const docYear = docDate.getFullYear();
+            const docMonth = docDate.getMonth();
+            firstDay = new Date(docYear, docMonth, 1);
+            lastDay = new Date(docYear, docMonth + 1, 0);
+            // Ensure we include at least the document date
+            if (docDate < firstDay) firstDay = new Date(docDate);
+            if (docDate > lastDay) lastDay = new Date(docDate);
         }
     }
+    {% endif %}
     
-    // Reset pagination to show all records
-    filteredRecords = allRows;
-    showClientPage(1);
-}
-
-// Client-side pagination implementation
-
-// Initialize client-side pagination
-function initializeClientPagination() {
-    // Store all table rows (deleted records already filtered at database level)
-    allRows = Array.from(document.querySelectorAll('tbody tr[data-document-id]'));
-    totalRecords = allRows.length;
-    filteredRecords = allRows;
-    
-    
-    // Hide existing server pagination
-    hideServerPagination();
-    
-    // Create client-side pagination controls
-    createClientPaginationControls();
-    
-    // Show first page
-    showClientPage(1);
-}
-
-// Hide server-side pagination
-function hideServerPagination() {
-    const serverPagination = document.querySelector('.bg-white.px-4.py-3.flex.items-center.justify-between.border-t');
-    if (serverPagination) {
-        serverPagination.style.display = 'none';
+    const formatDateForInput = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const applyButton = document.getElementById('apply-date-filter');
+    const pageSizeSelect = document.getElementById('page-size-select');
+    const defaultStart = formatDateForInput(firstDay);
+    const defaultEnd = formatDateForInput(lastDay);
+    if (startDateInput && endDateInput) {
+        if (!startDateInput.value) startDateInput.value = defaultStart;
+        if (!endDateInput.value) endDateInput.value = defaultEnd;
     }
-}
-
-// Create client-side pagination controls
-function createClientPaginationControls() {
-    const tableContainer = document.getElementById('asset-document-container');
-    if (!tableContainer) return;
-    
-    const paginationDiv = document.createElement('div');
-    paginationDiv.id = 'client-pagination';
-    paginationDiv.className = 'bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200';
-    
-    paginationDiv.innerHTML = `
-        <div class="flex-1 flex items-center justify-between">
-            <div>
-                <p class="text-xs text-gray-700">
-                    Showing <span id="page-start">1</span> to <span id="page-end">12</span> of <span id="total-records">0</span> results
-                    <span class="text-gray-500 ml-2">(Client-side pagination)</span>
-                </p>
-            </div>
-            <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="pagination-buttons">
-                </nav>
-            </div>
-        </div>
-    `;
-    
-    tableContainer.appendChild(paginationDiv);
-}
-
-// Show specific page
-function showClientPage(pageNumber) {
-    const totalPages = Math.ceil(filteredRecords.length / RECORDS_PER_PAGE);
-    
-    if (pageNumber < 1 || pageNumber > totalPages) return;
-    
-    currentClientPage = pageNumber;
-    
-    // Hide all rows
-    allRows.forEach(row => row.style.display = 'none');
-    
-    // Show rows for current page
-    const startIndex = (pageNumber - 1) * RECORDS_PER_PAGE;
-    const endIndex = Math.min(startIndex + RECORDS_PER_PAGE, filteredRecords.length);
-    
-    for (let i = startIndex; i < endIndex; i++) {
-        filteredRecords[i].style.display = '';
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', () => { pageSize = parseInt(pageSizeSelect.value); currentPage = 1; applyFrontendFilter(); });
     }
-    
-    // Update pagination controls
-    updateClientPaginationControls(startIndex + 1, endIndex, filteredRecords.length, totalPages);
-}
-
-// Update pagination controls
-function updateClientPaginationControls(start, end, total, totalPages) {
-    document.getElementById('page-start').textContent = total === 0 ? 0 : start;
-    document.getElementById('page-end').textContent = end;
-    document.getElementById('total-records').textContent = total;
-    
-    // Create page number buttons
-    createPageButtons(totalPages);
-}
-
-// Create page number buttons
-function createPageButtons(totalPages) {
-    const container = document.getElementById('pagination-buttons');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    // Previous button
-    const prevBtn = createPaginationButton('‹', currentClientPage - 1, currentClientPage === 1);
-    container.appendChild(prevBtn);
-    
-    // Page number buttons (show 5 pages at a time)
-    const startPage = Math.max(1, currentClientPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
-    
-    for (let i = startPage; i <= endPage; i++) {
-        const btn = createPaginationButton(i.toString(), i, false, i === currentClientPage);
-        container.appendChild(btn);
+    if (applyButton && startDateInput && endDateInput) {
+        applyButton.addEventListener('click', () => fetchDocuments(startDateInput.value, endDateInput.value));
     }
-    
-    // Next button
-    const nextBtn = createPaginationButton('›', currentClientPage + 1, currentClientPage === totalPages);
-    container.appendChild(nextBtn);
+    // Always fetch at load with defaults if inputs are missing
+    const start = (startDateInput && startDateInput.value) ? startDateInput.value : defaultStart;
+    const end = (endDateInput && endDateInput.value) ? endDateInput.value : defaultEnd;
+    fetchDocuments(start, end);
 }
 
-// Create pagination button
-function createPaginationButton(text, page, disabled, active = false) {
-    const btn = document.createElement('button');
-    btn.textContent = text;
-    btn.disabled = disabled;
-    
-    if (active) {
-        btn.className = 'relative inline-flex items-center px-3 py-1 border border-gray-300 bg-blue-600 text-xs font-medium text-white';
-    } else {
-        btn.className = 'relative inline-flex items-center px-3 py-1 border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50';
-    }
-    
-    if (disabled) {
-        btn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
-    
-    if (!disabled && !active) {
-        btn.addEventListener('click', () => goToClientPage(page));
-    }
-    
-    return btn;
-}
-
-// Go to specific page
-function goToClientPage(pageNumber) {
-    showClientPage(pageNumber);
-}
-
-// Apply filters and update pagination
-function applyFiltersWithPagination() {
-    const rows = document.querySelectorAll('tbody tr[data-document-id]');
-    filteredRecords = [];
-    
-    rows.forEach(row => {
-        let shouldShow = true;
-        
-        // Check all filters (deleted records already filtered at database level)
-        FILTER_INPUTS.forEach(filterId => {
-            const filterElement = document.getElementById(filterId);
-            if (filterElement && filterElement.value.trim()) {
-                const filterValue = filterElement.value.toLowerCase().trim();
-                const cellIndex = getCellIndexForFilter(filterId);
-                const cellText = row.cells[cellIndex]?.textContent?.toLowerCase() || '';
+function fetchDocuments(startDate, endDate) {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    if (currentApiRequest) { currentApiRequest.abort(); currentApiRequest = null; }
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    const url = `/core/api/asset-documents-master/?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+    currentApiRequest = new AbortController();
+    fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, signal: currentApiRequest.signal })
+        .then(r => r.json())
+        .then(data => {
+            currentApiRequest = null;
+            if (data.success) {
+                allDocumentsData = data.documents;
+                currentPage = 1;
                 
-                if (!cellText.includes(filterValue)) {
-                    shouldShow = false;
+                // If selected_document is in URL, optionally set document number filter for visual feedback
+                const urlParams = new URLSearchParams(window.location.search);
+                const selectedDocumentId = urlParams.get('selected_document');
+                if (selectedDocumentId) {
+                    const selectedDoc = data.documents.find(doc => doc.DocumentId == selectedDocumentId);
+                    const documentNoFilter = document.getElementById('filter-document-no');
+                    if (selectedDoc && documentNoFilter && !documentNoFilter.value) {
+                        documentNoFilter.value = selectedDoc.DocumentNo || '';
+                    }
                 }
+                
+                applyFrontendFilter();
             }
-        });
+            else { tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-red-600">Алдаа гарлаа</td></tr>'; }
+        })
+        .catch(err => { currentApiRequest = null; if (err.name !== 'AbortError') { console.error(err); tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>'; } });
+}
+
+function applyFrontendFilter() {
+    const filters = {
+        documentNo: document.getElementById('filter-document-no')?.value.toLowerCase().trim() || '',
+        documentType: document.getElementById('filter-document-type')?.value.toLowerCase().trim() || '',
+        client: document.getElementById('filter-client')?.value.toLowerCase().trim() || '',
+        date: document.getElementById('filter-date')?.value.toLowerCase().trim() || '',
+        description: document.getElementById('filter-description')?.value.toLowerCase().trim() || '',
+        account: document.getElementById('filter-account')?.value.toLowerCase().trim() || '',
+        isvat: document.getElementById('filter-isvat')?.value.toLowerCase().trim() || '',
+        costAmount: document.getElementById('filter-cost-amount')?.value.toLowerCase().trim() || '',
+        priceAmount: document.getElementById('filter-price-amount')?.value.toLowerCase().trim() || '',
+        createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
+    };
+    // Check for selected_document in URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDocumentId = urlParams.get('selected_document');
+    
+    filteredData = allDocumentsData.filter(doc => {
+        // If selected_document is in URL, filter to only that document
+        if (selectedDocumentId && doc.DocumentId != selectedDocumentId) return false;
         
-        if (shouldShow) {
-            filteredRecords.push(row);
+        if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
+        if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
+        if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
+        if (filters.date && !(doc.DocumentDate || '').toLowerCase().includes(filters.date)) return false;
+        if (filters.description && !(doc.Description || '').toLowerCase().includes(filters.description)) return false;
+        if (filters.account && !(doc.AccountCode || '').toLowerCase().includes(filters.account)) return false;
+        if (filters.isvat) { const v = doc.IsVat ? 'y' : 'n'; if (!v.includes(filters.isvat)) return false; }
+        if (filters.costAmount && !(doc.CostAmount || 0).toString().includes(filters.costAmount)) return false;
+        if (filters.priceAmount && !(doc.PriceAmount || 0).toString().includes(filters.priceAmount)) return false;
+        if (filters.createdBy && !(doc.CreatedByUsername || '').toLowerCase().includes(filters.createdBy)) return false;
+        return true;
+    });
+    totalPages = Math.ceil(filteredData.length / pageSize);
+    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, filteredData.length);
+    renderDocumentsTable(filteredData.slice(startIndex, endIndex));
+    updatePaginationInfo(startIndex + 1, endIndex, filteredData.length);
+}
+
+function renderDocumentsTable(documents) {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    const fragment = document.createDocumentFragment();
+    documents.forEach(doc => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 cursor-pointer';
+        tr.setAttribute('data-document-id', doc.DocumentId);
+        tr.setAttribute('data-document-type-id', doc.DocumentTypeId || '');
+        tr.setAttribute('data-client-register', doc.ClientRegister || '');
+        tr.setAttribute('data-account-code', doc.AccountCode || '');
+        tr.setAttribute('data-account-name', doc.AccountName || '');
+        
+        // Build action buttons based on permissions
+        let actionButtons = '';
+        // Manage Details button
+        actionButtons += `
+            <a href="/core/astdocuments/${doc.DocumentId}/bulk-manage-details/" 
+                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                   onclick="event.stopPropagation();"
+                                   title="Manage Details">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                </a>
+        `;
+        // Print button
+        actionButtons += `
+                                <button class="print-document-btn" 
+                    data-document-id="${doc.DocumentId}"
+                                        class="inline-flex items-center p-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        title="Print Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                </button>
+        `;
+        // Edit button (if user has permission and is the creator)
+        if (hasChangePermission && doc.CreatedById === currentUserId) {
+            actionButtons += `
+                <button class="edit-document-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                        data-document-id="${doc.DocumentId}"
+                        data-document-date="${doc.DocumentDate}"
+                        title="Edit Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+            `;
+        }
+        
+        // Delete button (if user has permission and is the creator)
+        if (hasDeletePermission && doc.CreatedById === currentUserId) {
+            actionButtons += `
+                                <button class="delete-document-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                        data-delete-url="/core/astdocuments/${doc.DocumentId}/delete/"
+                        data-document-name="Document ${doc.DocumentNo}" 
+                                        title="Delete Document">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+            `;
+        }
+        tr.innerHTML = `
+            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.DocumentNo || '-')}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.DocumentTypeCode || '-')}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.ClientName || '-')}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.DocumentDate || '-')}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                <span title="${escapeHtml(doc.Description || '')}">${truncateText(doc.Description || '', 50)}</span>
+                        </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 80px;"><span class="account-format" title="${escapeHtml(doc.AccountCode || '')} - ${escapeHtml(doc.AccountName || '')}">${escapeHtml(doc.AccountCode || '-')}</span></td>
+            <td class="px-2 py-1 text-center text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">${doc.IsVat ? 'Y' : 'N'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.CostAmount ? parseFloat(doc.CostAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.PriceAmount ? parseFloat(doc.PriceAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.CreatedByUsername || '-')}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium"><div class="flex items-center justify-center space-x-2">${actionButtons}</div></td>`;
+        fragment.appendChild(tr);
+    });
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+    
+    // Event handlers are already attached via delegation, no need to re-initialize
+}
+
+// Helper function to truncate text
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+// Helper function to format numbers
+function formatNumber(num) {
+    return parseFloat(num).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function updatePaginationInfo(start, end, total) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCount = document.getElementById('total-count');
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : start;
+    if (showingEnd) showingEnd.textContent = end;
+    if (totalCount) totalCount.textContent = total;
+    generatePaginationButtons();
+}
+
+function generatePaginationButtons() {
+    const pageInfo = document.getElementById('page-info');
+    if (!pageInfo) return;
+    pageInfo.innerHTML = '';
+    if (totalPages <= 1) return;
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage < maxVisiblePages - 1) startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${i === currentPage ? 'bg-blue-400 text-white hover:bg-blue-500' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`;
+        button.addEventListener('click', () => changePage(i));
+        pageInfo.appendChild(button);
+    }
+}
+
+function changePage(page) { if (page < 1 || page > totalPages) return; currentPage = page; applyFrontendFilter(); }
+
+function initializePaginationListeners() {
+    // Mobile pagination buttons
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    
+    if (prevBtn) prevBtn.onclick = () => changePage(currentPage - 1);
+    if (nextBtn) nextBtn.onclick = () => changePage(currentPage + 1);
+    
+    // Desktop pagination buttons
+    const prevDesktopBtn = document.getElementById('prev-page-desktop');
+    const nextDesktopBtn = document.getElementById('next-page-desktop');
+    
+    if (prevDesktopBtn) prevDesktopBtn.onclick = () => changePage(currentPage - 1);
+    if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
+}
+
+function initializeFilterListeners() {
+    const debouncedFilter = (fn => { let t; return function(...args){ clearTimeout(t); t = setTimeout(() => fn.apply(this,args), 300); }; })(applyFrontendFilter);
+    const filterInputs = ['filter-document-no','filter-document-type','filter-client','filter-date','filter-description','filter-account','filter-isvat','filter-cost-amount','filter-price-amount','filter-created-by'];
+    filterInputs.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', debouncedFilter); });
+    const clearButton = document.getElementById('clear-filters');
+    if (clearButton) clearButton.addEventListener('click', function(){ filterInputs.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); applyFrontendFilter(); });
+}
+
+function initializeEventHandlers() {
+    const tbody = document.getElementById('documents-tbody');
+    if (!tbody) return;
+    if (tbody.hasAttribute('data-handlers-initialized')) return;
+    tbody.addEventListener('click', function(e) {
+        const row = e.target.closest('tr[data-document-id]');
+        if (row && !e.target.closest('button') && !e.target.closest('a')) {
+            const documentId = row.getAttribute('data-document-id');
+            if (documentId) loadDocumentDetails(documentId);
+            return;
+        }
+        const editBtn = e.target.closest('.edit-document-btn');
+        if (editBtn) {
+            e.stopPropagation();
+            const documentId = editBtn.getAttribute('data-document-id');
+            const documentDate = editBtn.getAttribute('data-document-date');
+            checkPeriodLockForEdit(documentId, documentDate);
+            return;
+        }
+        const deleteBtn = e.target.closest('.delete-document-btn');
+        if (deleteBtn) {
+            e.preventDefault(); e.stopPropagation();
+            const deleteUrl = deleteBtn.getAttribute('data-delete-url');
+            const documentName = deleteBtn.getAttribute('data-document-name');
+            if (deleteUrl && documentName) Silicon4Delete.showModal(deleteUrl, documentName);
+            return;
+        }
+        const printBtn = e.target.closest('.print-document-btn');
+        if (printBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const documentId = printBtn.getAttribute('data-document-id');
+            if (documentId) {
+                printDocument(documentId);
+            }
+            return;
         }
     });
-    
-    // Reset to page 1 after filtering
-    showClientPage(1);
+    tbody.setAttribute('data-handlers-initialized','true');
 }
 
-// Get cell index for each filter
-function getCellIndexForFilter(filterId) {
-    const filterMap = {
-        'filter-document-no': 0,
-        'filter-document-type': 1,
-        'filter-client': 2,
-        'filter-date': 3,
-        'filter-description': 4,
-        'filter-account': 5,
-        'filter-cost-amount': 6,
-        'filter-price-amount': 7,
-        'filter-created-by': 8
-    };
-    return filterMap[filterId] || 0;
-}
-
-// Initialize all functionality when DOM is ready
-function initializeAll() {
-    initializeEventHandlers();
-    initializeFilters(); // Client-side filters for better UX
-    initializeClientPagination(); // Client-side pagination for all records
-    
-    // Note: Number formatting is handled automatically by shared-components.js DOMContentLoaded
-    
-    // Initialize grid layout optimized for desktop screens
-    if (typeof Silicon4Grid !== 'undefined') {
-        Silicon4Grid.initializeGrid({
-            tableSelector: 'table',
-            autoAdjust: true,
-            maxWidth: 800,  // Optimized for desktop screens
-            responsive: false,  // Disable responsive since users don't use mobile
-            forceFilterWidths: {
-                'filter-description': 300,       // Force description filter to be wider
-                'filter-created-by': 120,        // Force admin field filter to be wider
-                'filter-client': 200,            // Force client filter to be wider
-                'filter-document-type': 100      // Force document type filter width
-            }
-        });
-    }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAll);
-} else {
-    initializeAll();
-}
-
-
-// Load document details via AJAX with caching
 function loadDocumentDetails(documentId) {
-    // Check cache first
-    if (detailCache.has(documentId)) {
-        renderCachedDetails(documentId);
-        return;
-    }
-    
-    // Cancel any existing request
-    if (currentDetailRequest) {
-        currentDetailRequest.abort();
-        currentDetailRequest = null;
-    }
-    
-    // Update URL without page refresh
+    if (detailCache.has(documentId)) { renderCachedDetails(documentId); return; }
+    if (currentDetailRequest) { currentDetailRequest.abort(); currentDetailRequest = null; }
+    // Update URL state and selection
     const currentUrl = new URL(window.location);
     currentUrl.searchParams.set('selected_document', documentId);
     window.history.pushState({}, '', currentUrl.toString());
-    
-    // Update row selection visual state
     updateRowSelection(documentId);
-    
     // Show loading state
     showDetailLoadingState();
-    
-    // Create new AbortController for this request
     currentDetailRequest = new AbortController();
-    
-    // Make AJAX request to load details
-    fetch(`?selected_document=${documentId}&ajax=1`, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json',
-        },
-        signal: currentDetailRequest.signal
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.text();
-    })
-    .then(html => {
-        // Clear the current request reference since it completed successfully
-        currentDetailRequest = null;
-        
-        // Cache the response
-        detailCache.set(documentId, html);
-        
-        // Render the details
-        renderDetailContent(html);
-    })
-    .catch(error => {
-        // Clear the current request reference
-        currentDetailRequest = null;
-        
-        // Only show error if it's not an abort error
-        if (error.name !== 'AbortError') {
-            hideDetailLoadingState();
-            showDetailErrorState();
-        }
-    });
+    const detailsUrl = `/core/astdocuments/?selected_document=${encodeURIComponent(documentId)}&ajax=1`;
+    fetch(detailsUrl, { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'text/html' }, signal: currentDetailRequest.signal })
+        .then(r => { if (!r.ok) throw new Error('Network response was not ok'); return r.text(); })
+        .then(html => { currentDetailRequest = null; detailCache.set(documentId, html); renderDetailContent(html); })
+        .catch(err => { currentDetailRequest = null; if (err.name !== 'AbortError') { showDetailErrorState(); }});
 }
 
-// Render cached details
 function renderCachedDetails(documentId) {
     const html = detailCache.get(documentId);
     if (html) {
-        // Update URL without page refresh
         const currentUrl = new URL(window.location);
         currentUrl.searchParams.set('selected_document', documentId);
         window.history.pushState({}, '', currentUrl.toString());
-        
-        // Update row selection visual state
         updateRowSelection(documentId);
-        
-        // Render the cached content
         renderDetailContent(html);
     }
 }
 
 // Render detail content (shared between cached and fresh data)
 function renderDetailContent(html) {
-    // Find the detail grid container
     const detailContainer = document.getElementById('detail-grid-container');
-    
     if (detailContainer) {
-        // Replace the current detail grid with the new content
         detailContainer.innerHTML = html;
-        
-        // Calculate and display totals after content is loaded
         setTimeout(() => {
             if (typeof window.calculateAssetItemTotals === 'function') {
                 window.calculateAssetItemTotals();
             }
-            
             if (typeof window.calculateAssetAccountingTotals === 'function') {
                 window.calculateAssetAccountingTotals();
             }
-        }, 100); // Small delay to ensure DOM is ready
+        }, 100);
     }
-    
-    // Re-initialize grid layout for the new detail grid
     if (typeof Silicon4Grid !== 'undefined') {
         Silicon4Grid.initializeGrid({
             tableSelector: '#detail-grid-container table',
             autoAdjust: true,
-            maxWidth: 800,  // Optimized for desktop screens
-            responsive: false  // Disable responsive since users don't use mobile
+            maxWidth: 800,
+            responsive: false
         });
     }
 }
 
 // Update row selection visual state
 function updateRowSelection(selectedDocumentId) {
-    // Remove selection from all rows
     const allRows = document.querySelectorAll('tbody tr[data-document-id]');
-    allRows.forEach(row => {
-        row.classList.remove('bg-blue-50');
-    });
-    
-    // Add selection to clicked row
+    allRows.forEach(row => { row.classList.remove('bg-blue-50'); });
     const selectedRow = document.querySelector(`tr[data-document-id="${selectedDocumentId}"]`);
-    if (selectedRow) {
-        selectedRow.classList.add('bg-blue-50');
-    }
+    if (selectedRow) { selectedRow.classList.add('bg-blue-50'); }
 }
 
 // Show loading state for detail grid
@@ -799,11 +564,8 @@ function showDetailLoadingState() {
     }
 }
 
-// Hide loading state
-function hideDetailLoadingState() {
-    // Loading state will be replaced by actual content
-}
-
+// Hide loading state (no-op; content will replace)
+function hideDetailLoadingState() {}
 
 // Show error state for detail grid
 function showDetailErrorState() {
@@ -817,9 +579,7 @@ function showDetailErrorState() {
                 <h3 class="mt-2 text-xs font-medium text-gray-900">Error loading details</h3>
                 <p class="mt-1 text-xs text-gray-500">There was an error loading the document details. Please try again.</p>
                 <div class="mt-6">
-                    <button onclick="location.reload()" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">
-                        Reload Page
-                    </button>
+                    <button onclick="location.reload()" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">Reload Page</button>
                 </div>
             </div>
         `;
@@ -827,7 +587,213 @@ function showDetailErrorState() {
     }
 }
 
+// Print document
+async function printDocument(documentId) {
+    // Build minimal document data from the selected row
+    const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
+    if (!row) return;
+    const cells = row.querySelectorAll('td');
+    const documentNo = cells[0]?.textContent?.trim() || '';
+    const clientName = cells[2]?.textContent?.trim() || '';
+    const documentDate = cells[3]?.textContent?.trim() || '';
+    const description = cells[4]?.textContent?.trim() || '';
+    const documentTypeId = parseInt(row.getAttribute('data-document-type-id') || '0');
+    // Extract IsVat from column 6 (index 6) - it shows 'Y' or 'N'
+    const isVat = cells[6]?.textContent?.trim() === 'Y';
+    // Extract ClientRegister from data attribute
+    const clientRegister = row.getAttribute('data-client-register') || '';
+    // Extract AccountCode and AccountName from data attributes or fallback to cell title attribute
+    let accountCode = row.getAttribute('data-account-code') || '';
+    let accountName = row.getAttribute('data-account-name') || '';
+    
+    // Fallback: extract from account cell title attribute if not in data attributes
+    if (!accountCode || !accountName) {
+        const accountCell = cells[5];
+        if (accountCell) {
+            const accountSpan = accountCell.querySelector('span[title]');
+            if (accountSpan) {
+                const title = accountSpan.getAttribute('title') || '';
+                // Title format: "AccountCode - AccountName"
+                const titleParts = title.split(' - ');
+                if (!accountCode && titleParts.length > 0) {
+                    accountCode = titleParts[0].trim();
+                }
+                if (!accountName && titleParts.length > 1) {
+                    accountName = titleParts[1].trim();
+                }
+            }
+            // Final fallback to cell text content for accountCode
+            if (!accountCode) {
+                accountCode = accountCell.textContent?.trim() || '';
+            }
+        }
+    }
+
+    // Collect items from live DOM first (if the selected detail is already rendered)
+    let items = [];
+    const liveDetail = document.getElementById('detail-grid-container');
+    if (liveDetail) {
+        const liveTbody = liveDetail.querySelector('#items-tbody');
+        if (liveTbody) {
+            const liveRows = liveTbody.querySelectorAll('tr');
+            liveRows.forEach((r, idx) => {
+                const tds = r.querySelectorAll('td');
+                // Extract from data attributes (preferred) or fallback to cell content
+                const assetCardCode = r.getAttribute('data-asset-card-code') || tds[0]?.textContent.trim() || '';
+                const assetCardName = r.getAttribute('data-asset-card-name') || '';
+                
+                // Extract assetCardName from title attribute if not in data attribute
+                let extractedAssetCardName = assetCardName;
+                if (!extractedAssetCardName && tds[0]) {
+                    const titleSpan = tds[0].querySelector('span[title]');
+                    if (titleSpan) {
+                        const title = titleSpan.getAttribute('title') || '';
+                        // Title format: "AssetCardCode - AssetCardName"
+                        const titleParts = title.split(' - ');
+                        if (titleParts.length > 1) {
+                            extractedAssetCardName = titleParts[1].trim();
+                        }
+                    }
+                }
+                
+                // Table structure: AssetCardCode (col 0), Quantity (col 1), UnitCost (col 2), UnitPrice (col 3), TotalCost (col 4), TotalPrice (col 5)
+                if (tds.length >= 6) {
+                    items.push({
+                        no: String(idx + 1),
+                        assetCardCode: assetCardCode,
+                        name: extractedAssetCardName,
+                        qty: tds[1]?.textContent.trim() || '',
+                        unitPrice: tds[3]?.textContent.trim() || '',
+                        total: tds[5]?.textContent.trim() || '',
+                        vat: '', // Not in the detail grid
+                        totalNoVat: '' // Not in the detail grid
+                    });
+                }
+            });
+        }
+    }
+
+    // If no items from live DOM, try to get cached/fetched detail HTML and parse
+    if (items.length === 0) {
+        let detailHtml = detailCache.get(documentId);
+        if (!detailHtml) {
+            try {
+                const resp = await fetch(`?selected_document=${documentId}&ajax=1`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (resp.ok) {
+                    detailHtml = await resp.text();
+                    detailCache.set(documentId, detailHtml);
+                }
+            } catch (e) {
+                console.warn('Failed to fetch detail for printing:', e);
+            }
+        }
+        if (detailHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(detailHtml, 'text/html');
+            // Prefer #items-tbody if present, else first tbody under detail
+            let itemsTbody = doc.getElementById('items-tbody');
+            if (!itemsTbody) {
+                const detailRoot = doc.getElementById('detail-grid-container') || doc;
+                itemsTbody = detailRoot.querySelector('tbody');
+            }
+            if (itemsTbody) {
+                const rows = itemsTbody.querySelectorAll('tr');
+                rows.forEach((r, idx) => {
+                    const tds = r.querySelectorAll('td');
+                    // Extract from data attributes (preferred) or fallback to cell content
+                    const assetCardCode = r.getAttribute('data-asset-card-code') || tds[0]?.textContent.trim() || '';
+                    const assetCardName = r.getAttribute('data-asset-card-name') || '';
+                    
+                    // Extract assetCardName from title attribute if not in data attribute
+                    let extractedAssetCardName = assetCardName;
+                    if (!extractedAssetCardName && tds[0]) {
+                        const titleSpan = tds[0].querySelector('span[title]');
+                        if (titleSpan) {
+                            const title = titleSpan.getAttribute('title') || '';
+                            // Title format: "AssetCardCode - AssetCardName"
+                            const titleParts = title.split(' - ');
+                            if (titleParts.length > 1) {
+                                extractedAssetCardName = titleParts[1].trim();
+                            }
+                        }
+                    }
+                    
+                    // Table structure: AssetCardCode (col 0), Quantity (col 1), UnitCost (col 2), UnitPrice (col 3), TotalCost (col 4), TotalPrice (col 5)
+                    if (tds.length >= 6) {
+                        items.push({
+                            no: String(idx + 1),
+                            assetCardCode: assetCardCode,
+                            name: extractedAssetCardName,
+                            qty: tds[1]?.textContent.trim() || '',
+                            unitPrice: tds[3]?.textContent.trim() || '',
+                            total: tds[5]?.textContent.trim() || '',
+                            vat: '', // Not in the detail grid
+                            totalNoVat: '' // Not in the detail grid
+                        });
+                    }
+                });
+            }
+        }
+    }
+
+    // Use generic print function for assets
+    if (typeof Silicon4Print !== 'undefined' && Silicon4Print.document) {
+        Silicon4Print.document(documentId, documentNo, documentDate, description, clientName, 'Хөрөнгийн баримт', accountCode, accountName, '', documentTypeId, isVat, items, '{{ request.user.username|default:"" }}');
+    }
+}
+
+// Check period lock before allowing edit
+function checkPeriodLockForEdit(documentId, documentDate) {
+    console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
+    
+    if (!documentDate) {
+        console.log('No date, proceeding to edit');
+        // No date, proceed to edit
+        window.location.href = `/core/astdocuments/${documentId}/update/`;
+        return;
+    }
+    
+    console.log('Checking period lock for date:', documentDate);
+    
+    // Check period lock via API
+    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Period lock API response:', data);
+            if (data.is_locked) {
+                console.log('Period is locked, showing modal');
+                // Show modal for locked period
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                console.log('Period not locked, proceeding to edit');
+                // Not locked, proceed to edit
+                window.location.href = `/core/astdocuments/${documentId}/update/`;
+            }
+        })
+        .catch(error => {
+            console.error('Period lock check failed:', error);
+            // On error, allow edit (fail open)
+            window.location.href = `/core/astdocuments/${documentId}/update/`;
+        });
+}
+
+function initializeAll() {
+    initializeEventHandlers();
+    initializeDateInputs();
+    initializeFilterListeners();
+    initializePaginationListeners();
+}
+
+document.addEventListener('DOMContentLoaded', function(){ initializeAll(); });
+
 } // End of execution guard
 </script>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
 
 {% endblock %}

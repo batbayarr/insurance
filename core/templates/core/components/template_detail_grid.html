@@ -1,60 +1,61 @@
 {% if selected_template %}
-<div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail ID</th>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Code</th>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Name</th>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-            {% for detail in template_details %}
-            <tr class="hover:bg-gray-50">
-                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ detail.TemplateDetailId }}</td>
-                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ detail.AccountId.AccountCode }}</td>
-                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{{ detail.AccountId.AccountName }}</td>
-                <td class="px-3 py-2 whitespace-nowrap text-sm">
-                    {% if detail.IsDebit %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Debit</span>
-                    {% else %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Credit</span>
-                    {% endif %}
-                </td>
-                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                    <div class="flex space-x-1">
-                        <a href="{% url 'core:template_detail_update' detail.TemplateDetailId %}" 
-                           class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500" 
-                           title="Edit Detail">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'core:template_detail_delete' detail.TemplateDetailId %}" 
-                           class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" 
-                           title="Delete Detail">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="px-3 py-4 text-center text-sm text-gray-500">
-                    No template details found
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-    <h4 class="text-sm font-medium text-blue-800">Template Information</h4>
-    <div class="mt-2 text-sm text-blue-700">
-        <p><strong>Template:</strong> {{ selected_template.TemplateName }}</p>
-        <p><strong>Document Type:</strong> {{ selected_template.DocumentTypeId.Description }}</p>
-        <p><strong>Total Details:</strong> {{ template_details|length }}</p>
+<div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200" style="table-layout: auto;">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">#</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНСНЫ КОД</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНСНЫ НЭР</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит</th>
+                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЭЛ</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for detail in template_details %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ forloop.counter }}</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ detail.AccountId.AccountCode }}</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ detail.AccountId.AccountName }}</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        {% if detail.IsDebit %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Debit</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        {% if not detail.IsDebit %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Credit</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-2 py-1 text-xs text-gray-900">
+                        <div class="flex items-center space-x-1">
+                            <a href="{% url 'core:template_detail_update' detail.TemplateDetailId %}" 
+                               class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                               title="Edit Detail">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </a>
+                            <a href="{% url 'core:template_detail_delete' detail.TemplateDetailId %}" 
+                               class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                               title="Delete Detail">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-2 py-1 text-center text-xs text-gray-500">
+                        No template details found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% else %}

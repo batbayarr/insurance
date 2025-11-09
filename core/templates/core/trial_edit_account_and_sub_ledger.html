@@ -1,0 +1,898 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}ТУСЛАХ ДЭВТЭР - Silicon4 Accounting{% endblock %}
+
+{% block content %}
+<div
+    data-report-title="{{ report_title|default:'АВЛАГА,ӨГЛӨГИЙН ТУСЛАХ ДЭВТЭР' }}"
+    data-report-begin="{{ begin_date }}"
+    data-report-end="{{ end_date }}"
+    data-account-code="{{ account_info.AccountCode|default_if_none:'' }}"
+    data-account-name="{{ account_info.AccountName|default_if_none:'' }}"
+    data-client-name="{{ client_info.ClientName|default_if_none:'' }}"
+    data-begin-balance-debit="{{ summary.begin_balance_debit|default:0 }}"
+    data-begin-balance-credit="{{ summary.begin_balance_credit|default:0 }}"
+    data-debit-total="{{ summary.debit_total|default:0 }}"
+    data-credit-total="{{ summary.credit_total|default:0 }}"
+    data-end-balance-debit="{{ summary.end_balance_debit|default:0 }}"
+    data-end-balance-credit="{{ summary.end_balance_credit|default:0 }}"
+>
+    <!-- Header -->
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">{{ report_title|default:"АВЛАГА,ӨГЛӨГИЙН ТУСЛАХ ДЭВТЭР" }}</h1>            
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    {% if error_message %}
+    <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Алдаа</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    {{ error_message }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 1 and 2: Summary and Balance on same row -->
+    {% if account_info %}
+    <div class="flex flex-col lg:flex-row gap-4 mb-4">
+        <!-- Section 1: General Information -->
+        <div class="bg-white shadow rounded-lg border border-gray-200 p-4 flex-1">
+                        <div class="grid grid-cols-1">
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Дансны код:</label>
+                    <p class="text-sm text-gray-900">{{ account_info.AccountCode }}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Дансны нэр:</label>
+                    <p class="text-sm text-gray-900">{{ account_info.AccountName }}</p>
+                </div>
+                {% if client_info %}
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Харилцагчийн код:</label>
+                    <p class="text-sm text-gray-900">{{ client_info.ClientCode|default:"-" }}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Харилцагчийн нэр:</label>
+                    <p class="text-sm text-gray-900">{{ client_info.ClientName }}</p>
+                </div>
+                {% endif %}
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Хугацаа:</label>
+                    <p class="text-sm text-gray-900">{{ begin_date }} - {{ end_date }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Balance -->
+        <div class="bg-white shadow rounded-lg border border-gray-200 p-4 flex-1">
+            <div class="">
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Эхний үлдэгдэл:</label>
+                    <p class="text-sm text-gray-900">
+                        {% with begin_total=summary.begin_balance_debit|add:summary.begin_balance_credit %}
+                            {% if begin_total != 0 %}
+                                {{ begin_total|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        {% endwith %}
+                    </p>
+                </div>
+
+                
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Дебит гүйлгээ:</label>
+                    <p class="text-sm text-gray-900">
+                        {% if summary.debit_total != 0 %}
+                            {{ summary.debit_total|floatformat:2|intcomma }}
+                        {% else %}
+                            <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Кредит гүйлгээ:</label>
+                    <p class="text-sm text-gray-900">
+                        {% if summary.credit_total != 0 %}
+                            {{ summary.credit_total|floatformat:2|intcomma }}
+                        {% else %}
+                            <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </p>
+                
+                
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs font-medium text-gray-500">Эцсийн үлдэгдэл:</label>
+                    <p class="text-sm text-gray-900">
+                        {% with end_total=summary.end_balance_debit|add:summary.end_balance_credit %}
+                            {% if end_total != 0 %}
+                                {{ end_total|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        {% endwith %}
+                    </p>
+
+
+                
+               
+                
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 2: Transaction Table -->
+    {% if subsidiary_ledger_data %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900">Гүйлгээний жагсаалт</h3>
+            <div class="flex items-center gap-2">
+                <button id="print-transactions-top"
+                        class="hidden sm:inline-flex border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                    ХЭВЛЭХ
+                </button>
+                <button id="export-transactions-top"
+                        class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                    EXCEL
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="subsidiary-ledger-table" class="min-w-full border border-gray-300">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Огноо</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Баримтын дугаар</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Код</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Харилцагч</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Гүйлгээний утга</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Валют</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Ханш</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Валютын дүн</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дт дүн</th>
+                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Кт дүн</th>
+                    </tr>
+                    <tr class="bg-gray-100">
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-document-date" placeholder="Огноо..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-document-no" placeholder="Дугаар..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-account-code" placeholder="Код..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-client-name" placeholder="Харилцагч..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-description" placeholder="Утга..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-currency-name" placeholder="Валют..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-currency-exchange" placeholder="Ханш..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-currency-amount" placeholder="Валютын дүн..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-debit-amount" placeholder="Дт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-credit-amount" placeholder="Кт..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white">
+                    {% for row in subsidiary_ledger_data %}
+                    <tr class="hover:bg-gray-50" 
+                        data-document-date="{{ row.DocumentDate }}"
+                        data-document-no="{{ row.DocumentNo }}"
+                        data-document-id="{{ row.DocumentId }}"
+                        data-document-source="{{ row.DocumentSource }}"
+                        data-account-code="{{ row.AccountCode|default:'' }}"
+                        data-client-name="{{ row.ClientName|default:'' }}"
+                        data-description="{{ row.Description|default:'' }}"
+                        data-currency-name="{{ row.CurrencyName|default:'' }}"
+                        data-currency-exchange="{{ row.CurrencyExchange }}"
+                        data-currency-amount="{{ row.CurrencyAmount }}"
+                        data-debit-amount="{{ row.DebitAmount }}"
+                        data-credit-amount="{{ row.CreditAmount }}">
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                            {{ row.DocumentDate|date:"Y-m-d" }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                            {{ row.DocumentNo }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                            {{ row.AccountCode|default:"-" }}
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                            {{ row.ClientName|default:"-" }}
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                            {{ row.Description|default:"-" }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                            {{ row.CurrencyName|default:"-" }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.CurrencyExchange != 0 %}
+                                {{ row.CurrencyExchange|floatformat:4|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.CurrencyAmount != 0 %}
+                                {{ row.CurrencyAmount|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.DebitAmount != 0 %}
+                                {{ row.DebitAmount|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300">
+                            {% if row.CreditAmount != 0 %}
+                                {{ row.CreditAmount|floatformat:2|intcomma }}
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr class="border-t border-gray-300">
+                        <td colspan="8" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-debit-amount">
+                            <span>0.00</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-credit-amount">
+                            <span>0.00</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Pagination & Actions -->
+        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                <div class="text-sm text-gray-700">
+                    Нийт <span id="total-count">0</span> бичлэгээс
+                    <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                    (<span id="pagination-info">Хуудас 1, нийт 1 хуудас</span>)
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                    <div class="flex items-center gap-2">
+                        <label for="rows-per-page" class="text-sm text-gray-700">Хуудас бүрт:</label>
+                        <select id="rows-per-page" 
+                                class="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="prev-page" 
+                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                            Өмнөх
+                        </button>
+                        <div id="page-numbers" class="flex gap-1">
+                            <!-- Page numbers will be generated here -->
+                        </div>
+                        <button id="next-page" 
+                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                            Дараах
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="print-transactions" 
+                                class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                            ХЭВЛЭХ
+                        </button>
+                        <button id="export-transactions" 
+                                class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                            EXCEL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif account_info %}
+    <div class="bg-white shadow rounded-lg border border-gray-200 p-16 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">Мэдээлэл олдсонгүй</h3>
+        <p class="mt-2 text-sm text-gray-500">Сонгосон хугацаанд гүйлгээ олдсонгүй.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Context Menu -->
+<div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
+    <button id="menu-view-transaction" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        ГҮЙЛГЭЭ ҮЗЭХ
+    </button>
+</div>
+
+<script src="{% static 'js/print-sub-ledger.js' %}"></script>
+<script>
+(function() {
+// Client-side filtering and pagination
+let allRows = [];
+let filteredRows = [];
+let currentPage = 1;
+let rowsPerPage = 25;
+let totalPages = 1;
+let totalRows = 0;
+
+// Initialize filtering and pagination
+function initializeTableFeatures() {
+    const tbody = document.querySelector('#subsidiary-ledger-table tbody');
+    if (tbody) {
+        allRows = Array.from(tbody.querySelectorAll('tr'));
+        filteredRows = [...allRows];
+        console.log('Initialized with', allRows.length, 'rows');
+        displayRows(); // Display rows with proper document grouping and borders
+        setupPagination();
+        setupInlineFilters();
+        calculateTotals();
+        setupContextMenu();
+    } else {
+        console.log('Table body not found');
+    }
+}
+
+// Calculate totals for numeric columns
+function calculateTotals() {
+    let totals = {
+        debitTotal: 0,
+        creditTotal: 0
+    };
+    
+    // Calculate totals from filtered rows
+    filteredRows.forEach((row) => {
+        const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
+        const creditAmount = parseFloat(row.dataset.creditAmount) || 0;
+        
+        totals.debitTotal += debitAmount;
+        totals.creditTotal += creditAmount;
+    });
+    
+    // Update total display elements
+    updateTotalDisplay('total-debit-amount', totals.debitTotal);
+    updateTotalDisplay('total-credit-amount', totals.creditTotal);
+}
+
+// Update individual total display
+function updateTotalDisplay(elementId, value) {
+    const element = document.getElementById(elementId);
+    
+    if (element) {
+        const span = element.querySelector('span');
+        if (span) {
+            const formatted = value.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            span.textContent = formatted;
+        }
+    }
+}
+
+// Setup inline column filters
+function setupInlineFilters() {
+    const filterInputs = [
+        'filter-document-date',
+        'filter-document-no',
+        'filter-account-code',
+        'filter-client-name',
+        'filter-description',
+        'filter-currency-name',
+        'filter-currency-exchange',
+        'filter-currency-amount',
+        'filter-debit-amount',
+        'filter-credit-amount'
+    ];
+    
+    filterInputs.forEach(filterId => {
+        const input = document.getElementById(filterId);
+        if (input) {
+            input.addEventListener('input', function() {
+                applyAllFilters();
+            });
+        }
+    });
+}
+
+// Apply all filters
+function applyAllFilters() {
+    filteredRows = allRows.filter(row => {
+        const filters = {
+            'filter-document-date': row.dataset.documentDate?.toLowerCase() || '',
+            'filter-document-no': row.dataset.documentNo?.toLowerCase() || '',
+            'filter-account-code': row.dataset.accountCode?.toLowerCase() || '',
+            'filter-client-name': row.dataset.clientName?.toLowerCase() || '',
+            'filter-description': row.dataset.description?.toLowerCase() || '',
+            'filter-currency-name': row.dataset.currencyName?.toLowerCase() || '',
+            'filter-currency-exchange': parseFloat(row.dataset.currencyExchange) || 0,
+            'filter-currency-amount': parseFloat(row.dataset.currencyAmount) || 0,
+            'filter-debit-amount': parseFloat(row.dataset.debitAmount) || 0,
+            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0
+        };
+        
+        for (const [filterId, value] of Object.entries(filters)) {
+            const filterInput = document.getElementById(filterId);
+            if (filterInput && filterInput.value.trim()) {
+                const filterValue = filterInput.value.toLowerCase().trim();
+                
+                if (filterId.includes('date') || filterId.includes('no') || filterId.includes('code') || filterId.includes('name') || filterId.includes('description') || filterId.includes('currency-name')) {
+                    // Text filters
+                    if (!value.includes(filterValue)) {
+                        return false;
+                    }
+                } else {
+                    // Numeric filters - support operators like >, <, =, >=, <=
+                    if (filterValue.startsWith('>=')) {
+                        const num = parseFloat(filterValue.substring(2));
+                        if (isNaN(num) || value < num) return false;
+                    } else if (filterValue.startsWith('<=')) {
+                        const num = parseFloat(filterValue.substring(2));
+                        if (isNaN(num) || value > num) return false;
+                    } else if (filterValue.startsWith('>')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value <= num) return false;
+                    } else if (filterValue.startsWith('<')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value >= num) return false;
+                    } else if (filterValue.startsWith('=')) {
+                        const num = parseFloat(filterValue.substring(1));
+                        if (isNaN(num) || value !== num) return false;
+                    } else {
+                        const num = parseFloat(filterValue);
+                        if (!isNaN(num)) {
+                            if (value !== num) return false;
+                        } else {
+                            if (!value.toString().includes(filterValue)) return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
+    });
+    
+    totalRows = filteredRows.length;
+    currentPage = 1;
+    displayRows();
+    setupPagination();
+    // Recalculate totals based on filtered rows
+    calculateTotals();
+}
+
+// Display rows for current page
+function displayRows() {
+    const tbody = document.querySelector('#subsidiary-ledger-table tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const totalCount = filteredRows.length;
+    totalPages = totalCount > 0 ? Math.ceil(totalCount / rowsPerPage) : 0;
+    if (totalPages === 0) {
+        currentPage = 0;
+    } else {
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+    }
+
+    const startIndex = totalPages === 0 ? 0 : (currentPage - 1) * rowsPerPage;
+    const endIndex = totalPages === 0 ? 0 : startIndex + rowsPerPage;
+    const pageRows = filteredRows.slice(startIndex, endIndex);
+    const actualEndIndex = Math.min(endIndex, totalCount);
+    
+    // Group rows by document (using document-id + document-no as key)
+    const groupedByDocument = {};
+    pageRows.forEach((row) => {
+        const docId = row.dataset.documentId || '';
+        const docNo = row.dataset.documentNo || '';
+        const docKey = `${docId}_${docNo}`;
+        if (!groupedByDocument[docKey]) {
+            groupedByDocument[docKey] = [];
+        }
+        groupedByDocument[docKey].push(row);
+    });
+    
+    // Render rows with borders only between document batches
+    const documentKeys = Object.keys(groupedByDocument);
+    documentKeys.forEach((docKey, docIndex) => {
+        const docRows = groupedByDocument[docKey];
+        const isLastDocument = docIndex === documentKeys.length - 1;
+        
+        docRows.forEach((row, rowIndex) => {
+            const isLastRowInDocument = rowIndex === docRows.length - 1;
+            
+            // Remove existing border classes from row
+            row.classList.remove('border-b', 'border-b-2', 'border-gray-200', 'border-gray-300', 'border-gray-400');
+            
+            // Handle cell borders - replace border border-gray-300 with border-r border-gray-300 (right border only)
+            // This matches the pattern in cashreport.html
+            const cells = row.querySelectorAll('td');
+            
+            cells.forEach(cell => {
+                // Remove border class (which applies borders on all sides)
+                cell.classList.remove('border', 'border-gray-300');
+                // Add only right border (like cashreport.html)
+                cell.classList.add('border-r', 'border-gray-300');
+            });
+            
+            if (isLastRowInDocument && !isLastDocument) {
+                // Last row of document batch (except last document): add border
+                // Use same style as cashreport.html
+                row.classList.add('border-b', 'border-gray-200');
+            }
+            
+            tbody.appendChild(row);
+        });
+    });
+
+    updatePaginationInfo(startIndex, actualEndIndex, totalCount);
+}
+
+function updatePaginationInfo(startIndex, endIndex, totalCount) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCountSpan = document.getElementById('total-count');
+
+    if (totalCount === 0) {
+        if (showingStart) showingStart.textContent = '0';
+        if (showingEnd) showingEnd.textContent = '0';
+        if (totalCountSpan) totalCountSpan.textContent = '0';
+    } else {
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = endIndex;
+        if (totalCountSpan) totalCountSpan.textContent = totalCount;
+    }
+}
+
+// Setup pagination
+function setupPagination() {
+    const paginationInfo = document.getElementById('pagination-info');
+    const prevButton = document.getElementById('prev-page');
+    const nextButton = document.getElementById('next-page');
+    const pageNumbers = document.getElementById('page-numbers');
+    
+    if (paginationInfo) {
+        const pageText = totalPages === 0 ? '0' : currentPage;
+        paginationInfo.textContent = `Хуудас ${pageText}, нийт ${totalPages} хуудас`;
+    }
+    
+    if (prevButton) {
+        prevButton.disabled = totalPages <= 1 || currentPage <= 1;
+    }
+    if (nextButton) {
+        nextButton.disabled = totalPages <= 1 || currentPage >= totalPages;
+    }
+    
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        if (totalPages > 1) {
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = `px-3 py-1 text-sm rounded ${
+                    i === currentPage 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`;
+                pageButton.addEventListener('click', () => goToPage(i));
+                pageNumbers.appendChild(pageButton);
+            }
+        }
+    }
+}
+
+// Go to specific page
+function goToPage(page) {
+    if (totalPages === 0) return;
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        displayRows();
+        setupPagination();
+    }
+}
+
+// Context menu functionality
+let selectedRow = null;
+
+function setupContextMenu() {
+    const tbody = document.querySelector('#subsidiary-ledger-table tbody');
+    if (!tbody) return;
+    
+    // Use event delegation on tbody to handle all rows
+    // Remove existing listener if any
+    if (tbody.dataset.contextMenuSetup) return;
+    tbody.dataset.contextMenuSetup = 'true';
+    
+    tbody.addEventListener('contextmenu', function(e) {
+        const row = e.target.closest('tr');
+        if (row && row.dataset.documentId) {
+            e.preventDefault();
+            selectedRow = row;
+            showContextMenu(e.clientX, e.clientY);
+        }
+    });
+}
+
+function showContextMenu(x, y) {
+    const menu = document.getElementById('context-menu');
+    if (!menu) return;
+    
+    // Show menu first to get its dimensions
+    menu.classList.remove('hidden');
+    
+    // Get menu dimensions
+    const menuRect = menu.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Adjust position if menu goes off-screen
+    let left = x;
+    let top = y;
+    
+    if (x + menuRect.width > windowWidth) {
+        left = windowWidth - menuRect.width - 10;
+    }
+    if (y + menuRect.height > windowHeight) {
+        top = windowHeight - menuRect.height - 10;
+    }
+    
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    
+    // Hide menu when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', hideContextMenu, { once: true });
+    }, 0);
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('context-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
+}
+
+function handleViewTransaction() {
+    if (!selectedRow) return;
+    
+    const documentId = selectedRow.dataset.documentId;
+    const documentSource = selectedRow.dataset.documentSource;
+    
+    if (!documentId || !documentSource) {
+        alert('Мэдээлэл дутуу байна');
+        return;
+    }
+    
+    // Navigate to appropriate master-detail view based on document source
+    let url = '';
+    if (documentSource === 'cash') {
+        url = `/core/cashdocuments/?selected_document=${documentId}`;
+    } else if (documentSource === 'inv') {
+        url = `/core/invdocuments/?selected_document=${documentId}`;
+    } else if (documentSource === 'ast') {
+        url = `/core/astdocuments/?selected_document=${documentId}`;
+    } else {
+        alert('Буруу баримтын төрөл');
+        return;
+    }
+    
+    window.location.href = url;
+    hideContextMenu();
+}
+
+function handlePrintTransactions() {
+    if (!filteredRows || filteredRows.length === 0) {
+        alert('Хэвлэх мэдээлэл алга байна.');
+        return;
+    }
+
+    const container = document.querySelector('[data-report-title]');
+    const reportTitle = container?.dataset.reportTitle || '{{ report_title|default:"АВЛАГА,ӨГЛӨГИЙН ТУСЛАХ ДЭВТЭР" }}';
+    const beginDate = container?.dataset.reportBegin || '';
+    const endDate = container?.dataset.reportEnd || '';
+    const accountCode = container?.dataset.accountCode || '';
+    const accountName = container?.dataset.accountName || '';
+    const clientName = container?.dataset.clientName || '';
+    
+    // Get summary values from data attributes
+    const beginBalanceDebit = parseFloat(container?.dataset.beginBalanceDebit || 0);
+    const beginBalanceCredit = parseFloat(container?.dataset.beginBalanceCredit || 0);
+    const debitTotal = parseFloat(container?.dataset.debitTotal || 0);
+    const creditTotal = parseFloat(container?.dataset.creditTotal || 0);
+    const endBalanceDebit = parseFloat(container?.dataset.endBalanceDebit || 0);
+    const endBalanceCredit = parseFloat(container?.dataset.endBalanceCredit || 0);
+    
+    // Calculate combined balances
+    const beginBalance = beginBalanceDebit + beginBalanceCredit;
+    const endBalance = endBalanceDebit + endBalanceCredit;
+
+    const headers = Array.from(document.querySelectorAll('#subsidiary-ledger-table thead tr:first-child th'))
+        .map(th => th.textContent.trim());
+
+    // Use the new print-sub-ledger.js function
+    if (typeof window.printSubLedgerTable === 'function') {
+        const mappedData = filteredRows.map(row => ({
+            DocumentDate: row.dataset.documentDate || '',
+            DocumentNo: row.dataset.documentNo || '',
+            AccountCode: row.dataset.accountCode || '',
+            ClientName: row.dataset.clientName || '',
+            Description: row.dataset.description || '',
+            CurrencyName: row.dataset.currencyName || '',
+            CurrencyAmount: parseFloat(row.dataset.currencyAmount) || 0,
+            CurrencyExchange: parseFloat(row.dataset.currencyExchange) || 0,
+            DebitAmount: parseFloat(row.dataset.debitAmount) || 0,
+            CreditAmount: parseFloat(row.dataset.creditAmount) || 0
+        }));
+
+        window.printSubLedgerTable({
+            title: reportTitle,
+            startDate: beginDate,
+            endDate: endDate,
+            accountCode: accountCode,
+            accountName: accountName,
+            clientName: clientName,
+            allData: mappedData,
+            columnHeaders: headers,
+            totals: {
+                debit: debitTotal,
+                credit: creditTotal
+            },
+            summary: {
+                beginBalance: beginBalance,
+                debitTotal: debitTotal,
+                creditTotal: creditTotal,
+                endBalance: endBalance
+            }
+        });
+    } else {
+        alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+    }
+}
+
+function handleExportTransactions() {
+    if (!filteredRows || filteredRows.length === 0) {
+        alert('Экспорт хийх мэдээлэл алга байна.');
+        return;
+    }
+
+    const headers = Array.from(document.querySelectorAll('#subsidiary-ledger-table thead tr:first-child th'))
+        .map(th => th.textContent.trim());
+    const rows = filteredRows.map(row => {
+        const cells = row.querySelectorAll('td');
+        return Array.from(cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
+    });
+
+    let csvContent = '';
+    csvContent += headers.map(h => '"' + h.replace(/"/g, '""') + '"').join(',') + '\n';
+    rows.forEach(row => {
+        const line = row.map(value => '"' + value.replace(/"/g, '""') + '"').join(',');
+        csvContent += line + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'trial_edit_account_and_sub_ledger_' + new Date().toISOString().split('T')[0] + '.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Event listeners for pagination
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initializeTableFeatures, 100);
+    
+    const prevButton = document.getElementById('prev-page');
+    if (prevButton) {
+        prevButton.addEventListener('click', () => goToPage(currentPage - 1));
+    }
+    
+    const nextButton = document.getElementById('next-page');
+    if (nextButton) {
+        nextButton.addEventListener('click', () => goToPage(currentPage + 1));
+    }
+    
+    const rowsPerPageSelect = document.getElementById('rows-per-page');
+    if (rowsPerPageSelect) {
+        rowsPerPageSelect.addEventListener('change', function() {
+            rowsPerPage = parseInt(this.value);
+            currentPage = 1;
+            displayRows();
+            setupPagination();
+        });
+    }
+    
+    // Context menu event listener
+    const menuViewTransaction = document.getElementById('menu-view-transaction');
+    if (menuViewTransaction) {
+        menuViewTransaction.addEventListener('click', handleViewTransaction);
+    }
+
+    const printButton = document.getElementById('print-transactions');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrintTransactions);
+    }
+
+    const printButtonTop = document.getElementById('print-transactions-top');
+    if (printButtonTop) {
+        printButtonTop.addEventListener('click', handlePrintTransactions);
+    }
+
+    const exportButton = document.getElementById('export-transactions');
+    if (exportButton) {
+        exportButton.addEventListener('click', handleExportTransactions);
+    }
+
+    const exportButtonTop = document.getElementById('export-transactions-top');
+    if (exportButtonTop) {
+        exportButtonTop.addEventListener('click', handleExportTransactions);
+    }
+});
+})();
+</script>
+{% endblock %}
+

@@ -18,7 +18,7 @@
     <div class="bg-white shadow rounded-lg border border-gray-200 p-4 mb-4">
         <form method="get" class="flex flex-col lg:flex-row gap-4 items-end">
             <div class="flex-1">
-                <label for="begin_date" class="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
+                <label for="begin_date" class="block text-sm font-medium text-gray-700 mb-1">Эхний огноо</label>
                 <input type="date" 
                        id="begin_date" 
                        name="begin_date" 
@@ -27,7 +27,7 @@
                        required>
             </div>
             <div class="flex-1">
-                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
+                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Эцсийн огноо</label>
                 <input type="date" 
                        id="end_date" 
                        name="end_date" 
@@ -68,7 +68,7 @@
     <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
             <h3 class="text-sm font-medium text-gray-900">
-                Гүйлгээний баланс: {{ begin_date }} - {{ end_date }}
+                Гүйлгээ баланс: {{ begin_date }} - {{ end_date }}
             </h3>
             
         </div>
@@ -268,13 +268,23 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <h3 class="mt-4 text-sm font-medium text-gray-900">Мэдээлэл олдсонгүй</h3>
-        <p class="mt-2 text-sm text-gray-500">Сонгосон хугацаанд гүйлгээний баланс олдсонгүй.</p>
+        <p class="mt-2 text-sm text-gray-500">Сонгосон хугацаанд гүйлгээ оруулаагүй байна.</p>
     </div>
     {% endif %}
 </div>
 
 <!-- Include Account Statement Modal -->
-{% include 'core/components/account_statement_modal.html' %}
+{% include 'core/components/print_account_statement_modal.html' %}
+
+<!-- Context Menu -->
+<div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
+    <button id="menu-account-statement" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        ТАЙЛАН ХЭВЛЭХ
+    </button>
+    <button id="menu-edit-account" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        ТАЙЛАН ЗАСАХ
+    </button>
+</div>
 
 <script>
 (function() {
@@ -319,7 +329,7 @@ function handleAccountRowClick(row) {
     }
     
     // Show modal and loading state
-    showAccountStatementModal();
+    showPrintAccountStatementModal();
     showModalLoading();
     
     // Prepare balance data from the row
@@ -406,6 +416,97 @@ function addClickHandlersToRows() {
     });
 }
 
+// Context menu functionality
+let selectedRow = null;
+
+function setupContextMenu() {
+    const tbody = document.querySelector('#trial-balance-table tbody');
+    if (!tbody) return;
+    
+    // Use event delegation on tbody to handle all rows
+    // Remove existing listener if any
+    if (tbody.dataset.contextMenuSetup) return;
+    tbody.dataset.contextMenuSetup = 'true';
+    
+    tbody.addEventListener('contextmenu', function(e) {
+        const row = e.target.closest('tr');
+        if (row && row.dataset.accountId) {
+            e.preventDefault();
+            selectedRow = row;
+            showContextMenu(e.clientX, e.clientY);
+        }
+    });
+}
+
+function showContextMenu(x, y) {
+    const menu = document.getElementById('context-menu');
+    if (!menu) return;
+    
+    // Show menu first to get its dimensions
+    menu.classList.remove('hidden');
+    
+    // Get menu dimensions
+    const menuRect = menu.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Adjust position if menu goes off-screen
+    let left = x;
+    let top = y;
+    
+    if (x + menuRect.width > windowWidth) {
+        left = windowWidth - menuRect.width - 10;
+    }
+    if (y + menuRect.height > windowHeight) {
+        top = windowHeight - menuRect.height - 10;
+    }
+    
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    
+    // Hide menu when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', hideContextMenu, { once: true });
+    }, 0);
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('context-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
+}
+
+function handleAccountStatement() {
+    if (!selectedRow) return;
+    handleAccountRowClick(selectedRow);
+    hideContextMenu();
+}
+
+function handleEditAccount() {
+    if (!selectedRow) return;
+    
+    const accountId = selectedRow.dataset.accountId;
+    const beginDate = document.getElementById('begin_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const beginningBalanceDebit = parseFloat(selectedRow.dataset.beginningBalanceDebit) || 0;
+    const beginningBalanceCredit = parseFloat(selectedRow.dataset.beginningBalanceCredit) || 0;
+    const debitAmount = parseFloat(selectedRow.dataset.debitAmount) || 0;
+    const creditAmount = parseFloat(selectedRow.dataset.creditAmount) || 0;
+    const endingBalanceDebit = parseFloat(selectedRow.dataset.endingBalanceDebit) || 0;
+    const endingBalanceCredit = parseFloat(selectedRow.dataset.endingBalanceCredit) || 0;
+    
+    if (!accountId || !beginDate || !endDate) {
+        alert('Мэдээлэл дутуу байна');
+        return;
+    }
+    
+    // Navigate to account statement view with all summary values
+    const url = `/core/reports/account-statement/?account_id=${accountId}&begin_date=${beginDate}&end_date=${endDate}&begin_balance_debit=${beginningBalanceDebit}&begin_balance_credit=${beginningBalanceCredit}&debit_total=${debitAmount}&credit_total=${creditAmount}&end_balance_debit=${endingBalanceDebit}&end_balance_credit=${endingBalanceCredit}`;
+    window.location.href = url;
+    hideContextMenu();
+}
+
 // Re-add click handlers after form submission (when new data is loaded)
 const form = document.querySelector('form');
 if (form) {
@@ -432,6 +533,7 @@ function initializeTableFeatures() {
         setupPagination();
         setupInlineFilters();
         calculateTotals();
+        setupContextMenu();
     } else {
         console.log('Table body not found');
     }
@@ -448,10 +550,10 @@ function calculateTotals() {
         endCredit: 0
     };
     
-    console.log('Calculating totals from ALL rows:', allRows.length, 'total rows');
+    console.log('Calculating totals from FILTERED rows:', filteredRows.length, 'filtered rows');
     
-    // Calculate totals from ALL rows (not filtered rows)
-    allRows.forEach((row, index) => {
+    // Calculate totals from filtered rows
+    filteredRows.forEach((row, index) => {
         const beginDebit = parseFloat(row.dataset.beginningBalanceDebit) || 0;
         const beginCredit = parseFloat(row.dataset.beginningBalanceCredit) || 0;
         const debitAmount = parseFloat(row.dataset.debitAmount) || 0;
@@ -474,7 +576,7 @@ function calculateTotals() {
         }
     });
     
-    console.log('Calculated totals from ALL rows:', totals);
+    console.log('Calculated totals from FILTERED rows:', totals);
     
     // Debug: Log totals to console
     console.log('Final calculated totals:', totals);
@@ -606,7 +708,8 @@ function applyAllFilters() {
     currentPage = 1;
     displayRows();
     setupPagination();
-    // Note: Totals are calculated from ALL rows, not filtered rows
+    // Recalculate totals based on filtered rows
+    calculateTotals();
 }
 
 // Clear all filters
@@ -736,6 +839,17 @@ document.addEventListener('DOMContentLoaded', function() {
             displayRows();
             setupPagination();
         });
+    }
+    
+    // Context menu item click handlers
+    const menuAccountStatement = document.getElementById('menu-account-statement');
+    if (menuAccountStatement) {
+        menuAccountStatement.addEventListener('click', handleAccountStatement);
+    }
+    
+    const menuEditAccount = document.getElementById('menu-edit-account');
+    if (menuEditAccount) {
+        menuEditAccount.addEventListener('click', handleEditAccount);
     }
 });
 })(); // End IIFE

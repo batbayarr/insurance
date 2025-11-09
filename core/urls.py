@@ -27,6 +27,8 @@ urlpatterns = [
     
     # Period Lock API
     path('api/check-period-lock/', views.api_check_period_lock, name='api_check_period_lock'),
+    path('api/validate-period-dates/', views.api_validate_period_dates, name='api_validate_period_dates'),
+    path('api/exchange-rate-adjustment-bulk/', views.api_exchange_rate_adjustment_bulk, name='api_exchange_rate_adjustment_bulk'),
     
     # Cash Documents (Master-Detail)
     path('cashdocuments/', views.cashdocument_master_detail, name='cashdocument_master_detail'),
@@ -36,9 +38,11 @@ urlpatterns = [
     
     # Cash Documents Views
     path('cashdocuments-tabs/', views.cash_documents, name='cash_journal'),
+    path('cashimport/', views.cash_import, name='cash_import'),
     path('api/cash-documents-filtered/', views.get_cash_documents_filtered, name='get_cash_documents_filtered'),
     path('api/cash-documents-master/', views.get_cash_documents_master, name='api_cash_documents_master'),
     path('api/inventory-documents-master/', views.get_inventory_documents_master, name='api_inventory_documents_master'),
+    path('api/asset-documents-master/', views.get_asset_documents_master, name='api_asset_documents_master'),
     
     # Trial Closing Entry (Depreciation & Closing)
     path('trial-closing-entry/', views.trial_closing_entry, name='trial_closing_entry'),
@@ -71,6 +75,19 @@ urlpatterns = [
     # Inventory Document Items
     path('invdocuments/<int:document_id>/bulk-manage-details/', views.bulk_manage_inv_details, name='bulk_manage_inv_details'),
     path('invdocuments/<int:document_id>/bulk-manage-details/api/', views.bulk_manage_inv_details_api, name='bulk_manage_inv_details_api'),
+    
+    # Inventory Documents Views
+    path('invdocuments-tabs/', views.inv_documents, name='invjournal'),
+    path('api/inv-documents-filtered/', views.get_inv_documents_filtered, name='get_inv_documents_filtered'),
+    path('api/inv-balance-data/', views.get_inv_balance_data, name='get_inv_balance_data'),
+    
+    # Asset Documents Views
+    path('astdocuments-tabs/', views.ast_documents, name='astjournal'),
+    path('api/ast-documents-filtered/', views.get_ast_documents_filtered, name='get_ast_documents_filtered'),
+    path('api/ast-balance-data/', views.get_ast_balance_data, name='get_ast_balance_data'),
+    
+    # Currency Journal
+    path('currencyjournal/', views.currency_journal, name='currency_journal'),
 
     # Asset Documents (Master-Detail)
     path('astdocuments/', views.astdocument_master_detail, name='astdocument_master_detail'),
@@ -105,6 +122,9 @@ urlpatterns = [
     # JSON API Endpoints
     path('api/assets/', views.assets_json, name='assets_json'),
     path('api/clients/', views.clients_json, name='clients_json'),
+    path('api/client-lookup-by-name/', views.api_client_lookup_by_name, name='api_client_lookup_by_name'),
+    path('api/account-lookup-by-code/', views.api_account_lookup_by_code, name='api_account_lookup_by_code'),
+    path('api/cash-import-bulk/', views.api_cash_import_bulk, name='api_cash_import_bulk'),
     path('api/refclienttypes/', views.refclient_types_json, name='refclient_types_json'),
     
 
@@ -139,13 +159,18 @@ urlpatterns = [
     
     # Template API Endpoints
     path('api/templates/', views.api_templates_list, name='api_templates_list'),
+    path('api/templates-by-account-code/', views.api_templates_by_account_code, name='api_templates_by_account_code'),
     path('api/templates/<int:template_id>/details/', views.api_template_details, name='api_template_details'),
     path('api/accounts/<int:account_id>/details/', views.api_account_details, name='api_account_details'),
 
     # Reports
     path('reports/trial-balance/', views.trial_balance, name='trial_balance'),
     path('reports/trial-recpay-balance/', views.recpay_balance, name='recpay_balance'),
+    path('reports/account-statement/', views.account_statement, name='account_statement'),
+    path('reports/subsidiary-ledger/', views.subsidiary_ledger, name='subsidiary_ledger'),
+    path('reports/y-balance/', views.y_balance, name='y_balance'),
     path('api/account-statement/', views.account_statement_detail, name='account_statement_detail'),
+    path('api/subsidiary-ledger/', views.subsidiary_ledger_detail, name='subsidiary_ledger_detail'),
     
     # Depreciation
     path('depreciation/calculate/', views.calculate_depreciation_view, name='calculate_depreciation'),

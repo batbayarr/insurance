@@ -1,0 +1,1592 @@
+{% extends 'base.html' %}
+{% load static %}
+<!-- FORCE NO CACHE - New File -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="cache-bust" content="CURRENCY-JOURNAL-v1.0-2025-01-31">
+{% load humanize %}
+
+{% block title %}Currency Journal{% endblock %}
+
+{% block content %}
+<div class="">
+    <!-- Date Filter Section -->
+    <div class="bg-white shadow rounded-lg p-1 mb-2">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center space-x-2">
+                <label for="start-date" class="text-sm font-medium text-gray-700">Эхлэх огноо:</label>
+                <input type="date" id="start-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
+                <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="filter-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                СЭРГЭЭХ
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white shadow rounded-lg mb-4">
+        <div class="border-b-2 border-gray-300">
+            <nav class="flex space-x-2 px-6 p-3">
+                <button onclick="switchToCashView()" class="border border-blue-500 text-blue-600 bg-blue-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    МӨНГӨН ХӨРӨНГӨ
+                </button>
+                <button onclick="switchToRecPayView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    АВЛАГА ӨГЛӨГ
+                </button>
+                <button onclick="switchToExchangeRateView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    ХАНШИЙН ТЭГШИТГЭЛ
+                </button>
+                <button onclick="printCurrencyJournal()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    ХЭВЛЭХ
+                </button>
+                <button onclick="exportToExcel()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    EXCEL
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Мөнгөн хөрөнгө Tab View -->
+    <div id="cash-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Дансны нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Дансны валют</th>
+                        
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Валют нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлдэгдэл</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлдэгдэл(₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Дебит </th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Дебит (₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Кредит </th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Кредит(₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлдэгдэл</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлдэгдэл(₮)</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-cash-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-cash-account-name" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-cash-account-currency" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20" style="display: none;">
+                            <input type="text" id="filter-cash-currency-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-cash-currency-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-beg-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-beg-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-debit-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-debit-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-credit-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-credit-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-end-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-cash-end-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="cash-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load currency balance data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination for Cash Tab -->
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-cash" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </button>
+                <button id="next-page-cash" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p id="pagination-info-cash" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-cash">0</span> бичлэгээс <span id="showing-start-cash">0</span> - <span id="showing-end-cash">0</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select-cash" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select-cash" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="40">40</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prev-page-desktop-cash" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span id="page-info-cash" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                <!-- Dynamic page buttons will be generated here -->
+                            </span>
+                            <button id="next-page-desktop-cash" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- АВЛАГА ӨГЛӨГ Tab View -->
+    <div id="recpay-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Дансны нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Дансны валют</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Харилцагч код</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Харилцагч нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Валют</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлд</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлд(₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Дебит </th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Дебит (₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Кредит </th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Кредит (₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлд</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлд(₮)</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-recpay-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-recpay-account-name" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-recpay-account-currency" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-recpay-client-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-recpay-client-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-recpay-currency-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-beg-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-beg-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-debit-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-debit-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-credit-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-credit-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-end-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-recpay-end-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="recpay-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="14" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load currency balance data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination for RecPay Tab -->
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-recpay" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </button>
+                <button id="next-page-recpay" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p id="pagination-info-recpay" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-recpay">0</span> бичлэгээс <span id="showing-start-recpay">0</span> - <span id="showing-end-recpay">0</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select-recpay" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select-recpay" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="40">40</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prev-page-desktop-recpay" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span id="page-info-recpay" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                <!-- Dynamic page buttons will be generated here -->
+                            </span>
+                            <button id="next-page-desktop-recpay" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ХАНШИЙН ТЭГШИТГЭЛ Tab View -->
+    <div id="exchangerate-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Дансны нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Дансны валют</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Харилцагч код</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Харилцагч нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлд</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эх.үлд(₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлд</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Эц.үлд(₮)</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">БОДИТ ХАНШ</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">Тэгшитгэх ханш</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">АШИГ</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">АЛДАГДАЛ</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-25">ACTION</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-exchangerate-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-exchangerate-account-name" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-exchangerate-account-currency" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-20">
+                            <input type="text" id="filter-exchangerate-client-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-40">
+                            <input type="text" id="filter-exchangerate-client-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-beg-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-beg-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-end-cur" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-end-mnt" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-actual-rate" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-adjust-rate" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-profit" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <input type="text" id="filter-exchangerate-loss" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200 w-25">
+                            <!-- Empty cell for ACTION column filter -->
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="exchangerate-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="14" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load currency balance data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination for ExchangeRate Tab -->
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-exchangerate" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </button>
+                <button id="next-page-exchangerate" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p id="pagination-info-exchangerate" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-exchangerate">0</span> бичлэгээс <span id="showing-start-exchangerate">0</span> - <span id="showing-end-exchangerate">0</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select-exchangerate" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select-exchangerate" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="40">40</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prev-page-desktop-exchangerate" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span id="page-info-exchangerate" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                <!-- Dynamic page buttons will be generated here -->
+                            </span>
+                            <button id="next-page-desktop-exchangerate" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input and Button Section -->
+        <div class="bg-white px-4 py-3 flex items-center gap-4 border-t border-gray-200 justify-end">
+            <input type="text" id="exchangerate-input" placeholder="Enter value..." 
+                   class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-md">
+            <button id="exchangerate-action-button" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors">
+                Action
+            </button>
+        </div>
+        
+
+
+
+
+
+    </div>
+</div>
+
+<!-- Currency data from Django template -->
+<script type="application/json" id="currency-data-json">
+{{ currency_data_json|safe }}
+</script>
+
+<script>
+    // Currency Journal JavaScript
+    
+    // Global variables
+    let currencyData = [];
+    let currentPageCash = 1;
+    let pageSizeCash = 20;
+    let totalPagesCash = 1;
+    let currentPageRecPay = 1;
+    let pageSizeRecPay = 20;
+    let totalPagesRecPay = 1;
+    let currentPageExchangeRate = 1;
+    let pageSizeExchangeRate = 20;
+    let totalPagesExchangeRate = 1;
+    let currentTab = 'cash'; // 'cash', 'recpay', or 'exchangerate'
+    
+    // Currency data from Django template
+    try {
+        const currencyDataElement = document.getElementById('currency-data-json');
+        if (currencyDataElement) {
+            const currencyDataJson = JSON.parse(currencyDataElement.textContent);
+            if (currencyDataJson && Array.isArray(currencyDataJson) && currencyDataJson.length > 0) {
+                currencyData = currencyDataJson;
+            }
+        }
+    } catch (e) {
+        console.error('Error parsing currency data:', e);
+        currencyData = [];
+    }
+    
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeAll();
+    });
+    
+    function initializeAll() {
+        initializeDateInputs();
+        initializeFilters();
+        initializePagination();
+        loadInitialData();
+        initializeExchangeRateButton();
+    }
+    
+    function initializeDateInputs() {
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const pageSizeSelectCash = document.getElementById('page-size-select-cash');
+        const pageSizeSelectRecPay = document.getElementById('page-size-select-recpay');
+        const pageSizeSelectExchangeRate = document.getElementById('page-size-select-exchangerate');
+        
+        setDefaultDateValues();
+        
+        if (pageSizeSelectCash) {
+            pageSizeSelectCash.addEventListener('change', function() {
+                pageSizeCash = parseInt(this.value);
+                currentPageCash = 1;
+                if (currencyData && currencyData.length > 0) {
+                    filterAndRenderCash();
+                }
+            });
+        }
+        
+        if (pageSizeSelectRecPay) {
+            pageSizeSelectRecPay.addEventListener('change', function() {
+                pageSizeRecPay = parseInt(this.value);
+                currentPageRecPay = 1;
+                if (currencyData && currencyData.length > 0) {
+                    filterAndRenderRecPay();
+                }
+            });
+        }
+        
+        if (pageSizeSelectExchangeRate) {
+            pageSizeSelectExchangeRate.addEventListener('change', function() {
+                pageSizeExchangeRate = parseInt(this.value);
+                currentPageExchangeRate = 1;
+                if (currencyData && currencyData.length > 0) {
+                    filterAndRenderExchangeRate();
+                }
+            });
+        }
+    }
+    
+    function setDefaultDateValues() {
+        // Check URL parameters first
+        const urlParams = new URLSearchParams(window.location.search);
+        const startDateParam = urlParams.get('start_date');
+        const endDateParam = urlParams.get('end_date');
+        
+        const formatDateForInput = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        
+        // Use URL parameters if available, otherwise use current month dates
+        if (startDateParam && startDateInput) {
+            startDateInput.value = startDateParam;
+        } else if (startDateInput && !startDateInput.value) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            startDateInput.value = formatDateForInput(firstDay);
+        }
+        
+        if (endDateParam && endDateInput) {
+            endDateInput.value = endDateParam;
+        } else if (endDateInput && !endDateInput.value) {
+            const today = new Date();
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            endDateInput.value = formatDateForInput(lastDay);
+        }
+    }
+    
+    function initializeFilters() {
+        const filterInputs = document.querySelectorAll('input[placeholder="Filter..."]');
+        filterInputs.forEach((input) => {
+            input.addEventListener('input', function() {
+                clearTimeout(window.filterTimeout);
+                window.filterTimeout = setTimeout(() => {
+                    if (currentTab === 'cash') {
+                        filterAndRenderCash();
+                    } else if (currentTab === 'recpay') {
+                        filterAndRenderRecPay();
+                    } else if (currentTab === 'exchangerate') {
+                        filterAndRenderExchangeRate();
+                    }
+                }, 300);
+            });
+        });
+    }
+    
+    function initializePagination() {
+        // Cash tab pagination
+        const prevPageCash = document.getElementById('prev-page-cash');
+        const nextPageCash = document.getElementById('next-page-cash');
+        const prevPageDesktopCash = document.getElementById('prev-page-desktop-cash');
+        const nextPageDesktopCash = document.getElementById('next-page-desktop-cash');
+        
+        if (prevPageCash) prevPageCash.addEventListener('click', () => changePageCash(currentPageCash - 1));
+        if (nextPageCash) nextPageCash.addEventListener('click', () => changePageCash(currentPageCash + 1));
+        if (prevPageDesktopCash) prevPageDesktopCash.addEventListener('click', () => changePageCash(currentPageCash - 1));
+        if (nextPageDesktopCash) nextPageDesktopCash.addEventListener('click', () => changePageCash(currentPageCash + 1));
+        
+        // RecPay tab pagination
+        const prevPageRecPay = document.getElementById('prev-page-recpay');
+        const nextPageRecPay = document.getElementById('next-page-recpay');
+        const prevPageDesktopRecPay = document.getElementById('prev-page-desktop-recpay');
+        const nextPageDesktopRecPay = document.getElementById('next-page-desktop-recpay');
+        
+        if (prevPageRecPay) prevPageRecPay.addEventListener('click', () => changePageRecPay(currentPageRecPay - 1));
+        if (nextPageRecPay) nextPageRecPay.addEventListener('click', () => changePageRecPay(currentPageRecPay + 1));
+        if (prevPageDesktopRecPay) prevPageDesktopRecPay.addEventListener('click', () => changePageRecPay(currentPageRecPay - 1));
+        if (nextPageDesktopRecPay) nextPageDesktopRecPay.addEventListener('click', () => changePageRecPay(currentPageRecPay + 1));
+        
+        // ExchangeRate tab pagination
+        const prevPageExchangeRate = document.getElementById('prev-page-exchangerate');
+        const nextPageExchangeRate = document.getElementById('next-page-exchangerate');
+        const prevPageDesktopExchangeRate = document.getElementById('prev-page-desktop-exchangerate');
+        const nextPageDesktopExchangeRate = document.getElementById('next-page-desktop-exchangerate');
+        
+        if (prevPageExchangeRate) prevPageExchangeRate.addEventListener('click', () => changePageExchangeRate(currentPageExchangeRate - 1));
+        if (nextPageExchangeRate) nextPageExchangeRate.addEventListener('click', () => changePageExchangeRate(currentPageExchangeRate + 1));
+        if (prevPageDesktopExchangeRate) prevPageDesktopExchangeRate.addEventListener('click', () => changePageExchangeRate(currentPageExchangeRate - 1));
+        if (nextPageDesktopExchangeRate) nextPageDesktopExchangeRate.addEventListener('click', () => changePageExchangeRate(currentPageExchangeRate + 1));
+        
+        // Filter button
+        const filterButton = document.getElementById('filter-button');
+        if (filterButton) {
+            filterButton.addEventListener('click', applyDateFilter);
+        }
+        
+        // Exchange Rate input box - populate all Тэгшитгэх ханш columns
+        const exchangerateInput = document.getElementById('exchangerate-input');
+        if (exchangerateInput) {
+            exchangerateInput.addEventListener('input', function() {
+                const value = this.value;
+                // Update all Тэгшитгэх ханш input fields in the table
+                const adjustRateInputs = document.querySelectorAll('.exchangerate-adjust-rate-input');
+                adjustRateInputs.forEach(input => {
+                    input.value = value;
+                    // Trigger calculation for this row
+                    if (typeof calculateProfitLossForRow === 'function') {
+                        calculateProfitLossForRow(input);
+                    }
+                });
+            });
+        }
+    }
+    
+    function calculateProfitLossForRow(adjustRateInput) {
+        const row = adjustRateInput.closest('tr');
+        if (!row) return;
+        
+        const actualRate = parseFloat(row.getAttribute('data-actual-rate')) || 0;
+        const endBalanceCur = parseFloat(row.getAttribute('data-end-balance-cur')) || 0;
+        const adjustRate = parseFloat(adjustRateInput.value) || 0;
+        
+        const profitCell = row.querySelector('.exchangerate-profit-cell');
+        const lossCell = row.querySelector('.exchangerate-loss-cell');
+        
+        if (!profitCell || !lossCell) return;
+        
+        // Calculate difference: ТЭГШИТГЭХ ХАНШ - БОДИТ ХАНШ
+        const difference = adjustRate - actualRate;
+        
+        let profit = 0;
+        let loss = 0;
+        
+        if (difference > 0) {
+            // АШИГ = (ТЭГШИТГЭХ ХАНШ - БОДИТ ХАНШ) * Эц.ҮЛД
+            profit = difference * endBalanceCur;
+            loss = 0;
+        } else if (difference < 0) {
+            // АЛДАГДАЛ = (БОДИТ ХАНШ - ТЭГШИТГЭХ ХАНШ) * Эц.ҮЛД
+            loss = Math.abs(difference) * endBalanceCur;
+            profit = 0;
+        } else {
+            // difference == 0
+            profit = 0;
+            loss = 0;
+        }
+        
+        profitCell.textContent = formatNumber(profit, 2);
+        lossCell.textContent = formatNumber(loss, 2);
+    }
+    
+    function calculateAllProfitLoss() {
+        // Calculate profit/loss for all rows when table is rendered
+        const adjustRateInputs = document.querySelectorAll('.exchangerate-adjust-rate-input');
+        adjustRateInputs.forEach(input => {
+            if (input.value) {
+                calculateProfitLossForRow(input);
+            }
+        });
+    }
+    
+    // Validate period dates against ref_period table
+    function validatePeriodDatesWithAPI(startDate, endDate) {
+        return fetch(`/core/api/validate-period-dates/?start_date=${startDate}&end_date=${endDate}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    return {
+                        valid: true,
+                        period: data.period,
+                        adjusted: data.adjusted || false,
+                        adjusted_start: data.adjusted_start,
+                        adjusted_end: data.adjusted_end
+                    };
+                } else {
+                    return {
+                        valid: false,
+                        message: data.message || 'Period validation failed',
+                        adjusted: false
+                    };
+                }
+            })
+            .catch(error => {
+                return {
+                    valid: false,
+                    message: 'Error validating period: ' + error.message,
+                    adjusted: false
+                };
+            });
+    }
+    
+    // Show prompt for date input
+    function promptForPeriodDates() {
+        return new Promise((resolve) => {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            
+            // Use existing date inputs or prompt for new ones
+            const startInput = prompt('Enter beginning date (YYYY-MM-DD):', startDate || '');
+            if (!startInput) {
+                resolve(null);
+                return;
+            }
+            
+            const endInput = prompt('Enter end date (YYYY-MM-DD):', endDate || '');
+            if (!endInput) {
+                resolve(null);
+                return;
+            }
+            
+            resolve({
+                start_date: startInput,
+                end_date: endInput
+            });
+        });
+    }
+    
+    // Helper function to reload data with validated dates
+    function reloadDataWithDates(startDate, endDate) {
+        // Update date inputs
+        document.getElementById('start-date').value = startDate;
+        document.getElementById('end-date').value = endDate;
+        
+        // Reload page with new date parameters and tab indicator
+        const url = new URL(window.location.href);
+        url.searchParams.set('start_date', startDate);
+        url.searchParams.set('end_date', endDate);
+        url.searchParams.set('tab', 'exchangerate');  // Add tab parameter
+        window.location.href = url.toString();
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Initialize exchange rate button click handler
+    function initializeExchangeRateButton() {
+        const actionButton = document.getElementById('exchangerate-action-button');
+        if (!actionButton) return;
+        
+        actionButton.addEventListener('click', async function() {
+            // Dates are already validated when tab is shown, so we can proceed directly
+            // Step 1: Collect selected rows
+            const selectedRows = [];
+            const checkboxes = document.querySelectorAll('#exchangerate-tbody input[type="checkbox"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Please select at least one row');
+                return;
+            }
+            
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const adjustRateInput = row.querySelector('.exchangerate-adjust-rate-input');
+                const profitCell = row.querySelector('.exchangerate-profit-cell');
+                const lossCell = row.querySelector('.exchangerate-loss-cell');
+                
+                // Only process if adjust rate is filled
+                if (adjustRateInput && adjustRateInput.value) {
+                    const accountcode = row.cells[0].textContent.trim();
+                    const clientcode = row.cells[3].textContent.trim();
+                    const profit = parseFloat(profitCell.textContent.replace(/,/g, '')) || 0;
+                    const loss = parseFloat(lossCell.textContent.replace(/,/g, '')) || 0;
+                    
+                    if (profit > 0 || loss > 0) {
+                        selectedRows.push({
+                            accountcode: accountcode,
+                            clientcode: clientcode,
+                            accounttypeid: parseInt(row.getAttribute('data-account-type-id')) || null,
+                            profit: profit,
+                            loss: loss
+                        });
+                    }
+                }
+            });
+            
+            if (selectedRows.length === 0) {
+                alert('Please select rows with profit or loss values');
+                return;
+            }
+            
+            // Step 2: Show loading state
+            const button = this;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            
+            // Step 3: Get end date from date input (already validated)
+            const endDate = document.getElementById('end-date').value;
+            
+            // Step 4: Send to API
+            fetch('/core/api/exchange-rate-adjustment-bulk/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    rows: selectedRows,
+                    document_date: endDate  // Use end date as document date (already validated)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.disabled = false;
+                button.textContent = originalText;
+                
+                if (data.success) {
+                    let message = `Successfully created ${data.count} document(s)\nDocument numbers: ${data.document_numbers.join(', ')}`;
+                    if (data.deleted_count && data.deleted_count > 0) {
+                        message += `\n\nDeleted ${data.deleted_count} existing document(s) for the same period.`;
+                    }
+                    alert(message);
+                    // Optionally refresh or redirect
+                    // window.location.reload();
+                } else {
+                    const errorMsg = data.message || 'Unknown error';
+                    const errors = data.errors ? '\n' + data.errors.join('\n') : '';
+                    alert('Error: ' + errorMsg + errors);
+                }
+            })
+            .catch(error => {
+                button.disabled = false;
+                button.textContent = originalText;
+                alert('Error: ' + error.message);
+            });
+        });
+    }
+    
+    function loadInitialData() {
+        // Check if we should show exchange rate tab after reload
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        
+        // If we have currency data, render it
+        if (currencyData && currencyData.length > 0) {
+            if (tabParam === 'exchangerate') {
+                // Automatically switch to exchange rate tab (validation will happen)
+                switchToExchangeRateView();
+                // Remove tab parameter from URL to avoid repeating
+                urlParams.delete('tab');
+                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+            } else {
+                filterAndRenderCash();
+            }
+        } else if (tabParam === 'exchangerate') {
+            // If no data but tab is requested, still switch to tab (validation will happen)
+            switchToExchangeRateView();
+            // Remove tab parameter from URL
+            urlParams.delete('tab');
+            const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+            window.history.replaceState({}, '', newUrl);
+        }
+    }
+    
+    function applyDateFilter() {
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+        
+        // Reload page with date parameters
+        const url = new URL(window.location.href);
+        url.searchParams.set('start_date', startDate);
+        url.searchParams.set('end_date', endDate);
+        window.location.href = url.toString();
+    }
+    
+    function switchToCashView() {
+        currentTab = 'cash';
+        document.getElementById('cash-view').style.display = 'block';
+        document.getElementById('recpay-view').style.display = 'none';
+        document.getElementById('exchangerate-view').style.display = 'none';
+        updateTabStyling('cash');
+        if (currencyData && currencyData.length > 0) {
+            filterAndRenderCash();
+        }
+    }
+    
+    function switchToRecPayView() {
+        currentTab = 'recpay';
+        document.getElementById('cash-view').style.display = 'none';
+        document.getElementById('recpay-view').style.display = 'block';
+        document.getElementById('exchangerate-view').style.display = 'none';
+        updateTabStyling('recpay');
+        if (currencyData && currencyData.length > 0) {
+            filterAndRenderRecPay();
+        }
+    }
+    
+    async function switchToExchangeRateView() {
+        // Step 1: Get current dates from date inputs
+        let startDate = document.getElementById('start-date').value;
+        let endDate = document.getElementById('end-date').value;
+        
+        // Step 2: Validate dates - if empty, prompt for dates
+        if (!startDate || !endDate) {
+            const dateInputs = await promptForPeriodDates();
+            if (!dateInputs) {
+                return; // User cancelled
+            }
+            startDate = dateInputs.start_date;
+            endDate = dateInputs.end_date;
+        }
+        
+        // Step 3: Validate dates format
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+            alert('Invalid date format. Please use YYYY-MM-DD format.');
+            return;
+        }
+        
+        // Step 4: Validate against period
+        const validation = await validatePeriodDatesWithAPI(startDate, endDate);
+        
+        if (!validation.valid) {
+            // Prompt for correct dates
+            const dateInputs = await promptForPeriodDates();
+            if (!dateInputs) {
+                return; // User cancelled
+            }
+            
+            // Validate entered dates
+            if (!dateRegex.test(dateInputs.start_date) || !dateRegex.test(dateInputs.end_date)) {
+                alert('Invalid date format. Please use YYYY-MM-DD format.');
+                return;
+            }
+            
+            const reValidation = await validatePeriodDatesWithAPI(dateInputs.start_date, dateInputs.end_date);
+            if (!reValidation.valid) {
+                alert('Validation failed: ' + reValidation.message + '\n\nPlease select valid period dates (first day and last day of a month).');
+                return;
+            }
+            
+            // Use validated dates
+            startDate = reValidation.adjusted ? reValidation.adjusted_start : dateInputs.start_date;
+            endDate = reValidation.adjusted ? reValidation.adjusted_end : dateInputs.end_date;
+            
+            // Update date inputs and reload data
+            reloadDataWithDates(startDate, endDate);
+            return;
+        }
+        
+        // Step 5: If dates were adjusted, update inputs and reload
+        if (validation.adjusted) {
+            const confirmMsg = `Dates adjusted to match period:\n` +
+                             `Start: ${validation.adjusted_start}\n` +
+                             `End: ${validation.adjusted_end}\n\n` +
+                             `Continue with adjusted dates?`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            startDate = validation.adjusted_start;
+            endDate = validation.adjusted_end;
+            
+            // Update date inputs and reload data
+            reloadDataWithDates(startDate, endDate);
+            return;
+        }
+        
+        // Step 6: Dates are valid, show the tab view
+        currentTab = 'exchangerate';
+        document.getElementById('cash-view').style.display = 'none';
+        document.getElementById('recpay-view').style.display = 'none';
+        document.getElementById('exchangerate-view').style.display = 'block';
+        updateTabStyling('exchangerate');
+        if (currencyData && currencyData.length > 0) {
+            filterAndRenderExchangeRate();
+        }
+    }
+    
+    function updateTabStyling(activeTab) {
+        const tabs = document.querySelectorAll('nav button');
+        tabs.forEach(tab => {
+            tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
+            tab.classList.add('border-gray-300', 'text-gray-500');
+        });
+        
+        if (activeTab === 'cash') {
+            tabs[0].classList.remove('border-gray-300', 'text-gray-500');
+            tabs[0].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'recpay') {
+            tabs[1].classList.remove('border-gray-300', 'text-gray-500');
+            tabs[1].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'exchangerate') {
+            tabs[2].classList.remove('border-gray-300', 'text-gray-500');
+            tabs[2].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        }
+    }
+    
+    function filterAndRenderCash() {
+        // Filter by AccountTypeId: Cash accounts (1, 2)
+        let filteredData = currencyData.filter(item => 
+            item.accounttypeid === 1 || item.accounttypeid === 2
+        );
+        
+        // Apply column filters
+        filteredData = applyColumnFilters(filteredData, 'cash');
+        
+        // Calculate pagination
+        totalPagesCash = Math.ceil(filteredData.length / pageSizeCash);
+        if (currentPageCash > totalPagesCash) currentPageCash = 1;
+        
+        // Get paginated data
+        const startIndex = (currentPageCash - 1) * pageSizeCash;
+        const endIndex = startIndex + pageSizeCash;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updatePaginationInfoCash(filteredData.length, paginatedData.length, startIndex);
+        
+        // Render table
+        renderCashTable(paginatedData);
+    }
+    
+    function filterAndRenderRecPay() {
+        // Filter by AccountTypeId: Receivable (3,4,5,6) or Payable (>41 <59)
+        let filteredData = currencyData.filter(item => 
+            (item.accounttypeid >= 3 && item.accounttypeid <= 6) ||
+            (item.accounttypeid > 41 && item.accounttypeid < 59)
+        );
+        
+        // Apply column filters
+        filteredData = applyColumnFilters(filteredData, 'recpay');
+        
+        // Calculate pagination
+        totalPagesRecPay = Math.ceil(filteredData.length / pageSizeRecPay);
+        if (currentPageRecPay > totalPagesRecPay) currentPageRecPay = 1;
+        
+        // Get paginated data
+        const startIndex = (currentPageRecPay - 1) * pageSizeRecPay;
+        const endIndex = startIndex + pageSizeRecPay;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updatePaginationInfoRecPay(filteredData.length, paginatedData.length, startIndex);
+        
+        // Render table
+        renderRecPayTable(paginatedData);
+    }
+    
+    function filterAndRenderExchangeRate() {
+        // Filter by AccountTypeId: Cash accounts (1,2), Receivable (3,4,5,6), or Payable (>41 <59)
+        // Exclude records where currencyId === 1
+        let filteredData = currencyData.filter(item => 
+            ((item.accounttypeid === 1 || item.accounttypeid === 2) ||
+            (item.accounttypeid >= 3 && item.accounttypeid <= 6) ||
+            (item.accounttypeid > 41 && item.accounttypeid < 59)) &&
+            (item.currencyid !== 1)
+        );
+        
+        // Apply column filters
+        filteredData = applyColumnFilters(filteredData, 'exchangerate');
+        
+        // Calculate pagination
+        totalPagesExchangeRate = Math.ceil(filteredData.length / pageSizeExchangeRate);
+        if (currentPageExchangeRate > totalPagesExchangeRate) currentPageExchangeRate = 1;
+        
+        // Get paginated data
+        const startIndex = (currentPageExchangeRate - 1) * pageSizeExchangeRate;
+        const endIndex = startIndex + pageSizeExchangeRate;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updatePaginationInfoExchangeRate(filteredData.length, paginatedData.length, startIndex);
+        
+        // Render table
+        renderExchangeRateTable(paginatedData);
+    }
+    
+    function applyColumnFilters(data, tab) {
+        const prefix = tab === 'cash' ? 'cash' : (tab === 'recpay' ? 'recpay' : 'exchangerate');
+        
+        const filters = {
+            accountcode: document.getElementById(`filter-${prefix}-account-code`)?.value.toLowerCase().trim() || '',
+            accountname: document.getElementById(`filter-${prefix}-account-name`)?.value.toLowerCase().trim() || '',
+            accountcurrencyid: document.getElementById(`filter-${prefix}-account-currency`)?.value.toLowerCase().trim() || '',
+            clientcode: document.getElementById(`filter-${prefix}-client-code`)?.value.toLowerCase().trim() || '',
+            clientname: document.getElementById(`filter-${prefix}-client-name`)?.value.toLowerCase().trim() || '',
+            currencyname: document.getElementById(`filter-${prefix}-currency-name`)?.value.toLowerCase().trim() || '',
+            begcur: document.getElementById(`filter-${prefix}-beg-cur`)?.value.toLowerCase().trim() || '',
+            begmnt: document.getElementById(`filter-${prefix}-beg-mnt`)?.value.toLowerCase().trim() || '',
+            debitcur: tab === 'exchangerate' ? '' : (document.getElementById(`filter-${prefix}-debit-cur`)?.value.toLowerCase().trim() || ''),
+            debitmnt: tab === 'exchangerate' ? '' : (document.getElementById(`filter-${prefix}-debit-mnt`)?.value.toLowerCase().trim() || ''),
+            creditcur: tab === 'exchangerate' ? '' : (document.getElementById(`filter-${prefix}-credit-cur`)?.value.toLowerCase().trim() || ''),
+            creditmnt: tab === 'exchangerate' ? '' : (document.getElementById(`filter-${prefix}-credit-mnt`)?.value.toLowerCase().trim() || ''),
+            endcur: document.getElementById(`filter-${prefix}-end-cur`)?.value.toLowerCase().trim() || '',
+            endmnt: document.getElementById(`filter-${prefix}-end-mnt`)?.value.toLowerCase().trim() || ''
+        };
+        
+        if (!Object.values(filters).some(f => f.length > 0)) {
+            return data;
+        }
+        
+        return data.filter(item => {
+            const begBalanceCur = (item.beginningbalancecurdebit || 0) + (item.beginningbalancecurcredit || 0);
+            const begBalanceMnt = (item.beginningbalancemntdebit || 0) + (item.beginningbalancemntcredit || 0);
+            const endBalanceCur = (item.endingbalancecurdebit || 0) + (item.endingbalancecurcredit || 0);
+            const endBalanceMnt = (item.endingbalancemntdebit || 0) + (item.endingbalancemntcredit || 0);
+            
+            const baseMatch = (
+                (!filters.accountcode || String(item.accountcode || '').toLowerCase().includes(filters.accountcode)) &&
+                (!filters.accountname || String(item.accountname || '').toLowerCase().includes(filters.accountname)) &&
+                (!filters.accountcurrencyid || 
+                    (String(item.accountcurrencyid || '').toLowerCase().includes(filters.accountcurrencyid) ||
+                     String(item.accountcurrencyname || '').toLowerCase().includes(filters.accountcurrencyid))) &&
+                (!filters.clientcode || String(item.clientcode || '').toLowerCase().includes(filters.clientcode)) &&
+                (!filters.clientname || String(item.clientname || '').toLowerCase().includes(filters.clientname)) &&
+                (!filters.currencyname || String(item.currencyname || '').toLowerCase().includes(filters.currencyname)) &&
+                (!filters.begcur || String(begBalanceCur || '').toLowerCase().includes(filters.begcur)) &&
+                (!filters.begmnt || String(begBalanceMnt || '').toLowerCase().includes(filters.begmnt)) &&
+                (!filters.endcur || String(endBalanceCur || '').toLowerCase().includes(filters.endcur)) &&
+                (!filters.endmnt || String(endBalanceMnt || '').toLowerCase().includes(filters.endmnt))
+            );
+            
+            if (tab === 'exchangerate') {
+                return baseMatch;
+            }
+            
+            return baseMatch &&
+                (!filters.debitcur || String(item.debitcur || '').toLowerCase().includes(filters.debitcur)) &&
+                (!filters.debitmnt || String(item.debitmnt || '').toLowerCase().includes(filters.debitmnt)) &&
+                (!filters.creditcur || String(item.creditcur || '').toLowerCase().includes(filters.creditcur)) &&
+                (!filters.creditmnt || String(item.creditmnt || '').toLowerCase().includes(filters.creditmnt));
+        });
+    }
+    
+    function renderCashTable(data) {
+        const tbody = document.getElementById('cash-tbody');
+        if (!tbody) return;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 class="text-sm font-medium text-gray-900 mb-1">No data found</h3>
+                            <p class="text-sm text-gray-500">No currency balance data found for cash accounts.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let htmlContent = '';
+        data.forEach((item) => {
+            const begBalanceCur = (item.beginningbalancecurdebit || 0) + (item.beginningbalancecurcredit || 0);
+            const begBalanceMnt = (item.beginningbalancemntdebit || 0) + (item.beginningbalancemntcredit || 0);
+            const endBalanceCur = (item.endingbalancecurdebit || 0) + (item.endingbalancecurcredit || 0);
+            const endBalanceMnt = (item.endingbalancemntdebit || 0) + (item.endingbalancemntcredit || 0);
+            
+            htmlContent += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcode || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcurrencyname || ''}</td>
+                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currencyname || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceMnt, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debitcur || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debitmnt || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.creditcur || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.creditmnt || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceMnt, 2)}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlContent;
+    }
+    
+    function renderRecPayTable(data) {
+        const tbody = document.getElementById('recpay-tbody');
+        if (!tbody) return;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="14" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 class="text-sm font-medium text-gray-900 mb-1">No data found</h3>
+                            <p class="text-sm text-gray-500">No currency balance data found for receivable/payable accounts.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let htmlContent = '';
+        data.forEach((item) => {
+            const begBalanceCur = (item.beginningbalancecurdebit || 0) + (item.beginningbalancecurcredit || 0);
+            const begBalanceMnt = (item.beginningbalancemntdebit || 0) + (item.beginningbalancemntcredit || 0);
+            const endBalanceCur = (item.endingbalancecurdebit || 0) + (item.endingbalancecurcredit || 0);
+            const endBalanceMnt = (item.endingbalancemntdebit || 0) + (item.endingbalancemntcredit || 0);
+            
+            htmlContent += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcode || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcurrencyname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.clientcode || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.clientname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currencyname || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceMnt, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debitcur || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debitmnt || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.creditcur || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.creditmnt || 0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceMnt, 2)}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlContent;
+    }
+    
+    function renderExchangeRateTable(data) {
+        const tbody = document.getElementById('exchangerate-tbody');
+        if (!tbody) return;
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="14" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 class="text-sm font-medium text-gray-900 mb-1">No data found</h3>
+                            <p class="text-sm text-gray-500">No currency balance data found for exchange rate accounts.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let htmlContent = '';
+        data.forEach((item) => {
+            const begBalanceCur = (item.beginningbalancecurdebit || 0) + (item.beginningbalancecurcredit || 0);
+            const begBalanceMnt = (item.beginningbalancemntdebit || 0) + (item.beginningbalancemntcredit || 0);
+            const endBalanceCur = (item.endingbalancecurdebit || 0) + (item.endingbalancecurcredit || 0);
+            const endBalanceMnt = (item.endingbalancemntdebit || 0) + (item.endingbalancemntcredit || 0);
+            
+            // Calculate БОДИТ ХАНШ = Эц.үлд(₮) / Эц.үлд
+            const actualRate = endBalanceCur !== 0 ? (endBalanceMnt / endBalanceCur) : 0;
+            
+            htmlContent += `
+                <tr class="hover:bg-gray-50" data-actual-rate="${actualRate}" data-end-balance-cur="${endBalanceCur}" data-account-type-id="${item.accounttypeid || ''}">
+                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcode || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.accountcurrencyname || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.clientcode || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.clientname || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(begBalanceMnt, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceCur, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(endBalanceMnt, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(actualRate, 4)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        <input type="text" class="exchangerate-adjust-rate-input w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-right" 
+                               placeholder="0.0000" value="">
+                    </td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right exchangerate-profit-cell">${formatNumber(0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right exchangerate-loss-cell">${formatNumber(0, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-center">
+                        <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlContent;
+        
+        // Add event listeners to all Тэгшитгэх ханш input fields
+        const adjustRateInputs = tbody.querySelectorAll('.exchangerate-adjust-rate-input');
+        adjustRateInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                if (typeof calculateProfitLossForRow === 'function') {
+                    calculateProfitLossForRow(this);
+                }
+            });
+        });
+        
+        // Calculate profit/loss for any rows that already have values
+        if (typeof calculateAllProfitLoss === 'function') {
+            calculateAllProfitLoss();
+        }
+    }
+    
+    function updatePaginationInfoCash(totalRecords, currentRecords, startIndex) {
+        const showingStart = document.getElementById('showing-start-cash');
+        const showingEnd = document.getElementById('showing-end-cash');
+        const totalCount = document.getElementById('total-count-cash');
+        
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
+        if (totalCount) totalCount.textContent = totalRecords;
+        
+        generatePaginationButtonsCash();
+    }
+    
+    function updatePaginationInfoRecPay(totalRecords, currentRecords, startIndex) {
+        const showingStart = document.getElementById('showing-start-recpay');
+        const showingEnd = document.getElementById('showing-end-recpay');
+        const totalCount = document.getElementById('total-count-recpay');
+        
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
+        if (totalCount) totalCount.textContent = totalRecords;
+        
+        generatePaginationButtonsRecPay();
+    }
+    
+    function generatePaginationButtonsCash() {
+        const pageInfo = document.getElementById('page-info-cash');
+        if (!pageInfo) return;
+        
+        pageInfo.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPageCash - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPagesCash, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = `px-2 py-1 text-sm rounded-md ${
+                i === currentPageCash 
+                    ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`;
+            button.addEventListener('click', () => changePageCash(i));
+            pageInfo.appendChild(button);
+        }
+    }
+    
+    function generatePaginationButtonsRecPay() {
+        const pageInfo = document.getElementById('page-info-recpay');
+        if (!pageInfo) return;
+        
+        pageInfo.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPageRecPay - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPagesRecPay, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = `px-2 py-1 text-sm rounded-md ${
+                i === currentPageRecPay 
+                    ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`;
+            button.addEventListener('click', () => changePageRecPay(i));
+            pageInfo.appendChild(button);
+        }
+    }
+    
+    function changePageCash(newPage) {
+        if (newPage < 1 || newPage > totalPagesCash) return;
+        currentPageCash = newPage;
+        filterAndRenderCash();
+    }
+    
+    function changePageRecPay(newPage) {
+        if (newPage < 1 || newPage > totalPagesRecPay) return;
+        currentPageRecPay = newPage;
+        filterAndRenderRecPay();
+    }
+    
+    function updatePaginationInfoExchangeRate(totalRecords, currentRecords, startIndex) {
+        const showingStart = document.getElementById('showing-start-exchangerate');
+        const showingEnd = document.getElementById('showing-end-exchangerate');
+        const totalCount = document.getElementById('total-count-exchangerate');
+        
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
+        if (totalCount) totalCount.textContent = totalRecords;
+        
+        generatePaginationButtonsExchangeRate();
+    }
+    
+    function generatePaginationButtonsExchangeRate() {
+        const pageInfo = document.getElementById('page-info-exchangerate');
+        if (!pageInfo) return;
+        
+        pageInfo.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPageExchangeRate - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPagesExchangeRate, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = `px-2 py-1 text-sm rounded-md ${
+                i === currentPageExchangeRate 
+                    ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`;
+            button.addEventListener('click', () => changePageExchangeRate(i));
+            pageInfo.appendChild(button);
+        }
+    }
+    
+    function changePageExchangeRate(newPage) {
+        if (newPage < 1 || newPage > totalPagesExchangeRate) return;
+        currentPageExchangeRate = newPage;
+        filterAndRenderExchangeRate();
+    }
+    
+    function formatNumber(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '0.00';
+        return parseFloat(value).toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+    
+    function printCurrencyJournal() {
+        window.print();
+    }
+    
+    function exportToExcel() {
+        const viewId = currentTab === 'cash' ? 'cash-view' : (currentTab === 'recpay' ? 'recpay-view' : 'exchangerate-view');
+        const table = document.querySelector(`#${viewId} table`);
+        if (!table) {
+            alert('No data to export');
+            return;
+        }
+        
+        let csvContent = '';
+        const rows = table.querySelectorAll('tr');
+        
+        rows.forEach(function(row) {
+            const cells = row.querySelectorAll('th, td');
+            const rowData = [];
+            
+            cells.forEach(function(cell) {
+                let cellText = cell.textContent.trim();
+                cellText = cellText.replace(/,/g, '');
+                rowData.push('"' + cellText + '"');
+            });
+            
+            csvContent += rowData.join(',') + '\n';
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'currency_journal_' + new Date().toISOString().split('T')[0] + '.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert('Currency journal exported to Excel successfully!');
+    }
+</script>
+{% endblock %}
+

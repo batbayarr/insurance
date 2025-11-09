@@ -46,6 +46,12 @@ function FillAccountingDetailsCashGeneric(config) {
 
     const docData = JSON.parse(documentDataElement.textContent);
     
+    // Check CurrencyId - only allow automatic filling for MNT (CurrencyId = 1)
+    if (docData.CurrencyId && docData.CurrencyId > 1) {
+        console.log(`${debugPrefix}: CurrencyId is ${docData.CurrencyId} (> 1), skipping automatic fill. Manual row management allowed.`);
+        return;
+    }
+    
     // Step 1: Get TotalAmount from cash_document master table
     // Ensure proper precision handling for CurrencyAmount (24,6) and CurrencyExchange (10,2)
     const currencyAmount = parseFloat(docData.CurrencyAmount);
@@ -237,9 +243,43 @@ function FillAccountingDetailsCashGeneric(config) {
             console.log('Rule: Other document type, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
         }
         
+        // Convert currencyAmount based on CurrencyId and currencyExchange
+        // If document currency is foreign currency (not MNT), convert from MNT back to foreign currency
+        // BUT: Only convert if this row will use foreign currency (main account row)
+        // Rows forced to MNT by bulkAdjustRows should keep currencyAmount in MNT
+        const isForeignCurrency = docData.CurrencyId !== 1; // Assuming 1 is MNT
+        const isMainAccount = parseInt(templateDetail.AccountId) === parseInt(docData.AccountId);
+        
+        // Only convert if document is foreign currency AND this is the main account row (will use foreign currency)
+        // Other rows will be forced to MNT by bulkAdjustRows, so they should keep MNT amount
+        if (isForeignCurrency && isMainAccount && currencyExchange > 0 && currencyAmount > 0) {
+            // Store original MNT amount before conversion
+            const originalMNTAmount = currencyAmount;
+            // Convert from MNT equivalent back to foreign currency
+            currencyAmount = currencyAmount / currencyExchange;
+            console.log('Currency conversion applied (main account row):', {
+                originalMNT: originalMNTAmount,
+                convertedAmount: currencyAmount,
+                currencyId: docData.CurrencyId,
+                currencyExchange: currencyExchange
+            });
+        } else if (isForeignCurrency && !isMainAccount) {
+            // Non-main account rows will be forced to MNT, so keep currencyAmount in MNT (no conversion)
+            console.log('Currency conversion skipped (will be forced to MNT):', {
+                currencyAmount: currencyAmount,
+                accountId: templateDetail.AccountId,
+                mainAccountId: docData.AccountId
+            });
+        }
+        
         // Ensure currency amount has proper precision (6 decimal places)
         const finalCurrencyAmount = typeof currencyAmount === 'number' ? parseFloat(currencyAmount.toFixed(6)) : 0;
         console.log('Final CurrencyAmount for row:', finalCurrencyAmount, 'Type:', typeof finalCurrencyAmount, 'CashFlowId:', cashFlowId, 'Type:', typeof cashFlowId);
+        
+        // Determine currency exchange rate for this row
+        // Non-main account rows will be forced to MNT, so use exchange=1.0
+        const rowCurrencyExchange = isForeignCurrency && !isMainAccount ? 1.0 : docData.CurrencyExchange;
+        const rowCurrencyId = isForeignCurrency && !isMainAccount ? 1 : docData.CurrencyId; // MNT for forced rows
         
         // Create new row using the provided function
         console.log(`${debugPrefix}: Creating row ${rowCounter} for template detail:`, templateDetail.AccountCode);
@@ -250,8 +290,8 @@ function FillAccountingDetailsCashGeneric(config) {
                 clientId: docData.ClientId,
                 clientDisplay: docData.ClientCode + ' - ' + docData.ClientName,
                 documentId: docData.DocumentId,
-                currencyId: docData.CurrencyId,
-                currencyExchange: docData.CurrencyExchange,
+                currencyId: rowCurrencyId,
+                currencyExchange: rowCurrencyExchange,
                 currencyAmount: finalCurrencyAmount.toFixed(6),
                 isDebit: templateDetail.IsDebit,
                 cashFlowId: cashFlowId,

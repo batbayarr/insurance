@@ -22,6 +22,8 @@ RETURNS TABLE (
     clientname VARCHAR(100),
     currencyid SMALLINT,
     currencyname VARCHAR(50),
+    accountcurrencyid SMALLINT,
+    accountcurrencyname VARCHAR(50),
     beginningbalancecurdebit NUMERIC(24,6),
     beginningbalancemntdebit NUMERIC(24,6),
     beginningbalancecurcredit NUMERIC(24,6),
@@ -201,6 +203,8 @@ BEGIN
         rc."ClientName",
         acc."CurrencyId",
         cur."Currency_name",
+        ra."CurrencyId" AS AccountCurrencyId,
+        acc_cur."Currency_name" AS AccountCurrencyName,
         
         -- Beginning Balance Currency (Debit) - Cash and Receivable only
         CASE 
@@ -299,6 +303,7 @@ BEGIN
     INNER JOIN account_client_currency_combinations acc ON ra."AccountId" = acc."AccountId"
     LEFT JOIN ref_client rc ON acc."ClientId" = rc."ClientId"
     LEFT JOIN ref_currency cur ON acc."CurrencyId" = cur."CurrencyId"
+    LEFT JOIN ref_currency acc_cur ON ra."CurrencyId" = acc_cur."CurrencyId"
     LEFT JOIN starting_balances sb ON ra."AccountId" = sb."AccountId" 
         AND acc."ClientId" = sb."ClientId"
         AND acc."CurrencyId" = sb."CurrencyId"
@@ -309,6 +314,7 @@ BEGIN
         AND acc."ClientId" = ap."ClientId"
         AND acc."CurrencyId" = ap."CurrencyId"
     WHERE ra."IsDelete" = false
+        AND ra."CurrencyId" > 1  -- Only return accounts with foreign currency (non-MNT)
         AND (
             (rat."AccountTypeId" IN (1, 2) AND rat."IsActive" = true)  -- Cash
             OR 

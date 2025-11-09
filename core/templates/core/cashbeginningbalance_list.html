@@ -4,173 +4,129 @@
 {% block title %}{{ config.page_title }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Header Section -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">{{ config.title }}</h1>
-                        <p class="mt-1 text-sm text-gray-500">{{ config.subtitle }}</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <button onclick="refreshBalanceList()" 
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
-                        <button onclick="addNewBalance()" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            Add New Balance
-                        </button>
-                    </div>
-                </div>
-            </div>
+<div class="space-y-0">
+    <!-- Header Section (compact, consistent with cash module) -->
+    <div class="flex justify-between items-center pl-0 pr-3 py-2 lg:pl-0 lg:pr-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">{{ config.title }}</h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="refreshBalanceList()"
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 border border-gray-300 bg-white text-gray-700 text-xs font-medium rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span class="text-xs">Сэргээх</span>
+            </button>
+            <button onclick="addNewBalance()"
+                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs">Нэмэх</span>
+            </button>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Filters Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Filters</h3>
-            </div>
-            <div class="px-6 py-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label for="filter-account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-                        <input type="text" 
-                               id="filter-account" 
-                               placeholder="Filter by account..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="filter-client" class="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                        <input type="text" 
-                               id="filter-client" 
-                               placeholder="Filter by client..." 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="filter-currency" class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                        <select id="filter-currency" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Currencies</option>
-                            <option value="MNT">MNT</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button onclick="clearAllFilters()" 
-                                class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Clear Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Balance List Section -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">Beginning Balances</h3>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-500">Total Records:</span>
-                        <span id="total-records" class="text-sm font-medium text-gray-900">{{ balances|length }}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Balance Grid -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+    <!-- Balance List Section -->
+    <div id="cash-document-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <input type="checkbox" id="select-all" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">#</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ДАНС
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Account
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ХАРИЛЦАГЧ
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Client
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ВАЛЮТ
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Currency
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ХАНШ
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Exchange Rate
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ВАЛЮТЫН ДҮН
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Currency Amount
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ТӨГРӨГИЙН ДҮН
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                MNT Amount
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ОГНОО
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created Date
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ХЭРЭГЛЭГЧ
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created By
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                ҮЙЛДЭЛ
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <td class="px-2 py-1 border-r border-gray-200 text-center text-xs text-gray-500">#</td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="filter-account" placeholder="Filter..."
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="filter-client" placeholder="Filter..."
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 border-r border-gray-200"></td>
+                            <td class="px-2 py-1"></td>
                         </tr>
                     </thead>
                     <tbody id="balance-tbody" class="bg-white divide-y divide-gray-200">
                         {% for balance in balances %}
                         <tr class="balance-row" 
-                            data-account="{{ balance.AccountID.AccountName|lower }}" 
+                            data-account="{{ balance.AccountID.AccountCode|lower }} {{ balance.AccountID.AccountName|lower }}" 
                             data-client="{{ balance.ClientID.ClientName|lower|default:'' }}" 
                             data-currency="{{ balance.CurrencyID.Currency_name|lower }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input type="checkbox" class="balance-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" value="{{ balance.BeginningBalanceID }}">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center">
+                                <span class="row-index">1</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    <span class="account-format" title="{{ balance.AccountID.AccountCode }} - {{ balance.AccountID.AccountName }}">{{ balance.AccountID.AccountCode }}</span>
-                                </div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                <span class="account-format" title="{{ balance.AccountID.AccountCode }} - {{ balance.AccountID.AccountName }}">{{ balance.AccountID.AccountCode }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.ClientID.ClientName|default:"-" }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ balance.ClientID.ClientName|default:"-" }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CurrencyID.Currency_name }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ balance.CurrencyID.Currency_name }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CurrencyExchange|floatformat:4 }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right" data-currency-exchange="{{ balance.CurrencyExchange }}">
+                                <span class="currency-exchange-value">{{ balance.CurrencyExchange|floatformat:4 }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CurrencyAmount|floatformat:2 }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right" data-currency-amount="{{ balance.CurrencyAmount }}">
+                                <span class="currency-amount-value">{{ balance.CurrencyAmount|floatformat:2 }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{% widthratio balance.CurrencyAmount 1 balance.CurrencyExchange %}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right" data-mnt-amount="{{ balance.CurrencyAmount|floatformat:6 }}|{{ balance.CurrencyExchange|floatformat:6 }}">
+                                <span class="mnt-amount-value">-</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedDate|date:"Y-m-d" }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ balance.CreatedDate|date:"Y-m-d" }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ balance.CreatedBy.username|default:"-" }}</div>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ balance.CreatedBy.username|default:"-" }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-2">
-                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 transition-colors" 
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <button class="edit-balance-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors" 
                                             data-balance-id="{{ balance.BeginningBalanceID }}" title="Edit">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
-                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 transition-colors" 
+                                    <button class="delete-balance-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" 
                                             data-balance-id="{{ balance.BeginningBalanceID }}" title="Delete">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -181,11 +137,65 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">No beginning balances found</td>
+                            <td colspan="10" class="px-4 py-4 text-center text-xs text-gray-500">No beginning balances found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="6"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium">
+                                 <span id="total-mnt-amount">-</span>
+                            </td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>
+            
+            <!-- Pagination -->
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button id="bb-prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Өмнөх
+                    </button>
+                    <button id="bb-next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Дараа
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p id="bb-pagination-info" class="text-sm text-gray-700">
+                            Нийт <span id="bb-total-count">0</span> бичлэгээс <span id="bb-showing-start">0</span> - <span id="bb-showing-end">0</span> бичлэг харагдаж байна
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="bb-page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                            <select id="bb-page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="10">10</option>
+                                <option value="15" selected>15</option>
+                            </select>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="bb-prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <span id="bb-page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700"></span>
+                                <button id="bb-next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
             
             <!-- Empty State -->
@@ -207,7 +217,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <!-- Add/Edit Balance Modal -->
 <div id="balance-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
@@ -231,21 +240,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Account Selection -->
                 <div>
-                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                    <label for="AccountIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ДАНС *</label>
                     <div class="relative">
                         <input type="text" 
                                id="AccountIdDisplay" 
                                readonly
                                placeholder="Click to select account..."
-                               onclick="openAccountPopup(this, null, {modalTitle: 'Select Account for Beginning Balance', modalSubtitle: 'Choose an account to set the beginning balance'})"
+                               onclick="openAccountPopupWithFilter(this)"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
                         <input type="hidden" id="AccountId" name="AccountID">
                     </div>
                 </div>
 
                 <!-- Client Selection -->
-                <div>
-                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+                {% if balance_type == 'receivable' or balance_type == 'payable' %}
+                <div id="client-field-container">
+                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ХАРИЛЦАГЧ *</label>
                     <div class="relative">
                         <input type="text" 
                                id="ClientIdDisplay" 
@@ -257,39 +267,65 @@
                         <input type="hidden" id="ClientId" name="ClientID" required>
                     </div>
                 </div>
+                {% else %}
+                <div id="client-field-container" class="hidden">
+                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ХАРИЛЦАГЧ *</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="ClientIdDisplay" 
+                               readonly
+                               placeholder="Click to select client..."
+                               onclick="openClientPopup(this, null)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
+                        <input type="hidden" id="ClientId" name="ClientID" value="1">
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Currency Selection -->
-                <div>
-                    <label for="CurrencyId" class="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
-                    <select id="CurrencyId" name="CurrencyID" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Select Currency</option>
-                        <option value="1">MNT</option>
-                        <option value="2">USD</option>
-                        <option value="3">EUR</option>
-                    </select>
+                <div id="currency-field-container" {% if balance_type == 'genledger' %}class="hidden"{% endif %}>
+                    <label for="CurrencyIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ВАЛЮТ *</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="CurrencyIdDisplay" 
+                               readonly
+                               value="{% if balance_type == 'genledger' %}MNT{% endif %}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                               placeholder="Currency will be auto-filled from account">
+                        <input type="hidden" 
+                               id="CurrencyId" 
+                               {% if balance_type != 'genledger' %}name="CurrencyID" required{% endif %}
+                               value="{% if balance_type == 'genledger' %}1{% endif %}">
+                        {% if balance_type == 'genledger' %}
+                        <input type="hidden" name="CurrencyID" value="1">
+                        {% endif %}
+                    </div>
                 </div>
 
                 <!-- Exchange Rate -->
-                <div>
-                    <label for="CurrencyExchange" class="block text-sm font-medium text-gray-700 mb-1">Exchange Rate *</label>
+                <div id="exchange-rate-field-container" {% if balance_type == 'genledger' %}class="hidden"{% endif %}>
+                    <label for="CurrencyExchange" class="block text-sm font-medium text-gray-700 mb-1">ХАНШ *</label>
                     <input type="number" 
                            id="CurrencyExchange" 
-                           name="CurrencyExchange" 
-                           step="0.0001" 
+                           {% if balance_type != 'genledger' %}name="CurrencyExchange" required{% endif %}
+                           {% if balance_type == 'genledger' %}disabled{% endif %}
+                           step="0.0000001" 
                            min="0" 
-                           required
+                           {% if balance_type == 'genledger' %}value="1"{% endif %}
                            placeholder="1.0000"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    {% if balance_type == 'genledger' %}
+                    <input type="hidden" name="CurrencyExchange" value="1">
+                    {% endif %}
                 </div>
 
                 <!-- Currency Amount -->
                 <div>
-                    <label for="CurrencyAmount" class="block text-sm font-medium text-gray-700 mb-1">Currency Amount *</label>
+                    <label for="CurrencyAmount" class="block text-sm font-medium text-gray-700 mb-1">ВАЛЮТЫН ДҮН *</label>
                     <input type="number" 
                            id="CurrencyAmount" 
                            name="CurrencyAmount" 
-                           step="0.01" 
+                           step="0.0000001" 
                            min="0" 
                            required
                            placeholder="0.00"
@@ -298,7 +334,7 @@
 
                 <!-- MNT Amount (Calculated) -->
                 <div>
-                    <label for="MNTAmount" class="block text-sm font-medium text-gray-700 mb-1">MNT Amount</label>
+                    <label for="MNTAmount" class="block text-sm font-medium text-gray-700 mb-1">ТӨГРӨГИЙН ДҮН</label>
                     <input type="number" 
                            id="MNTAmount" 
                            readonly
@@ -334,6 +370,7 @@
 <!-- Include Selection Modals -->
 {% include 'core/components/account_selection_modal.html' %}
 {% include 'core/components/client_selection_modal.html' %}
+{% include 'core/components/delete_modal.html' %}
 
 <!-- Initialize balance data from server -->
 <script type="application/json" id="balance-data">
@@ -361,12 +398,170 @@
 // Cash Beginning Balance Management Functions
 let balanceData = JSON.parse(document.getElementById('balance-data').textContent);
 let isEditMode = false;
+const balanceType = '{{ balance_type }}';
+
+// Get account type filter based on balance type
+function getAccountTypeFilter() {
+    switch(balanceType) {
+        case 'cash':
+            return '1,2';
+        case 'receivable':
+        case 'payable':
+            return '3,4,5,6,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58';
+        case 'genledger':
+            // AccountTypeId in (33,37,38,39,40,41) OR between (59 and 68)
+            return '33,37,38,39,40,41,59,60,61,62,63,64,65,66,67,68';
+        default:
+            return '';
+    }
+}
+
+// Open account popup with appropriate filter
+function openAccountPopupWithFilter(inputElement) {
+    const accountTypeFilter = getAccountTypeFilter();
+    const extraParams = accountTypeFilter ? `&account_type=${accountTypeFilter}` : '';
+    openAccountPopup(inputElement, null, {
+        modalTitle: 'Select Account for Beginning Balance',
+        modalSubtitle: 'Choose an account to set the beginning balance',
+        extraQueryParams: extraParams
+    });
+}
+
+// Update ClientId field visibility based on balance type
+function updateClientFieldVisibility() {
+    const clientContainer = document.getElementById('client-field-container');
+    const clientIdInput = document.getElementById('ClientId');
+    const clientIdDisplay = document.getElementById('ClientIdDisplay');
+    
+    if (!clientContainer) return;
+    
+    if (balanceType === 'cash' || balanceType === 'genledger') {
+        // Hide client field and set ClientId to 1
+        clientContainer.classList.add('hidden');
+        if (clientIdInput) {
+            clientIdInput.value = '1';
+            clientIdInput.removeAttribute('required');
+        }
+        if (clientIdDisplay) {
+            clientIdDisplay.value = '';
+            clientIdDisplay.removeAttribute('required');
+        }
+    } else if (balanceType === 'receivable' || balanceType === 'payable') {
+        // Show client field and make it required
+        clientContainer.classList.remove('hidden');
+        if (clientIdInput) {
+            clientIdInput.setAttribute('required', 'required');
+        }
+        if (clientIdDisplay) {
+            clientIdDisplay.setAttribute('required', 'required');
+        }
+    }
+}
+
+// Update Currency field visibility based on balance type
+function updateCurrencyFieldVisibility() {
+    const currencyContainer = document.getElementById('currency-field-container');
+    const exchangeRateContainer = document.getElementById('exchange-rate-field-container');
+    const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+    const currencyHiddenInput = document.getElementById('CurrencyId');
+    const currencyExchangeInput = document.getElementById('CurrencyExchange');
+    
+    if (balanceType === 'genledger') {
+        // Hide currency fields and set values to 1
+        if (currencyContainer) {
+            currencyContainer.classList.add('hidden');
+        }
+        if (exchangeRateContainer) {
+            exchangeRateContainer.classList.add('hidden');
+        }
+        
+        // Set CurrencyId to 1
+        if (currencyDisplayInput) {
+            currencyDisplayInput.value = 'MNT';
+        }
+        if (currencyHiddenInput) {
+            currencyHiddenInput.value = '1';
+            currencyHiddenInput.removeAttribute('required');
+        }
+        
+        // Set CurrencyExchange to 1
+        if (currencyExchangeInput) {
+            currencyExchangeInput.value = '1';
+            currencyExchangeInput.removeAttribute('required');
+        }
+    } else {
+        // Show currency fields and make them required
+        if (currencyContainer) {
+            currencyContainer.classList.remove('hidden');
+        }
+        if (exchangeRateContainer) {
+            exchangeRateContainer.classList.remove('hidden');
+        }
+        
+        if (currencyHiddenInput) {
+            currencyHiddenInput.setAttribute('required', 'required');
+        }
+        if (currencyExchangeInput) {
+            currencyExchangeInput.setAttribute('required', 'required');
+        }
+    }
+}
+
+// Hook into selectAccount to ensure ClientId is set correctly for cash/genledger and populate currency
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure selectAccount is loaded from the included modal
+    setTimeout(function() {
+        if (window.selectAccount) {
+            const originalSelectAccount = window.selectAccount;
+            window.selectAccount = function(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue) {
+                // Call original function
+                originalSelectAccount(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue);
+                
+                // Populate currency fields from account selection (if not genledger)
+                if (balanceType !== 'genledger' && currencyId && currencyId !== 'null' && currencyName) {
+                    const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+                    const currencyHiddenInput = document.getElementById('CurrencyId');
+                    
+                    if (currencyDisplayInput && currencyHiddenInput) {
+                        currencyDisplayInput.value = currencyName;
+                        currencyHiddenInput.value = currencyId;
+                        
+                        // Add visual feedback
+                        currencyDisplayInput.style.backgroundColor = '#dbeafe';
+                        currencyDisplayInput.style.borderColor = '#3b82f6';
+                    }
+                    
+                    // Set default exchange rate if provided
+                    if (currencyDefaultValue && currencyDefaultValue !== 'null') {
+                        const currencyExchangeInput = document.getElementById('CurrencyExchange');
+                        if (currencyExchangeInput) {
+                            currencyExchangeInput.value = currencyDefaultValue;
+                            // Trigger change event to update MNT calculation
+                            currencyExchangeInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            currencyExchangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+                
+                // Ensure ClientId is set to 1 for cash/genledger after account selection
+                if (balanceType === 'cash' || balanceType === 'genledger') {
+                    const clientIdInput = document.getElementById('ClientId');
+                    if (clientIdInput) {
+                        clientIdInput.value = '1';
+                    }
+                    updateClientFieldVisibility();
+                }
+            };
+        }
+    }, 100);
+});
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    setupFilters();
     setupFormValidation();
     setupActionButtons();
+    updateClientFieldVisibility();
+    updateCurrencyFieldVisibility();
 });
 
 // Setup action buttons with event listeners
@@ -459,6 +654,12 @@ function addNewBalance() {
     document.getElementById('ClientId').value = '';
     document.getElementById('ClientIdDisplay').value = '';
     
+    // Update client field visibility and set ClientId appropriately
+    updateClientFieldVisibility();
+    
+    // Update currency field visibility and set values appropriately
+    updateCurrencyFieldVisibility();
+    
     document.getElementById('balance-modal').classList.remove('hidden');
 }
 
@@ -474,14 +675,45 @@ function editBalance(balanceId) {
     // Set form action for update
     document.getElementById('balance-form').action = `/core/beginningbalances/{{ balance_type }}/${balanceId}/update/`;
     
+    // Update client field visibility first
+    updateClientFieldVisibility();
+    
+    // Update currency field visibility
+    updateCurrencyFieldVisibility();
+    
     // Populate form
     document.getElementById('balance-id').value = balance.BeginningBalanceID;
     document.getElementById('AccountId').value = balance.AccountID;
     document.getElementById('AccountIdDisplay').value = `${balance.account_code} - ${balance.account_name}`;
-    document.getElementById('ClientId').value = balance.ClientID || '';
-    document.getElementById('ClientIdDisplay').value = balance.client_name || '';
-    document.getElementById('CurrencyId').value = balance.CurrencyID;
-    document.getElementById('CurrencyExchange').value = balance.CurrencyExchange;
+    
+    // Handle ClientId based on balance type
+    if (balanceType === 'cash' || balanceType === 'genledger') {
+        document.getElementById('ClientId').value = '1';
+        document.getElementById('ClientIdDisplay').value = '';
+    } else {
+        document.getElementById('ClientId').value = balance.ClientID || '';
+        document.getElementById('ClientIdDisplay').value = balance.client_name || '';
+    }
+    
+    // Handle CurrencyId and CurrencyExchange based on balance type
+    if (balanceType === 'genledger') {
+        // For genledger, set to 1
+        const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+        const currencyHiddenInput = document.getElementById('CurrencyId');
+        const currencyExchangeInput = document.getElementById('CurrencyExchange');
+        if (currencyDisplayInput) currencyDisplayInput.value = 'MNT';
+        if (currencyHiddenInput) currencyHiddenInput.value = '1';
+        if (currencyExchangeInput) currencyExchangeInput.value = '1';
+    } else {
+        // For other types, use balance values
+        const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
+        const currencyHiddenInput = document.getElementById('CurrencyId');
+        const currencyExchangeInput = document.getElementById('CurrencyExchange');
+        if (currencyDisplayInput) currencyDisplayInput.value = balance.currency_name || '';
+        if (currencyHiddenInput) currencyHiddenInput.value = balance.CurrencyID;
+        if (currencyExchangeInput) currencyExchangeInput.value = balance.CurrencyExchange;
+    }
+    
     document.getElementById('CurrencyAmount').value = balance.CurrencyAmount;
     
     // Calculate MNT amount
@@ -497,25 +729,36 @@ function deleteBalance(balanceId) {
     
     const accountName = `${balance.account_code} - ${balance.account_name}`;
     const amount = `${parseFloat(balance.CurrencyAmount).toFixed(2)} ${balance.currency_name}`;
+    const itemName = `${accountName} (${amount})`;
+    const deleteUrl = `/core/beginningbalances/{{ balance_type }}/${balanceId}/delete/`;
     
-    if (confirm(`Are you sure you want to delete the beginning balance for ${accountName} (${amount})?`)) {
-        // Create and submit a form for deletion
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/core/beginningbalances/{{ balance_type }}/${balanceId}/delete/`;
-        
-        // Add CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken.value;
-            form.appendChild(csrfInput);
+    // Use standardized delete modal if available, otherwise fallback to confirm
+    if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+        Silicon4Delete.showModal(deleteUrl, itemName, function() {
+            // Reload page after successful deletion
+            window.location.reload();
+        });
+    } else {
+        // Fallback to confirm dialog if Silicon4Delete is not available
+        if (confirm(`Are you sure you want to delete the beginning balance for ${itemName}?`)) {
+            // Create and submit a form for deletion
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteUrl;
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
         }
-        
-        document.body.appendChild(form);
-        form.submit();
     }
 }
 
@@ -552,12 +795,264 @@ function refreshBalanceList() {
     window.location.reload();
 }
 
-// Select all checkbox functionality
-document.getElementById('select-all').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.balance-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = this.checked;
+// Format number with thousands separator and fixed decimals (match cashdocument_master_detail.html)
+function formatNumber(num, decimals = 2) {
+    const n = parseFloat(num);
+    if (isNaN(n) || n === 0) return '-';
+    return n.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Currency exchange uses 2 decimals in cashdocument_master_detail.html
+function formatExchangeRate(num) {
+    return formatNumber(num, 2);
+}
+
+// Format numbers in table after page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Format currency exchange rates
+    document.querySelectorAll('.currency-exchange-value').forEach(element => {
+        const value = parseFloat(element.textContent.replace(/,/g, ''));
+        if (!isNaN(value)) {
+            element.textContent = formatExchangeRate(value);
+        }
     });
+    
+    // Format currency amounts (2 decimals)
+    document.querySelectorAll('.currency-amount-value').forEach(element => {
+        const value = parseFloat(element.textContent.replace(/,/g, ''));
+        if (!isNaN(value)) {
+            element.textContent = formatNumber(value, 2);
+        }
+    });
+    
+    // Format MNT amounts (2 decimals) - calculate from CurrencyAmount * CurrencyExchange
+    document.querySelectorAll('[data-mnt-amount]').forEach(cell => {
+        const mntSpan = cell.querySelector('.mnt-amount-value');
+        if (!mntSpan) return;
+        
+        const dataValue = cell.getAttribute('data-mnt-amount');
+        if (!dataValue) return;
+        
+        // Parse the data attribute: "CurrencyAmount|CurrencyExchange"
+        const parts = dataValue.split('|');
+        if (parts.length !== 2) return;
+        
+        const currencyAmount = parseFloat(parts[0].replace(/,/g, '')) || 0;
+        const currencyExchange = parseFloat(parts[1].replace(/,/g, '')) || 0;
+        const mntAmount = currencyAmount * currencyExchange;
+        
+        // Update the span with formatted value (2 decimals)
+        mntSpan.textContent = formatNumber(mntAmount, 2);
+    });
+
+    // Initialize filters and summary
+    setupInlineFilters();
+    recalculateSummaryForVisibleRows();
+
+    // Initialize pagination
+    initializeBbPagination();
+
+    // Prevent duplicate combination on create (AccountID, ClientID, CurrencyID must be unique)
+    const balanceForm = document.getElementById('balance-form');
+    if (balanceForm) {
+        balanceForm.addEventListener('submit', function(e) {
+            try {
+                const isCreate = !isEditMode;
+                if (!isCreate) return; // allow updates
+
+                const accountId = parseInt(document.getElementById('AccountId')?.value || '0');
+                const clientId = parseInt(document.getElementById('ClientId')?.value || '0');
+                const currencyId = parseInt(document.getElementById('CurrencyId')?.value || document.querySelector('input[name="CurrencyID"]')?.value || '0');
+
+                if (!accountId || !clientId || !currencyId) return; // required validation handles empties
+
+                const exists = Array.isArray(balanceData) && balanceData.some(b =>
+                    parseInt(b.AccountID) === accountId &&
+                    parseInt(b.ClientID) === clientId &&
+                    parseInt(b.CurrencyID) === currencyId
+                );
+
+                if (exists) {
+                    e.preventDefault();
+                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                    const msg = 'Энэ дансны үлдэгдлийг оруулсан байна';
+                    if (typeof showMessageModal === 'function') {
+                        showMessageModal(msg, 'warning');
+                    } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.warning) {
+                        Silicon4Message.warning(msg);
+                    } else {
+                        alert(msg);
+                    }
+                    return false;
+                }
+            } catch (err) {
+                console.error('Duplicate check failed:', err);
+            }
+        });
+    }
 });
+
+// Select all checkbox functionality
+// Inline filters for Account and Client only
+function setupInlineFilters() {
+    const accountFilter = document.getElementById('filter-account');
+    const clientFilter = document.getElementById('filter-client');
+
+    const applyFilters = () => {
+        const accountTerm = (accountFilter?.value || '').toLowerCase();
+        const clientTerm = (clientFilter?.value || '').toLowerCase();
+
+        const rows = document.querySelectorAll('.balance-row');
+        rows.forEach(row => {
+            const account = row.dataset.account || '';
+            const client = row.dataset.client || '';
+            const matchesAccount = !accountTerm || account.includes(accountTerm);
+            const matchesClient = !clientTerm || client.includes(clientTerm);
+            row.style.display = (matchesAccount && matchesClient) ? '' : 'none';
+        });
+
+        recalculateSummaryForVisibleRows();
+        // Reset to first page on filter change and re-render
+        bbCurrentPage = 1;
+        bbApplyPagination();
+    };
+
+    if (accountFilter) accountFilter.addEventListener('input', applyFilters);
+    if (clientFilter) clientFilter.addEventListener('input', applyFilters);
+}
+
+// Summarize visible MNT amounts
+function recalculateSummaryForVisibleRows() {
+    const rows = document.querySelectorAll('.balance-row');
+    let total = 0;
+    rows.forEach(row => {
+        if (row.style.display === 'none') return;
+        const mntCell = row.querySelector('[data-mnt-amount]');
+        if (!mntCell) return;
+        
+        // Parse the data attribute: "CurrencyAmount|CurrencyExchange"
+        const dataValue = mntCell.getAttribute('data-mnt-amount');
+        if (!dataValue) return;
+        
+        const parts = dataValue.split('|');
+        if (parts.length !== 2) return;
+        
+        const currencyAmount = parseFloat(parts[0].replace(/,/g, '')) || 0;
+        const currencyExchange = parseFloat(parts[1].replace(/,/g, '')) || 0;
+        const mntAmount = currencyAmount * currencyExchange;
+        
+        if (!isNaN(mntAmount)) total += mntAmount;
+    });
+    const totalEl = document.getElementById('total-mnt-amount');
+    if (totalEl) totalEl.textContent = formatNumber(total, 2);
+}
+
+// ===== Pagination (match cashdocument_master_detail style) =====
+let bbCurrentPage = 1;
+let bbPageSize = 15;
+
+function bbGetVisibleRows() {
+    const rows = Array.from(document.querySelectorAll('.balance-row'));
+    return rows.filter(r => r.style.display !== 'none');
+}
+
+function bbRenderPage() {
+    const visible = bbGetVisibleRows();
+    const total = visible.length;
+    const totalPages = Math.max(1, Math.ceil(total / bbPageSize));
+    if (bbCurrentPage > totalPages) bbCurrentPage = totalPages;
+    const startIndex = (bbCurrentPage - 1) * bbPageSize;
+    const endIndex = Math.min(startIndex + bbPageSize, total);
+
+    // Hide all, then show current page slice
+    const allRows = document.querySelectorAll('.balance-row');
+    allRows.forEach(r => { if (r) r.style.visibility = 'hidden'; });
+    visible.forEach((row, idx) => {
+        const inPage = idx >= startIndex && idx < endIndex;
+        row.style.visibility = inPage ? '' : 'hidden';
+        // Set row index number (1-based across visible list)
+        const indexCell = row.querySelector('.row-index');
+        if (indexCell) {
+            indexCell.textContent = inPage ? (idx + 1) : '';
+        }
+    });
+
+    // Update info text
+    const info = document.getElementById('bb-pagination-info');
+    const showingStart = document.getElementById('bb-showing-start');
+    const showingEnd = document.getElementById('bb-showing-end');
+    const totalCount = document.getElementById('bb-total-count');
+    if (info) {
+        if (showingStart) showingStart.textContent = total === 0 ? 0 : (startIndex + 1);
+        if (showingEnd) showingEnd.textContent = endIndex;
+        if (totalCount) totalCount.textContent = total;
+    }
+
+    bbGeneratePageButtons(totalPages);
+}
+
+function bbGeneratePageButtons(totalPages) {
+    const pageInfo = document.getElementById('bb-page-info');
+    if (!pageInfo) return;
+    pageInfo.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, bbCurrentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-2 py-1 text-sm rounded-md ${
+            i === bbCurrentPage
+                ? 'bg-blue-400 text-white hover:bg-blue-500'
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        btn.addEventListener('click', () => {
+            bbCurrentPage = i;
+            bbRenderPage();
+        });
+        pageInfo.appendChild(btn);
+    }
+}
+
+function bbApplyPagination() {
+    bbRenderPage();
+}
+
+function initializeBbPagination() {
+    const sizeSelect = document.getElementById('bb-page-size-select');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', (e) => {
+            bbPageSize = parseInt(e.target.value) || 15;
+            bbCurrentPage = 1;
+            bbApplyPagination();
+        });
+    }
+
+    const prevMobile = document.getElementById('bb-prev-page-btn');
+    const nextMobile = document.getElementById('bb-next-page-btn');
+    const prevDesktop = document.getElementById('bb-prev-page-desktop');
+    const nextDesktop = document.getElementById('bb-next-page-desktop');
+
+    const goPrev = () => { if (bbCurrentPage > 1) { bbCurrentPage--; bbApplyPagination(); } };
+    const goNext = () => {
+        const total = bbGetVisibleRows().length;
+        const totalPages = Math.max(1, Math.ceil(total / bbPageSize));
+        if (bbCurrentPage < totalPages) { bbCurrentPage++; bbApplyPagination(); }
+    };
+
+    if (prevMobile) prevMobile.onclick = goPrev;
+    if (nextMobile) nextMobile.onclick = goNext;
+    if (prevDesktop) prevDesktop.onclick = goPrev;
+    if (nextDesktop) nextDesktop.onclick = goNext;
+
+    // Initial render
+    bbApplyPagination();
+}
 </script>
 {% endblock %}

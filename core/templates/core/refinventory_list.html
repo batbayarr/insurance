@@ -38,58 +38,60 @@
         {% if inventories %}
         <div class="overflow-x-auto">
             <form method="get" id="filter-form">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full border-collapse border border-gray-300">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Inventory Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Unit</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Код</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-40">Бараа материал</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-40">Төрөл</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Нэгж</th>
                             {% if not is_modal %}
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Unit Cost</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Unit Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Created By</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Created</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Нэгж өртөг</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Нэгж үнэ</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Үүсгэсэн</th>
+                            <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Төлөв</th>
                             {% endif %}
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Actions</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-11">Үйлдлүүд</th>
                         </tr>
                         {% if not is_modal %}
-                        <tr class="bg-gray-50">
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"><input type="text" name="name" value="{{ name_filter }}" class="w-full text-xs border-gray-300 rounded focus:border-accounting-blue focus:ring-accounting-blue" placeholder="Filter name..." onchange="this.form.submit()"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"><input type="text" name="created_by" value="{{ created_by_filter }}" class="w-full text-xs border-gray-300 rounded focus:border-accounting-blue focus:ring-accounting-blue" placeholder="Filter created by..." onchange="this.form.submit()"></th>
-                            <th class="px-6 py-2 border-b border-gray-200">
-                                <select name="status" class="w-full text-xs border-gray-300 rounded focus:border-accounting-blue focus:ring-accounting-blue" onchange="this.form.submit()">
-                                    <option value="">All</option>
-                                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <tr class="bg-gray-100">
+                            <td class="px-1 py-1 border border-gray-300 w-20">
+                                <input type="text" name="code" value="{{ code_filter|default:'' }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-40">
+                                <input type="text" name="name" value="{{ name_filter }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-40">
+                                <input type="text" name="type" value="{{ type_filter|default:'' }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                            </td>
+                            <td class="px-1 py-1 border border-gray-300 w-20"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-20"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-20"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-20"></td>
+                            <td class="px-1 py-1 border border-gray-300 w-20">
+                                <select name="status" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                    <option value="">Бүгд</option>
+                                    <option value="y" {% if status_filter == 'y' %}selected{% endif %}>y</option>
+                                    <option value="n" {% if status_filter == 'n' %}selected{% endif %}>n</option>
                                 </select>
-                            </th>
-                            <th class="px-6 py-2 border-b border-gray-200"></th>
-                            <th class="px-6 py-2 border-b border-gray-200"><a href="{% url 'core:refinventory_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">Clear</a></th>
+                            </td>
                         </tr>
                         {% endif %}
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white">
                         {% for inventory in inventories %}
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">{{ inventory.InventoryCode|default:"-" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">{{ inventory.InventoryName }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ inventory.InventoryTypeId|default:"-" }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ inventory.MeasurementId|default:"-" }}</td>
+                            <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300">{{ inventory.InventoryCode|default:"-" }}</td>
+                            <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300">{{ inventory.InventoryName }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.InventoryTypeId|default:"-" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.MeasurementId|default:"-" }}</td>
                             {% if not is_modal %}
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ inventory.UnitCost|floatformat:2|default:"-" }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ inventory.UnitPrice|floatformat:2|default:"-" }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">{{ inventory.CreatedBy.username|default:"-" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">{% if inventory.IsActive %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>{% else %}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>{% endif %}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-200">{{ inventory.CreatedDate|date:"M d, Y" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.UnitCost|floatformat:2|default:"-" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.UnitPrice|floatformat:2|default:"-" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.CreatedBy.username|default:"-" }}</td>
+                            <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ inventory.IsActive|yesno:"y,n"|default:"-" }}</td>
                             {% endif %}
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td class="px-1 py-1 whitespace-nowrap text-right text-sm font-medium border border-gray-300 w-11">
                                 {% if is_modal %}
                                 <button onclick="selectInventory('{{ inventory.InventoryId }}', '{{ inventory.InventoryName }}', '{{ inventory.UnitCost|default:0 }}', '{{ inventory.UnitPrice|default:0 }}')" 
                                         class="text-accounting-blue hover:text-accounting-blue-dark font-medium px-3 py-1 rounded hover:bg-blue-50">
@@ -109,10 +111,10 @@
                                         type="button" 
                                         class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                                         title="Delete"
-                                        hx-get="{% url 'core:refinventory_delete' inventory.InventoryId %}?modal=true"
-                                        hx-target="#delete-modal"
-                                        hx-trigger="click"
-                                        hx-swap="innerHTML">
+                                        data-soft-delete
+                                        data-item-id="{{ inventory.InventoryId }}"
+                                        data-item-name="{% if inventory.InventoryCode %}{{ inventory.InventoryCode }} - {% endif %}{{ inventory.InventoryName }}"
+                                        data-delete-url="{% url 'core:refinventory_delete' inventory.InventoryId %}">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -130,63 +132,59 @@
         
         <!-- Pagination -->
         {% if inventories.has_other_pages %}
-        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-between sm:hidden">
                 {% if inventories.has_previous %}
-                <a href="?page={{ inventories.previous_page_number }}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if created_by_filter %}&created_by={{ created_by_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Previous
+                <a href="?page={{ inventories.previous_page_number }}{% if code_filter %}&code={{ code_filter }}{% endif %}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
                 </a>
                 {% endif %}
                 {% if inventories.has_next %}
-                <a href="?page={{ inventories.next_page_number }}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if created_by_filter %}&created_by={{ created_by_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Next
+                <a href="?page={{ inventories.next_page_number }}{% if code_filter %}&code={{ code_filter }}{% endif %}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
                 </a>
                 {% endif %}
             </div>
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                     <p class="text-sm text-gray-700">
-                        Showing
-                        <span class="font-medium">{{ inventories.start_index }}</span>
-                        to
-                        <span class="font-medium">{{ inventories.end_index }}</span>
-                        of
-                        <span class="font-medium">{{ inventories.paginator.count }}</span>
-                        results
+                        Нийт <span class="font-medium">{{ inventories.paginator.count }}</span> бичлэгээс <span class="font-medium">{{ inventories.start_index }}</span> - <span class="font-medium">{{ inventories.end_index }}</span> бичлэг харагдаж байна
                     </p>
                 </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        {% if inventories.has_previous %}
-                        <a href="?page={{ inventories.previous_page_number }}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if created_by_filter %}&created_by={{ created_by_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Previous</span>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                        {% endif %}
-                        
-                        {% for num in inventories.paginator.page_range %}
-                            {% if inventories.number == num %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-accounting-blue text-sm font-medium text-white">
-                                {{ num }}
-                            </span>
-                            {% elif num > inventories.number|add:'-3' and num < inventories.number|add:'3' %}
-                            <a href="?page={{ num }}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if created_by_filter %}&created_by={{ created_by_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                {{ num }}
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if inventories.has_previous %}
+                            <a href="?page={{ inventories.previous_page_number }}{% if code_filter %}&code={{ code_filter }}{% endif %}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
                             </a>
                             {% endif %}
-                        {% endfor %}
-                        
-                        {% if inventories.has_next %}
-                        <a href="?page={{ inventories.next_page_number }}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if created_by_filter %}&created_by={{ created_by_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <span class="sr-only">Next</span>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                        {% endif %}
-                    </nav>
+                            <span class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                {% for num in inventories.paginator.page_range %}
+                                    {% if inventories.number == num %}
+                                    <span class="px-2 py-1 text-sm rounded-md bg-blue-400 text-white hover:bg-blue-500">
+                                        {{ num }}
+                                    </span>
+                                    {% elif num > inventories.number|add:'-3' and num < inventories.number|add:'3' %}
+                                    <a href="?page={{ num }}{% if code_filter %}&code={{ code_filter }}{% endif %}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                                        {{ num }}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% if inventories.has_next %}
+                            <a href="?page={{ inventories.next_page_number }}{% if code_filter %}&code={{ code_filter }}{% endif %}{% if name_filter %}&name={{ name_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>
@@ -226,19 +224,8 @@
 {% endif %}
 
 {% if not is_modal %}
-<!-- Delete Modal Container -->
-<div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <!-- Modal content will be loaded here via HTMX -->
-</div>
-
-<script>
-// Show modal when HTMX loads content
-document.addEventListener('htmx:afterSwap', function(event) {
-    if (event.target.id === 'delete-modal') {
-        event.target.classList.remove('hidden');
-    }
-});
-</script>
+<!-- Include soft delete modal -->
+{% include 'core/components/delete_modal.html' %}
 {% endif %}
 
 {% endblock %} 

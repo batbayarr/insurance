@@ -5,9 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% if item %}Мөнгөн хөрөнгийн баримт шинэчлэх{% else %}Мөнгөн хөрөнгийн баримт үүсгэх{% endif %} - Silicon4 Accounting</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="{% static 'js/shared-components.js' %}?v={{ timestamp|default:'20240116' }}"></script>
+    <script src="{% static 'js/soft-delete.js' %}"></script>
 </head>
 <body class="bg-gray-100 p-4">
     <div class="max-w-4xl mx-auto">
@@ -67,28 +69,6 @@
                     </div>
                 </div>
                 
-                <!-- Document Number -->
-                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
-                    <div class="flex items-center border-r border-gray-200 pr-2">
-                        <label for="{{ form.DocumentNo.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
-                            БАРИМТЫН ДУГААР: <span class="text-red-500">*</span>
-                        </label>
-                    </div>
-                    <div class="flex justify-start pl-2">
-                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
-                            {{ form.DocumentNo }}
-                        </div>
-                        <div id="document-no-error" class="mt-1 text-xs text-red-600"></div>
-                        {% if form.DocumentNo.errors %}
-                        <div class="mt-1 text-xs text-red-600">
-                            {% for error in form.DocumentNo.errors %}
-                            <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                
                 <!-- Account ID -->
                 <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
                     <div class="flex items-center border-r border-gray-200 pr-2">
@@ -127,11 +107,33 @@
                     </div>
                 </div>
                 
+                <!-- Document Number -->
+                <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
+                    <div class="flex items-center border-r border-gray-200 pr-2">
+                        <label for="{{ form.DocumentNo.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                            БАРИМТЫН ДУГААР: <span class="text-red-500">*</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-start pl-2">
+                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
+                            {{ form.DocumentNo }}
+                        </div>
+                        <div id="document-no-error" class="mt-1 text-xs text-red-600"></div>
+                        {% if form.DocumentNo.errors %}
+                        <div class="mt-1 text-xs text-red-600">
+                            {% for error in form.DocumentNo.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
                 <!-- Template -->
                 <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
                     <div class="flex items-center border-r border-gray-200 pr-2">
                         <label for="TemplateId" class="text-xs text-gray-700 font-normal uppercase">
-                            ТЕМПЛЭТ:
+                            ГҮЙЛГЭЭНИЙ ЗАГВАР:
                         </label>
                     </div>
                     <div class="flex justify-start pl-2">
@@ -139,7 +141,8 @@
                             <select id="TemplateId" 
                                     name="TemplateId" 
                                     class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white appearance-none"
-                                    onchange="handleTemplateSelection(this)">
+                                    onchange="handleTemplateSelection(this)"
+                                    value="{% if item and item.TemplateId %}{{ item.TemplateId.TemplateId }}{% endif %}">
                                 <option value="">Template сонгоно уу?</option>
                                 <!-- Templates will be populated dynamically -->
                             </select>
@@ -470,6 +473,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Declare commonly used elements once at the top to avoid redeclaration errors
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    const accountIdField = document.getElementById('AccountId');
+    const templateSelect = document.getElementById('TemplateId');
+    
     // Auto-fill current date if creating new document
     const dateField = document.getElementById('id_DocumentDate');
     if (dateField && !dateField.value) {
@@ -592,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Document type change handler - clear account and currency selection when document type changes
-    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    // Note: documentTypeSelect is already declared at top of DOMContentLoaded
     const accountDisplayInput = document.getElementById('AccountIdDisplay');
     const accountHiddenInput = document.getElementById('AccountId');
     const currencyDisplayInput = document.getElementById('CurrencyIdDisplay');
@@ -909,10 +917,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // VAT account mapping based on document type (using database constants)
     const vatAccountMapping = {
-        1: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Receipt (Орлого) - VAT Account 9 (Payable)
-        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Payment (Зарлага) - VAT Account 9 (Payable)
-        3: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Transfer (Шилжүүлэг) - VAT Account 9 (Payable)
-        4: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Adjustment (Тохируулга) - VAT Account 9 (Payable)
+        1: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 1,3 -> VAT 9
+        3: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
+        2: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 2,4 -> VAT 8
+        4: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
     };
     
     // Function to set VAT account based on document type
@@ -926,16 +934,17 @@ document.addEventListener('DOMContentLoaded', function() {
             vatAccountDisplay.value = vatAccount.display;
             vatAccountHidden.value = vatAccount.id;
         } else {
-            // Fallback to default VAT account
+            // Fallback to VAT 9
             vatAccountDisplay.value = '{{ vat_accounts.vat_account_2_display }}';
             vatAccountHidden.value = '{{ vat_accounts.vat_account_2_id }}';
         }
     }
     
+    // Note: documentTypeSelect, accountIdField, and templateSelect are already declared at top of DOMContentLoaded
+    
     if (vatCheckbox && vatAccountDisplay && vatAccountHidden) {
         // Initialize VAT account on page load if VAT is already enabled
         if (vatCheckbox.checked) {
-            const documentTypeSelect = document.getElementById('id_DocumentTypeId');
             if (documentTypeSelect && documentTypeSelect.value) {
                 setVatAccountForDocumentType(documentTypeSelect.value);
             }
@@ -944,7 +953,6 @@ document.addEventListener('DOMContentLoaded', function() {
         vatCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 // Get current document type and set appropriate VAT account
-                const documentTypeSelect = document.getElementById('id_DocumentTypeId');
                 if (documentTypeSelect && documentTypeSelect.value) {
                     setVatAccountForDocumentType(documentTypeSelect.value);
                 } else {
@@ -969,7 +977,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen for account selection changes to update templates
-    const accountIdField = document.getElementById('AccountId');
+    
+    // Get saved TemplateId from Django template (if editing)
+    let savedTemplateId = null;
+    {% if item and item.TemplateId %}
+    savedTemplateId = '{{ item.TemplateId.TemplateId }}';
+    {% endif %}
+    
+    // Store saved TemplateId on the select element for later use (multiple ways for reliability)
+    if (templateSelect && savedTemplateId) {
+        templateSelect.setAttribute('data-saved-template-id', savedTemplateId);
+        templateSelect.setAttribute('value', savedTemplateId);
+        // Also store in a global variable as backup
+        window.savedTemplateId = savedTemplateId;
+    }
+    
     if (accountIdField) {
         // Use a MutationObserver to detect when the hidden AccountId field value changes
         const observer = new MutationObserver(function(mutations) {
@@ -984,22 +1006,33 @@ document.addEventListener('DOMContentLoaded', function() {
         // Also listen for direct value changes
         accountIdField.addEventListener('change', updateTemplateDropdown);
     }
+    
+    // Initialize template dropdown on page load if editing and both AccountId and DocumentTypeId are present
+    if (accountIdField && documentTypeSelect && templateSelect) {
+        const accountValue = accountIdField.value;
+        const documentTypeValue = documentTypeSelect.value;
+        
+        if (accountValue && documentTypeValue) {
+            // Call updateTemplateDropdown to populate templates and restore saved TemplateId
+            updateTemplateDropdown();
+        }
+    }
 });
 
 // Function to handle account selection with document type validation
 function handleAccountSelection(accountDisplayInput) {
     // Check if document type is selected first
-    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
-    if (!documentTypeSelect || !documentTypeSelect.value) {
+    const docTypeSelect = document.getElementById('id_DocumentTypeId');
+    if (!docTypeSelect || !docTypeSelect.value) {
         // Show error message
         Silicon4Message.error('document-type-required');
         
         // Highlight the document type field
-        if (documentTypeSelect) {
-            documentTypeSelect.focus();
-            documentTypeSelect.style.borderColor = '#ef4444';
+        if (docTypeSelect) {
+            docTypeSelect.focus();
+            docTypeSelect.style.borderColor = '#ef4444';
             setTimeout(() => {
-                documentTypeSelect.style.borderColor = '';
+                docTypeSelect.style.borderColor = '';
             }, 3000);
         }
         
@@ -1020,7 +1053,6 @@ function handleAccountSelection(accountDisplayInput) {
     }
     
     // If document type is selected, proceed with account selection
-    const docTypeSelect = document.getElementById('id_DocumentTypeId');
     const selectedDocumentType = docTypeSelect ? docTypeSelect.value : null;
     
     openAccountPopup(accountDisplayInput, null, { 
@@ -1046,22 +1078,124 @@ function updateTemplateDropdown() {
         return;
     }
     
+    // Get the saved TemplateId value from multiple sources (if editing)
+    // Get it BEFORE clearing options - check in this order:
+    // 1. Data attribute (set on page load)
+    // 2. Global variable (backup)
+    // 3. Current select value (if selected)
+    // 4. Value attribute
+    const savedTemplateId = templateSelect.getAttribute('data-saved-template-id') || 
+                             (typeof window.savedTemplateId !== 'undefined' ? window.savedTemplateId : null) ||
+                             (templateSelect.options.length > 1 && templateSelect.selectedIndex > 0 ? templateSelect.value : null) ||
+                             templateSelect.getAttribute('value');
+    
     // Fetch templates via AJAX
     fetch(`/core/api/templates/?account_id=${accountIdField.value}&document_type_id=${documentTypeSelect.value}`)
         .then(response => response.json())
         .then(data => {
+            let savedTemplateFound = false;
+            
             if (data.success && data.templates) {
                 data.templates.forEach(template => {
                     const option = document.createElement('option');
                     option.value = template.TemplateId;
                     option.textContent = template.TemplateName + (template.IsVat ? ' (VAT)' : '');
                     option.setAttribute('data-isvat', template.IsVat);
+                    // Mark as selected if this matches the saved TemplateId
+                    if (savedTemplateId && String(template.TemplateId) === String(savedTemplateId)) {
+                        option.selected = true;
+                        savedTemplateFound = true;
+                    }
                     templateSelect.appendChild(option);
                 });
+            }
+            
+            // If saved TemplateId exists but wasn't in the filtered list, fetch it and add it
+            if (savedTemplateId && !savedTemplateFound) {
+                // Fetch template details via API
+                fetch(`/core/api/templates/${savedTemplateId}/details/`)
+                    .then(response => response.json())
+                    .then(templateData => {
+                        if (templateData.success && templateData.template) {
+                            const option = document.createElement('option');
+                            option.value = templateData.template.TemplateId;
+                            option.textContent = templateData.template.TemplateName + (templateData.template.IsVat ? ' (VAT)' : '');
+                            option.setAttribute('data-isvat', templateData.template.IsVat);
+                            option.selected = true;
+                            // Insert saved template option after empty option
+                            if (templateSelect.options.length > 0) {
+                                templateSelect.insertBefore(option, templateSelect.options[1]);
+                            } else {
+                                templateSelect.appendChild(option);
+                            }
+                            
+                            // Set value and trigger handler
+                            templateSelect.value = savedTemplateId;
+                            if (typeof handleTemplateSelection === 'function') {
+                                handleTemplateSelection(templateSelect);
+                            }
+                        } else {
+                            // Template not found or deleted, but still try to set it
+                            const option = document.createElement('option');
+                            option.value = savedTemplateId;
+                            option.textContent = 'Template (ID: ' + savedTemplateId + ') - Not Available';
+                            option.selected = true;
+                            // Insert saved template option after empty option
+                            if (templateSelect.options.length > 0) {
+                                templateSelect.insertBefore(option, templateSelect.options[1]);
+                            } else {
+                                templateSelect.appendChild(option);
+                            }
+                            templateSelect.value = savedTemplateId;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading saved template details:', error);
+                        // On error, still try to add it as an option
+                        const option = document.createElement('option');
+                        option.value = savedTemplateId;
+                        option.textContent = 'Template (ID: ' + savedTemplateId + ')';
+                        option.selected = true;
+                        // Insert saved template option after empty option
+                        if (templateSelect.options.length > 0) {
+                            templateSelect.insertBefore(option, templateSelect.options[1]);
+                        } else {
+                            templateSelect.appendChild(option);
+                        }
+                        templateSelect.value = savedTemplateId;
+                    });
+            } else if (savedTemplateId && savedTemplateFound) {
+                // Saved template was found in filtered results, just ensure it's selected
+                templateSelect.value = savedTemplateId;
+                if (typeof handleTemplateSelection === 'function') {
+                    handleTemplateSelection(templateSelect);
+                }
             }
         })
         .catch(error => {
             console.error('Error loading templates:', error);
+            // On error, still try to add saved template if it exists
+            if (savedTemplateId) {
+                fetch(`/core/api/templates/${savedTemplateId}/details/`)
+                    .then(response => response.json())
+                    .then(templateData => {
+                        if (templateData.success && templateData.template) {
+                            const option = document.createElement('option');
+                            option.value = templateData.template.TemplateId;
+                            option.textContent = templateData.template.TemplateName + (templateData.template.IsVat ? ' (VAT)' : '');
+                            option.setAttribute('data-isvat', templateData.template.IsVat);
+                            option.selected = true;
+                            templateSelect.appendChild(option);
+                            templateSelect.value = savedTemplateId;
+                            if (typeof handleTemplateSelection === 'function') {
+                                handleTemplateSelection(templateSelect);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error loading saved template details:', err);
+                    });
+            }
         });
 }
 
