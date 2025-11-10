@@ -5172,6 +5172,9 @@ def trial_balance(request):
                 trial_balance_data = [
                     dict(zip(columns, row)) for row in results
                 ]
+            
+            # Force-close the database connection so next request gets a fresh connection
+            connection.close()
         
         context = {
             'trial_balance_data': trial_balance_data,
