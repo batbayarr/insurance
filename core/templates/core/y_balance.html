@@ -1,5 +1,10 @@
 {% extends 'base.html' %}
 {% load humanize %}
+<!-- FORCE NO CACHE - New File -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="cache-bust" content="v1.0-2025-01-31">
 <!-- Y Balance Financial Statement Report -->
 
 {% block title %}САНХҮҮГИЙН ТАЙЛАН - Silicon4 Accounting{% endblock %}
@@ -354,6 +359,22 @@
 
 <script>
 (function() {
+// Add timestamp to form submission to prevent browser caching
+document.addEventListener('DOMContentLoaded', function() {
+    const reportForm = document.getElementById('report-form');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            // Add timestamp parameter to prevent browser caching
+            const timestamp = new Date().getTime();
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = '_t';
+            hiddenInput.value = timestamp;
+            this.appendChild(hiddenInput);
+        });
+    }
+});
+
 // Set default dates if not provided
 document.addEventListener('DOMContentLoaded', function() {
     const beginDateInput = document.getElementById('begin_date');

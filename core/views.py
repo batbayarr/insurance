@@ -5360,7 +5360,17 @@ def y_balance(request):
             'error_message': error_message,
         }
         
-        return render(request, 'core/y_balance.html', context)
+        response = render(request, 'core/y_balance.html', context)
+        # Add explicit no-cache headers to prevent browser caching
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        # Remove ETag and Last-Modified headers that can cause caching
+        if 'ETag' in response:
+            del response['ETag']
+        if 'Last-Modified' in response:
+            del response['Last-Modified']
+        return response
         
     except Exception as e:
         context = {
@@ -5372,7 +5382,17 @@ def y_balance(request):
             'active_tab': active_tab if 'active_tab' in locals() else 'balance',
             'error_message': f'Error generating report: {str(e)}',
         }
-        return render(request, 'core/y_balance.html', context)
+        response = render(request, 'core/y_balance.html', context)
+        # Add explicit no-cache headers to prevent browser caching
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        # Remove ETag and Last-Modified headers that can cause caching
+        if 'ETag' in response:
+            del response['ETag']
+        if 'Last-Modified' in response:
+            del response['Last-Modified']
+        return response
 
 
 @login_required
