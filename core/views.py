@@ -5156,9 +5156,12 @@ def trial_balance(request):
         
         if begin_date and end_date:
             # Execute the trial balance function
+            import time
+            cache_buster = int(time.time() * 1000)  # Current timestamp in milliseconds
             with connection.cursor() as cursor:
+                # Add cache-busting comment to force PostgreSQL to treat each query as unique
                 cursor.execute(
-                    "SELECT * FROM calculate_trial_balance(%s, %s)",
+                    f"SELECT * FROM calculate_trial_balance(%s, %s) /* cache_bust: {cache_buster} */",
                     [begin_date, end_date]
                 )
                 
@@ -5236,6 +5239,8 @@ def y_balance(request):
         if begin_date and end_date and calculate:
             # Execute stored procedures only when "ТООЦООЛОХ" button is clicked (form submitted)
             # Functions now return data sets directly
+            import time
+            cache_buster = int(time.time() * 1000)  # Current timestamp in milliseconds
             with connection.cursor() as cursor:
                 # Column name mapping for St_Balance (PostgreSQL returns column names as defined in RETURNS TABLE)
                 # Since we use quoted identifiers, they preserve case, but we'll map to be safe
@@ -5256,8 +5261,9 @@ def y_balance(request):
                 }
                 
                 # Calculate St_Balance and get data
+                # Add cache-busting comment to force PostgreSQL to treat each query as unique
                 cursor.execute(
-                    "SELECT * FROM calculate_st_balance(%s, %s)",
+                    f"SELECT * FROM calculate_st_balance(%s, %s) /* cache_bust: {cache_buster} */",
                     [begin_date, end_date]
                 )
                 columns = [col[0] for col in cursor.description]
@@ -5288,8 +5294,9 @@ def y_balance(request):
                 }
                 
                 # Calculate St_Income and get data
+                # Add cache-busting comment to force PostgreSQL to treat each query as unique
                 cursor.execute(
-                    "SELECT * FROM calculate_st_income(%s, %s)",
+                    f"SELECT * FROM calculate_st_income(%s, %s) /* cache_bust: {cache_buster} */",
                     [begin_date, end_date]
                 )
                 columns = [col[0] for col in cursor.description]
@@ -5322,8 +5329,9 @@ def y_balance(request):
                 }
                 
                 # Calculate St_CashFlow and get data
+                # Add cache-busting comment to force PostgreSQL to treat each query as unique
                 cursor.execute(
-                    "SELECT * FROM calculate_st_cash_flow(%s, %s)",
+                    f"SELECT * FROM calculate_st_cash_flow(%s, %s) /* cache_bust: {cache_buster} */",
                     [begin_date, end_date]
                 )
                 columns = [col[0] for col in cursor.description]
@@ -5337,6 +5345,9 @@ def y_balance(request):
                         mapped_name = cashflow_column_mapping.get(clean_col_name, cashflow_column_mapping.get(clean_col_name.lower(), clean_col_name))
                         row_dict[mapped_name] = row[i]
                     st_cashflow_data.append(row_dict)
+            
+            # Force-close the database connection so next request gets a fresh connection
+            connection.close()
         elif begin_date and end_date:
             # If just switching tabs, query existing data from models
             # Convert QuerySet to list of dictionaries with proper field names
