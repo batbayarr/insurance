@@ -14,9 +14,10 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
 from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
-from django.db import connection
+from django.db import connection, connections
 from .forms import Ref_AccountForm, RefClientForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
 from .utils import get_available_databases, set_database
+from .thread_local import get_current_db
 from .error_handling import (
     handle_errors, handle_ajax_errors, handle_form_errors, 
     safe_database_operation, Silicon4Error, ValidationError, 
@@ -5158,26 +5159,28 @@ def trial_balance(request):
             # Execute the trial balance function
             import time
             cache_buster = int(time.time() * 1000)  # Current timestamp in milliseconds
-            with connection.cursor() as cursor:
-                # Add cache-busting comment to force PostgreSQL to treat each query as unique
-                cursor.execute(
-                    f"SELECT * FROM calculate_trial_balance(%s, %s) /* cache_bust: {cache_buster} */",
-                    [begin_date, end_date]
-                )
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                trial_balance_data = [
-                    dict(zip(columns, row)) for row in results
-                ]
-            
-            # Force-close the database connection so next request gets a fresh connection
-            connection.close()
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    # Add cache-busting comment to force PostgreSQL to treat each query as unique
+                    cursor.execute(
+                        f"SELECT * FROM calculate_trial_balance(%s, %s) /* cache_bust: {cache_buster} */",
+                        [begin_date, end_date]
+                    )
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    trial_balance_data = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+            finally:
+                # Force-close the tenant database connection so next request gets a fresh connection
+                connections[db_alias].close()
         
         context = {
             'trial_balance_data': trial_balance_data,
@@ -5241,113 +5244,115 @@ def y_balance(request):
             # Functions now return data sets directly
             import time
             cache_buster = int(time.time() * 1000)  # Current timestamp in milliseconds
-            with connection.cursor() as cursor:
-                # Column name mapping for St_Balance (PostgreSQL returns column names as defined in RETURNS TABLE)
-                # Since we use quoted identifiers, they preserve case, but we'll map to be safe
-                balance_column_mapping = {
-                    'stbalanceid': 'StbalanceId',
-                    'stbalancecode': 'StbalanceCode',
-                    'stbalancename': 'StbalanceName',
-                    'beginbalance': 'BeginBalance',
-                    'endbalance': 'EndBalance',
-                    'order': 'Order',
-                    # Also handle exact case matches
-                    'StbalanceId': 'StbalanceId',
-                    'StbalanceCode': 'StbalanceCode',
-                    'StbalanceName': 'StbalanceName',
-                    'BeginBalance': 'BeginBalance',
-                    'EndBalance': 'EndBalance',
-                    'Order': 'Order'
-                }
-                
-                # Calculate St_Balance and get data
-                # Add cache-busting comment to force PostgreSQL to treat each query as unique
-                cursor.execute(
-                    f"SELECT * FROM calculate_st_balance(%s, %s) /* cache_bust: {cache_buster} */",
-                    [begin_date, end_date]
-                )
-                columns = [col[0] for col in cursor.description]
-                st_balance_data = []
-                for row in cursor.fetchall():
-                    row_dict = {}
-                    for i, col_name in enumerate(columns):
-                        # Remove quotes if present and normalize
-                        clean_col_name = col_name.strip('"').strip("'")
-                        # Map column names to expected format (try exact match first, then lowercase)
-                        mapped_name = balance_column_mapping.get(clean_col_name, balance_column_mapping.get(clean_col_name.lower(), clean_col_name))
-                        row_dict[mapped_name] = row[i]
-                    st_balance_data.append(row_dict)
-                
-                # Column name mapping for St_Income
-                income_column_mapping = {
-                    'stincomeid': 'StIncomeId',
-                    'stincome': 'StIncome',
-                    'stincomename': 'StIncomeName',
-                    'endbalance': 'EndBalance',
-                    'order': 'Order',
-                    # Also handle exact case matches
-                    'StIncomeId': 'StIncomeId',
-                    'StIncome': 'StIncome',
-                    'StIncomeName': 'StIncomeName',
-                    'EndBalance': 'EndBalance',
-                    'Order': 'Order'
-                }
-                
-                # Calculate St_Income and get data
-                # Add cache-busting comment to force PostgreSQL to treat each query as unique
-                cursor.execute(
-                    f"SELECT * FROM calculate_st_income(%s, %s) /* cache_bust: {cache_buster} */",
-                    [begin_date, end_date]
-                )
-                columns = [col[0] for col in cursor.description]
-                st_income_data = []
-                for row in cursor.fetchall():
-                    row_dict = {}
-                    for i, col_name in enumerate(columns):
-                        # Remove quotes if present and normalize
-                        clean_col_name = col_name.strip('"').strip("'")
-                        # Map column names to expected format
-                        mapped_name = income_column_mapping.get(clean_col_name, income_column_mapping.get(clean_col_name.lower(), clean_col_name))
-                        row_dict[mapped_name] = row[i]
-                    st_income_data.append(row_dict)
-                
-                # Column name mapping for St_CashFlow
-                cashflow_column_mapping = {
-                    'stcashflowid': 'StCashFlowId',
-                    'stcashflowcode': 'StCashFlowCode',
-                    'stcashflowname': 'StCashFlowName',
-                    'endbalance': 'EndBalance',
-                    'order': 'Order',
-                    'isvisible': 'IsVisible',
-                    # Also handle exact case matches
-                    'StCashFlowId': 'StCashFlowId',
-                    'StCashFlowCode': 'StCashFlowCode',
-                    'StCashFlowName': 'StCashFlowName',
-                    'EndBalance': 'EndBalance',
-                    'Order': 'Order',
-                    'IsVisible': 'IsVisible'
-                }
-                
-                # Calculate St_CashFlow and get data
-                # Add cache-busting comment to force PostgreSQL to treat each query as unique
-                cursor.execute(
-                    f"SELECT * FROM calculate_st_cash_flow(%s, %s) /* cache_bust: {cache_buster} */",
-                    [begin_date, end_date]
-                )
-                columns = [col[0] for col in cursor.description]
-                st_cashflow_data = []
-                for row in cursor.fetchall():
-                    row_dict = {}
-                    for i, col_name in enumerate(columns):
-                        # Remove quotes if present and normalize
-                        clean_col_name = col_name.strip('"').strip("'")
-                        # Map column names to expected format
-                        mapped_name = cashflow_column_mapping.get(clean_col_name, cashflow_column_mapping.get(clean_col_name.lower(), clean_col_name))
-                        row_dict[mapped_name] = row[i]
-                    st_cashflow_data.append(row_dict)
-            
-            # Force-close the database connection so next request gets a fresh connection
-            connection.close()
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    # Column name mapping for St_Balance (PostgreSQL returns column names as defined in RETURNS TABLE)
+                    # Since we use quoted identifiers, they preserve case, but we'll map to be safe
+                    balance_column_mapping = {
+                        'stbalanceid': 'StbalanceId',
+                        'stbalancecode': 'StbalanceCode',
+                        'stbalancename': 'StbalanceName',
+                        'beginbalance': 'BeginBalance',
+                        'endbalance': 'EndBalance',
+                        'order': 'Order',
+                        # Also handle exact case matches
+                        'StbalanceId': 'StbalanceId',
+                        'StbalanceCode': 'StbalanceCode',
+                        'StbalanceName': 'StbalanceName',
+                        'BeginBalance': 'BeginBalance',
+                        'EndBalance': 'EndBalance',
+                        'Order': 'Order'
+                    }
+                    
+                    # Calculate St_Balance and get data
+                    # Add cache-busting comment to force PostgreSQL to treat each query as unique
+                    cursor.execute(
+                        f"SELECT * FROM calculate_st_balance(%s, %s) /* cache_bust: {cache_buster} */",
+                        [begin_date, end_date]
+                    )
+                    columns = [col[0] for col in cursor.description]
+                    st_balance_data = []
+                    for row in cursor.fetchall():
+                        row_dict = {}
+                        for i, col_name in enumerate(columns):
+                            # Remove quotes if present and normalize
+                            clean_col_name = col_name.strip('"').strip("'")
+                            # Map column names to expected format (try exact match first, then lowercase)
+                            mapped_name = balance_column_mapping.get(clean_col_name, balance_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                            row_dict[mapped_name] = row[i]
+                        st_balance_data.append(row_dict)
+                    
+                    # Column name mapping for St_Income
+                    income_column_mapping = {
+                        'stincomeid': 'StIncomeId',
+                        'stincome': 'StIncome',
+                        'stincomename': 'StIncomeName',
+                        'endbalance': 'EndBalance',
+                        'order': 'Order',
+                        # Also handle exact case matches
+                        'StIncomeId': 'StIncomeId',
+                        'StIncome': 'StIncome',
+                        'StIncomeName': 'StIncomeName',
+                        'EndBalance': 'EndBalance',
+                        'Order': 'Order'
+                    }
+                    
+                    # Calculate St_Income and get data
+                    # Add cache-busting comment to force PostgreSQL to treat each query as unique
+                    cursor.execute(
+                        f"SELECT * FROM calculate_st_income(%s, %s) /* cache_bust: {cache_buster} */",
+                        [begin_date, end_date]
+                    )
+                    columns = [col[0] for col in cursor.description]
+                    st_income_data = []
+                    for row in cursor.fetchall():
+                        row_dict = {}
+                        for i, col_name in enumerate(columns):
+                            # Remove quotes if present and normalize
+                            clean_col_name = col_name.strip('"').strip("'")
+                            # Map column names to expected format
+                            mapped_name = income_column_mapping.get(clean_col_name, income_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                            row_dict[mapped_name] = row[i]
+                        st_income_data.append(row_dict)
+                    
+                    # Column name mapping for St_CashFlow
+                    cashflow_column_mapping = {
+                        'stcashflowid': 'StCashFlowId',
+                        'stcashflowcode': 'StCashFlowCode',
+                        'stcashflowname': 'StCashFlowName',
+                        'endbalance': 'EndBalance',
+                        'order': 'Order',
+                        'isvisible': 'IsVisible',
+                        # Also handle exact case matches
+                        'StCashFlowId': 'StCashFlowId',
+                        'StCashFlowCode': 'StCashFlowCode',
+                        'StCashFlowName': 'StCashFlowName',
+                        'EndBalance': 'EndBalance',
+                        'Order': 'Order',
+                        'IsVisible': 'IsVisible'
+                    }
+                    
+                    # Calculate St_CashFlow and get data
+                    # Add cache-busting comment to force PostgreSQL to treat each query as unique
+                    cursor.execute(
+                        f"SELECT * FROM calculate_st_cash_flow(%s, %s) /* cache_bust: {cache_buster} */",
+                        [begin_date, end_date]
+                    )
+                    columns = [col[0] for col in cursor.description]
+                    st_cashflow_data = []
+                    for row in cursor.fetchall():
+                        row_dict = {}
+                        for i, col_name in enumerate(columns):
+                            # Remove quotes if present and normalize
+                            clean_col_name = col_name.strip('"').strip("'")
+                            # Map column names to expected format
+                            mapped_name = cashflow_column_mapping.get(clean_col_name, cashflow_column_mapping.get(clean_col_name.lower(), clean_col_name))
+                            row_dict[mapped_name] = row[i]
+                        st_cashflow_data.append(row_dict)
+            finally:
+                # Force-close the tenant database connection so next request gets a fresh connection
+                connections[db_alias].close()
         elif begin_date and end_date:
             # If just switching tabs, query existing data from models
             # Convert QuerySet to list of dictionaries with proper field names
