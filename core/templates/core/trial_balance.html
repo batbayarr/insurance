@@ -21,7 +21,7 @@
 
     <!-- Date Filter Form -->
     <div class="bg-white shadow rounded-lg border border-gray-200 p-4 mb-4">
-        <form method="get" class="flex flex-col lg:flex-row gap-4 items-end">
+        <form method="get" id="trial-balance-form" class="flex flex-col lg:flex-row gap-4 items-end">
             <div class="flex-1">
                 <label for="begin_date" class="block text-sm font-medium text-gray-700 mb-1">Эхний огноо</label>
                 <input type="date" 
@@ -295,16 +295,24 @@
 (function() {
 // Add timestamp to form submission to prevent browser caching
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    const form = document.getElementById('trial-balance-form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default submission
+            
+            // Get form data
+            const formData = new FormData(this);
+            
             // Add timestamp parameter to prevent browser caching
             const timestamp = new Date().getTime();
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = '_t';
-            hiddenInput.value = timestamp;
-            this.appendChild(hiddenInput);
+            formData.append('_t', timestamp);
+            
+            // Build URL with all parameters including timestamp
+            const params = new URLSearchParams(formData);
+            const url = window.location.pathname + '?' + params.toString();
+            
+            // Navigate to the URL with timestamp
+            window.location.href = url;
         });
     }
 });

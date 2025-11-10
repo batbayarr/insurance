@@ -364,13 +364,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportForm = document.getElementById('report-form');
     if (reportForm) {
         reportForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default submission
+            
+            // Get form data
+            const formData = new FormData(this);
+            
             // Add timestamp parameter to prevent browser caching
             const timestamp = new Date().getTime();
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = '_t';
-            hiddenInput.value = timestamp;
-            this.appendChild(hiddenInput);
+            formData.append('_t', timestamp);
+            
+            // Build URL with all parameters including timestamp
+            const params = new URLSearchParams(formData);
+            const url = window.location.pathname + '?' + params.toString();
+            
+            // Navigate to the URL with timestamp
+            window.location.href = url;
         });
     }
 });
