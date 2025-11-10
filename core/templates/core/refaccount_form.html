@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if item %}Edit{% else %}Create{% endif %} Account - Silicon4 Accounting{% endblock %}
+{% block title %}{% if item %}Данс засах{% else %}Данс нэмэх{% endif %} - Silicon4 Accounting{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="space-y-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">
-                {% if item %}Edit{% else %}Create{% endif %} Account
+                {% if item %}Данс засах{% else %}Данс нэмэх{% endif %}
             </h1>
             <p class="text-gray-600">
-                {% if item %}Update the account information{% else %}Add a new account to your chart of accounts{% endif %}
+                {% if item %}Дансны мэдээллийг шинэчлэх{% else %}Дансны төлөвлөгөөнд шинэ данс нэмэх{% endif %}
             </p>
         </div>
         <div class="bg-white shadow sm:rounded-lg">
@@ -33,7 +33,7 @@
                                 ДАНСНЫ ТӨРӨЛ{% if form.AccountTypeId.field.required %} *{% endif %}
                             </label>
                             <select name="account_type_selector" id="account_type_selector" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-accounting-blue focus:border-accounting-blue sm:text-sm" required>
-                                <option value="">ДАНСНЫ ТӨРӨЛ СОНГОХ</option>
+                                <option value="">--- ДАНСНЫ ТӨРӨЛ СОНГОХ ---</option>
                                 {% for choice in account_types %}
                                     <option value="{{ choice.AccountTypeId }}" {% if form.AccountTypeId.value|stringformat:"s" == choice.AccountTypeId|stringformat:"s" %}selected{% endif %}>{{ choice.AccountTypeCode }} - {{ choice.AccountTypeName }}</option>
                                 {% endfor %}
@@ -54,22 +54,123 @@
                             {{ form.CurrencyId }}
                         </div>
                     </div>
-                    <div>
-                        <label for="{{ form.IsActive.id_for_label }}" class="block text-sm font-medium text-gray-700">АКТИВ</label>
-                        {{ form.IsActive }}
-                    </div>
                     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                        <a href="{% url 'core:refaccount_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">Cancel</a>
-                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-accounting-green hover:bg-accounting-green-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-green">{% if item %}Update{% else %}Create{% endif %} Account</button>
+                        <a href="{% url 'core:refaccount_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">Цуцлах</a>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-accounting-green hover:bg-accounting-green-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-green">{% if item %}Шинэчлэх{% else %}Нэмэх{% endif %}</button>
                     </div>
                 </form>
             </div>
         </div>
         <div class="text-center">
-            <a href="{% url 'core:refaccount_list' %}" class="text-accounting-blue hover:text-accounting-blue-dark text-sm">← Back to Chart of Accounts</a>
+            <a href="{% url 'core:refaccount_list' %}" class="text-accounting-blue hover:text-accounting-blue-dark text-sm">← Дансны төлөвлөгөө руу буцах</a>
         </div>
     </div>
 </div>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
+<script>
+// Inline Message Modal Function (to ensure it's always available)
+function showMessageModal(message, type = 'error', title = null) {
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to alert if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to alert');
+        alert(message);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Update icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Update message
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Update button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on OK button for accessibility
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 100);
+    }
+}
+
+// Show validation errors in modal
+document.addEventListener('DOMContentLoaded', function() {
+    {% if form.errors %}
+        {% if form.AccountCode.errors %}
+            {% for error in form.AccountCode.errors %}
+                showMessageModal('{{ error|escapejs }}', 'error', 'Алдаа');
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+});
+</script>
 
 {% endblock %}
 

@@ -39,16 +39,16 @@
                         {% if not is_modal %}
                         <tr class="bg-gray-100">
                             <td class="px-1 py-1 border border-gray-300 w-20">
-                                <input type="text" name="code" value="{{ filters.code }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                                <input type="text" id="filter-code" name="code" value="{{ filters.code }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." oninput="applyFilters()">
                             </td>
                             <td class="px-1 py-1 border border-gray-300 w-40">
-                                <input type="text" name="name" value="{{ filters.name }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                                <input type="text" id="filter-name" name="name" value="{{ filters.name }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." oninput="applyFilters()">
                             </td>
                             <td class="px-1 py-1 border border-gray-300 w-40">
-                                <input type="text" name="register" value="{{ filters.register }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
+                                <input type="text" id="filter-register" name="register" value="{{ filters.register }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." oninput="applyFilters()">
                             </td>
                             <td class="px-1 py-1 border border-gray-300 w-40">
-                                <select name="type" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                <select id="filter-type" name="type" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="applyFilters()">
                                     <option value="">Бүгд</option>
                                     {% for client_type in client_types %}
                                     <option value="{{ client_type.ClientTypeName }}" {% if filters.type == client_type.ClientTypeName %}selected{% endif %}>{{ client_type.ClientTypeName }}</option>
@@ -56,7 +56,7 @@
                                 </select>
                             </td>
                             <td class="px-1 py-1 border border-gray-300 w-20">
-                                <select name="status" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                <select id="filter-status" name="status" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="applyFilters()">
                                     <option value="">Бүгд</option>
                                     <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Идэвхтэй</option>
                                     <option value="deleted" {% if filters.status == 'deleted' %}selected{% endif %}>Устгасан</option>
@@ -65,14 +65,19 @@
                             <td class="px-1 py-1 border border-gray-300 w-20 hidden"></td>
                             <td class="px-1 py-1 border border-gray-300 w-20"></td>
                             <td class="px-1 py-1 border border-gray-300 w-11">
-                                <a href="{% url 'core:refclient_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">Clear</a>
+                                <button type="button" onclick="clearFilters()" class="text-xs text-gray-500 hover:text-gray-700" title="Шүүлт цэвэрлэх">ЦЭВЭРЛЭХ</button>
                             </td>
                         </tr>
                         {% endif %}
                     </thead>
-                    <tbody class="bg-white">
+                    <tbody class="bg-white" id="client-table-body">
                         {% for client in clients %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 client-row" 
+                            data-client-code="{{ client.ClientCode|lower }}"
+                            data-client-name="{{ client.ClientName|lower }}"
+                            data-client-register="{{ client.ClientRegister|default:'-'|lower }}"
+                            data-client-type="{{ client.ClientType.ClientTypeName|default:'-'|lower }}"
+                            data-client-status="{% if not client.IsDelete %}active{% else %}deleted{% endif %}">
                             <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300">{{ client.ClientCode }}</td>
                             <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ClientName }}</td>
                             <td class="px-1 py-1 text-sm text-gray-900 border border-gray-300">{{ client.ClientRegister|default:"-" }}</td>
@@ -223,6 +228,123 @@
 {% include 'core/components/delete_modal.html' %}
 
 <script>
+// Client-side filtering function
+function applyFilters() {
+    const codeFilter = document.getElementById('filter-code');
+    const nameFilter = document.getElementById('filter-name');
+    const registerFilter = document.getElementById('filter-register');
+    const typeFilter = document.getElementById('filter-type');
+    const statusFilter = document.getElementById('filter-status');
+    
+    const codeValue = codeFilter ? codeFilter.value.toLowerCase().trim() : '';
+    const nameValue = nameFilter ? nameFilter.value.toLowerCase().trim() : '';
+    const registerValue = registerFilter ? registerFilter.value.toLowerCase().trim() : '';
+    const typeValue = typeFilter ? typeFilter.value.toLowerCase().trim() : '';
+    const statusValue = statusFilter ? statusFilter.value.toLowerCase().trim() : '';
+    
+    const rows = document.querySelectorAll('.client-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let shouldShow = true;
+        
+        // Filter by code
+        if (codeValue) {
+            const clientCode = row.getAttribute('data-client-code') || '';
+            if (!clientCode.includes(codeValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Filter by name
+        if (nameValue && shouldShow) {
+            const clientName = row.getAttribute('data-client-name') || '';
+            if (!clientName.includes(nameValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Filter by register
+        if (registerValue && shouldShow) {
+            const clientRegister = row.getAttribute('data-client-register') || '';
+            if (!clientRegister.includes(registerValue)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Filter by type
+        if (typeValue && shouldShow) {
+            const clientType = (row.getAttribute('data-client-type') || '').toLowerCase();
+            if (clientType !== typeValue) {
+                shouldShow = false;
+            }
+        }
+        
+        // Filter by status
+        if (statusValue && shouldShow) {
+            const clientStatus = row.getAttribute('data-client-status') || '';
+            if (clientStatus !== statusValue) {
+                shouldShow = false;
+            }
+        }
+        
+        // Show or hide row
+        if (shouldShow) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show message if no rows match
+    const tbody = document.getElementById('client-table-body');
+    if (tbody) {
+        let noResultsMsg = tbody.querySelector('.no-results-message');
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('tr');
+                noResultsMsg.className = 'no-results-message';
+                noResultsMsg.innerHTML = '<td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500">Шүүлтийн шалгуурт тохирох харилцагч олдсонгүй</td>';
+                tbody.appendChild(noResultsMsg);
+            }
+            noResultsMsg.style.display = '';
+        } else if (noResultsMsg) {
+            noResultsMsg.style.display = 'none';
+        }
+    }
+}
+
+// Clear all filters
+function clearFilters() {
+    const codeFilter = document.getElementById('filter-code');
+    const nameFilter = document.getElementById('filter-name');
+    const registerFilter = document.getElementById('filter-register');
+    const typeFilter = document.getElementById('filter-type');
+    const statusFilter = document.getElementById('filter-status');
+    
+    if (codeFilter) codeFilter.value = '';
+    if (nameFilter) nameFilter.value = '';
+    if (registerFilter) registerFilter.value = '';
+    if (typeFilter) typeFilter.value = '';
+    if (statusFilter) statusFilter.value = '';
+    
+    // Show all rows
+    const rows = document.querySelectorAll('.client-row');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    // Hide no results message
+    const tbody = document.getElementById('client-table-body');
+    if (tbody) {
+        const noResultsMsg = tbody.querySelector('.no-results-message');
+        if (noResultsMsg) {
+            noResultsMsg.style.display = 'none';
+        }
+    }
+}
+
 // Handle page size change
 document.addEventListener('DOMContentLoaded', function() {
     const pageSizeSelect = document.getElementById('page-size-select');
@@ -240,6 +362,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reload page with new page size
             window.location.href = currentUrl.toString();
         });
+    }
+    
+    // Apply filters on page load if any filter values exist
+    const codeFilter = document.getElementById('filter-code');
+    const nameFilter = document.getElementById('filter-name');
+    const registerFilter = document.getElementById('filter-register');
+    const typeFilter = document.getElementById('filter-type');
+    const statusFilter = document.getElementById('filter-status');
+    
+    if ((codeFilter && codeFilter.value) || 
+        (nameFilter && nameFilter.value) || 
+        (registerFilter && registerFilter.value) ||
+        (typeFilter && typeFilter.value) || 
+        (statusFilter && statusFilter.value)) {
+        applyFilters();
     }
 });
 </script>

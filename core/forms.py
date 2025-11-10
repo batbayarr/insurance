@@ -34,16 +34,41 @@ class Ref_AccountForm(forms.ModelForm):
         self.fields['AccountTypeId'].queryset = Ref_Account_Type.objects.all().order_by('AccountTypeCode')
         self.fields['CurrencyId'].queryset = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
         
-        # Add empty choice for optional fields
-        self.fields['CurrencyId'].empty_label = "Select Currency (Optional)"
-        self.fields['CurrencyId'].required = False
+        # Make all fields required
+        self.fields['AccountCode'].required = True
+        self.fields['AccountName'].required = True
+        self.fields['AccountTypeId'].required = True
+        self.fields['CurrencyId'].required = True
         
         # Add empty choice for AccountTypeId
-        self.fields['AccountTypeId'].empty_label = "Select Account Type"
+        self.fields['AccountTypeId'].empty_label = "--- ДАНСНЫ ТӨРӨЛ СОНГОХ ---"
+        
+        # Add empty choice for CurrencyId
+        self.fields['CurrencyId'].empty_label = "--- ВАЛЮТ СОНГОХ ---"
+    
+    def clean_AccountCode(self):
+        """Validate that AccountCode is unique"""
+        account_code = self.cleaned_data.get('AccountCode')
+        
+        if account_code:
+            # Check if an account with this code already exists
+            # Exclude the current instance if we're updating
+            query = Ref_Account.objects.filter(AccountCode=account_code)
+            
+            # If we're updating an existing account, exclude it from the check
+            if self.instance and self.instance.pk:
+                query = query.exclude(pk=self.instance.pk)
+            
+            if query.exists():
+                raise forms.ValidationError(
+                    f'Дансны код "{account_code}" бүртгэгдсэн байна. Өөр код оруулна уу.'
+                )
+        
+        return account_code
     
     class Meta:
         model = Ref_Account
-        fields = ['AccountCode', 'AccountName', 'AccountTypeId', 'CurrencyId', 'IsDelete']
+        fields = ['AccountCode', 'AccountName', 'AccountTypeId', 'CurrencyId']
         widgets = {
             'AccountCode': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
@@ -56,17 +81,13 @@ class Ref_AccountForm(forms.ModelForm):
             }),
             'CurrencyId': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
-            }),
-            'IsDelete': forms.CheckboxInput(attrs={
-                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-300 rounded'
             })
         }
         labels = {
             'AccountCode': 'Account Code',
             'AccountName': 'Account Name',
             'AccountTypeId': 'Account Type',
-            'CurrencyId': 'Currency',
-            'IsDelete': 'Deleted'
+            'CurrencyId': 'Currency'
         }
 
 
@@ -973,8 +994,8 @@ class Ref_TemplateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filter active document types
         self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False)
-        # Filter active accounts
-        self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False)
+        # Filter active accounts and order by AccountCode
+        self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         # AccountId is required - no empty_label needed
 
 

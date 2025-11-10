@@ -265,10 +265,7 @@ def refaccount_create(request):
         if form.is_valid():
             form.save()
             return redirect('core:refaccount_list')
-        else:
-            # Debug: print form errors
-            print("Form errors:", form.errors)
-            print("Form data:", request.POST)
+        # If form is invalid, it will be passed to template with errors
     else:
         form = Ref_AccountForm()
     
@@ -414,7 +411,7 @@ def refclient_list(request):
         except Exception:
             pass
     
-    clients_list = clients_list.order_by('ClientCode')
+    clients_list = clients_list.order_by('ClientName')
     
     # Get page size from request, default to 15
     page_size = request.GET.get('page_size', '15')
@@ -7669,8 +7666,8 @@ def template_create(request):
     
     return render(request, 'core/template_form.html', {
         'form': form,
-        'title': 'Create Template',
-        'submit_text': 'Create Template'
+        'title': 'Загвар нэмэх',
+        'submit_text': 'Нэмэх'
     })
 
 
@@ -7699,8 +7696,8 @@ def template_update(request, pk):
     
     return render(request, 'core/template_form.html', {
         'form': form,
-        'title': 'Update Template',
-        'submit_text': 'Update Template'
+        'title': 'Загвар засах',
+        'submit_text': 'Шинэчлэх'
     })
 
 
