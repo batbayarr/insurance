@@ -204,7 +204,7 @@ BEGIN
     ORDER BY ra."AccountCode";
     
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- Example usage:
 -- SELECT * FROM calculate_trial_balance('2025-01-01', '2025-12-31');

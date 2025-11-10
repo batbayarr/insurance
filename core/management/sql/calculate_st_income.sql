@@ -76,7 +76,7 @@ BEGIN
     ORDER BY si."Order", si."StIncome";
     
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- Example usage:
 -- SELECT calculate_st_income('2025-01-01', '2025-12-31');

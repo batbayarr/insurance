@@ -230,7 +230,7 @@ BEGIN
     ORDER BY sb."Order", sb."StbalanceCode";
     
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- Example usage:
 -- SELECT calculate_st_balance('2025-01-01', '2025-12-31');
