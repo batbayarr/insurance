@@ -717,27 +717,6 @@ def refclient_delete(request, pk):
 
 
 # Template views removed
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @login_required
 @permission_required('core.view_refinventory', raise_exception=True)
 def refinventory_list(request):
@@ -812,8 +791,6 @@ def refinventory_list(request):
     }
     
     return render(request, 'core/refinventory_list.html', context)
-
-
 @login_required
 @permission_required('core.add_refinventory', raise_exception=True)
 def refinventory_create(request):
@@ -1536,8 +1513,6 @@ def cashdocument_update(request, pk):
         'vat_accounts': vat_accounts,
         'timestamp': int(time.time())
     })
-
-
 @login_required
 @permission_required('core.delete_cash_document', raise_exception=True)
 def cashdocument_delete(request, pk):
@@ -1614,8 +1589,6 @@ def cashdocument_delete(request, pk):
     
     # GET request without modal parameter - redirect to list
     return redirect('core:cashdocument_master_detail')
-
-
 @login_required
 @permission_required('core.view_cash_documentdetail', raise_exception=True)
 def cashdocumentdetail_list(request):
@@ -2264,8 +2237,6 @@ def invdocument_master_detail(request):
         return render(request, 'core/components/inv_document_detail_grid.html', context)
     
     return render(request, 'core/invdocument_master_detail.html', context)
-
-
 @login_required
 @permission_required('core.add_inv_document', raise_exception=True)
 def invdocument_create(request, parentid=None):
@@ -2380,8 +2351,6 @@ def invdocument_create(request, parentid=None):
         'inventory_account_types': inventory_account_types,
         'vat_accounts': vat_accounts
     })
-
-
 @login_required
 @permission_required('core.change_inv_document', raise_exception=True)
 def invdocument_update(request, pk, parentid=None):
@@ -3025,8 +2994,6 @@ def ref_asset_card_list(request):
         'page_size': page_size,
         'is_modal': False
     })
-
-
 @login_required
 @permission_required('core.add_ref_asset_card', raise_exception=True)
 def ref_asset_card_create(request):
@@ -3146,10 +3113,6 @@ def ref_asset_card_delete(request, pk):
     
     # GET request without modal parameter - redirect to list
     return redirect('core:asset_master_detail')
-
-
-@login_required
-@require_http_methods(["GET"])
 def get_next_document_number(request):
     """API endpoint to get the next document number for a given DocumentTypeId"""
     document_type_id = request.GET.get('document_type_id')
@@ -3525,7 +3488,7 @@ def invbeginningbalance_update(request, balance_id):
             balance.InventoryId_id = inventory_id
             balance.Quantity = quantity
             balance.UnitCost = unit_cost
-            balance.UnitPrice = unit_price
+            balance.UnitPrice = unit_price,
             balance.WarehouseId_id = warehouse_id
             balance.EmployeeId = employee_id if employee_id else None
             balance.ModifiedBy = request.user
@@ -3819,8 +3782,6 @@ def astbeginningbalance_update(request, balance_id):
             return redirect('core:astbeginningbalance_list')
     
     return redirect('core:astbeginningbalance_list')
-
-
 @login_required
 def astbeginningbalance_delete(request, balance_id):
     """Delete an asset beginning balance"""
@@ -3860,10 +3821,6 @@ def cash_documents(request):
 def cash_import(request):
     """View for cash import page"""
     return render(request, 'core/cash_import.html', {})
-
-
-@login_required
-@permission_required('core.view_cash_document', raise_exception=True)
 def get_cash_documents_filtered(request):
     """API endpoint to get ALL cash documents and details for all tabs in one call"""
     if request.method != 'GET':
@@ -4017,30 +3974,34 @@ def currency_journal(request):
     currency_data = []
     if start_date and end_date:
         try:
-            # Execute the currency balance function
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT * FROM calculate_currency_balance(%s, %s)",
-                    [start_date, end_date]
-                )
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                currency_data = [
-                    dict(zip(columns, row)) for row in results
-                ]
-                
-                # Convert Decimal values to float for JSON serialization
-                from decimal import Decimal
-                for item in currency_data:
-                    for key, value in item.items():
-                        if isinstance(value, Decimal):
-                            item[key] = float(value)
+            db_alias = get_current_db()
+            try:
+                # Execute the currency balance function
+                with connections[db_alias].cursor() as cursor:
+                    cursor.execute(
+                        "SELECT * FROM calculate_currency_balance(%s, %s)",
+                        [start_date, end_date]
+                    )
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    currency_data = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+                    
+                    # Convert Decimal values to float for JSON serialization
+                    from decimal import Decimal
+                    for item in currency_data:
+                        for key, value in item.items():
+                            if isinstance(value, Decimal):
+                                item[key] = float(value)
+            finally:
+                connections[db_alias].close()
         except Exception as e:
             currency_data = []
     
@@ -4232,30 +4193,34 @@ def get_inv_balance_data(request):
         
         balance_data = []
         try:
-            # Execute the inventory balance function
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT * FROM calculate_inventory_balance(%s, %s)",
-                    [start_date, end_date]
-                )
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                balance_data = [
-                    dict(zip(columns, row)) for row in results
-                ]
-                
-                # Convert Decimal values to float for JSON serialization
-                from decimal import Decimal
-                for item in balance_data:
-                    for key, value in item.items():
-                        if isinstance(value, Decimal):
-                            item[key] = float(value)
+            db_alias = get_current_db()
+            try:
+                # Execute the inventory balance function
+                with connections[db_alias].cursor() as cursor:
+                    cursor.execute(
+                        "SELECT * FROM calculate_inventory_balance(%s, %s)",
+                        [start_date, end_date]
+                    )
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    balance_data = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+                    
+                    # Convert Decimal values to float for JSON serialization
+                    from decimal import Decimal
+                    for item in balance_data:
+                        for key, value in item.items():
+                            if isinstance(value, Decimal):
+                                item[key] = float(value)
+            finally:
+                connections[db_alias].close()
         except Exception as e:
             return JsonResponse({
                 'success': False,
@@ -4472,30 +4437,34 @@ def get_ast_balance_data(request):
         
         balance_data = []
         try:
-            # Execute the asset balance function (uses only end_date as asofdate)
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT * FROM calculate_ast_balance(%s)",
-                    [end_date]
-                )
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                balance_data = [
-                    dict(zip(columns, row)) for row in results
-                ]
-                
-                # Convert Decimal values to float for JSON serialization
-                from decimal import Decimal
-                for item in balance_data:
-                    for key, value in item.items():
-                        if isinstance(value, Decimal):
-                            item[key] = float(value)
+            db_alias = get_current_db()
+            try:
+                # Execute the asset balance function (uses only end_date as asofdate)
+                with connections[db_alias].cursor() as cursor:
+                    cursor.execute(
+                        "SELECT * FROM calculate_ast_balance(%s)",
+                        [end_date]
+                    )
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    balance_data = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+                    
+                    # Convert Decimal values to float for JSON serialization
+                    from decimal import Decimal
+                    for item in balance_data:
+                        for key, value in item.items():
+                            if isinstance(value, Decimal):
+                                item[key] = float(value)
+            finally:
+                connections[db_alias].close()
         except Exception as e:
             return JsonResponse({
                 'success': False,
@@ -4588,6 +4557,8 @@ def api_depreciation_summary(request):
         }, status=500)
 
 
+@login_required
+@permission_required('core.view_astdepreciationexpense', raise_exception=True)
 def api_asset_depreciation_expenses(request):
     """Returns asset depreciation expenses with detailed asset card information"""
     if request.method != 'GET':
@@ -4646,10 +4617,7 @@ def api_asset_depreciation_expenses(request):
             'success': False,
             'error': f'Error loading asset depreciation expenses: {str(e)}'
         }, status=500)
-
-
 # ==================== ASSET DOCUMENT VIEWS ====================
-
 @login_required
 @permission_required('core.view_ast_document', raise_exception=True)
 def astdocument_master_detail(request):
@@ -5219,8 +5187,6 @@ def trial_balance(request):
         if 'Last-Modified' in response:
             del response['Last-Modified']
         return response
-
-
 @login_required
 def y_balance(request):
     """Y Balance Financial Statement Report View"""
@@ -5432,9 +5398,6 @@ def y_balance(request):
         if 'Last-Modified' in response:
             del response['Last-Modified']
         return response
-
-
-@login_required
 def recpay_balance(request):
     """Receivable and Payable Balance Report View"""
     try:
@@ -5447,22 +5410,26 @@ def recpay_balance(request):
         
         if begin_date and end_date:
             # Execute the recpay balance function
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT * FROM calculate_recpay_balance(%s, %s)",
-                    [begin_date, end_date]
-                )
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                recpay_balance_data = [
-                    dict(zip(columns, row)) for row in results
-                ]
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    cursor.execute(
+                        "SELECT * FROM calculate_recpay_balance(%s, %s)",
+                        [begin_date, end_date]
+                    )
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    recpay_balance_data = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+            finally:
+                connections[db_alias].close()
         
         context = {
             'recpay_balance_data': recpay_balance_data,
@@ -5537,56 +5504,60 @@ def account_statement(request):
                 # Execute the account statement function
                 if not error_message:
                     try:
-                        with connection.cursor() as cursor:
-                            # Call SQL function with parameters (no ClientId)
-                            # Cast date parameters to DATE type explicitly
-                            cursor.execute(
-                                "SELECT * FROM report_account_statement(%s, %s::DATE, %s::DATE)",
-                                [account_id, begin_date, end_date]
-                            )
-                            
-                            # Get column names
-                            columns = [col[0] for col in cursor.description]
-                            
-                            # Fetch all results
-                            results = cursor.fetchall()
-                            
-                            # Convert to list of dictionaries with proper column name mapping
-                            # PostgreSQL returns column names in lowercase, but template expects mixed case
-                            column_mapping = {
-                                'documentdate': 'DocumentDate',
-                                'documentno': 'DocumentNo',
-                                'documentid': 'DocumentId',
-                                'documenttypeid': 'DocumentTypeId',
-                                'documentsource': 'DocumentSource',
-                                'clientname': 'ClientName',
-                                'description': 'Description',
-                                'currencyname': 'CurrencyName',
-                                'currencyexchange': 'CurrencyExchange',
-                                'currencyamount': 'CurrencyAmount',
-                                'debitamount': 'DebitAmount',
-                                'creditamount': 'CreditAmount',
-                                'accountcode': 'AccountCode'
-                            }
-                            
-                            subsidiary_ledger_data = []
-                            for row in results:
-                                row_dict = {}
-                                for i, col_name in enumerate(columns):
-                                    # Map lowercase column names to mixed case for template
-                                    mapped_name = column_mapping.get(col_name.lower(), col_name)
-                                    row_dict[mapped_name] = row[i]
-                                subsidiary_ledger_data.append(row_dict)
-                            
-                            # All summary values are already passed from trial_balance.html
-                            # No need to calculate them again
-                            
-                            # Convert Decimal values to float for JSON serialization
-                            from decimal import Decimal
-                            for item in subsidiary_ledger_data:
-                                for key, value in item.items():
-                                    if isinstance(value, Decimal):
-                                        item[key] = float(value)
+                        db_alias = get_current_db()
+                        try:
+                            with connections[db_alias].cursor() as cursor:
+                                # Call SQL function with parameters (no ClientId)
+                                # Cast date parameters to DATE type explicitly
+                                cursor.execute(
+                                    "SELECT * FROM report_account_statement(%s, %s::DATE, %s::DATE)",
+                                    [account_id, begin_date, end_date]
+                                )
+                                
+                                # Get column names
+                                columns = [col[0] for col in cursor.description]
+                                
+                                # Fetch all results
+                                results = cursor.fetchall()
+                                
+                                # Convert to list of dictionaries with proper column name mapping
+                                # PostgreSQL returns column names in lowercase, but template expects mixed case
+                                column_mapping = {
+                                    'documentdate': 'DocumentDate',
+                                    'documentno': 'DocumentNo',
+                                    'documentid': 'DocumentId',
+                                    'documenttypeid': 'DocumentTypeId',
+                                    'documentsource': 'DocumentSource',
+                                    'clientname': 'ClientName',
+                                    'description': 'Description',
+                                    'currencyname': 'CurrencyName',
+                                    'currencyexchange': 'CurrencyExchange',
+                                    'currencyamount': 'CurrencyAmount',
+                                    'debitamount': 'DebitAmount',
+                                    'creditamount': 'CreditAmount',
+                                    'accountcode': 'AccountCode'
+                                }
+                                
+                                subsidiary_ledger_data = []
+                                for row in results:
+                                    row_dict = {}
+                                    for i, col_name in enumerate(columns):
+                                        # Map lowercase column names to mixed case for template
+                                        mapped_name = column_mapping.get(col_name.lower(), col_name)
+                                        row_dict[mapped_name] = row[i]
+                                    subsidiary_ledger_data.append(row_dict)
+                                
+                                # All summary values are already passed from trial_balance.html
+                                # No need to calculate them again
+                                
+                                # Convert Decimal values to float for JSON serialization
+                                from decimal import Decimal
+                                for item in subsidiary_ledger_data:
+                                    for key, value in item.items():
+                                        if isinstance(value, Decimal):
+                                            item[key] = float(value)
+                        finally:
+                            connections[db_alias].close()
                                     
                     except Exception as e:
                         error_message = f'Error executing account statement query: {str(e)}'
@@ -5666,9 +5637,11 @@ def account_statement_detail(request):
         
         # Get documents with all their details where at least one detail matches the account
         try:
-            with connection.cursor() as cursor:
-                # First, get all cash documents with their details
-                cursor.execute("""
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    # First, get all cash documents with their details
+                    cursor.execute("""
                 SELECT 
                     cd."DocumentId",
                     cd."DocumentDate",
@@ -5773,18 +5746,20 @@ def account_statement_detail(request):
                 AND ad."IsDelete" = false
                 
                 ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
-            """, [account_id, begin_date, end_date, account_id, begin_date, end_date, account_id, begin_date, end_date])
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                all_details = [
-                    dict(zip(columns, row)) for row in results
-                ]
+                """, [account_id, begin_date, end_date, account_id, begin_date, end_date, account_id, begin_date, end_date])
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    all_details = [
+                        dict(zip(columns, row)) for row in results
+                    ]
+            finally:
+                connections[db_alias].close()
             
                 # Group details by document
                 documents = {}
@@ -5873,9 +5848,6 @@ def account_statement_detail(request):
             'success': False,
             'error': f'Error generating account statement: {str(e)}'
         }, status=500)
-
-
-@login_required
 def subsidiary_ledger(request):
     """Subsidiary Ledger Report View"""
     try:
@@ -5946,290 +5918,294 @@ def subsidiary_ledger(request):
                 # Execute the subsidiary ledger query
                 if not error_message:
                     try:
-                        with connection.cursor() as cursor:
-                            # Use the same SQL query pattern as subsidiary_ledger_detail API
-                            if client_id:
-                                # With client filter
-                                cursor.execute("""
-                                SELECT 
-                                    cd."DocumentId",
-                                    cd."DocumentDate",
-                                    cd."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(cd."Description", '') as DocumentDescription,
-                                    cdd."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
-                                    cdd."CurrencyAmount",
-                                    cdd."DebitAmount",
-                                    cdd."CreditAmount",
-                                    cdd."IsDebit",
-                                    'Cash' as DocumentCategory
-                                FROM cash_document cd
-                                INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
-                                INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE cd."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM cash_document_detail 
-                                    WHERE "AccountId" = %s AND "ClientId" = %s
-                                )
-                                AND cd."DocumentDate" >= %s 
-                                AND cd."DocumentDate" <= %s 
-                                AND cd."IsDelete" = false
-                                AND cdd."ClientId" = %s
-                                
-                                UNION ALL
-                                
-                                SELECT 
-                                    id."DocumentId",
-                                    id."DocumentDate",
-                                    id."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(id."Description", '') as DocumentDescription,
-                                    idd."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
-                                    idd."CurrencyAmount",
-                                    idd."DebitAmount",
-                                    idd."CreditAmount",
-                                    idd."IsDebit",
-                                    'Inventory' as DocumentCategory
-                                FROM inv_document id
-                                INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
-                                INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE id."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM inv_document_detail 
-                                    WHERE "AccountId" = %s AND "ClientId" = %s
-                                )
-                                AND id."DocumentDate" >= %s 
-                                AND id."DocumentDate" <= %s 
-                                AND id."IsDelete" = false
-                                AND idd."ClientId" = %s
-                                
-                                UNION ALL
-                                
-                                SELECT 
-                                    ad."DocumentId",
-                                    ad."DocumentDate",
-                                    ad."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(ad."Description", '') as DocumentDescription,
-                                    add."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
-                                    add."CurrencyAmount",
-                                    add."DebitAmount",
-                                    add."CreditAmount",
-                                    add."IsDebit",
-                                    'Asset' as DocumentCategory
-                                FROM ast_document ad
-                                INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
-                                INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE ad."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM ast_document_detail 
-                                    WHERE "AccountId" = %s AND "ClientId" = %s
-                                )
-                                AND ad."DocumentDate" >= %s 
-                                AND ad."DocumentDate" <= %s 
-                                AND ad."IsDelete" = false
-                                AND add."ClientId" = %s
-                                
-                                ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
-                                """, 
-                                [account_id, client_id, begin_date, end_date, client_id,
-                                 account_id, client_id, begin_date, end_date, client_id,
-                                 account_id, client_id, begin_date, end_date, client_id])
-                            else:
-                                # Without client filter
-                                cursor.execute("""
-                                SELECT 
-                                    cd."DocumentId",
-                                    cd."DocumentDate",
-                                    cd."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(cd."Description", '') as DocumentDescription,
-                                    cdd."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
-                                    cdd."CurrencyAmount",
-                                    cdd."DebitAmount",
-                                    cdd."CreditAmount",
-                                    cdd."IsDebit",
-                                    'Cash' as DocumentCategory
-                                FROM cash_document cd
-                                INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
-                                INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE cd."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM cash_document_detail 
-                                    WHERE "AccountId" = %s
-                                )
-                                AND cd."DocumentDate" >= %s 
-                                AND cd."DocumentDate" <= %s 
-                                AND cd."IsDelete" = false
-                                
-                                UNION ALL
-                                
-                                SELECT 
-                                    id."DocumentId",
-                                    id."DocumentDate",
-                                    id."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(id."Description", '') as DocumentDescription,
-                                    idd."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
-                                    idd."CurrencyAmount",
-                                    idd."DebitAmount",
-                                    idd."CreditAmount",
-                                    idd."IsDebit",
-                                    'Inventory' as DocumentCategory
-                                FROM inv_document id
-                                INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
-                                INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE id."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM inv_document_detail 
-                                    WHERE "AccountId" = %s
-                                )
-                                AND id."DocumentDate" >= %s 
-                                AND id."DocumentDate" <= %s 
-                                AND id."IsDelete" = false
-                                
-                                UNION ALL
-                                
-                                SELECT 
-                                    ad."DocumentId",
-                                    ad."DocumentDate",
-                                    ad."DocumentNo",
-                                    dt."Description" as DocumentType,
-                                    COALESCE(ad."Description", '') as DocumentDescription,
-                                    add."DocumentDetailId",
-                                    a."AccountCode",
-                                    a."AccountName",
-                                    COALESCE(c."ClientCode", '') as ClientCode,
-                                    COALESCE(c."ClientName", '') as ClientName,
-                                    COALESCE(cur."Currency_name", '') as currencyname,
-                                    COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
-                                    add."CurrencyAmount",
-                                    add."DebitAmount",
-                                    add."CreditAmount",
-                                    add."IsDebit",
-                                    'Asset' as DocumentCategory
-                                FROM ast_document ad
-                                INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
-                                INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
-                                LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
-                                LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
-                                INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
-                                WHERE ad."DocumentId" IN (
-                                    SELECT DISTINCT "DocumentId" 
-                                    FROM ast_document_detail 
-                                    WHERE "AccountId" = %s
-                                )
-                                AND ad."DocumentDate" >= %s 
-                                AND ad."DocumentDate" <= %s 
-                                AND ad."IsDelete" = false
-                                
-                                ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
-                                """, 
-                                [account_id, begin_date, end_date,
-                                 account_id, begin_date, end_date,
-                                 account_id, begin_date, end_date])
-                            
-                            # Get column names
-                            columns = [col[0] for col in cursor.description]
-                            
-                            # Fetch all results
-                            results = cursor.fetchall()
-                            
-                            # Convert to list of dictionaries with proper column name mapping
-                            column_mapping = {
-                                'documentdate': 'DocumentDate',
-                                'documentno': 'DocumentNo',
-                                'documentid': 'DocumentId',
-                                'documenttype': 'DocumentType',
-                                'documentdescription': 'Description',
-                                'documentcategory': 'DocumentCategory',
-                                'clientname': 'ClientName',
-                                'currencyname': 'CurrencyName',
-                                'currencyexchange': 'CurrencyExchange',
-                                'currencyamount': 'CurrencyAmount',
-                                'debitamount': 'DebitAmount',
-                                'creditamount': 'CreditAmount'
-                            }
-                            
-                            # Map DocumentCategory to DocumentSource
-                            for row in results:
-                                row_dict = {}
-                                document_category = None
-                                for i, col_name in enumerate(columns):
-                                    mapped_name = column_mapping.get(col_name.lower(), col_name)
-                                    value = row[i]
+                        db_alias = get_current_db()
+                        try:
+                            with connections[db_alias].cursor() as cursor:
+                                # Use the same SQL query pattern as subsidiary_ledger_detail API
+                                if client_id:
+                                    # With client filter
+                                    cursor.execute("""
+                                    SELECT 
+                                        cd."DocumentId",
+                                        cd."DocumentDate",
+                                        cd."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(cd."Description", '') as DocumentDescription,
+                                        cdd."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                                        cdd."CurrencyAmount",
+                                        cdd."DebitAmount",
+                                        cdd."CreditAmount",
+                                        cdd."IsDebit",
+                                        'Cash' as DocumentCategory
+                                    FROM cash_document cd
+                                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE cd."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM cash_document_detail 
+                                        WHERE "AccountId" = %s AND "ClientId" = %s
+                                    )
+                                    AND cd."DocumentDate" >= %s 
+                                    AND cd."DocumentDate" <= %s 
+                                    AND cd."IsDelete" = false
+                                    AND cdd."ClientId" = %s
                                     
-                                    if mapped_name == 'DocumentCategory':
-                                        document_category = value
-                                        # Map category to source
-                                        if value == 'Cash':
-                                            row_dict['DocumentSource'] = 'cash'
-                                        elif value == 'Inventory':
-                                            row_dict['DocumentSource'] = 'inv'
-                                        elif value == 'Asset':
-                                            row_dict['DocumentSource'] = 'ast'
+                                    UNION ALL
+                                    
+                                    SELECT 
+                                        id."DocumentId",
+                                        id."DocumentDate",
+                                        id."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(id."Description", '') as DocumentDescription,
+                                        idd."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                                        idd."CurrencyAmount",
+                                        idd."DebitAmount",
+                                        idd."CreditAmount",
+                                        idd."IsDebit",
+                                        'Inventory' as DocumentCategory
+                                    FROM inv_document id
+                                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE id."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM inv_document_detail 
+                                        WHERE "AccountId" = %s AND "ClientId" = %s
+                                    )
+                                    AND id."DocumentDate" >= %s 
+                                    AND id."DocumentDate" <= %s 
+                                    AND id."IsDelete" = false
+                                    AND idd."ClientId" = %s
+                                    
+                                    UNION ALL
+                                    
+                                    SELECT 
+                                        ad."DocumentId",
+                                        ad."DocumentDate",
+                                        ad."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(ad."Description", '') as DocumentDescription,
+                                        add."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                                        add."CurrencyAmount",
+                                        add."DebitAmount",
+                                        add."CreditAmount",
+                                        add."IsDebit",
+                                        'Asset' as DocumentCategory
+                                    FROM ast_document ad
+                                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE ad."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM ast_document_detail 
+                                        WHERE "AccountId" = %s AND "ClientId" = %s
+                                    )
+                                    AND ad."DocumentDate" >= %s 
+                                    AND ad."DocumentDate" <= %s 
+                                    AND ad."IsDelete" = false
+                                    AND add."ClientId" = %s
+                                    
+                                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                                    """, 
+                                    [account_id, client_id, begin_date, end_date, client_id,
+                                     account_id, client_id, begin_date, end_date, client_id,
+                                     account_id, client_id, begin_date, end_date, client_id])
+                                else:
+                                    # Without client filter
+                                    cursor.execute("""
+                                    SELECT 
+                                        cd."DocumentId",
+                                        cd."DocumentDate",
+                                        cd."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(cd."Description", '') as DocumentDescription,
+                                        cdd."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                                        cdd."CurrencyAmount",
+                                        cdd."DebitAmount",
+                                        cdd."CreditAmount",
+                                        cdd."IsDebit",
+                                        'Cash' as DocumentCategory
+                                    FROM cash_document cd
+                                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE cd."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM cash_document_detail 
+                                        WHERE "AccountId" = %s
+                                    )
+                                    AND cd."DocumentDate" >= %s 
+                                    AND cd."DocumentDate" <= %s 
+                                    AND cd."IsDelete" = false
+                                    
+                                    UNION ALL
+                                    
+                                    SELECT 
+                                        id."DocumentId",
+                                        id."DocumentDate",
+                                        id."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(id."Description", '') as DocumentDescription,
+                                        idd."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                                        idd."CurrencyAmount",
+                                        idd."DebitAmount",
+                                        idd."CreditAmount",
+                                        idd."IsDebit",
+                                        'Inventory' as DocumentCategory
+                                    FROM inv_document id
+                                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE id."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM inv_document_detail 
+                                        WHERE "AccountId" = %s
+                                    )
+                                    AND id."DocumentDate" >= %s 
+                                    AND id."DocumentDate" <= %s 
+                                    AND id."IsDelete" = false
+                                    
+                                    UNION ALL
+                                    
+                                    SELECT 
+                                        ad."DocumentId",
+                                        ad."DocumentDate",
+                                        ad."DocumentNo",
+                                        dt."Description" as DocumentType,
+                                        COALESCE(ad."Description", '') as DocumentDescription,
+                                        add."DocumentDetailId",
+                                        a."AccountCode",
+                                        a."AccountName",
+                                        COALESCE(c."ClientCode", '') as ClientCode,
+                                        COALESCE(c."ClientName", '') as ClientName,
+                                        COALESCE(cur."Currency_name", '') as currencyname,
+                                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                                        add."CurrencyAmount",
+                                        add."DebitAmount",
+                                        add."CreditAmount",
+                                        add."IsDebit",
+                                        'Asset' as DocumentCategory
+                                    FROM ast_document ad
+                                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                                    WHERE ad."DocumentId" IN (
+                                        SELECT DISTINCT "DocumentId" 
+                                        FROM ast_document_detail 
+                                        WHERE "AccountId" = %s
+                                    )
+                                    AND ad."DocumentDate" >= %s 
+                                    AND ad."DocumentDate" <= %s 
+                                    AND ad."IsDelete" = false
+                                    
+                                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                                    """, 
+                                    [account_id, begin_date, end_date,
+                                     account_id, begin_date, end_date,
+                                     account_id, begin_date, end_date])
+                                
+                                # Get column names
+                                columns = [col[0] for col in cursor.description]
+                                
+                                # Fetch all results
+                                results = cursor.fetchall()
+                                
+                                # Convert to list of dictionaries with proper column name mapping
+                                column_mapping = {
+                                    'documentdate': 'DocumentDate',
+                                    'documentno': 'DocumentNo',
+                                    'documentid': 'DocumentId',
+                                    'documenttype': 'DocumentType',
+                                    'documentdescription': 'Description',
+                                    'documentcategory': 'DocumentCategory',
+                                    'clientname': 'ClientName',
+                                    'currencyname': 'CurrencyName',
+                                    'currencyexchange': 'CurrencyExchange',
+                                    'currencyamount': 'CurrencyAmount',
+                                    'debitamount': 'DebitAmount',
+                                    'creditamount': 'CreditAmount'
+                                }
+                                
+                                # Map DocumentCategory to DocumentSource
+                                for row in results:
+                                    row_dict = {}
+                                    document_category = None
+                                    for i, col_name in enumerate(columns):
+                                        mapped_name = column_mapping.get(col_name.lower(), col_name)
+                                        value = row[i]
+                                        
+                                        if mapped_name == 'DocumentCategory':
+                                            document_category = value
+                                            # Map category to source
+                                            if value == 'Cash':
+                                                row_dict['DocumentSource'] = 'cash'
+                                            elif value == 'Inventory':
+                                                row_dict['DocumentSource'] = 'inv'
+                                            elif value == 'Asset':
+                                                row_dict['DocumentSource'] = 'ast'
+                                            else:
+                                                row_dict['DocumentSource'] = value.lower() if value else 'cash'
                                         else:
-                                            row_dict['DocumentSource'] = value.lower() if value else 'cash'
-                                    else:
-                                        row_dict[mapped_name] = value
-                                
-                                # Add DocumentTypeId (not available in query, set to None)
-                                row_dict['DocumentTypeId'] = None
-                                
-                                subsidiary_ledger_data.append(row_dict)
-                            
-                            # Convert Decimal values to float for JSON serialization
-                            from decimal import Decimal
-                            for item in subsidiary_ledger_data:
-                                for key, value in item.items():
-                                    if isinstance(value, Decimal):
-                                        item[key] = float(value)
+                                            row_dict[mapped_name] = value
                                     
+                                    # Add DocumentTypeId (not available in query, set to None)
+                                    row_dict['DocumentTypeId'] = None
+                                    
+                                    subsidiary_ledger_data.append(row_dict)
+                                
+                                # Convert Decimal values to float for JSON serialization
+                                from decimal import Decimal
+                                for item in subsidiary_ledger_data:
+                                    for key, value in item.items():
+                                        if isinstance(value, Decimal):
+                                            item[key] = float(value)
+                                        
+                        finally:
+                            connections[db_alias].close()
                     except Exception as e:
                         error_message = f'Error executing subsidiary ledger query: {str(e)}'
         
@@ -6331,320 +6307,323 @@ def subsidiary_ledger_detail(request):
         
         # Get documents with all their details where at least one detail matches the account and client (if provided)
         try:
-            with connection.cursor() as cursor:
-                # Build the SQL query with proper client filtering
-                if client_id:
-                    # With client filter
-                    cursor.execute("""
-                    SELECT 
-                        cd."DocumentId",
-                        cd."DocumentDate",
-                        cd."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(cd."Description", '') as DocumentDescription,
-                        cdd."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
-                        cdd."CurrencyAmount",
-                        cdd."DebitAmount",
-                        cdd."CreditAmount",
-                        cdd."IsDebit",
-                        'Cash' as DocumentCategory
-                    FROM cash_document cd
-                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
-                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE cd."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM cash_document_detail 
-                        WHERE "AccountId" = %s AND "ClientId" = %s
-                    )
-                    AND cd."DocumentDate" >= %s 
-                    AND cd."DocumentDate" <= %s 
-                    AND cd."IsDelete" = false
-                    AND cdd."ClientId" = %s
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        id."DocumentId",
-                        id."DocumentDate",
-                        id."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(id."Description", '') as DocumentDescription,
-                        idd."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
-                        idd."CurrencyAmount",
-                        idd."DebitAmount",
-                        idd."CreditAmount",
-                        idd."IsDebit",
-                        'Inventory' as DocumentCategory
-                    FROM inv_document id
-                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
-                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE id."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM inv_document_detail 
-                        WHERE "AccountId" = %s AND "ClientId" = %s
-                    )
-                    AND id."DocumentDate" >= %s 
-                    AND id."DocumentDate" <= %s 
-                    AND id."IsDelete" = false
-                    AND idd."ClientId" = %s
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        ad."DocumentId",
-                        ad."DocumentDate",
-                        ad."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(ad."Description", '') as DocumentDescription,
-                        add."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
-                        add."CurrencyAmount",
-                        add."DebitAmount",
-                        add."CreditAmount",
-                        add."IsDebit",
-                        'Asset' as DocumentCategory
-                    FROM ast_document ad
-                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
-                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE ad."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM ast_document_detail 
-                        WHERE "AccountId" = %s AND "ClientId" = %s
-                    )
-                    AND ad."DocumentDate" >= %s 
-                    AND ad."DocumentDate" <= %s 
-                    AND ad."IsDelete" = false
-                    AND add."ClientId" = %s
-                    
-                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
-                    """, 
-                    [account_id, client_id, begin_date, end_date, client_id,
-                     account_id, client_id, begin_date, end_date, client_id,
-                     account_id, client_id, begin_date, end_date, client_id])
-                else:
-                    # Without client filter
-                    cursor.execute("""
-                    SELECT 
-                        cd."DocumentId",
-                        cd."DocumentDate",
-                        cd."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(cd."Description", '') as DocumentDescription,
-                        cdd."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
-                        cdd."CurrencyAmount",
-                        cdd."DebitAmount",
-                        cdd."CreditAmount",
-                        cdd."IsDebit",
-                        'Cash' as DocumentCategory
-                    FROM cash_document cd
-                    INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
-                    INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE cd."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM cash_document_detail 
-                        WHERE "AccountId" = %s
-                    )
-                    AND cd."DocumentDate" >= %s 
-                    AND cd."DocumentDate" <= %s 
-                    AND cd."IsDelete" = false
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        id."DocumentId",
-                        id."DocumentDate",
-                        id."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(id."Description", '') as DocumentDescription,
-                        idd."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
-                        idd."CurrencyAmount",
-                        idd."DebitAmount",
-                        idd."CreditAmount",
-                        idd."IsDebit",
-                        'Inventory' as DocumentCategory
-                    FROM inv_document id
-                    INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
-                    INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE id."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM inv_document_detail 
-                        WHERE "AccountId" = %s
-                    )
-                    AND id."DocumentDate" >= %s 
-                    AND id."DocumentDate" <= %s 
-                    AND id."IsDelete" = false
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        ad."DocumentId",
-                        ad."DocumentDate",
-                        ad."DocumentNo",
-                        dt."Description" as DocumentType,
-                        COALESCE(ad."Description", '') as DocumentDescription,
-                        add."DocumentDetailId",
-                        a."AccountCode",
-                        a."AccountName",
-                        COALESCE(c."ClientCode", '') as ClientCode,
-                        COALESCE(c."ClientName", '') as ClientName,
-                        COALESCE(cur."Currency_name", '') as currencyname,
-                        COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
-                        add."CurrencyAmount",
-                        add."DebitAmount",
-                        add."CreditAmount",
-                        add."IsDebit",
-                        'Asset' as DocumentCategory
-                    FROM ast_document ad
-                    INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
-                    INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
-                    LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
-                    LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
-                    INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
-                    WHERE ad."DocumentId" IN (
-                        SELECT DISTINCT "DocumentId" 
-                        FROM ast_document_detail 
-                        WHERE "AccountId" = %s
-                    )
-                    AND ad."DocumentDate" >= %s 
-                    AND ad."DocumentDate" <= %s 
-                    AND ad."IsDelete" = false
-                    
-                    ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
-                    """, 
-                    [account_id, begin_date, end_date,
-                     account_id, begin_date, end_date,
-                     account_id, begin_date, end_date])
-                
-                # Get column names
-                columns = [col[0] for col in cursor.description]
-                
-                # Fetch all results
-                results = cursor.fetchall()
-                
-                # Convert to list of dictionaries
-                all_details = [
-                    dict(zip(columns, row)) for row in results
-                ]
-            
-                # Group details by document
-                documents = {}
-                total_debit = 0
-                total_credit = 0
-                
-                for detail in all_details:
-                    doc_id = detail['DocumentId']
-                    
-                    if doc_id not in documents:
-                        documents[doc_id] = {
-                            'DocumentId': doc_id,
-                            'DocumentNo': detail['DocumentNo'],
-                            'DocumentDate': detail['DocumentDate'],
-                            'DocumentType': detail['documenttype'],
-                            'DocumentDescription': detail['documentdescription'],
-                            'DocumentCategory': detail['documentcategory'],
-                            'TotalAmount': 0,
-                            'details': []
-                        }
-                    
-                    # Add detail to document (only include details that match the account)
-                    if detail['AccountCode'] == account.AccountCode:
-                        detail_info = {
-                            'DetailId': detail['DocumentDetailId'],
-                            'AccountCode': detail['AccountCode'],
-                            'AccountName': detail['AccountName'],
-                            'ClientCode': detail['clientcode'],
-                            'ClientName': detail['clientname'],
-                            'CurrencyName': detail.get('currencyname') or '',
-                            'CurrencyExchange': float(detail.get('currencyexchange') or 1.0),
-                            'CurrencyAmount': float(detail['CurrencyAmount'] or 0),
-                            'DebitAmount': float(detail['DebitAmount'] or 0),
-                            'CreditAmount': float(detail['CreditAmount'] or 0),
-                            'IsDebit': detail['IsDebit'],
-                            'IsMatchingAccount': detail['AccountCode'] == account.AccountCode
-                        }
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    # Build the SQL query with proper client filtering
+                    if client_id:
+                        # With client filter
+                        cursor.execute("""
+                        SELECT 
+                            cd."DocumentId",
+                            cd."DocumentDate",
+                            cd."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(cd."Description", '') as DocumentDescription,
+                            cdd."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                            cdd."CurrencyAmount",
+                            cdd."DebitAmount",
+                            cdd."CreditAmount",
+                            cdd."IsDebit",
+                            'Cash' as DocumentCategory
+                        FROM cash_document cd
+                        INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                        INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE cd."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM cash_document_detail 
+                            WHERE "AccountId" = %s AND "ClientId" = %s
+                        )
+                        AND cd."DocumentDate" >= %s 
+                        AND cd."DocumentDate" <= %s 
+                        AND cd."IsDelete" = false
+                        AND cdd."ClientId" = %s
                         
-                        documents[doc_id]['details'].append(detail_info)
+                        UNION ALL
                         
-                        # Add to totals (only for matching account details)
-                        if detail_info['IsMatchingAccount']:
-                            total_debit += detail_info['DebitAmount']
-                            total_credit += detail_info['CreditAmount']
+                        SELECT 
+                            id."DocumentId",
+                            id."DocumentDate",
+                            id."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(id."Description", '') as DocumentDescription,
+                            idd."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                            idd."CurrencyAmount",
+                            idd."DebitAmount",
+                            idd."CreditAmount",
+                            idd."IsDebit",
+                            'Inventory' as DocumentCategory
+                        FROM inv_document id
+                        INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                        INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE id."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM inv_document_detail 
+                            WHERE "AccountId" = %s AND "ClientId" = %s
+                        )
+                        AND id."DocumentDate" >= %s 
+                        AND id."DocumentDate" <= %s 
+                        AND id."IsDelete" = false
+                        AND idd."ClientId" = %s
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            ad."DocumentId",
+                            ad."DocumentDate",
+                            ad."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(ad."Description", '') as DocumentDescription,
+                            add."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                            add."CurrencyAmount",
+                            add."DebitAmount",
+                            add."CreditAmount",
+                            add."IsDebit",
+                            'Asset' as DocumentCategory
+                        FROM ast_document ad
+                        INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                        INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE ad."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM ast_document_detail 
+                            WHERE "AccountId" = %s AND "ClientId" = %s
+                        )
+                        AND ad."DocumentDate" >= %s 
+                        AND ad."DocumentDate" <= %s 
+                        AND ad."IsDelete" = false
+                        AND add."ClientId" = %s
+                        
+                        ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                        """, 
+                        [account_id, client_id, begin_date, end_date, client_id,
+                         account_id, client_id, begin_date, end_date, client_id,
+                         account_id, client_id, begin_date, end_date, client_id])
+                    else:
+                        # Without client filter
+                        cursor.execute("""
+                        SELECT 
+                            cd."DocumentId",
+                            cd."DocumentDate",
+                            cd."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(cd."Description", '') as DocumentDescription,
+                            cdd."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(cdd."CurrencyExchange", 1.0) as currencyexchange,
+                            cdd."CurrencyAmount",
+                            cdd."DebitAmount",
+                            cdd."CreditAmount",
+                            cdd."IsDebit",
+                            'Cash' as DocumentCategory
+                        FROM cash_document cd
+                        INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
+                        INNER JOIN ref_account a ON cdd."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON cd."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE cd."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM cash_document_detail 
+                            WHERE "AccountId" = %s
+                        )
+                        AND cd."DocumentDate" >= %s 
+                        AND cd."DocumentDate" <= %s 
+                        AND cd."IsDelete" = false
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            id."DocumentId",
+                            id."DocumentDate",
+                            id."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(id."Description", '') as DocumentDescription,
+                            idd."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(idd."CurrencyExchange", 1.0) as currencyexchange,
+                            idd."CurrencyAmount",
+                            idd."DebitAmount",
+                            idd."CreditAmount",
+                            idd."IsDebit",
+                            'Inventory' as DocumentCategory
+                        FROM inv_document id
+                        INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
+                        INNER JOIN ref_account a ON idd."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON idd."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON idd."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON id."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE id."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM inv_document_detail 
+                            WHERE "AccountId" = %s
+                        )
+                        AND id."DocumentDate" >= %s 
+                        AND id."DocumentDate" <= %s 
+                        AND id."IsDelete" = false
+                        
+                        UNION ALL
+                        
+                        SELECT 
+                            ad."DocumentId",
+                            ad."DocumentDate",
+                            ad."DocumentNo",
+                            dt."Description" as DocumentType,
+                            COALESCE(ad."Description", '') as DocumentDescription,
+                            add."DocumentDetailId",
+                            a."AccountCode",
+                            a."AccountName",
+                            COALESCE(c."ClientCode", '') as ClientCode,
+                            COALESCE(c."ClientName", '') as ClientName,
+                            COALESCE(cur."Currency_name", '') as currencyname,
+                            COALESCE(add."CurrencyExchange", 1.0) as currencyexchange,
+                            add."CurrencyAmount",
+                            add."DebitAmount",
+                            add."CreditAmount",
+                            add."IsDebit",
+                            'Asset' as DocumentCategory
+                        FROM ast_document ad
+                        INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
+                        INNER JOIN ref_account a ON add."AccountId" = a."AccountId"
+                        LEFT JOIN ref_client c ON add."ClientId" = c."ClientId"
+                        LEFT JOIN ref_currency cur ON add."CurrencyId" = cur."CurrencyId"
+                        INNER JOIN ref_document_type dt ON ad."DocumentTypeId" = dt."DocumentTypeId"
+                        WHERE ad."DocumentId" IN (
+                            SELECT DISTINCT "DocumentId" 
+                            FROM ast_document_detail 
+                            WHERE "AccountId" = %s
+                        )
+                        AND ad."DocumentDate" >= %s 
+                        AND ad."DocumentDate" <= %s 
+                        AND ad."IsDelete" = false
+                        
+                        ORDER BY "DocumentDate", "DocumentNo", "DocumentDetailId"
+                        """, 
+                        [account_id, begin_date, end_date,
+                         account_id, begin_date, end_date,
+                         account_id, begin_date, end_date])
+                    
+                    # Get column names
+                    columns = [col[0] for col in cursor.description]
+                    
+                    # Fetch all results
+                    results = cursor.fetchall()
+                    
+                    # Convert to list of dictionaries
+                    all_details = [
+                        dict(zip(columns, row)) for row in results
+                    ]
                 
-                # Calculate document totals after processing all details
-                for doc_id, doc in documents.items():
-                    doc['TotalAmount'] = sum(
-                        detail['DebitAmount'] + detail['CreditAmount'] 
-                        for detail in doc['details'] 
-                        if detail['IsMatchingAccount']
-                    )
+                    # Group details by document
+                    documents = {}
+                    total_debit = 0
+                    total_credit = 0
+                    
+                    for detail in all_details:
+                        doc_id = detail['DocumentId']
+                        
+                        if doc_id not in documents:
+                            documents[doc_id] = {
+                                'DocumentId': doc_id,
+                                'DocumentNo': detail['DocumentNo'],
+                                'DocumentDate': detail['DocumentDate'],
+                                'DocumentType': detail['documenttype'],
+                                'DocumentDescription': detail['documentdescription'],
+                                'DocumentCategory': detail['documentcategory'],
+                                'TotalAmount': 0,
+                                'details': []
+                            }
+                        
+                        # Add detail to document (only include details that match the account)
+                        if detail['AccountCode'] == account.AccountCode:
+                            detail_info = {
+                                'DetailId': detail['DocumentDetailId'],
+                                'AccountCode': detail['AccountCode'],
+                                'AccountName': detail['AccountName'],
+                                'ClientCode': detail['clientcode'],
+                                'ClientName': detail['clientname'],
+                                'CurrencyName': detail.get('currencyname') or '',
+                                'CurrencyExchange': float(detail.get('currencyexchange') or 1.0),
+                                'CurrencyAmount': float(detail['CurrencyAmount'] or 0),
+                                'DebitAmount': float(detail['DebitAmount'] or 0),
+                                'CreditAmount': float(detail['CreditAmount'] or 0),
+                                'IsDebit': detail['IsDebit'],
+                                'IsMatchingAccount': detail['AccountCode'] == account.AccountCode
+                            }
+                            
+                            documents[doc_id]['details'].append(detail_info)
+                            
+                            # Add to totals (only for matching account details)
+                            if detail_info['IsMatchingAccount']:
+                                total_debit += detail_info['DebitAmount']
+                                total_credit += detail_info['CreditAmount']
                 
-                # Convert to list and sort by date
-                documents_list = list(documents.values())
-                documents_list.sort(key=lambda x: (x['DocumentDate'], x['DocumentNo']))
-                
-                return JsonResponse({
-                    'success': True,
-                    'account': {
-                        'AccountId': account.AccountId,
-                        'AccountCode': account.AccountCode,
-                        'AccountName': account.AccountName,
-                        'AccountType': account_type.AccountTypeName,
-                        'IsActive': account_type.IsActive
-                    },
-                    'client': client_info,
-                    'total_debit': float(total_debit),
-                    'total_credit': float(total_credit),
-                    'documents': documents_list,
-                    'date_range': {
-                        'begin_date': begin_date,
-                        'end_date': end_date
-                    }
-                })
-                
+                    # Calculate document totals after processing all details
+                    for doc_id, doc in documents.items():
+                        doc['TotalAmount'] = sum(
+                            detail['DebitAmount'] + detail['CreditAmount'] 
+                            for detail in doc['details'] 
+                            if detail['IsMatchingAccount']
+                        )
+                    
+                    # Convert to list and sort by date
+                    documents_list = list(documents.values())
+                    documents_list.sort(key=lambda x: (x['DocumentDate'], x['DocumentNo']))
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'account': {
+                            'AccountId': account.AccountId,
+                            'AccountCode': account.AccountCode,
+                            'AccountName': account.AccountName,
+                            'AccountType': account_type.AccountTypeName,
+                            'IsActive': account_type.IsActive
+                        },
+                        'client': client_info,
+                        'total_debit': float(total_debit),
+                        'total_credit': float(total_credit),
+                        'documents': documents_list,
+                        'date_range': {
+                            'begin_date': begin_date,
+                            'end_date': end_date
+                        }
+                    })
+            finally:
+                connections[db_alias].close()
         except Exception as e:
             print(f"SQL Error in subsidiary_ledger_detail: {str(e)}")
             return JsonResponse({
@@ -6658,10 +6637,6 @@ def subsidiary_ledger_detail(request):
             'success': False,
             'error': f'Error generating subsidiary ledger: {str(e)}'
         }, status=500)
-
-
-@csrf_exempt
-@login_required
 def ref_asset_depreciation_account_list(request):
     """List all asset depreciation accounts with pagination"""
     depreciation_accounts = Ref_Asset_Depreciation_Account.objects.select_related(
@@ -6747,13 +6722,18 @@ def calculate_depreciation_view(request):
             return redirect('core:calculate_depreciation')
         
         try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM calculate_depreciation(%s)", [period_id])
-                columns = [col[0] for col in cursor.description]
-                results = [
-                    dict(zip(columns, row))
-                    for row in cursor.fetchall()
-                ]
+            db_alias = get_current_db()
+            try:
+                with connections[db_alias].cursor() as cursor:
+                    cursor.execute("SELECT * FROM calculate_depreciation(%s)", [period_id])
+                    columns = [col[0] for col in cursor.description]
+                    results = [
+                        dict(zip(columns, row))
+                        for row in cursor.fetchall()
+                    ]
+            
+            finally:
+                connections[db_alias].close()
             
             if results:
                 messages.success(request, f"Successfully calculated {len(results)} depreciation expense records.")
@@ -7444,11 +7424,6 @@ def api_exchange_rate_adjustment_bulk(request):
             'message': f'Unexpected error: {str(e)}',
             'traceback': traceback.format_exc()
         }, status=500)
-
-
-@login_required
-@permission_required('core.view_ref_account', raise_exception=True)
-@require_http_methods(["GET"])
 def api_account_lookup_by_code(request):
     """API endpoint to look up Ref_Account by AccountCode (case-insensitive exact match)"""
     account_code = request.GET.get('account_code')
@@ -7821,5 +7796,3 @@ def template_detail_delete(request, pk):
         messages.success(request, 'Template detail deleted successfully.')
     
     return redirect('core:template_master_detail')
-
-
