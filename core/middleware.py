@@ -46,10 +46,25 @@ class NoCacheMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         
-        # Only add no-cache headers for HTML responses
-        if response.get('Content-Type', '').startswith('text/html'):
+        # Check if response is HTML by Content-Type or by checking if it's a TemplateResponse
+        content_type = response.get('Content-Type', '')
+        is_html = (
+            content_type.startswith('text/html') or
+            hasattr(response, 'template_name') or  # TemplateResponse
+            (hasattr(response, 'content') and 
+             isinstance(response.content, bytes) and 
+             len(response.content) > 0 and
+             response.content[:100].strip().startswith(b'<!'))
+        )
+        
+        if is_html:
             response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response['Pragma'] = 'no-cache'
             response['Expires'] = '0'
+            # Also remove ETag and Last-Modified headers that can cause caching
+            if 'ETag' in response:
+                del response['ETag']
+            if 'Last-Modified' in response:
+                del response['Last-Modified']
         
         return response 

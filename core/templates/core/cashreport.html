@@ -54,7 +54,7 @@
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Баримт</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Огноо</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20 whitespace-nowrap">Данс</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">БТ</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
@@ -213,7 +213,7 @@
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 whitespace-nowrap">Данс</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны нэр</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
@@ -532,6 +532,23 @@
         apiCache.clear();
         currentCacheKey = '';
         isDeleteFilter = false;
+        
+        // Clear all filter inputs in all tabs before fetching new data
+        // Clear filters in БАРИМТ tab
+        if (documentsView) {
+            const filterInputs = documentsView.querySelectorAll('input[placeholder="Filter..."]');
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+        }
+        
+        // Clear filters in ЖУРНАЛ tab
+        if (detailView) {
+            const filterInputs = detailView.querySelectorAll('input[placeholder="Filter..."]');
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+        }
         
         // Show loading state
         const filterButton = document.getElementById('filter-button');

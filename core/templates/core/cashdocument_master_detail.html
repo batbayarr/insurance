@@ -235,6 +235,45 @@ function loadDateRangeFromLocalStorage() {
     return null;
 }
 
+// Helper function to save all filter states to localStorage
+function saveAllFiltersToLocalStorage() {
+    try {
+        const filters = {
+            documentNo: document.getElementById('filter-document-no')?.value || '',
+            documentType: document.getElementById('filter-document-type')?.value || '',
+            client: document.getElementById('filter-client')?.value || '',
+            date: document.getElementById('filter-date')?.value || '',
+            description: document.getElementById('filter-description')?.value || '',
+            isVat: document.getElementById('filter-is-vat')?.value || '',
+            account: document.getElementById('filter-account')?.value || '',
+            currency: document.getElementById('filter-currency')?.value || '',
+            currencyAmount: document.getElementById('filter-currency-amount')?.value || '',
+            currencyExchange: document.getElementById('filter-currency-exchange')?.value || '',
+            mntAmount: document.getElementById('filter-mnt-amount')?.value || '',
+            createdBy: document.getElementById('filter-created-by')?.value || '',
+            pageSize: pageSize,
+            currentPage: currentPage
+        };
+        localStorage.setItem('cashdocument_all_filters', JSON.stringify(filters));
+    } catch (e) {
+        console.warn('Failed to save all filters to localStorage:', e);
+    }
+}
+
+// Helper function to load all filter states from localStorage
+function loadAllFiltersFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('cashdocument_all_filters');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return parsed;
+        }
+    } catch (e) {
+        console.warn('Failed to load all filters from localStorage:', e);
+    }
+    return null;
+}
+
 // Initialize date inputs with default values (current month)
 function initializeDateInputs() {
     // Format dates for HTML date input (YYYY-MM-DD)
@@ -319,22 +358,74 @@ function initializeDateInputs() {
         });
     }
     
+    // Load all saved filter states
+    const savedFilters = loadAllFiltersFromLocalStorage();
+    
+    if (savedFilters) {
+        // Restore page size
+        if (savedFilters.pageSize) {
+            pageSize = parseInt(savedFilters.pageSize);
+            if (pageSizeSelect) {
+                pageSizeSelect.value = pageSize;
+            }
+        }
+        
+        // Restore current page (will be applied after data loads)
+        if (savedFilters.currentPage) {
+            currentPage = parseInt(savedFilters.currentPage);
+        }
+        
+        // Restore inline filter values
+        const filterIds = [
+            'filter-document-no', 'filter-document-type', 'filter-client',
+            'filter-date', 'filter-description', 'filter-is-vat',
+            'filter-account', 'filter-currency', 'filter-currency-amount',
+            'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+        ];
+        
+        const filterMap = {
+            'filter-document-no': 'documentNo',
+            'filter-document-type': 'documentType',
+            'filter-client': 'client',
+            'filter-date': 'date',
+            'filter-description': 'description',
+            'filter-is-vat': 'isVat',
+            'filter-account': 'account',
+            'filter-currency': 'currency',
+            'filter-currency-amount': 'currencyAmount',
+            'filter-currency-exchange': 'currencyExchange',
+            'filter-mnt-amount': 'mntAmount',
+            'filter-created-by': 'createdBy'
+        };
+        
+        filterIds.forEach(filterId => {
+            const element = document.getElementById(filterId);
+            const savedKey = filterMap[filterId];
+            if (element && savedFilters[savedKey] !== undefined) {
+                element.value = savedFilters[savedKey];
+            }
+        });
+    }
+    
     if (pageSizeSelect) {
         pageSizeSelect.addEventListener('change', (e) => {
             pageSize = parseInt(e.target.value);
             currentPage = 1;
+            saveAllFiltersToLocalStorage();
             applyFrontendFilter();
         });
     }
     
-    // Load initial data
+    // Load initial data - page will be restored automatically via savedFilters.currentPage
+    // The currentPage was already set above if savedFilters exists, and applyFrontendFilter()
+    // in fetchDocuments will use it
     fetchDocuments(startDateInput.value, endDateInput.value);
 }
 
 // Fetch documents from API
 function fetchDocuments(startDate, endDate) {
     const tbody = document.getElementById('documents-tbody');
-    if (!tbody) return;
+    if (!tbody) return Promise.resolve();
     
     // Cancel previous request if still in flight
     if (currentApiRequest) {
@@ -350,7 +441,7 @@ function fetchDocuments(startDate, endDate) {
     // Create new AbortController for this request
     currentApiRequest = new AbortController();
     
-    fetch(url, {
+    return fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -365,7 +456,7 @@ function fetchDocuments(startDate, endDate) {
         
         if (data.success) {
             allDocumentsData = data.documents;
-            currentPage = 1;
+            // Don't reset currentPage here - it will be restored from localStorage if needed
             
             // If selected_document is in URL, optionally set document number filter for visual feedback
             const urlParams = new URLSearchParams(window.location.search);
@@ -468,6 +559,9 @@ function applyFrontendFilter() {
     
     // Update pagination
     updatePaginationInfo(startIndex + 1, endIndex, filteredData.length);
+    
+    // Save all filter states to localStorage
+    saveAllFiltersToLocalStorage();
 }
 
 // Render documents table
@@ -502,14 +596,14 @@ function renderDocumentsTable(documents) {
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || ''}</td>
             <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || ''}</td>
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 hidden">${doc.DocumentTypeCode || '-'}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
-                <span class="text-left inline-block w-full text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
-                        </td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                <span class="text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
+            </td>
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-8">${doc.IsVat ? 'Y' : 'N'}</td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
-                <span title="${doc.Description || ''}">${truncateText(doc.Description || '', 50)}</span>
-                        </td>
+                <span>${doc.Description || '-'}</span>
+            </td>
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 w-16">
                 <span title="${doc.CurrencyName || ''}">${truncateText(doc.CurrencyName || '', 3)}</span>
                         </td>

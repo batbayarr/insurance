@@ -692,6 +692,31 @@
         currentCacheKey = '';
         isDeleteFilter = false;
         
+        // Clear all filter inputs in all tabs before fetching new data
+        // Clear filters in НЭР ТӨРЛӨӨР tab
+        if (documentsView) {
+            const filterInputs = documentsView.querySelectorAll('input[placeholder="Filter..."]');
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+        }
+        
+        // Clear filters in ЖУРНАЛ tab
+        if (detailView) {
+            const filterInputs = detailView.querySelectorAll('input[placeholder="Filter..."]');
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+        }
+        
+        // Clear filters in ДАНСНЫ ҮЛДЭГДЭЛ tab
+        if (balanceView) {
+            const filterInputs = balanceView.querySelectorAll('input[placeholder="Filter..."]');
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+        }
+        
         // Show loading state
         const filterButton = document.getElementById('filter-button');
         if (filterButton) {

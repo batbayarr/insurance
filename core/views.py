@@ -1011,8 +1011,8 @@ def get_cash_documents_master(request):
         if end_date:
             documents_query = documents_query.filter(DocumentDate__lte=end_date)
         
-        # Order by document date (newest first)
-        documents_query = documents_query.order_by('-DocumentDate')
+        # Order by document ID (newest first)
+        documents_query = documents_query.order_by('-DocumentId')
         
         # Build response data
         documents_data = []
@@ -3883,7 +3883,7 @@ def get_cash_documents_filtered(request):
         # Get ALL cash documents (both active and deleted) with related data
         all_documents = Cash_Document.objects.select_related(
             'DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'TemplateId', 'CreatedBy'
-        ).order_by('-DocumentDate').distinct()
+        ).order_by('-DocumentId').distinct()
         
         # Apply date filtering if provided
         if start_date:
@@ -3901,7 +3901,7 @@ def get_cash_documents_filtered(request):
         # Get ALL cash document details for ЖУРНАЛ tab
         all_details = Cash_DocumentDetail.objects.select_related(
             'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy'
-        ).order_by('DocumentId__DocumentNo')
+        ).order_by('-DocumentId__DocumentId')
         
         # Apply date filtering to details if provided
         if start_date:
