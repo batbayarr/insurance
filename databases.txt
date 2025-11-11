@@ -1,3 +1,4 @@
+6553621,devjikh2025,"DevjihHurd 2025"
 otgoo,otgoo,"OTGOO BTS-2026"
 test,test,"A company-2025"
 5347017,silicon4,"A company-2025"
