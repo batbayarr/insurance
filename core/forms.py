@@ -1024,8 +1024,8 @@ class Ref_Template_DetailForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter active accounts
-        self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False)
+        # Filter active accounts and order by AccountCode ascending
+        self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         # Filter active cash flows
         self.fields['CashFlowId'].queryset = Ref_CashFlow.objects.filter(IsActive=True)
         # Set empty label for CashFlowId
