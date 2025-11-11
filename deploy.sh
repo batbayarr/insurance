@@ -38,9 +38,23 @@ fi
 echo "Building Tailwind CSS..."
 npm run build:css
 
+# Verify CSS file was built
+if [ ! -f "core/static/css/tailwind.build.css" ]; then
+    echo "ERROR: tailwind.build.css was not created!"
+    exit 1
+fi
+echo "✓ Tailwind CSS built successfully"
+
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
+
+# Verify CSS file was collected
+if [ ! -f "staticfiles/css/tailwind.build.css" ]; then
+    echo "ERROR: tailwind.build.css was not collected to staticfiles!"
+    exit 1
+fi
+echo "✓ Static files collected successfully"
 
 # Run database migrations
 echo "Running database migrations..."
