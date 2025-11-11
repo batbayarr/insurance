@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Silicon4 Accounting{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/static/css/tailwind.build.css' %}">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
@@ -49,21 +50,7 @@
     
     <!-- Custom Table Styles - Now using direct Tailwind CSS classes -->
     
-    <!-- Tailwind CSS CDN with Custom Configuration -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'accounting-blue': '#1e40af',
-                        'accounting-green': '#059669',
-                        'accounting-red': '#dc2626',
-                    }
-                }
-            }
-        }
-    </script>
+   
     
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
