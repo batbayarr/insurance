@@ -274,6 +274,39 @@ function loadAllFiltersFromLocalStorage() {
     return null;
 }
 
+// Helper function to clear all client-side filters (but preserve date range)
+function clearAllClientSideFilters() {
+    const filterIds = [
+        'filter-document-no', 'filter-document-type', 'filter-client',
+        'filter-date', 'filter-description', 'filter-is-vat',
+        'filter-account', 'filter-currency', 'filter-currency-amount',
+        'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+    ];
+    
+    // Clear all filter input values
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
+    
+    // Reset pagination
+    currentPage = 1;
+    
+    // Remove selected_document from URL
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.has('selected_document')) {
+        currentUrl.searchParams.delete('selected_document');
+        window.history.pushState({}, '', currentUrl.toString());
+    }
+    
+    // Clear filter localStorage (but keep date range localStorage)
+    try {
+        localStorage.removeItem('cashdocument_all_filters');
+    } catch (e) {
+        console.warn('Failed to clear filters from localStorage:', e);
+    }
+}
+
 // Initialize date inputs with default values (current month)
 function initializeDateInputs() {
     // Format dates for HTML date input (YYYY-MM-DD)
@@ -338,6 +371,7 @@ function initializeDateInputs() {
         
         // Add event listeners
         applyButton.addEventListener('click', () => {
+            clearAllClientSideFilters(); // Clear all filters before fetching
             saveAndFetch(startDateInput.value, endDateInput.value);
         });
         
@@ -351,10 +385,16 @@ function initializeDateInputs() {
         
         // Also trigger on Enter key
         startDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') {
+                clearAllClientSideFilters(); // Clear all filters before fetching
+                saveAndFetch(startDateInput.value, endDateInput.value);
+            }
         });
         endDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') {
+                clearAllClientSideFilters(); // Clear all filters before fetching
+                saveAndFetch(startDateInput.value, endDateInput.value);
+            }
         });
     }
     

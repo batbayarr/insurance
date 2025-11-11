@@ -228,7 +228,9 @@ window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') 
     const url = `/core/refaccounts/?${filterParams}`;
     console.log('DEBUG: Fetching accounts from URL:', url);
     
-    fetch(url)
+    fetch(url, {
+        credentials: 'include'  // Ensure session cookies are sent for tenant DB routing
+    })
         .then(response => {
             console.log('DEBUG: Fetch response status:', response.status);
             return response.text();
@@ -370,8 +372,11 @@ window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') 
             }
             
             // Initialize account filters and pagination
-            initializeAccountFilters();
-            initializeAccountPagination();
+            // Use setTimeout to ensure DOM is fully ready after innerHTML update
+            setTimeout(() => {
+                initializeAccountFilters();
+                initializeAccountPagination();
+            }, 50);
         })
         .catch(error => {
             console.error('DEBUG: Error loading accounts:', error);
@@ -443,27 +448,49 @@ function debounceAccount(func, wait) {
 
 // Initialize account filters with real-time search
 function initializeAccountFilters() {
-    // Add event listener to clear button
-    const clearButton = document.getElementById('clear-account-filters');
-    if (clearButton) {
-        clearButton.addEventListener('click', clearAllAccountFilters);
+    // Use event delegation on account-list-container to avoid duplicate listeners
+    const accountListContainer = document.getElementById('account-list-container');
+    if (!accountListContainer) {
+        console.warn('DEBUG: account-list-container not found for filter initialization');
+        return;
     }
     
-    // Add real-time filtering to all filter inputs
-    const filterInputs = [
-        'filter-account-code',
-        'filter-account-name', 
-        'filter-account-type',
-        'filter-account-currency'
-    ];
+    // Remove any existing delegation listener (if we added one before)
+    if (accountListContainer._filterDelegationHandler) {
+        accountListContainer.removeEventListener('input', accountListContainer._filterDelegationHandler);
+        accountListContainer.removeEventListener('click', accountListContainer._filterDelegationHandler);
+    }
     
-    filterInputs.forEach(filterId => {
-        const element = document.getElementById(filterId);
-        if (element) {
-            // Real-time filtering on input
-            element.addEventListener('input', debounceAccount(applyRealTimeFilters, 300));
+    // Create delegation handlers with debouncing
+    const debouncedFilter = debounceAccount(applyRealTimeFilters, 300);
+    const inputHandler = function(e) {
+        const target = e.target;
+        const filterIds = ['filter-account-code', 'filter-account-name', 'filter-account-type', 'filter-account-currency'];
+        if (filterIds.includes(target.id)) {
+            debouncedFilter();
         }
-    });
+    };
+    
+    const clickHandler = function(e) {
+        const target = e.target;
+        // Check if the clicked element is the clear button or inside it
+        const clearButton = target.id === 'clear-account-filters' 
+            ? target 
+            : target.closest('#clear-account-filters');
+        if (clearButton) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllAccountFilters();
+        }
+    };
+    
+    // Store handlers for potential removal later
+    accountListContainer._filterDelegationHandler = inputHandler;
+    accountListContainer._clickDelegationHandler = clickHandler;
+    
+    // Add event delegation listeners
+    accountListContainer.addEventListener('input', inputHandler);
+    accountListContainer.addEventListener('click', clickHandler);
 }
 
 // Apply real-time client-side filtering
@@ -474,8 +501,8 @@ function applyRealTimeFilters() {
     const typeFilter = document.getElementById('filter-account-type')?.value.toLowerCase() || '';
     const currencyFilter = document.getElementById('filter-account-currency')?.value.toLowerCase() || '';
     
-    // Filter account rows in real-time
-    const accountRows = document.querySelectorAll('.account-row');
+    // Filter account rows in real-time (use allAccountRows if available, otherwise query)
+    const accountRows = allAccountRows.length > 0 ? allAccountRows : Array.from(document.querySelectorAll('.account-row'));
     let visibleCount = 0;
     
     accountRows.forEach(row => {
@@ -612,15 +639,22 @@ function initializeAccountPagination() {
         paginationDiv.style.display = totalPages > 1 ? 'flex' : 'none';
     }
     
-    // Add event listeners to pagination buttons
+    // Remove old event listeners before adding new ones
     const prevMobile = document.getElementById('prev-account-page-mobile');
     const nextMobile = document.getElementById('next-account-page-mobile');
     
     if (prevMobile) {
-        prevMobile.addEventListener('click', () => goToAccountPage(currentAccountPage - 1));
+        // Clone and replace to remove old listeners
+        const newPrevMobile = prevMobile.cloneNode(true);
+        prevMobile.parentNode.replaceChild(newPrevMobile, prevMobile);
+        newPrevMobile.addEventListener('click', () => goToAccountPage(currentAccountPage - 1));
     }
+    
     if (nextMobile) {
-        nextMobile.addEventListener('click', () => goToAccountPage(currentAccountPage + 1));
+        // Clone and replace to remove old listeners
+        const newNextMobile = nextMobile.cloneNode(true);
+        nextMobile.parentNode.replaceChild(newNextMobile, nextMobile);
+        newNextMobile.addEventListener('click', () => goToAccountPage(currentAccountPage + 1));
     }
     
     // Show first page
@@ -635,15 +669,20 @@ function showAccountPage(pageNumber) {
     
     currentAccountPage = pageNumber;
     
-    // Hide all rows
-    allAccountRows.forEach(row => row.style.display = 'none');
+    // IMPORTANT: Only modify display for rows that pass the filter (are in filteredAccountRecords)
+    // Hide all rows that are in filteredAccountRecords (these are the visible/filtered rows)
+    filteredAccountRecords.forEach(row => {
+        row.style.display = 'none';
+    });
     
-    // Show rows for current page
+    // Show rows for current page (only from filteredAccountRecords)
     const startIndex = (pageNumber - 1) * ACCOUNT_RECORDS_PER_PAGE;
     const endIndex = Math.min(startIndex + ACCOUNT_RECORDS_PER_PAGE, filteredAccountRecords.length);
     
     for (let i = startIndex; i < endIndex; i++) {
-        filteredAccountRecords[i].style.display = '';
+        if (filteredAccountRecords[i]) {
+            filteredAccountRecords[i].style.display = '';
+        }
     }
     
     // Update pagination controls

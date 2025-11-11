@@ -211,7 +211,7 @@
                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Add New Balance
+                        Шинэ үлдэгдэл нэмэх
                     </button>
                 </div>
             </div>
@@ -224,8 +224,8 @@
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
             <div>
-                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Add New Balance</h3>
-                <p class="text-sm text-gray-500 mt-1">Enter the beginning balance details</p>
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Үлдэгдэл оруулах</h3>
+                <p class="text-sm text-gray-500 mt-1">Эхний үлдэгдлийн мэдээлэл оруулна уу</p>
             </div>
             <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,7 +351,7 @@
                 </button>
                 <button type="submit" id="submit-btn"
                         class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                    <span id="submit-text">Add Balance</span>
+                    <span id="submit-text">Үлдэгдэл оруулах</span>
                     <span id="submit-loading" class="hidden">
                         <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -640,8 +640,8 @@ function clearAllFilters() {
 // Add new balance
 function addNewBalance() {
     isEditMode = false;
-    document.getElementById('modal-title').textContent = 'Add New Balance';
-    document.getElementById('submit-text').textContent = 'Add Balance';
+    document.getElementById('modal-title').textContent = 'Үлдэгдэл оруулах';
+    document.getElementById('submit-text').textContent = 'Үлдэгдэл оруулах';
     document.getElementById('balance-form').reset();
     document.getElementById('balance-id').value = '';
     
@@ -669,8 +669,8 @@ function editBalance(balanceId) {
     if (!balance) return;
     
     isEditMode = true;
-    document.getElementById('modal-title').textContent = 'Edit Balance';
-    document.getElementById('submit-text').textContent = 'Update Balance';
+    document.getElementById('modal-title').textContent = 'Үлдэгдэл засах';
+    document.getElementById('submit-text').textContent = 'Үлдэгдэл шинэчлэх';
     
     // Set form action for update
     document.getElementById('balance-form').action = `/core/beginningbalances/{{ balance_type }}/${balanceId}/update/`;

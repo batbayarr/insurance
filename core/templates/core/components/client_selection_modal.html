@@ -257,6 +257,7 @@ window.submitClientForm = function(event) {
     // Use fetch to submit and handle response
     fetch(url, {
         method: 'POST',
+        credentials: 'include',  // Ensure session cookies are sent for tenant DB routing
         body: formData,
         headers: {
             'X-CSRFToken': csrfToken ? csrfToken.value : '',
@@ -405,7 +406,9 @@ window.loadClientList = function(options = null) {
     const typePart = options.clientTypeId ? `&client_type_id=${options.clientTypeId}` : '';
     const url = `/core/refclients/?modal=true&select_mode=true${typePart}`;
     
-    fetch(url)
+    fetch(url, {
+        credentials: 'include'  // Ensure session cookies are sent for tenant DB routing
+    })
         .then(response => {
             return response.text();
         })
@@ -580,8 +583,11 @@ window.loadClientList = function(options = null) {
             addClientRowEventListeners();
             
             // Initialize client filtering and pagination
-            initializeClientFilters();
-            initializeClientPagination();
+            // Use setTimeout to ensure DOM is fully ready after innerHTML update
+            setTimeout(() => {
+                initializeClientFilters();
+                initializeClientPagination();
+            }, 50);
         })
         .catch(error => {
             // Clear the timeout since we got an error
@@ -681,31 +687,55 @@ function debounceClient(func, wait) {
 
 // Initialize client filters
 function initializeClientFilters() {
-    const filterInputs = [
-        'filter-client-code',
-        'filter-client-name', 
-        'filter-client-register',
-        'filter-client-type'
-    ];
-    
-    // Add event listeners to filter inputs
-    filterInputs.forEach(filterId => {
-        const element = document.getElementById(filterId);
-        if (element) {
-            element.addEventListener('input', debounceClient(applyClientFilters, 200));
-        }
-    });
-    
-    // Add event listener to clear button
-    const clearButton = document.getElementById('clear-client-filters');
-    if (clearButton) {
-        clearButton.addEventListener('click', clearAllClientFilters);
+    // Use event delegation on client-list-container to avoid duplicate listeners
+    const clientListContainer = document.getElementById('client-list-container');
+    if (!clientListContainer) {
+        console.warn('DEBUG: client-list-container not found for filter initialization');
+        return;
     }
+    
+    // Remove any existing delegation listener (if we added one before)
+    if (clientListContainer._filterDelegationHandler) {
+        clientListContainer.removeEventListener('input', clientListContainer._filterDelegationHandler);
+        clientListContainer.removeEventListener('click', clientListContainer._clickDelegationHandler);
+    }
+    
+    // Create delegation handlers with debouncing
+    const debouncedFilter = debounceClient(applyClientFilters, 200);
+    const inputHandler = function(e) {
+        const target = e.target;
+        const filterIds = ['filter-client-code', 'filter-client-name', 'filter-client-register', 'filter-client-type'];
+        if (filterIds.includes(target.id)) {
+            debouncedFilter();
+        }
+    };
+    
+    const clickHandler = function(e) {
+        const target = e.target;
+        // Check if the clicked element is the clear button or inside it
+        const clearButton = target.id === 'clear-client-filters' 
+            ? target 
+            : target.closest('#clear-client-filters');
+        if (clearButton) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllClientFilters();
+        }
+    };
+    
+    // Store handlers for potential removal later
+    clientListContainer._filterDelegationHandler = inputHandler;
+    clientListContainer._clickDelegationHandler = clickHandler;
+    
+    // Add event delegation listeners
+    clientListContainer.addEventListener('input', inputHandler);
+    clientListContainer.addEventListener('click', clickHandler);
 }
 
 // Apply client filters
 function applyClientFilters() {
-    const rows = document.querySelectorAll('.client-row');
+    // Use allClientRows if available, otherwise query (for consistency)
+    const rows = allClientRows.length > 0 ? allClientRows : Array.from(document.querySelectorAll('.client-row'));
     filteredClientRecords = [];
     
     rows.forEach(row => {
@@ -803,16 +833,17 @@ function initializeClientPagination() {
     const nextMobile = document.getElementById('next-client-page-mobile');
     
     if (prevMobile) {
-        // Remove existing event listeners to prevent duplicates
-        prevMobile.removeEventListener('click', prevMobile._clickHandler);
-        prevMobile._clickHandler = () => goToClientPage(currentClientPage - 1);
-        prevMobile.addEventListener('click', prevMobile._clickHandler);
+        // Clone and replace to remove old listeners
+        const newPrevMobile = prevMobile.cloneNode(true);
+        prevMobile.parentNode.replaceChild(newPrevMobile, prevMobile);
+        newPrevMobile.addEventListener('click', () => goToClientPage(currentClientPage - 1));
     }
+    
     if (nextMobile) {
-        // Remove existing event listeners to prevent duplicates
-        nextMobile.removeEventListener('click', nextMobile._clickHandler);
-        nextMobile._clickHandler = () => goToClientPage(currentClientPage + 1);
-        nextMobile.addEventListener('click', nextMobile._clickHandler);
+        // Clone and replace to remove old listeners
+        const newNextMobile = nextMobile.cloneNode(true);
+        nextMobile.parentNode.replaceChild(newNextMobile, nextMobile);
+        newNextMobile.addEventListener('click', () => goToClientPage(currentClientPage + 1));
     }
     
     // Show first page
@@ -827,15 +858,20 @@ function showClientPage(pageNumber) {
     
     currentClientPage = pageNumber;
     
-    // Hide all rows
-    allClientRows.forEach(row => row.style.display = 'none');
+    // IMPORTANT: Only modify display for rows that pass the filter (are in filteredClientRecords)
+    // Hide all rows that are in filteredClientRecords (these are the visible/filtered rows)
+    filteredClientRecords.forEach(row => {
+        row.style.display = 'none';
+    });
     
-    // Show rows for current page
+    // Show rows for current page (only from filteredClientRecords)
     const startIndex = (pageNumber - 1) * CLIENT_RECORDS_PER_PAGE;
     const endIndex = Math.min(startIndex + CLIENT_RECORDS_PER_PAGE, filteredClientRecords.length);
     
     for (let i = startIndex; i < endIndex; i++) {
-        filteredClientRecords[i].style.display = '';
+        if (filteredClientRecords[i]) {
+            filteredClientRecords[i].style.display = '';
+        }
     }
     
     // Update pagination controls
@@ -937,7 +973,9 @@ window.populateClientTypes = function(prefetchOnly = false) {
     const select = document.getElementById('client-type');
     if (!select) return;
     
-    fetch('/core/api/refclienttypes/')
+    fetch('/core/api/refclienttypes/', {
+        credentials: 'include'  // Ensure session cookies are sent for tenant DB routing
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1003,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Make API call
                 const response = await fetch(deleteUrl, {
                     method: 'POST',
+                    credentials: 'include',  // Ensure session cookies are sent for tenant DB routing
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': this.getCSRFToken()
