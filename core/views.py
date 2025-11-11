@@ -14,7 +14,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
 from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
-from django.db import connection, connections
+from django.db import connection, connections, transaction
 from .forms import Ref_AccountForm, RefClientForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
 from .utils import get_available_databases, set_database
 from .thread_local import get_current_db
@@ -1440,15 +1440,26 @@ def cashdocument_update(request, pk):
                         'timestamp': int(time.time())
                     })
             
-            cash_document.ModifiedBy = request.user
-            cash_document.save()
-            messages.success(request, 'Cash document updated successfully.')
+            deleted_count = 0
+            with transaction.atomic():
+                cash_document.ModifiedBy = request.user
+                cash_document.save()
+                deleted_count, _ = Cash_DocumentDetail.objects.filter(
+                    DocumentId=cash_document
+                ).delete()
+            
+            if deleted_count:
+                message_text = f"Cash document updated successfully. {deleted_count} detail record{'s' if deleted_count != 1 else ''} cleared."
+            else:
+                message_text = 'Cash document updated successfully. No detail records were associated with this document.'
+            messages.success(request, message_text)
             
             # Check if AJAX request and return JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/core/cashdocuments/'
+                    'redirect_url': '/core/cashdocuments/',
+                    'deleted_details': deleted_count
                 })
             
             # Redirect to master detail page without selected_document parameter

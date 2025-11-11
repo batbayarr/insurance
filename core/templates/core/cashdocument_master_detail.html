@@ -976,11 +976,14 @@ function initializeEventHandlers() {
     // Handle delete document buttons
         const deleteBtn = e.target.closest('.delete-document-btn');
         if (deleteBtn) {
-                e.stopPropagation();
+            e.stopPropagation();
             const deleteUrl = deleteBtn.getAttribute('data-delete-url');
-            const documentName = deleteBtn.getAttribute('data-document-name');
-                
-                Silicon4Delete.showModal(deleteUrl, documentName);
+            const row = deleteBtn.closest('tr[data-document-id]');
+            const documentId = row ? row.getAttribute('data-document-id') : null;
+            const documentDate = deleteBtn.getAttribute('data-document-date') || (row ? row.querySelector('td')?.textContent?.trim() : '');
+            const documentName = deleteBtn.getAttribute('data-document-name') || (documentId ? Document  : 'Document');
+
+            checkPeriodLockForDelete(documentId, documentDate, deleteUrl, documentName);
             return;
         }
     });
@@ -1377,6 +1380,50 @@ function checkPeriodLockForEdit(documentId, documentDate) {
             window.location.href = `/core/cashdocuments/${documentId}/update/`;
         });
 }
+
+// Check period lock before allowing delete
+function checkPeriodLockForDelete(documentId, documentDate, deleteUrl, documentName) {
+    console.log('checkPeriodLockForDelete called with:', documentId, documentDate);
+
+    if (!deleteUrl) {
+        console.warn('Delete URL missing, aborting period lock check for delete action');
+        return;
+    }
+
+    const proceedWithDelete = () => {
+        if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+            Silicon4Delete.showModal(deleteUrl, documentName);
+        } else {
+            window.location.href = deleteUrl;
+        }
+    };
+
+    if (!documentDate) {
+        console.log('No date provided, proceeding to delete');
+        proceedWithDelete();
+        return;
+    }
+
+    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Period lock API response (delete):', data);
+            if (data.is_locked) {
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                proceedWithDelete();
+            }
+        })
+        .catch(error => {
+            console.error('Period lock check failed for delete:', error);
+            proceedWithDelete();
+        });
+}
+
 
 } // End of execution guard
 </script>
