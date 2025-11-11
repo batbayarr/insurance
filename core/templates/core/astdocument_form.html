@@ -1,12 +1,12 @@
 {% load static %}
 {% load humanize %}
+<link rel="stylesheet" href="{% static 'css/tailwind.build.css' %}">
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if item %}Хөрөнгийн баримт шинэчлэх{% else %}Хөрөнгийн баримт үүсгэх{% endif %} - Silicon4 Accounting</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="{% static 'js/shared-components.js' %}"></script>
 </head>
 <body class="bg-gray-100 p-4">
