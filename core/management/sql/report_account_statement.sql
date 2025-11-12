@@ -1,7 +1,7 @@
 -- PostgreSQL Account Statement Function
 -- This function returns transaction details for a specific account within a date range
 -- Parameters: AccountId INTEGER, beginDate DATE, EndDate DATE
--- Returns: DocumentDate, DocumentNo, DocumentId, DocumentTypeId, DocumentSource, ClientName, Description, CurrencyName, CurrencyExchange, CurrencyAmount, DebitAmount, CreditAmount, AccountCode
+-- Returns: DocumentDate, DocumentNo, DocumentId, DocumentTypeId, DocumentSource, ClientName, Description, CurrencyName, CurrencyExchange, CurrencyAmount, DebitAmount, CreditAmount, AccountCode, CashFlowName
 
 -- Drop the function if it exists
 DROP FUNCTION IF EXISTS public.report_account_statement(INTEGER, DATE, DATE);
@@ -24,7 +24,8 @@ RETURNS TABLE (
     CurrencyAmount NUMERIC(24,6),
     DebitAmount NUMERIC(24,6),
     CreditAmount NUMERIC(24,6),
-    AccountCode VARCHAR(50)
+    AccountCode VARCHAR(50),
+    CashFlowName VARCHAR(60)
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -42,12 +43,14 @@ BEGIN
         COALESCE(cdd."CurrencyAmount", 0) AS CurrencyAmount,
         COALESCE(cdd."DebitAmount", 0) AS DebitAmount,
         COALESCE(cdd."CreditAmount", 0) AS CreditAmount,
-        COALESCE(a."AccountCode", '') AS AccountCode
+        COALESCE(a."AccountCode", '') AS AccountCode,
+        COALESCE(cf."Description", '') AS CashFlowName
     FROM cash_document cd
     INNER JOIN cash_document_detail cdd ON cd."DocumentId" = cdd."DocumentId"
     LEFT JOIN ref_account a ON cdd."AccountId" = a."AccountId"
     LEFT JOIN ref_client c ON cdd."ClientId" = c."ClientId"
     LEFT JOIN ref_currency cur ON cdd."CurrencyId" = cur."CurrencyId"
+    LEFT JOIN ref_cash_flow cf ON cdd."CashFlowId" = cf."CashFlowId"
     WHERE cd."DocumentId" IN (
         SELECT DISTINCT "DocumentId" 
         FROM cash_document_detail 
@@ -73,7 +76,8 @@ BEGIN
         COALESCE(idd."CurrencyAmount", 0) AS CurrencyAmount,
         COALESCE(idd."DebitAmount", 0) AS DebitAmount,
         COALESCE(idd."CreditAmount", 0) AS CreditAmount,
-        COALESCE(a."AccountCode", '') AS AccountCode
+        COALESCE(a."AccountCode", '') AS AccountCode,
+        ''::VARCHAR(60) AS CashFlowName
     FROM inv_document id
     INNER JOIN inv_document_detail idd ON id."DocumentId" = idd."DocumentId"
     LEFT JOIN ref_account a ON idd."AccountId" = a."AccountId"
@@ -104,7 +108,8 @@ BEGIN
         COALESCE(add."CurrencyAmount", 0) AS CurrencyAmount,
         COALESCE(add."DebitAmount", 0) AS DebitAmount,
         COALESCE(add."CreditAmount", 0) AS CreditAmount,
-        COALESCE(a."AccountCode", '') AS AccountCode
+        COALESCE(a."AccountCode", '') AS AccountCode,
+        ''::VARCHAR(60) AS CashFlowName
     FROM ast_document ad
     INNER JOIN ast_document_detail add ON ad."DocumentId" = add."DocumentId"
     LEFT JOIN ref_account a ON add."AccountId" = a."AccountId"

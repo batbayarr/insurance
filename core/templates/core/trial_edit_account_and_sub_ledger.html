@@ -167,6 +167,7 @@
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Валютын дүн</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дт дүн</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Кт дүн</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">МӨНГӨН ГҮЙЛГЭЭНИЙ МӨР</th>
                     </tr>
                     <tr class="bg-gray-100">
                         <th class="px-2 py-1 border border-gray-300">
@@ -209,6 +210,10 @@
                             <input type="text" id="filter-credit-amount" placeholder="Кт..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                         </th>
+                        <th class="px-2 py-1 border border-gray-300">
+                            <input type="text" id="filter-cashflow-name" placeholder="Мөнгөн гүйлгээ..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white">
@@ -225,7 +230,8 @@
                         data-currency-exchange="{{ row.CurrencyExchange }}"
                         data-currency-amount="{{ row.CurrencyAmount }}"
                         data-debit-amount="{{ row.DebitAmount }}"
-                        data-credit-amount="{{ row.CreditAmount }}">
+                        data-credit-amount="{{ row.CreditAmount }}"
+                        data-cashflow-name="{{ row.CashFlowName|default:'' }}">
                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
                             {{ row.DocumentDate|date:"Y-m-d" }}
                         </td>
@@ -272,12 +278,19 @@
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
+                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
+                            {% if row.CashFlowName %}
+                                {{ row.CashFlowName }}
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="bg-gray-50">
                     <tr class="border-t border-gray-300">
-                        <td colspan="8" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
+                        <td colspan="9" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
                         <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-debit-amount">
                             <span>0.00</span>
                         </td>
@@ -433,7 +446,8 @@ function setupInlineFilters() {
         'filter-currency-exchange',
         'filter-currency-amount',
         'filter-debit-amount',
-        'filter-credit-amount'
+        'filter-credit-amount',
+        'filter-cashflow-name'
     ];
     
     filterInputs.forEach(filterId => {
@@ -459,7 +473,8 @@ function applyAllFilters() {
             'filter-currency-exchange': parseFloat(row.dataset.currencyExchange) || 0,
             'filter-currency-amount': parseFloat(row.dataset.currencyAmount) || 0,
             'filter-debit-amount': parseFloat(row.dataset.debitAmount) || 0,
-            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0
+            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0,
+            'filter-cashflow-name': row.dataset.cashflowName?.toLowerCase() || ''
         };
         
         for (const [filterId, value] of Object.entries(filters)) {
@@ -467,7 +482,7 @@ function applyAllFilters() {
             if (filterInput && filterInput.value.trim()) {
                 const filterValue = filterInput.value.toLowerCase().trim();
                 
-                if (filterId.includes('date') || filterId.includes('no') || filterId.includes('code') || filterId.includes('name') || filterId.includes('description') || filterId.includes('currency-name')) {
+                if (filterId.includes('date') || filterId.includes('no') || filterId.includes('code') || filterId.includes('name') || filterId.includes('description') || filterId.includes('currency-name') || filterId.includes('cashflow-name')) {
                     // Text filters
                     if (!value.includes(filterValue)) {
                         return false;
@@ -724,14 +739,84 @@ function handleViewTransaction() {
         return;
     }
     
+    // Get date range from page data attributes (passed from trial_balance.html)
+    // Priority: 1) Data attributes, 2) URL parameters, 3) Extract from displayed text
+    let beginDate = '';
+    let endDate = '';
+    
+    // Method 1: Try data attributes from container (most reliable - set by Django template)
+    const container = document.querySelector('[data-report-begin]');
+    if (container) {
+        beginDate = container.getAttribute('data-report-begin') || container.dataset.reportBegin || '';
+        endDate = container.getAttribute('data-report-end') || container.dataset.reportEnd || '';
+    }
+    
+    // Method 2: Try URL parameters (fallback if data attributes not available)
+    if (!beginDate || !endDate) {
+        const urlParams = new URLSearchParams(window.location.search);
+        beginDate = beginDate || urlParams.get('begin_date') || '';
+        endDate = endDate || urlParams.get('end_date') || '';
+    }
+    
+    // Method 3: Extract from displayed text (final fallback)
+    if (!beginDate || !endDate) {
+        // Look for the date text displayed on page: "{{ begin_date }} - {{ end_date }}"
+        const dateLabel = Array.from(document.querySelectorAll('label')).find(
+            el => el.textContent && el.textContent.trim().includes('Хугацаа')
+        );
+        
+        if (dateLabel) {
+            const dateTextElement = dateLabel.nextElementSibling;
+            if (dateTextElement && dateTextElement.tagName === 'P') {
+                const dateText = dateTextElement.textContent || dateTextElement.innerText || '';
+                // Extract dates from text (format: "YYYY-MM-DD - YYYY-MM-DD")
+                const dateMatch = dateText.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
+                if (dateMatch) {
+                    beginDate = beginDate || dateMatch[1];
+                    endDate = endDate || dateMatch[2];
+                }
+            }
+        }
+    }
+    
     // Navigate to appropriate master-detail view based on document source
     let url = '';
     if (documentSource === 'cash') {
-        url = `/core/cashdocuments/?selected_document=${documentId}`;
+        const params = new URLSearchParams({
+            selected_document: documentId
+        });
+        
+        // Add date range if available (passed from trial_balance.html)
+        if (beginDate && endDate && beginDate.trim() && endDate.trim()) {
+            params.set('begin_date', beginDate.trim());
+            params.set('end_date', endDate.trim());
+        }
+        
+        url = `/core/cashdocuments/?${params.toString()}`;
     } else if (documentSource === 'inv') {
-        url = `/core/invdocuments/?selected_document=${documentId}`;
+        const params = new URLSearchParams({
+            selected_document: documentId
+        });
+        
+        // Add date range if available (for consistency)
+        if (beginDate && endDate && beginDate.trim() && endDate.trim()) {
+            params.set('begin_date', beginDate.trim());
+            params.set('end_date', endDate.trim());
+        }
+        
+        url = `/core/invdocuments/?${params.toString()}`;
     } else if (documentSource === 'ast') {
-        url = `/core/astdocuments/?selected_document=${documentId}`;
+        const params = new URLSearchParams({
+            selected_document: documentId
+        });
+        
+        // Add date range if available (for consistency)
+        if (beginDate && endDate && beginDate.trim() && endDate.trim()) {
+            params.set('begin_date', beginDate.trim());
+            params.set('end_date', endDate.trim());
+        }
+        
+        url = `/core/astdocuments/?${params.toString()}`;
     } else {
         alert('Буруу баримтын төрөл');
         return;
@@ -782,7 +867,8 @@ function handlePrintTransactions() {
             CurrencyAmount: parseFloat(row.dataset.currencyAmount) || 0,
             CurrencyExchange: parseFloat(row.dataset.currencyExchange) || 0,
             DebitAmount: parseFloat(row.dataset.debitAmount) || 0,
-            CreditAmount: parseFloat(row.dataset.creditAmount) || 0
+            CreditAmount: parseFloat(row.dataset.creditAmount) || 0,
+            CashFlowName: row.dataset.cashflowName || ''
         }));
 
         window.printSubLedgerTable({

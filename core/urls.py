@@ -16,6 +16,12 @@ urlpatterns = [
     path('refclients/<int:pk>/update/', views.refclient_update, name='refclient_update'),
     path('refclients/<int:pk>/delete/', views.refclient_delete, name='refclient_delete'),
     
+    # Client Banks
+    path('client-bank-list/<int:client_id>/', views.client_bank_list, name='client_bank_list'),
+    path('client-bank/create/', views.client_bank_create, name='client_bank_create'),
+    path('client-bank/update/<int:pk>/', views.client_bank_update, name='client_bank_update'),
+    path('client-bank/delete/<int:pk>/', views.client_bank_delete, name='client_bank_delete'),
+    
     
     
     # Inventory

@@ -200,6 +200,49 @@ class RefClientForm(forms.ModelForm):
         }
 
 
+class Ref_Client_BankForm(forms.ModelForm):
+    """Form for creating and editing client bank accounts"""
+    
+    def __init__(self, *args, **kwargs):
+        client_id = kwargs.pop('client_id', None)
+        super().__init__(*args, **kwargs)
+        
+        if client_id:
+            self.fields['ClientId'].initial = client_id
+    
+    class Meta:
+        model = Ref_Client_Bank
+        fields = ['ClientId', 'BankName', 'BankAccount', 'IsActive']
+        widgets = {
+            'ClientId': forms.HiddenInput(),
+            'BankName': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Банкны нэр',
+                'maxlength': '45'
+            }),
+            'BankAccount': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Дансны дугаар',
+                'maxlength': '45'
+            }),
+            'IsActive': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+        }
+    
+    def clean_BankName(self):
+        bank_name = self.cleaned_data.get('BankName')
+        if not bank_name or not bank_name.strip():
+            raise forms.ValidationError('Банкны нэр заавал шаардлагатай.')
+        return bank_name.strip()
+    
+    def clean_BankAccount(self):
+        bank_account = self.cleaned_data.get('BankAccount')
+        if not bank_account or not bank_account.strip():
+            raise forms.ValidationError('Дансны дугаар заавал шаардлагатай.')
+        return bank_account.strip()
+
+
 class RefInventoryForm(forms.ModelForm):
     """Form for creating and editing inventory items"""
     

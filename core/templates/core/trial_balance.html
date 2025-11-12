@@ -282,7 +282,7 @@
 {% include 'core/components/print_account_statement_modal.html' %}
 
 <!-- Context Menu -->
-<div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
+<div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg py-1 min-w-[200px]" style="z-index: 9999;">
     <button id="menu-account-statement" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
         ТАЙЛАН ХЭВЛЭХ
     </button>
@@ -461,15 +461,21 @@ function setupContextMenu() {
         const row = e.target.closest('tr');
         if (row && row.dataset.accountId) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             selectedRow = row;
             showContextMenu(e.clientX, e.clientY);
         }
-    });
+    }, true); // Use capture phase to ensure we catch the event early
 }
 
 function showContextMenu(x, y) {
     const menu = document.getElementById('context-menu');
     if (!menu) return;
+    
+    // Ensure menu has highest z-index
+    menu.style.zIndex = '99999';
+    menu.style.position = 'fixed';
     
     // Show menu first to get its dimensions
     menu.classList.remove('hidden');
@@ -493,9 +499,24 @@ function showContextMenu(x, y) {
     menu.style.left = left + 'px';
     menu.style.top = top + 'px';
     
-    // Hide menu when clicking outside
+    // Hide menu when clicking outside or pressing Escape
+    const hideMenu = () => {
+        hideContextMenu();
+        document.removeEventListener('click', hideMenu);
+        document.removeEventListener('contextmenu', hideMenu);
+        document.removeEventListener('keydown', escapeHandler);
+    };
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            hideMenu();
+        }
+    };
+    
     setTimeout(() => {
-        document.addEventListener('click', hideContextMenu, { once: true });
+        document.addEventListener('click', hideMenu, { once: true });
+        document.addEventListener('contextmenu', hideMenu, { once: true });
+        document.addEventListener('keydown', escapeHandler, { once: true });
     }, 0);
 }
 
@@ -516,8 +537,17 @@ function handleEditAccount() {
     if (!selectedRow) return;
     
     const accountId = selectedRow.dataset.accountId;
-    const beginDate = document.getElementById('begin_date').value;
-    const endDate = document.getElementById('end_date').value;
+    const beginDateInput = document.getElementById('begin_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    if (!beginDateInput || !endDateInput) {
+        console.error('ERROR: Date inputs not found!');
+        alert('Огнооны талбар олдсонгүй');
+        return;
+    }
+    
+    const beginDate = beginDateInput.value;
+    const endDate = endDateInput.value;
     const beginningBalanceDebit = parseFloat(selectedRow.dataset.beginningBalanceDebit) || 0;
     const beginningBalanceCredit = parseFloat(selectedRow.dataset.beginningBalanceCredit) || 0;
     const debitAmount = parseFloat(selectedRow.dataset.debitAmount) || 0;
@@ -525,13 +555,32 @@ function handleEditAccount() {
     const endingBalanceDebit = parseFloat(selectedRow.dataset.endingBalanceDebit) || 0;
     const endingBalanceCredit = parseFloat(selectedRow.dataset.endingBalanceCredit) || 0;
     
+    // Debug: Log dates being passed
+    console.log('DEBUG: handleEditAccount - Dates from form:', {
+        beginDate,
+        endDate,
+        accountId,
+        beginDateInputExists: !!beginDateInput,
+        endDateInputExists: !!endDateInput
+    });
+    
     if (!accountId || !beginDate || !endDate) {
+        console.error('ERROR: Missing required data:', {
+            accountId: !!accountId,
+            beginDate: !!beginDate,
+            endDate: !!endDate
+        });
         alert('Мэдээлэл дутуу байна');
         return;
     }
     
     // Navigate to account statement view with all summary values
+    // Dates are passed in URL so they can be used in account_statement view
+    // and then passed to trial_edit_account_and_sub_ledger.html template
     const url = `/core/reports/account-statement/?account_id=${accountId}&begin_date=${beginDate}&end_date=${endDate}&begin_balance_debit=${beginningBalanceDebit}&begin_balance_credit=${beginningBalanceCredit}&debit_total=${debitAmount}&credit_total=${creditAmount}&end_balance_debit=${endingBalanceDebit}&end_balance_credit=${endingBalanceCredit}`;
+    
+    console.log('DEBUG: handleEditAccount - Navigating to:', url);
+    
     window.location.href = url;
     hideContextMenu();
 }

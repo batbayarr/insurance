@@ -275,7 +275,7 @@ function loadAllFiltersFromLocalStorage() {
 }
 
 // Helper function to clear all client-side filters (but preserve date range)
-function clearAllClientSideFilters() {
+function clearAllClientSideFilters(preserveSelectedDocument = false) {
     const filterIds = [
         'filter-document-no', 'filter-document-type', 'filter-client',
         'filter-date', 'filter-description', 'filter-is-vat',
@@ -292,11 +292,13 @@ function clearAllClientSideFilters() {
     // Reset pagination
     currentPage = 1;
     
-    // Remove selected_document from URL
-    const currentUrl = new URL(window.location);
-    if (currentUrl.searchParams.has('selected_document')) {
-        currentUrl.searchParams.delete('selected_document');
-        window.history.pushState({}, '', currentUrl.toString());
+    // Remove selected_document from URL (unless we want to preserve it)
+    if (!preserveSelectedDocument) {
+        const currentUrl = new URL(window.location);
+        if (currentUrl.searchParams.has('selected_document')) {
+            currentUrl.searchParams.delete('selected_document');
+            window.history.pushState({}, '', currentUrl.toString());
+        }
     }
     
     // Clear filter localStorage (but keep date range localStorage)
@@ -309,6 +311,9 @@ function clearAllClientSideFilters() {
 
 // Initialize date inputs with default values (current month)
 function initializeDateInputs() {
+    // Store the promise for external access when needed (declared at function scope)
+    let searchPromise = null;
+    
     // Format dates for HTML date input (YYYY-MM-DD)
     const formatDateForInput = (date) => {
         const year = date.getFullYear();
@@ -317,38 +322,72 @@ function initializeDateInputs() {
         return `${year}-${month}-${day}`;
     };
     
+    // Check URL parameters for selected_document and date range
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDocumentId = urlParams.get('selected_document');
+    const beginDateParam = urlParams.get('begin_date');
+    const endDateParam = urlParams.get('end_date');
+    
+    // If selected_document is present, clear filters and filter by documentId
+    let useDocumentFilter = false;
+    let usePassedDateRange = false;
+    
+    // Check if date range is passed from URL (from trial_balance.html or trial_edit_account_and_sub_ledger.html)
+    if (beginDateParam && endDateParam) {
+        usePassedDateRange = true;
+    }
+    
+    if (selectedDocumentId) {
+        // Clear filter localStorage first to prevent restoration
+        try {
+            localStorage.removeItem('cashdocument_all_filters');
+        } catch (e) {
+            console.warn('Failed to clear filters from localStorage:', e);
+        }
+        
+        // Reset pagination to first page
+        currentPage = 1;
+        useDocumentFilter = true;
+    }
+    
     // Use user's local system date
     const today = new Date();
     let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    // Check localStorage for saved date range values
-    const savedDateRange = loadDateRangeFromLocalStorage();
-    if (savedDateRange) {
-        // Use saved date range values
-        firstDay = new Date(savedDateRange.startDate);
-        lastDay = new Date(savedDateRange.endDate);
-    } else {
-        // Check if selected_document is in URL and adjust date range if needed
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedDocumentId = urlParams.get('selected_document');
-        {% if selected_document %}
-        if (selectedDocumentId) {
-            // Get document date from server-side context
-            const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
-            // If document date is outside current month, adjust date range to include it
-            if (docDate < firstDay || docDate > lastDay) {
-                // Use document date ± 1 month, or use document date's month
-                const docYear = docDate.getFullYear();
-                const docMonth = docDate.getMonth();
-                firstDay = new Date(docYear, docMonth, 1);
-                lastDay = new Date(docYear, docMonth + 1, 0);
-                // Ensure we include at least the document date
-                if (docDate < firstDay) firstDay = new Date(docDate);
-                if (docDate > lastDay) lastDay = new Date(docDate);
+        // If date range is passed from URL, use it (ensures it matches trial_balance.html)
+        // This takes priority over localStorage and default dates
+        if (usePassedDateRange && beginDateParam && endDateParam) {
+            // Use passed dates directly (already in YYYY-MM-DD format)
+            firstDay = beginDateParam;
+            lastDay = endDateParam;
+        } else {
+        // Check localStorage for saved date range values
+        const savedDateRange = loadDateRangeFromLocalStorage();
+        if (savedDateRange) {
+            // Use saved date range values
+            firstDay = new Date(savedDateRange.startDate);
+            lastDay = new Date(savedDateRange.endDate);
+        } else {
+            // Check if selected_document is in URL and adjust date range if needed
+            {% if selected_document %}
+            if (selectedDocumentId) {
+                // Get document date from server-side context
+                const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
+                // If document date is outside current month, adjust date range to include it
+                if (docDate < firstDay || docDate > lastDay) {
+                    // Use document date ± 1 month, or use document date's month
+                    const docYear = docDate.getFullYear();
+                    const docMonth = docDate.getMonth();
+                    firstDay = new Date(docYear, docMonth, 1);
+                    lastDay = new Date(docYear, docMonth + 1, 0);
+                    // Ensure we include at least the document date
+                    if (docDate < firstDay) firstDay = new Date(docDate);
+                    if (docDate > lastDay) lastDay = new Date(docDate);
+                }
             }
+            {% endif %}
         }
-        {% endif %}
     }
     
     const startDateInput = document.getElementById('start-date');
@@ -357,22 +396,67 @@ function initializeDateInputs() {
     const applyButton = document.getElementById('apply-date-filter');
     
     if (startDateInput && endDateInput) {
-        startDateInput.value = formatDateForInput(firstDay);
-        endDateInput.value = formatDateForInput(lastDay);
+        // Set date input values - format Date objects
+        if (useDocumentFilter) {
+            // When filtering by documentId, clear all filter inputs
+            // Use requestAnimationFrame to ensure DOM is fully rendered
+            requestAnimationFrame(() => {
+                const filterIds = [
+                    'filter-document-no', 'filter-document-type', 'filter-client',
+                    'filter-date', 'filter-description', 'filter-is-vat',
+                    'filter-account', 'filter-currency', 'filter-currency-amount',
+                    'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+                ];
+                
+                filterIds.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = '';
+                    }
+                });
+            });
+        }
         
+        // Set date inputs - use passed dates directly if available, otherwise format Date objects
+        if (usePassedDateRange && beginDateParam && endDateParam) {
+            // Use passed dates directly (already in YYYY-MM-DD format)
+            startDateInput.value = beginDateParam;
+            endDateInput.value = endDateParam;
+        } else {
+            // Format Date objects for input
+            startDateInput.value = formatDateForInput(firstDay);
+            endDateInput.value = formatDateForInput(lastDay);
+        }
         // Save initial date range to localStorage
         saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
         
         // Helper function to save and fetch documents
-        const saveAndFetch = (startDate, endDate) => {
-            saveDateRangeToLocalStorage(startDate, endDate);
-            fetchDocuments(startDate, endDate);
+        const saveAndFetch = (startDate, endDate, skipLocalStorage = false) => {
+            if (!skipLocalStorage) {
+                saveDateRangeToLocalStorage(startDate, endDate);
+            }
+            return fetchDocuments(startDate, endDate);
         };
+        
+        // Flags for controlling button handler behavior
+        let isProgrammaticClick = false;
+        let skipFilterClear = false; // Flag to skip clearing filters if already cleared
         
         // Add event listeners
         applyButton.addEventListener('click', () => {
-            clearAllClientSideFilters(); // Clear all filters before fetching
-            saveAndFetch(startDateInput.value, endDateInput.value);
+            // Skip if this is a programmatic click (we'll handle it separately)
+            if (isProgrammaticClick) {
+                isProgrammaticClick = false;
+                // Still trigger the search, but don't clear filters
+                searchPromise = saveAndFetch(startDateInput.value, endDateInput.value);
+                return;
+            }
+            // Only clear filters if not already cleared
+            if (!skipFilterClear) {
+                clearAllClientSideFilters(); // Clear all filters before fetching
+            }
+            skipFilterClear = false; // Reset flag
+            searchPromise = saveAndFetch(startDateInput.value, endDateInput.value);
         });
         
         // Save on date input change
@@ -398,53 +482,78 @@ function initializeDateInputs() {
         });
     }
     
-    // Load all saved filter states
-    const savedFilters = loadAllFiltersFromLocalStorage();
-    
-    if (savedFilters) {
-        // Restore page size
-        if (savedFilters.pageSize) {
-            pageSize = parseInt(savedFilters.pageSize);
-            if (pageSizeSelect) {
-                pageSizeSelect.value = pageSize;
+    // Load all saved filter states (skip if filtering by documentId)
+    if (!useDocumentFilter) {
+        const savedFilters = loadAllFiltersFromLocalStorage();
+        
+        if (savedFilters) {
+            // Restore page size
+            if (savedFilters.pageSize) {
+                pageSize = parseInt(savedFilters.pageSize);
+                if (pageSizeSelect) {
+                    pageSizeSelect.value = pageSize;
+                }
             }
-        }
-        
-        // Restore current page (will be applied after data loads)
-        if (savedFilters.currentPage) {
-            currentPage = parseInt(savedFilters.currentPage);
-        }
-        
-        // Restore inline filter values
-        const filterIds = [
-            'filter-document-no', 'filter-document-type', 'filter-client',
-            'filter-date', 'filter-description', 'filter-is-vat',
-            'filter-account', 'filter-currency', 'filter-currency-amount',
-            'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
-        ];
-        
-        const filterMap = {
-            'filter-document-no': 'documentNo',
-            'filter-document-type': 'documentType',
-            'filter-client': 'client',
-            'filter-date': 'date',
-            'filter-description': 'description',
-            'filter-is-vat': 'isVat',
-            'filter-account': 'account',
-            'filter-currency': 'currency',
-            'filter-currency-amount': 'currencyAmount',
-            'filter-currency-exchange': 'currencyExchange',
-            'filter-mnt-amount': 'mntAmount',
-            'filter-created-by': 'createdBy'
-        };
-        
-        filterIds.forEach(filterId => {
-            const element = document.getElementById(filterId);
-            const savedKey = filterMap[filterId];
-            if (element && savedFilters[savedKey] !== undefined) {
-                element.value = savedFilters[savedKey];
+            
+            // Restore current page (will be applied after data loads)
+            if (savedFilters.currentPage) {
+                currentPage = parseInt(savedFilters.currentPage);
             }
-        });
+            
+            // Restore inline filter values
+            const filterIds = [
+                'filter-document-no', 'filter-document-type', 'filter-client',
+                'filter-date', 'filter-description', 'filter-is-vat',
+                'filter-account', 'filter-currency', 'filter-currency-amount',
+                'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+            ];
+            
+            const filterMap = {
+                'filter-document-no': 'documentNo',
+                'filter-document-type': 'documentType',
+                'filter-client': 'client',
+                'filter-date': 'date',
+                'filter-description': 'description',
+                'filter-is-vat': 'isVat',
+                'filter-account': 'account',
+                'filter-currency': 'currency',
+                'filter-currency-amount': 'currencyAmount',
+                'filter-currency-exchange': 'currencyExchange',
+                'filter-mnt-amount': 'mntAmount',
+                'filter-created-by': 'createdBy'
+            };
+            
+            filterIds.forEach(filterId => {
+                // Skip client filter if selected_document is in URL
+                if (filterId === 'filter-client' && selectedDocumentId) {
+                    return;
+                }
+                const element = document.getElementById(filterId);
+                const savedKey = filterMap[filterId];
+                if (element && savedFilters[savedKey] !== undefined) {
+                    element.value = savedFilters[savedKey];
+                }
+            });
+        }
+    } else {
+        // When filtering by documentId, ensure filters are cleared after DOM is ready
+        // This happens after the above block, so filters won't be restored
+        // Clear filters after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            const filterIds = [
+                'filter-document-no', 'filter-document-type', 'filter-client',
+                'filter-date', 'filter-description', 'filter-is-vat',
+                'filter-account', 'filter-currency', 'filter-currency-amount',
+                'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+            ];
+            
+            filterIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = '';
+                }
+            });
+        }, 100);
     }
     
     if (pageSizeSelect) {
@@ -456,10 +565,93 @@ function initializeDateInputs() {
         });
     }
     
-    // Load initial data - page will be restored automatically via savedFilters.currentPage
-    // The currentPage was already set above if savedFilters exists, and applyFrontendFilter()
-    // in fetchDocuments will use it
-    fetchDocuments(startDateInput.value, endDateInput.value);
+    // Load initial data
+    // If filtering by documentId, trigger search button click first, then apply documentId filter
+    if (useDocumentFilter) {
+        // Step 1: Clear filters first
+        // Step 2: Click "Хайх" button to fetch documents with the date range
+        // Step 3: After fetch completes, apply documentId filter
+        if (applyButton) {
+            // Use setTimeout to ensure date inputs are set and filter elements exist
+            setTimeout(() => {
+                // Clear all filter inputs explicitly (ensure they're cleared)
+                const clearFilters = () => {
+                    const filterIds = [
+                        'filter-document-no', 'filter-document-type', 'filter-client',
+                        'filter-date', 'filter-description', 'filter-is-vat',
+                        'filter-account', 'filter-currency', 'filter-currency-amount',
+                        'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
+                    ];
+                    
+                    filterIds.forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.value = '';
+                        }
+                    });
+                };
+                
+                // Clear filters immediately
+                clearFilters();
+                
+                // Clear again after a small delay to catch any late-loading elements
+                setTimeout(clearFilters, 50);
+                
+                // Clear filters using the helper function (preserve selected_document in URL)
+                clearAllClientSideFilters(true);
+                
+                // Step 2: Set flag to indicate this is initial document filter load
+                // This prevents fetchDocuments from applying filter immediately
+                window.isInitialDocumentFilterLoad = true;
+                
+                // Step 3: Set flags to control button handler behavior
+                skipFilterClear = true; // Don't clear filters again (already cleared)
+                isProgrammaticClick = true; // Mark as programmatic click
+                
+                // Step 4: Click "Хайх" button to trigger search
+                // The button handler will call saveAndFetch, which calls fetchDocuments
+                applyButton.click();
+                
+                // Step 5: Wait for the search promise from button handler
+                // The button handler sets searchPromise, so we can use it
+                // Use a small delay to ensure the promise is set
+                setTimeout(() => {
+                    // Get the promise from the button handler (it's stored in searchPromise variable)
+                    // If searchPromise is not set yet, call fetchDocuments directly as fallback
+                    const promiseToUse = searchPromise || fetchDocuments(startDateInput.value, endDateInput.value);
+                    
+                    // Step 6: After search completes, apply documentId filter
+                    promiseToUse.then(() => {
+                        // Clear the flag
+                        window.isInitialDocumentFilterLoad = false;
+                        
+                        // Small delay to ensure data is fully loaded
+                        setTimeout(() => {
+                            // Apply filter by documentId (this will filter the already-loaded documents)
+                            applyFrontendFilter();
+                            
+                            // Then load document details if selected_document is present
+                            if (selectedDocumentId) {
+                                setTimeout(() => {
+                                    loadDocumentDetails(selectedDocumentId);
+                                }, 100);
+                            }
+                        }, 100);
+                    }).catch(error => {
+                        // Clear the flag on error
+                        window.isInitialDocumentFilterLoad = false;
+                        // Handle error silently - fetchDocuments already shows error message
+                        console.error('Error during search:', error);
+                    });
+                }, 50); // Small delay to let button click handler set the promise
+            }, 100);
+        }
+    } else {
+        // Normal flow: page will be restored automatically via savedFilters.currentPage
+        // The currentPage was already set above if savedFilters exists, and applyFrontendFilter()
+        // in fetchDocuments will use it
+        fetchDocuments(startDateInput.value, endDateInput.value);
+    }
 }
 
 // Fetch documents from API
@@ -498,18 +690,25 @@ function fetchDocuments(startDate, endDate) {
             allDocumentsData = data.documents;
             // Don't reset currentPage here - it will be restored from localStorage if needed
             
-            // If selected_document is in URL, optionally set document number filter for visual feedback
+            // Check if we're filtering by documentId
             const urlParams = new URLSearchParams(window.location.search);
             const selectedDocumentId = urlParams.get('selected_document');
-            if (selectedDocumentId) {
-                const selectedDoc = data.documents.find(doc => doc.DocumentId == selectedDocumentId);
-                const documentNoFilter = document.getElementById('filter-document-no');
-                if (selectedDoc && documentNoFilter && !documentNoFilter.value) {
-                    documentNoFilter.value = selectedDoc.DocumentNo || '';
-                }
-            }
             
-            applyFrontendFilter();
+            // Always apply filter after data is loaded
+            // If selected_document is in URL, it will be filtered automatically by applyFrontendFilter()
+            // If we're in initial document filter load, the calling code will handle it, but we also apply here as backup
+            if (!window.isInitialDocumentFilterLoad) {
+                // Normal flow: apply filters immediately
+                // applyFrontendFilter() will automatically filter by documentId if it's in URL
+                applyFrontendFilter();
+            } else {
+                // Initial load with documentId - filter will be applied after fetch completes
+                // This happens in the setTimeout callback in initializeDateInputs()
+                // But we also apply here as a safeguard to ensure filter is always applied
+                setTimeout(() => {
+                    applyFrontendFilter();
+                }, 50);
+            }
         } else {
             tbody.innerHTML = '<tr><td colspan="13" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
         }
@@ -545,27 +744,30 @@ function applyFrontendFilter() {
         createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
     };
     
-    // Check if there are any active filters
+    // Check if there are any active filters (excluding documentId filter)
     const hasActiveFilters = Object.values(filters).some(value => value !== '');
     
     // Check for selected_document in URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     let selectedDocumentId = urlParams.get('selected_document');
     
-    // If all filters are cleared and selected_document exists in URL, remove it
-    if (!hasActiveFilters && selectedDocumentId) {
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.delete('selected_document');
-        window.history.pushState({}, '', currentUrl.toString());
-        selectedDocumentId = null; // Clear the variable so filtering doesn't apply
-    }
+    // Note: We keep selected_document in URL even when other filters are cleared
+    // This allows the documentId filter to persist until explicitly removed
     
     // Filter data with null-safe operations
     filteredData = allDocumentsData.filter(doc => {
-        // If selected_document is in URL and no filters are active, filter to only that document
-        // If filters are active, ignore selected_document to allow filtering
-        if (selectedDocumentId && !hasActiveFilters && doc.DocumentId != selectedDocumentId) return false;
+        // If selected_document is in URL, filter to only that document
+        // Convert both to strings for reliable comparison (URL params are strings, DocumentId might be number)
+        if (selectedDocumentId) {
+            const docIdStr = String(doc.DocumentId || '');
+            const selectedIdStr = String(selectedDocumentId);
+            if (docIdStr !== selectedIdStr) {
+                return false; // Exclude documents that don't match the selected documentId
+            }
+            // If we reach here, this document matches the selected documentId
+        }
         
+        // Apply other filters only if documentId filter passed (or if no documentId filter)
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
         if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
         if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
@@ -837,26 +1039,18 @@ function initializeFilterListeners() {
 
 // Initialize event handlers using delegation pattern
 function initializeEventHandlers() {
-    console.log('Initializing event handlers...');
-    
     // Use single event delegation for all table interactions
     const tableContainer = document.querySelector('#cash-document-container');
     if (!tableContainer) {
-        console.log('Table container not found!');
         return;
     }
     
-    console.log('Table container found:', tableContainer);
-    
     // Remove any existing event listener to prevent duplicates
     if (tableContainer.hasAttribute('data-event-listener-added')) {
-        console.log('Event listener already added, skipping...');
         return; // Already initialized
     }
     
-    console.log('Adding event listener to table container...');
     tableContainer.addEventListener('click', function(e) {
-        console.log('Click event detected on:', e.target);
         // Handle row clicks for document selection
         const row = e.target.closest('tr[data-document-id]');
         if (row && !e.target.closest('button') && !e.target.closest('a')) {
@@ -870,13 +1064,10 @@ function initializeEventHandlers() {
     // Handle manage details buttons
         const manageDetailsBtn = e.target.closest('.manage-details-btn');
         if (manageDetailsBtn) {
-            console.log('Manage Details button clicked!', manageDetailsBtn);
             e.stopPropagation();
             
             const documentId = manageDetailsBtn.getAttribute('data-document-id');
             const documentDate = manageDetailsBtn.getAttribute('data-document-date');
-            
-            console.log('Document ID:', documentId, 'Date:', documentDate);
             
             // Check period lock before allowing manage details
             checkPeriodLockForManageDetails(documentId, documentDate);
@@ -886,13 +1077,10 @@ function initializeEventHandlers() {
     // Handle edit document buttons
         const editBtn = e.target.closest('.edit-document-btn');
         if (editBtn) {
-            console.log('Edit button clicked!', editBtn);
             e.stopPropagation();
             
             const documentId = editBtn.getAttribute('data-document-id');
             const documentDate = editBtn.getAttribute('data-document-date');
-            
-            console.log('Document ID:', documentId, 'Date:', documentDate);
             
             // Check period lock before allowing edit
             checkPeriodLockForEdit(documentId, documentDate);
@@ -1133,7 +1321,6 @@ function calculateCashDocumentTotals() {
 
 // Make function globally available
 window.calculateCashDocumentTotals = calculateCashDocumentTotals;
-console.log('✅ calculateCashDocumentTotals function defined in master-detail template');
 
 // Load document details via AJAX with caching
 function loadDocumentDetails(documentId) {
@@ -1305,24 +1492,17 @@ function showDetailErrorState() {
 
 // Check period lock before allowing manage details
 function checkPeriodLockForManageDetails(documentId, documentDate) {
-    console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
-    
     if (!documentDate) {
-        console.log('No date, proceeding to manage details');
         // No date, proceed to manage details
         window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
         return;
     }
     
-    console.log('Checking period lock for date:', documentDate);
-    
     // Check period lock via API
     fetch(`/core/api/check-period-lock/?date=${documentDate}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response:', data);
             if (data.is_locked) {
-                console.log('Period is locked, showing modal');
                 // Show modal for locked period
                 if (typeof showMessageModal === 'function') {
                     showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
@@ -1330,7 +1510,6 @@ function checkPeriodLockForManageDetails(documentId, documentDate) {
                     alert(data.message);
                 }
             } else {
-                console.log('Period not locked, proceeding to manage details');
                 // Not locked, proceed to manage details
                 window.location.href = `/core/cashdocuments/${documentId}/bulk-manage-details/`;
             }
@@ -1344,24 +1523,17 @@ function checkPeriodLockForManageDetails(documentId, documentDate) {
 
 // Check period lock before allowing edit
 function checkPeriodLockForEdit(documentId, documentDate) {
-    console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
-    
     if (!documentDate) {
-        console.log('No date, proceeding to edit');
         // No date, proceed to edit
         window.location.href = `/core/cashdocuments/${documentId}/update/`;
         return;
     }
     
-    console.log('Checking period lock for date:', documentDate);
-    
     // Check period lock via API
     fetch(`/core/api/check-period-lock/?date=${documentDate}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response:', data);
             if (data.is_locked) {
-                console.log('Period is locked, showing modal');
                 // Show modal for locked period
                 if (typeof showMessageModal === 'function') {
                     showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
@@ -1369,7 +1541,6 @@ function checkPeriodLockForEdit(documentId, documentDate) {
                     alert(data.message);
                 }
             } else {
-                console.log('Period not locked, proceeding to edit');
                 // Not locked, proceed to edit
                 window.location.href = `/core/cashdocuments/${documentId}/update/`;
             }
@@ -1383,8 +1554,6 @@ function checkPeriodLockForEdit(documentId, documentDate) {
 
 // Check period lock before allowing delete
 function checkPeriodLockForDelete(documentId, documentDate, deleteUrl, documentName) {
-    console.log('checkPeriodLockForDelete called with:', documentId, documentDate);
-
     if (!deleteUrl) {
         console.warn('Delete URL missing, aborting period lock check for delete action');
         return;
@@ -1399,7 +1568,6 @@ function checkPeriodLockForDelete(documentId, documentDate, deleteUrl, documentN
     };
 
     if (!documentDate) {
-        console.log('No date provided, proceeding to delete');
         proceedWithDelete();
         return;
     }
@@ -1407,7 +1575,6 @@ function checkPeriodLockForDelete(documentId, documentDate, deleteUrl, documentN
     fetch(`/core/api/check-period-lock/?date=${documentDate}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response (delete):', data);
             if (data.is_locked) {
                 if (typeof showMessageModal === 'function') {
                     showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');

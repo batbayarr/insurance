@@ -13,9 +13,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
-from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
+from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
 from django.db import connection, connections, transaction
-from .forms import Ref_AccountForm, RefClientForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
+from .forms import Ref_AccountForm, RefClientForm, Ref_Client_BankForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
 from .utils import get_available_databases, set_database
 from .thread_local import get_current_db
 from .error_handling import (
@@ -708,6 +708,160 @@ def refclient_delete(request, pk):
     
     # GET request without modal parameter - redirect to list
     return redirect('core:refclient_list')
+
+
+@login_required
+@permission_required('core.view_refclient', raise_exception=True)
+def client_bank_list(request, client_id):
+    """AJAX view to return JSON list of bank accounts for a client"""
+    try:
+        client = get_object_or_404(RefClient, pk=client_id)
+        banks = Ref_Client_Bank.objects.filter(ClientId=client).order_by('BankName', 'BankAccount')
+        
+        banks_data = []
+        for bank in banks:
+            banks_data.append({
+                'ClientBankId': bank.ClientBankId,
+                'BankName': bank.BankName,
+                'BankAccount': bank.BankAccount,
+                'IsActive': bank.IsActive
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'banks': banks_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Алдаа гарлаа: {str(e)}'
+        })
+
+
+@login_required
+@permission_required('core.add_refclient', raise_exception=True)
+def client_bank_create(request):
+    """AJAX view to create new bank account"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            client_id = data.get('ClientId')
+            
+            if not client_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Харилцагчийн ID олдсонгүй'
+                })
+            
+            client = get_object_or_404(RefClient, pk=client_id)
+            form = Ref_Client_BankForm(data, client_id=client_id)
+            
+            if form.is_valid():
+                bank = form.save(commit=False)
+                bank.ClientId = client
+                bank.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Банкны мэдээлэл амжилттай нэмэгдлээ',
+                    'bank': {
+                        'ClientBankId': bank.ClientBankId,
+                        'BankName': bank.BankName,
+                        'BankAccount': bank.BankAccount,
+                        'IsActive': bank.IsActive
+                    }
+                })
+            else:
+                errors = {}
+                for field, error_list in form.errors.items():
+                    errors[field] = error_list[0] if error_list else ''
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Баталгаажуулалт амжилтгүй',
+                    'errors': errors
+                })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Алдаа гарлаа: {str(e)}'
+            })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': 'Зөвхөн POST хүсэлт хүлээн авах боломжтой'
+        })
+
+
+@login_required
+@permission_required('core.change_refclient', raise_exception=True)
+def client_bank_update(request, pk):
+    """AJAX view to update existing bank account"""
+    bank = get_object_or_404(Ref_Client_Bank, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            form = Ref_Client_BankForm(data, instance=bank, client_id=bank.ClientId.ClientId)
+            
+            if form.is_valid():
+                bank = form.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Банкны мэдээлэл амжилттай шинэчлэгдлээ',
+                    'bank': {
+                        'ClientBankId': bank.ClientBankId,
+                        'BankName': bank.BankName,
+                        'BankAccount': bank.BankAccount,
+                        'IsActive': bank.IsActive
+                    }
+                })
+            else:
+                errors = {}
+                for field, error_list in form.errors.items():
+                    errors[field] = error_list[0] if error_list else ''
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Баталгаажуулалт амжилтгүй',
+                    'errors': errors
+                })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Алдаа гарлаа: {str(e)}'
+            })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': 'Зөвхөн POST хүсэлт хүлээн авах боломжтой'
+        })
+
+
+@login_required
+@permission_required('core.delete_refclient', raise_exception=True)
+def client_bank_delete(request, pk):
+    """AJAX view to delete bank account (soft delete by setting IsActive=False)"""
+    bank = get_object_or_404(Ref_Client_Bank, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            bank.IsActive = False
+            bank.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Банкны мэдээлэл амжилттай устгагдлаа'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Алдаа гарлаа: {str(e)}'
+            })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': 'Зөвхөн POST хүсэлт хүлээн авах боломжтой'
+        })
 
 
 # RefClientType Views
@@ -5543,7 +5697,8 @@ def account_statement(request):
                                     'currencyamount': 'CurrencyAmount',
                                     'debitamount': 'DebitAmount',
                                     'creditamount': 'CreditAmount',
-                                    'accountcode': 'AccountCode'
+                                    'accountcode': 'AccountCode',
+                                    'cashflowname': 'CashFlowName'
                                 }
                                 
                                 subsidiary_ledger_data = []
@@ -7636,7 +7791,7 @@ def template_master_detail(request):
             ).filter(IsDelete=False).get(TemplateId=selected_template_id)
             
             template_details = Ref_Template_Detail.objects.select_related(
-                'AccountId', 'TemplateId'
+                'AccountId', 'TemplateId', 'CashFlowId'
             ).filter(TemplateId=selected_template).order_by('TemplateDetailId')
             
         except Ref_Template.DoesNotExist:
