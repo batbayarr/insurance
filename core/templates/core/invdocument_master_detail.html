@@ -193,9 +193,21 @@ let totalPages = 1;
 let currentApiRequest = null;
 let currentDetailRequest = null;  // For AbortController on detail loading
 const detailCache = new Map();     // Cache loaded details
-const currentUserId = {{ request.user.id }};
-const hasChangePermission = {% if perms.core.change_inv_document %}true{% else %}false{% endif %};
-const hasDeletePermission = {% if perms.core.delete_inv_document %}true{% else %}false{% endif %};
+const currentUserId = parseInt('{{ request.user.id|default:"0" }}', 10) || 0;
+const hasChangePermission = '{{ perms.core.change_inv_document|yesno:"true,false" }}' === 'true';
+const hasDeletePermission = '{{ perms.core.delete_inv_document|yesno:"true,false" }}' === 'true';
+
+window.isInitialDocumentFilterLoad = window.isInitialDocumentFilterLoad || false;
+
+function getInputValue(elementId) {
+    const element = document.getElementById(elementId);
+    return element ? element.value : '';
+}
+
+function getFilterValue(elementId) {
+    const value = getInputValue(elementId);
+    return value ? value.toLowerCase().trim() : '';
+}
 
 // Helper function to save date range to localStorage
 function saveDateRangeToLocalStorage(startDate, endDate) {
@@ -228,8 +240,81 @@ function loadDateRangeFromLocalStorage() {
     return null;
 }
 
+// Helper function to save all filter states to localStorage
+function saveAllFiltersToLocalStorage() {
+    try {
+        const filters = {
+            documentNo: getInputValue('filter-document-no'),
+            documentType: getInputValue('filter-document-type'),
+            client: getInputValue('filter-client'),
+            date: getInputValue('filter-date'),
+            description: getInputValue('filter-description'),
+            account: getInputValue('filter-account'),
+            isVat: getInputValue('filter-isvat'),
+            warehouse: getInputValue('filter-warehouse'),
+            costAmount: getInputValue('filter-cost-amount'),
+            priceAmount: getInputValue('filter-price-amount'),
+            createdBy: getInputValue('filter-created-by'),
+            pageSize: pageSize,
+            currentPage: currentPage
+        };
+        localStorage.setItem('invdocument_all_filters', JSON.stringify(filters));
+    } catch (e) {
+        console.warn('Failed to save filters to localStorage:', e);
+    }
+}
+
+// Helper function to load all filter states from localStorage
+function loadAllFiltersFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('invdocument_all_filters');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('Failed to load filters from localStorage:', e);
+    }
+    return null;
+}
+
+// Helper function to clear client-side filters (optionally preserving selected_document)
+function clearAllClientSideFilters(preserveSelectedDocument = false) {
+    const filterIds = [
+        'filter-document-no', 'filter-document-type', 'filter-client',
+        'filter-date', 'filter-description', 'filter-account',
+        'filter-isvat', 'filter-warehouse', 'filter-cost-amount',
+        'filter-price-amount', 'filter-created-by'
+    ];
+
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = '';
+        }
+    });
+
+    currentPage = 1;
+
+    if (!preserveSelectedDocument) {
+        const currentUrl = new URL(window.location);
+        if (currentUrl.searchParams.has('selected_document')) {
+            currentUrl.searchParams.delete('selected_document');
+            window.history.pushState({}, '', currentUrl.toString());
+        }
+    }
+
+    try {
+        localStorage.removeItem('invdocument_all_filters');
+    } catch (e) {
+        console.warn('Failed to clear filters from localStorage:', e);
+    }
+}
+
 // Initialize date inputs with local system date
 function initializeDateInputs() {
+    // Store the promise for external access when needed (declared at function scope)
+    let searchPromise = null;
+
     // Format dates for HTML date input (YYYY-MM-DD)
     const formatDateForInput = (date) => {
         const year = date.getFullYear();
@@ -237,93 +322,281 @@ function initializeDateInputs() {
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
-    
+
+    // Check URL parameters for selected_document and date range
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDocumentId = urlParams.get('selected_document');
+    const beginDateParam = urlParams.get('begin_date');
+    const endDateParam = urlParams.get('end_date');
+
+    let useDocumentFilter = false;
+    let usePassedDateRange = false;
+
+    if (beginDateParam && endDateParam) {
+        usePassedDateRange = true;
+    }
+
+    if (selectedDocumentId) {
+        try {
+            localStorage.removeItem('invdocument_all_filters');
+        } catch (e) {
+            console.warn('Failed to clear filters from localStorage:', e);
+        }
+        currentPage = 1;
+        useDocumentFilter = true;
+    }
+
     // Use user's local system date
     const today = new Date();
     let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
-    // Check localStorage for saved date range values
-    const savedDateRange = loadDateRangeFromLocalStorage();
-    if (savedDateRange) {
-        // Use saved date range values
-        firstDay = new Date(savedDateRange.startDate);
-        lastDay = new Date(savedDateRange.endDate);
+
+    if (usePassedDateRange && beginDateParam && endDateParam) {
+        firstDay = beginDateParam;
+        lastDay = endDateParam;
     } else {
-        // Check if selected_document is in URL and adjust date range if needed
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedDocumentId = urlParams.get('selected_document');
-        {% if selected_document %}
-        if (selectedDocumentId) {
-            // Get document date from server-side context
-            const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
-            // If document date is outside current month, adjust date range to include it
-            if (docDate < firstDay || docDate > lastDay) {
-                // Use document date ± 1 month, or use document date's month
-                const docYear = docDate.getFullYear();
-                const docMonth = docDate.getMonth();
-                firstDay = new Date(docYear, docMonth, 1);
-                lastDay = new Date(docYear, docMonth + 1, 0);
-                // Ensure we include at least the document date
-                if (docDate < firstDay) firstDay = new Date(docDate);
-                if (docDate > lastDay) lastDay = new Date(docDate);
+        const savedDateRange = loadDateRangeFromLocalStorage();
+        if (savedDateRange) {
+            firstDay = new Date(savedDateRange.startDate);
+            lastDay = new Date(savedDateRange.endDate);
+        } else {
+            {% if selected_document %}
+            if (selectedDocumentId) {
+                const docDate = new Date('{{ selected_document.DocumentDate|date:"Y-m-d" }}');
+                if (docDate < firstDay || docDate > lastDay) {
+                    const docYear = docDate.getFullYear();
+                    const docMonth = docDate.getMonth();
+                    firstDay = new Date(docYear, docMonth, 1);
+                    lastDay = new Date(docYear, docMonth + 1, 0);
+                    if (docDate < firstDay) firstDay = new Date(docDate);
+                    if (docDate > lastDay) lastDay = new Date(docDate);
+                }
             }
+            {% endif %}
         }
-        {% endif %}
     }
-    
+
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
     const pageSizeSelect = document.getElementById('page-size-select');
     const applyButton = document.getElementById('apply-date-filter');
-    
+
     if (startDateInput && endDateInput) {
-        startDateInput.value = formatDateForInput(firstDay);
-        endDateInput.value = formatDateForInput(lastDay);
-        
-        // Save initial date range to localStorage
-        saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
-        
-        // Helper function to save and fetch documents
-        const saveAndFetch = (startDate, endDate) => {
-            saveDateRangeToLocalStorage(startDate, endDate);
-            fetchDocuments(startDate, endDate);
-        };
-        
-        // Add event listeners
-        if (applyButton) {
-            applyButton.addEventListener('click', () => {
-                saveAndFetch(startDateInput.value, endDateInput.value);
+        if (useDocumentFilter) {
+            requestAnimationFrame(() => {
+                const filterIds = [
+                    'filter-document-no', 'filter-document-type', 'filter-client',
+                    'filter-date', 'filter-description', 'filter-account',
+                    'filter-isvat', 'filter-warehouse', 'filter-cost-amount',
+                    'filter-price-amount', 'filter-created-by'
+                ];
+
+                filterIds.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = '';
+                    }
+                });
             });
         }
-        
-        // Save on date input change
+
+        if (usePassedDateRange && beginDateParam && endDateParam) {
+            startDateInput.value = beginDateParam;
+            endDateInput.value = endDateParam;
+        } else {
+            startDateInput.value = typeof firstDay === 'string' ? firstDay : formatDateForInput(firstDay);
+            endDateInput.value = typeof lastDay === 'string' ? lastDay : formatDateForInput(lastDay);
+        }
+
+        saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
+
+        const saveAndFetch = (startDate, endDate, skipLocalStorage = false) => {
+            if (!skipLocalStorage) {
+                saveDateRangeToLocalStorage(startDate, endDate);
+            }
+            return fetchDocuments(startDate, endDate);
+        };
+
+        let isProgrammaticClick = false;
+        let skipFilterClear = false;
+
+        if (applyButton) {
+            applyButton.addEventListener('click', () => {
+                if (isProgrammaticClick) {
+                    isProgrammaticClick = false;
+                    searchPromise = saveAndFetch(startDateInput.value, endDateInput.value, true);
+                    return;
+                }
+                if (!skipFilterClear) {
+                    clearAllClientSideFilters();
+                }
+                skipFilterClear = false;
+                searchPromise = saveAndFetch(startDateInput.value, endDateInput.value);
+            });
+        }
+
         startDateInput.addEventListener('change', () => {
             saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
         });
         endDateInput.addEventListener('change', () => {
             saveDateRangeToLocalStorage(startDateInput.value, endDateInput.value);
         });
-        
-        // Also trigger on Enter key
+
         startDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') {
+                clearAllClientSideFilters();
+                saveAndFetch(startDateInput.value, endDateInput.value);
+            }
         });
         endDateInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveAndFetch(startDateInput.value, endDateInput.value);
+            if (e.key === 'Enter') {
+                clearAllClientSideFilters();
+                saveAndFetch(startDateInput.value, endDateInput.value);
+            }
         });
+
+        if (!useDocumentFilter) {
+            const savedFilters = loadAllFiltersFromLocalStorage();
+
+            if (savedFilters) {
+                if (savedFilters.pageSize) {
+                    pageSize = parseInt(savedFilters.pageSize);
+                    if (pageSizeSelect) {
+                        pageSizeSelect.value = pageSize;
+                    }
+                }
+
+                if (savedFilters.currentPage) {
+                    currentPage = parseInt(savedFilters.currentPage);
+                }
+
+                const filterIds = [
+                    'filter-document-no', 'filter-document-type', 'filter-client',
+                    'filter-date', 'filter-description', 'filter-account',
+                    'filter-isvat', 'filter-warehouse', 'filter-cost-amount',
+                    'filter-price-amount', 'filter-created-by'
+                ];
+
+                const filterMap = {
+                    'filter-document-no': 'documentNo',
+                    'filter-document-type': 'documentType',
+                    'filter-client': 'client',
+                    'filter-date': 'date',
+                    'filter-description': 'description',
+                    'filter-account': 'account',
+                    'filter-isvat': 'isVat',
+                    'filter-warehouse': 'warehouse',
+                    'filter-cost-amount': 'costAmount',
+                    'filter-price-amount': 'priceAmount',
+                    'filter-created-by': 'createdBy'
+                };
+
+                filterIds.forEach(filterId => {
+                    const input = document.getElementById(filterId);
+                    const savedKey = filterMap[filterId];
+                    if (input && savedFilters[savedKey] !== undefined) {
+                        input.value = savedFilters[savedKey];
+                    }
+                });
+            }
+        } else {
+            setTimeout(() => {
+                const filterIds = [
+                    'filter-document-no', 'filter-document-type', 'filter-client',
+                    'filter-date', 'filter-description', 'filter-account',
+                    'filter-isvat', 'filter-warehouse', 'filter-cost-amount',
+                    'filter-price-amount', 'filter-created-by'
+                ];
+
+                filterIds.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = '';
+                    }
+                });
+            }, 100);
+        }
+
+        if (pageSizeSelect) {
+            pageSizeSelect.addEventListener('change', (e) => {
+                pageSize = parseInt(e.target.value);
+                currentPage = 1;
+                saveAllFiltersToLocalStorage();
+                applyFrontendFilter();
+            });
+        }
+
+        if (useDocumentFilter) {
+            if (applyButton) {
+                setTimeout(() => {
+                    const clearFilters = () => {
+                        const filterIds = [
+                            'filter-document-no', 'filter-document-type', 'filter-client',
+                            'filter-date', 'filter-description', 'filter-account',
+                            'filter-isvat', 'filter-warehouse', 'filter-cost-amount',
+                            'filter-price-amount', 'filter-created-by'
+                        ];
+
+                        filterIds.forEach(id => {
+                            const element = document.getElementById(id);
+                            if (element) {
+                                element.value = '';
+                            }
+                        });
+                    };
+
+                    clearFilters();
+                    setTimeout(clearFilters, 50);
+
+                    clearAllClientSideFilters(true);
+
+                    window.isInitialDocumentFilterLoad = true;
+
+                    skipFilterClear = true;
+                    isProgrammaticClick = true;
+
+                    applyButton.click();
+
+                    setTimeout(() => {
+                        const promiseToUse = searchPromise || fetchDocuments(startDateInput.value, endDateInput.value);
+
+                        promiseToUse.then(() => {
+                            window.isInitialDocumentFilterLoad = false;
+
+                            setTimeout(() => {
+                                applyFrontendFilter();
+                                if (selectedDocumentId) {
+                                    setTimeout(() => {
+                                        loadDocumentDetails(selectedDocumentId);
+                                    }, 100);
+                                }
+                            }, 100);
+                        }).catch(error => {
+                            window.isInitialDocumentFilterLoad = false;
+                            console.error('Error during search:', error);
+                        });
+                    }, 50);
+                }, 100);
+            } else {
+                window.isInitialDocumentFilterLoad = true;
+                const promiseToUse = fetchDocuments(startDateInput.value, endDateInput.value);
+                promiseToUse.then(() => {
+                    window.isInitialDocumentFilterLoad = false;
+                    setTimeout(() => {
+                        applyFrontendFilter();
+                        if (selectedDocumentId) {
+                            setTimeout(() => loadDocumentDetails(selectedDocumentId), 100);
+                        }
+                    }, 100);
+                }).catch(error => {
+                    window.isInitialDocumentFilterLoad = false;
+                    console.error('Error during search:', error);
+                });
+            }
+        } else {
+            fetchDocuments(startDateInput.value, endDateInput.value);
+        }
     }
-    
-    if (pageSizeSelect) {
-        pageSizeSelect.addEventListener('change', () => {
-            pageSize = parseInt(pageSizeSelect.value);
-            currentPage = 1;
-            applyFrontendFilter();
-        });
-    }
-    
-    // Load initial data
-    fetchDocuments(startDateInput.value, endDateInput.value);
 }
 
 // Fetch documents from API
@@ -345,7 +618,7 @@ function fetchDocuments(startDate, endDate) {
     // Create new AbortController for this request
     currentApiRequest = new AbortController();
     
-    fetch(url, {
+    return fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -360,7 +633,6 @@ function fetchDocuments(startDate, endDate) {
         
         if (data.success) {
             allDocumentsData = data.documents;
-            currentPage = 1;
             
             // If selected_document is in URL, optionally set document number filter for visual feedback
             const urlParams = new URLSearchParams(window.location.search);
@@ -382,7 +654,17 @@ function fetchDocuments(startDate, endDate) {
                 }
             }
             
-            applyFrontendFilter();
+            if (!window.isInitialDocumentFilterLoad) {
+                applyFrontendFilter();
+            } else {
+                setTimeout(() => {
+                    applyFrontendFilter();
+                    window.isInitialDocumentFilterLoad = false;
+                    if (selectedDocumentId) {
+                        setTimeout(() => loadDocumentDetails(selectedDocumentId), 100);
+                    }
+                }, 50);
+            }
         } else {
             tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
         }
@@ -396,6 +678,7 @@ function fetchDocuments(startDate, endDate) {
             console.error('Error fetching documents:', error);
             tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>';
         }
+        window.isInitialDocumentFilterLoad = false;
         // If AbortError, silently ignore (user triggered it by changing filters)
     });
 }
@@ -404,39 +687,32 @@ function fetchDocuments(startDate, endDate) {
 function applyFrontendFilter() {
     // Get filter values
     const filters = {
-        documentNo: document.getElementById('filter-document-no')?.value.toLowerCase().trim() || '',
-        documentType: document.getElementById('filter-document-type')?.value.toLowerCase().trim() || '',
-        client: document.getElementById('filter-client')?.value.toLowerCase().trim() || '',
-        date: document.getElementById('filter-date')?.value.toLowerCase().trim() || '',
-        description: document.getElementById('filter-description')?.value.toLowerCase().trim() || '',
-        account: document.getElementById('filter-account')?.value.toLowerCase().trim() || '',
-        isvat: document.getElementById('filter-isvat')?.value.toLowerCase().trim() || '',
-        warehouse: document.getElementById('filter-warehouse')?.value.toLowerCase().trim() || '',
-        costAmount: document.getElementById('filter-cost-amount')?.value.toLowerCase().trim() || '',
-        priceAmount: document.getElementById('filter-price-amount')?.value.toLowerCase().trim() || '',
-        createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
+        documentNo: getFilterValue('filter-document-no'),
+        documentType: getFilterValue('filter-document-type'),
+        client: getFilterValue('filter-client'),
+        date: getFilterValue('filter-date'),
+        description: getFilterValue('filter-description'),
+        account: getFilterValue('filter-account'),
+        isvat: getFilterValue('filter-isvat'),
+        warehouse: getFilterValue('filter-warehouse'),
+        costAmount: getFilterValue('filter-cost-amount'),
+        priceAmount: getFilterValue('filter-price-amount'),
+        createdBy: getFilterValue('filter-created-by')
     };
-    
-    // Check if there are any active filters
-    const hasActiveFilters = Object.values(filters).some(value => value !== '');
     
     // Check for selected_document in URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     let selectedDocumentId = urlParams.get('selected_document');
     
-    // If all filters are cleared and selected_document exists in URL, remove it
-    if (!hasActiveFilters && selectedDocumentId) {
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.delete('selected_document');
-        window.history.pushState({}, '', currentUrl.toString());
-        selectedDocumentId = null; // Clear the variable so filtering doesn't apply
-    }
-    
     // Filter data with null-safe operations
     filteredData = allDocumentsData.filter(doc => {
-        // If selected_document is in URL and no filters are active, filter to only that document
-        // If filters are active, ignore selected_document to allow filtering
-        if (selectedDocumentId && !hasActiveFilters && doc.DocumentId != selectedDocumentId) return false;
+        if (selectedDocumentId) {
+            const docIdStr = String(doc.DocumentId || '');
+            const selectedIdStr = String(selectedDocumentId);
+            if (docIdStr !== selectedIdStr) {
+                return false;
+            }
+        }
         
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
         if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
@@ -468,6 +744,9 @@ function applyFrontendFilter() {
     
     // Update pagination info
     updatePaginationInfo(startIndex + 1, endIndex, filteredData.length);
+
+    // Persist filters
+    saveAllFiltersToLocalStorage();
 }
 
 // Render documents table with DocumentFragment for performance
@@ -579,7 +858,93 @@ function renderDocumentsTable(documents) {
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
     
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDocumentId = urlParams.get('selected_document');
+    if (selectedDocumentId) {
+        updateRowSelection(selectedDocumentId);
+    }
+    
     // Event handlers are already attached via delegation, no need to re-initialize
+}
+
+// Update row selection visual state
+function updateRowSelection(selectedDocumentId) {
+    const allRows = document.querySelectorAll('tbody tr[data-document-id]');
+    allRows.forEach(row => {
+        row.classList.remove('bg-blue-50');
+    });
+
+    const selectedRow = document.querySelector(`tr[data-document-id="${selectedDocumentId}"]`);
+    if (selectedRow) {
+        selectedRow.classList.add('bg-blue-50');
+    }
+}
+
+// Show loading state for detail grid
+function showDetailLoadingState() {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <h3 class="mt-2 text-xs font-medium text-gray-900">Loading details...</h3>
+                <p class="mt-1 text-xs text-gray-500">Please wait while we load the document details.</p>
+            </div>
+        `;
+    }
+}
+
+// Hide loading state (content replacement handles this)
+function hideDetailLoadingState() {
+    // Intentionally left blank
+}
+
+// Show error state for detail grid
+function showDetailErrorState() {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-xs font-medium text-gray-900">Error loading details</h3>
+                <p class="mt-1 text-xs text-gray-500">There was an error loading the document details. Please try again.</p>
+                <div class="mt-6">
+                    <button onclick="location.reload()" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">
+                        Reload Page
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Render detail content (shared between cached and fresh data)
+function renderDetailContent(html) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) {
+        return;
+    }
+
+    detailContainer.innerHTML = html;
+
+    setTimeout(() => {
+        if (typeof window.calculateInventoryItemTotals === 'function') {
+            window.calculateInventoryItemTotals();
+        }
+        if (typeof window.calculateInventoryAccountingTotals === 'function') {
+            window.calculateInventoryAccountingTotals();
+        }
+    }, 100);
+
+    if (typeof Silicon4Grid !== 'undefined') {
+        Silicon4Grid.initializeGrid({
+            tableSelector: '#detail-grid-container table',
+            autoAdjust: true,
+            responsive: true
+        });
+    }
 }
 
 // Helper function to truncate text
@@ -702,19 +1067,7 @@ function initializeFilterListeners() {
     const clearButton = document.getElementById('clear-filters');
     if (clearButton) {
         clearButton.addEventListener('click', function() {
-            filterInputs.forEach(filterId => {
-                const input = document.getElementById(filterId);
-                if (input) input.value = '';
-            });
-            currentPage = 1;
-            
-            // Remove selected_document from URL when filters are cleared
-            const currentUrl = new URL(window.location);
-            if (currentUrl.searchParams.has('selected_document')) {
-                currentUrl.searchParams.delete('selected_document');
-                window.history.pushState({}, '', currentUrl.toString());
-            }
-            
+            clearAllClientSideFilters();
             applyFrontendFilter();
         });
     }
@@ -804,33 +1157,25 @@ function initializeEventHandlers() {
 
 // Load document details via AJAX with caching and request cancellation
 function loadDocumentDetails(documentId) {
-    // Check cache first
     if (detailCache.has(documentId)) {
         renderCachedDetails(documentId);
         return;
     }
-    
-    // Cancel previous request if still in flight
+
     if (currentDetailRequest) {
         currentDetailRequest.abort();
         currentDetailRequest = null;
     }
-    
-    const detailContainer = document.getElementById('detail-grid-container');
-    if (!detailContainer) return;
-    
-    // Show loading state
-    detailContainer.innerHTML = `
-        <div class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p class="mt-2 text-sm text-gray-600">Loading details...</p>
-        </div>
-    `;
-    
-    // Create new AbortController for this request
+
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('selected_document', documentId);
+    window.history.pushState({}, '', currentUrl.toString());
+
+    updateRowSelection(documentId);
+    showDetailLoadingState();
+
     currentDetailRequest = new AbortController();
-    
-    // Make AJAX request
+
     fetch(`/core/invdocuments/?selected_document=${documentId}&ajax=1`, {
         method: 'GET',
         headers: {
@@ -840,62 +1185,35 @@ function loadDocumentDetails(documentId) {
         signal: currentDetailRequest.signal
     })
     .then(response => {
-        // Clear request reference on success
         currentDetailRequest = null;
-        
+
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         return response.text();
     })
     .then(html => {
-        // Cache the response
         detailCache.set(documentId, html);
-        
-        // Render the details
-        detailContainer.innerHTML = html;
-        
-        // Call calculation functions if available
-        if (typeof window.calculateInventoryItemTotals === 'function') {
-            setTimeout(() => {
-                window.calculateInventoryItemTotals();
-                window.calculateInventoryAccountingTotals();
-            }, 100);
-        }
+        renderDetailContent(html);
     })
     .catch(error => {
-        // Clear request reference
         currentDetailRequest = null;
-        
-        // Only show error if it's not an abort error (abort is intentional)
         if (error.name !== 'AbortError') {
             console.error('Error loading document details:', error);
-            detailContainer.innerHTML = `
-                <div class="text-center py-8 text-red-600">
-                    <p>Error loading document details. Please try again.</p>
-                </div>
-            `;
+            showDetailErrorState();
         }
-        // If AbortError, silently ignore (user triggered it by clicking another row)
     });
 }
 
-// Render cached details
 function renderCachedDetails(documentId) {
     const html = detailCache.get(documentId);
     if (html) {
-    const detailContainer = document.getElementById('detail-grid-container');
-    if (detailContainer) {
-        detailContainer.innerHTML = html;
-        
-            // Call calculation functions if available
-                    if (typeof window.calculateInventoryItemTotals === 'function') {
-                setTimeout(() => {
-                        window.calculateInventoryItemTotals();
-                    window.calculateInventoryAccountingTotals();
-                }, 100);
-            }
-        }
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('selected_document', documentId);
+        window.history.pushState({}, '', currentUrl.toString());
+
+        updateRowSelection(documentId);
+        renderDetailContent(html);
     }
 }
 
