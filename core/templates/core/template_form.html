@@ -15,23 +15,26 @@
             <div class="px-4 py-5 sm:p-6">
                 <form method="post" class="space-y-6">
                     {% csrf_token %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="{{ form.TemplateName.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                                ЗАГВАРЫН НЭР <span class="text-red-500">*</span>
-                            </label>
-                            <div class="mt-1">
-                                {{ form.TemplateName }}
-                                {% if form.TemplateName.errors %}
-                                <div class="mt-1 text-sm text-red-600">
-                                    {% for error in form.TemplateName.errors %}
-                                    <p>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <p class="mt-1 text-sm text-gray-500">Давтагдашгүй загварын нэр оруулна уу (ихдээ 55 тэмдэгт)</p>
+                    <!-- Template Name - Full Width -->
+                    <div>
+                        <label for="{{ form.TemplateName.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            ЗАГВАРЫН НЭР <span class="text-red-500">*</span>
+                        </label>
+                        <div class="mt-1">
+                            {{ form.TemplateName }}
+                            {% if form.TemplateName.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.TemplateName.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
                             </div>
+                            {% endif %}
+                            <p class="mt-1 text-sm text-gray-500">Давтагдашгүй загварын нэр оруулна уу (ихдээ 150 тэмдэгт)</p>
                         </div>
+                    </div>
+                    
+                    <!-- Document Type and Account - Two Columns -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="{{ form.DocumentTypeId.id_for_label }}" class="block text-sm font-medium text-gray-700">
                                 БАРИМТЫН ТӨРӨЛ <span class="text-red-500">*</span>
@@ -48,8 +51,6 @@
                                 <p class="mt-1 text-sm text-gray-500">Энэ загварт тохирох баримтын төрлийг сонгоно уу</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="{{ form.AccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
                                 ДАНС <span class="text-red-500">*</span>
@@ -66,7 +67,6 @@
                                 <p class="mt-1 text-sm text-gray-500">Энэ загварт тохирох дансыг сонгоно уу</p>
                             </div>
                         </div>
-                        
                     </div>
                     
                     

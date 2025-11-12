@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load humanize %}
 <!-- FORCE NO CACHE - New File -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -263,6 +264,10 @@
                         <option value="50">50</option>
                         <option value="100">100</option>
                     </select>
+                    <button id="print-trial-balance" 
+                            class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                        ХЭВЛЭХ
+                    </button>
                 </div>
             </div>
         </div>
@@ -280,6 +285,9 @@
 
 <!-- Include Account Statement Modal -->
 {% include 'core/components/print_account_statement_modal.html' %}
+
+<!-- Include Print Script -->
+<script src="{% static 'js/print-trial-balance.js' %}"></script>
 
 <!-- Context Menu -->
 <div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg py-1 min-w-[200px]" style="z-index: 9999;">
@@ -597,6 +605,7 @@ if (form) {
 // Client-side filtering and pagination
 let allRows = [];
 let filteredRows = [];
+let allFilteredRowData = []; // Store all filtered row data for printing (maintains all rows regardless of pagination)
 let currentPage = 1;
 let rowsPerPage = 25;
 
@@ -784,7 +793,7 @@ function applyAllFilters() {
     });
     
     currentPage = 1;
-    displayRows();
+    displayRows(); // This will update allFilteredRowData
     setupPagination();
     // Recalculate totals based on filtered rows
     calculateTotals();
@@ -818,6 +827,20 @@ function displayRows() {
     const tbody = document.querySelector('#trial-balance-table tbody');
     if (!tbody) return;
     
+    // Store all filtered row data before clearing (for print function)
+    allFilteredRowData = filteredRows.map(row => ({
+        accountId: row.dataset.accountId || '',
+        accountCode: row.dataset.accountCode || '',
+        accountName: row.dataset.accountName || '',
+        accountType: row.dataset.accountType || '',
+        beginningBalanceDebit: parseFloat(row.dataset.beginningBalanceDebit) || 0,
+        beginningBalanceCredit: parseFloat(row.dataset.beginningBalanceCredit) || 0,
+        debitAmount: parseFloat(row.dataset.debitAmount) || 0,
+        creditAmount: parseFloat(row.dataset.creditAmount) || 0,
+        endingBalanceDebit: parseFloat(row.dataset.endingBalanceDebit) || 0,
+        endingBalanceCredit: parseFloat(row.dataset.endingBalanceCredit) || 0
+    }));
+    
     // Clear current rows
     tbody.innerHTML = '';
     
@@ -826,9 +849,9 @@ function displayRows() {
     const endIndex = startIndex + rowsPerPage;
     const pageRows = filteredRows.slice(startIndex, endIndex);
     
-    // Add rows to table
+    // Add rows to table (clone them so original filteredRows array is preserved)
     pageRows.forEach(row => {
-        tbody.appendChild(row);
+        tbody.appendChild(row.cloneNode(true));
     });
     
     // Re-add click handlers to new rows
@@ -891,6 +914,81 @@ function goToPage(page) {
     }
 }
 
+function handlePrintTrialBalance() {
+    // Use allFilteredRowData if available (contains all filtered rows), otherwise use filteredRows
+    const dataToUse = allFilteredRowData.length > 0 ? allFilteredRowData : filteredRows.map(row => ({
+        accountId: row.dataset.accountId || '',
+        accountCode: row.dataset.accountCode || '',
+        accountName: row.dataset.accountName || '',
+        accountType: row.dataset.accountType || '',
+        beginningBalanceDebit: parseFloat(row.dataset.beginningBalanceDebit) || 0,
+        beginningBalanceCredit: parseFloat(row.dataset.beginningBalanceCredit) || 0,
+        debitAmount: parseFloat(row.dataset.debitAmount) || 0,
+        creditAmount: parseFloat(row.dataset.creditAmount) || 0,
+        endingBalanceDebit: parseFloat(row.dataset.endingBalanceDebit) || 0,
+        endingBalanceCredit: parseFloat(row.dataset.endingBalanceCredit) || 0
+    }));
+
+    if (!dataToUse || dataToUse.length === 0) {
+        alert('Хэвлэх мэдээлэл алга байна.');
+        return;
+    }
+
+    // Get date range from form inputs
+    const beginDateInput = document.getElementById('begin_date');
+    const endDateInput = document.getElementById('end_date');
+    const beginDate = beginDateInput ? beginDateInput.value : '';
+    const endDate = endDateInput ? endDateInput.value : '';
+
+    // Get column headers from table
+    const headers = Array.from(document.querySelectorAll('#trial-balance-table thead tr:first-child th'))
+        .map(th => th.textContent.trim());
+
+    // Use the print-trial-balance.js function
+    if (typeof window.printTrialBalanceTable === 'function') {
+        const mappedData = dataToUse.map(row => ({
+            AccountCode: row.accountCode || '',
+            AccountName: row.accountName || '',
+            BeginningBalanceDebit: row.beginningBalanceDebit || 0,
+            BeginningBalanceCredit: row.beginningBalanceCredit || 0,
+            DebitAmount: row.debitAmount || 0,
+            CreditAmount: row.creditAmount || 0,
+            EndingBalanceDebit: row.endingBalanceDebit || 0,
+            EndingBalanceCredit: row.endingBalanceCredit || 0
+        }));
+
+        // Calculate totals from all filtered rows
+        const totals = {
+            beginDebit: 0,
+            beginCredit: 0,
+            debitAmount: 0,
+            creditAmount: 0,
+            endDebit: 0,
+            endCredit: 0
+        };
+
+        dataToUse.forEach(row => {
+            totals.beginDebit += row.beginningBalanceDebit || 0;
+            totals.beginCredit += row.beginningBalanceCredit || 0;
+            totals.debitAmount += row.debitAmount || 0;
+            totals.creditAmount += row.creditAmount || 0;
+            totals.endDebit += row.endingBalanceDebit || 0;
+            totals.endCredit += row.endingBalanceCredit || 0;
+        });
+
+        window.printTrialBalanceTable({
+            title: 'ГҮЙЛГЭЭ БАЛАНС',
+            startDate: beginDate,
+            endDate: endDate,
+            allData: mappedData,
+            columnHeaders: headers,
+            totals: totals
+        });
+    } else {
+        alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+    }
+}
+
 // Event listeners for pagination
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize table features after a short delay to ensure table is loaded
@@ -928,6 +1026,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuEditAccount = document.getElementById('menu-edit-account');
     if (menuEditAccount) {
         menuEditAccount.addEventListener('click', handleEditAccount);
+    }
+    
+    // Print button event listener
+    const printButton = document.getElementById('print-trial-balance');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrintTrialBalance);
     }
 });
 })(); // End IIFE

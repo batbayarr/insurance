@@ -101,7 +101,8 @@ class RefClient(models.Model):
         blank=False,
         db_column='ClientTypeId'
     )
-    ClientRegister = models.CharField(max_length=8, blank=True, null=True)
+    ClientRegister = models.CharField(max_length=10, blank=True, null=True)
+    IsVat = models.BooleanField(default=False)
     CreatedBy = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='created_clients', db_column='CreatedBy')
     ModifiedBy = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='modified_clients', db_column='ModifiedBy')
     IsDelete = models.BooleanField(default=False)
@@ -1195,7 +1196,7 @@ class AstDepreciationExpense(models.Model):
 class Ref_Template(models.Model):
     """Template model for document templates"""
     TemplateId = models.SmallAutoField(primary_key=True)
-    TemplateName = models.CharField(max_length=70)
+    TemplateName = models.CharField(max_length=150)
     DocumentTypeId = models.ForeignKey(
         Ref_Document_Type,
         on_delete=models.PROTECT,

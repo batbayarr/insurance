@@ -122,6 +122,24 @@
                     </div>
                 </div>
                 
+                <!-- Is VAT -->
+                <div>
+                    <div class="flex items-center">
+                        {{ form.IsVat }}
+                        <label for="{{ form.IsVat.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                            НӨАТ-тай харилцагч
+                        </label>
+                    </div>
+                    {% if form.IsVat.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.IsVat.errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Харилцагч НӨАТ-тай эсэхийг тэмдэглэх</p>
+                </div>
+                
                 <!-- Is Delete -->
                 <div class="sm:col-span-2 hidden">
                     <div class="flex items-center">

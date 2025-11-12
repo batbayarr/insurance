@@ -7910,8 +7910,8 @@ def template_detail_create(request, template_id):
     return render(request, 'core/template_detail_form.html', {
         'form': form,
         'template': template,
-        'title': 'Add Template Detail',
-        'submit_text': 'Add Detail'
+        'title': 'Загварын данс нэмэх',
+        'submit_text': 'Нэмэх'
     })
 
 
@@ -7939,8 +7939,8 @@ def template_detail_update(request, pk):
     return render(request, 'core/template_detail_form.html', {
         'form': form,
         'template': template,
-        'title': 'Update Template Detail',
-        'submit_text': 'Update Detail'
+        'title': 'Загварын мөр шинэчлэх',
+        'submit_text': 'Хадгалах'
     })
 
 

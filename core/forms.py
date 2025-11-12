@@ -171,24 +171,28 @@ class RefClientForm(forms.ModelForm):
     
     class Meta:
         model = RefClient
-        fields = ['ClientCode', 'ClientName', 'ClientType', 'ClientRegister', 'IsDelete']
+        fields = ['ClientCode', 'ClientName', 'ClientType', 'ClientRegister', 'IsVat', 'IsDelete']
         widgets = {
             'ClientCode': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'maxlength': '5'
             }),
             'ClientName': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'maxlength': '100'
             }),
             'ClientType': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2'
             }),
             'ClientRegister': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
+                'maxlength': '10'
+            }),
+            'IsVat': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
             }),
             'IsDelete': forms.CheckboxInput(attrs={
-                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-300 rounded'
+                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
             })
         }
         labels = {
@@ -196,6 +200,7 @@ class RefClientForm(forms.ModelForm):
             'ClientName': 'Client Name',
             'ClientType': 'Client Type',
             'ClientRegister': 'Client Register',
+            'IsVat': 'Is VAT',
             'IsDelete': 'Deleted'
         }
 
@@ -266,31 +271,31 @@ class RefInventoryForm(forms.ModelForm):
         fields = ['InventoryCode', 'InventoryName', 'InventoryTypeId', 'MeasurementId', 'UnitCost', 'UnitPrice', 'IsActive']
         widgets = {
             'InventoryCode': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'maxlength': '5'
             }),
             'InventoryName': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'maxlength': '50'
             }),
             'InventoryTypeId': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2'
             }),
             'MeasurementId': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2'
             }),
             'UnitCost': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'step': '0.000001',
                 'min': '0'
             }),
             'UnitPrice': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm px-3 py-2',
                 'step': '0.000001',
                 'min': '0'
             }),
             'IsActive': forms.CheckboxInput(attrs={
-                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-300 rounded'
+                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
             })
         }
         labels = {
@@ -1012,15 +1017,15 @@ class Ref_TemplateForm(forms.ModelForm):
         fields = ['TemplateName', 'DocumentTypeId', 'AccountId', 'IsDelete']
         widgets = {
             'TemplateName': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full',
                 'placeholder': 'Enter template name',
-                'maxlength': '70'
+                'maxlength': '150'
             }),
             'DocumentTypeId': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full'
             }),
             'AccountId': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full'
             }),
             'IsDelete': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -1050,13 +1055,13 @@ class Ref_Template_DetailForm(forms.ModelForm):
         fields = ['AccountId', 'IsDebit', 'CashFlowId']
         widgets = {
             'AccountId': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full'
             }),
             'CashFlowId': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full'
             }),
             'IsDebit': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'form-check-input h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
             })
         }
         labels = {
