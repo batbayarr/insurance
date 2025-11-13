@@ -1459,10 +1459,10 @@ def cashdocument_create(request):
                                 vat_sale = Ref_Constant.objects.filter(ConstantName='VAT_Sale').first()
                                 vat_purchase = Ref_Constant.objects.filter(ConstantName='VAT_Purchase').first()
                                 if vat_sale:
-                                    vat_sale_account = Ref_Account.objects.filter(AccountId=vat_sale.ConstantValue).first()
+                                    vat_sale_account = Ref_Account.objects.filter(AccountId=vat_sale.ConstantName).first()
                                     vat_accounts['vat_sale_code'] = vat_sale_account.AccountCode if vat_sale_account else ''
                                 if vat_purchase:
-                                    vat_purchase_account = Ref_Account.objects.filter(AccountId=vat_purchase.ConstantValue).first()
+                                    vat_purchase_account = Ref_Account.objects.filter(AccountId=vat_purchase.ConstantName).first()
                                     vat_accounts['vat_purchase_code'] = vat_purchase_account.AccountCode if vat_purchase_account else ''
                             except:
                                 pass
@@ -1516,24 +1516,28 @@ def cashdocument_create(request):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }
@@ -1580,10 +1584,10 @@ def cashdocument_update(request, pk):
                         vat_sale = Ref_Constant.objects.filter(ConstantName='VAT_Sale').first()
                         vat_purchase = Ref_Constant.objects.filter(ConstantName='VAT_Purchase').first()
                         if vat_sale:
-                            vat_sale_account = Ref_Account.objects.filter(AccountId=vat_sale.ConstantValue).first()
+                            vat_sale_account = Ref_Account.objects.filter(AccountId=vat_sale.ConstantName).first()
                             vat_accounts['vat_sale_code'] = vat_sale_account.AccountCode if vat_sale_account else ''
                         if vat_purchase:
-                            vat_purchase_account = Ref_Account.objects.filter(AccountId=vat_purchase.ConstantValue).first()
+                            vat_purchase_account = Ref_Account.objects.filter(AccountId=vat_purchase.ConstantName).first()
                             vat_accounts['vat_purchase_code'] = vat_purchase_account.AccountCode if vat_purchase_account else ''
                     except:
                         pass
@@ -1647,24 +1651,28 @@ def cashdocument_update(request, pk):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }
@@ -2427,18 +2435,27 @@ def invdocument_create(request, parentid=None):
                     vat_accounts = {}
                     try:
                         from .models import Ref_Constant, Ref_Account
-                        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-                        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+                        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+                        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
+                        
+                        # Convert ConstantName to integer to get AccountId
+                        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+                        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+                        
+                        # Get actual account objects to retrieve account codes
+                        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+                        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
+                        
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
-                            'vat_account_1_display': vat_account_8.AccountCode,
-                            'vat_account_2_display': vat_account_9.AccountCode,
+                            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+                            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+                            'vat_account_1_display': payable_vat_account.AccountCode,
+                            'vat_account_2_display': receivable_vat_account.AccountCode,
                         }
                     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
+                            'vat_account_1_id': 8,  # Payable VAT fallback
+                            'vat_account_2_id': 9,  # Receivable VAT fallback
                             'vat_account_1_display': '3403-01',
                             'vat_account_2_display': '3403-02',
                         }
@@ -2484,24 +2501,28 @@ def invdocument_create(request, parentid=None):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }
@@ -2548,18 +2569,27 @@ def invdocument_update(request, pk, parentid=None):
                     vat_accounts = {}
                     try:
                         from .models import Ref_Constant, Ref_Account
-                        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-                        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+                        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+                        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
+                        
+                        # Convert ConstantName to integer to get AccountId
+                        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+                        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+                        
+                        # Get actual account objects to retrieve account codes
+                        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+                        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
+                        
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
-                            'vat_account_1_display': vat_account_8.AccountCode,
-                            'vat_account_2_display': vat_account_9.AccountCode,
+                            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+                            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+                            'vat_account_1_display': payable_vat_account.AccountCode,
+                            'vat_account_2_display': receivable_vat_account.AccountCode,
                         }
                     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
+                            'vat_account_1_id': 8,  # Payable VAT fallback
+                            'vat_account_2_id': 9,  # Receivable VAT fallback
                             'vat_account_1_display': '3403-01',
                             'vat_account_2_display': '3403-02',
                         }
@@ -2613,24 +2643,28 @@ def invdocument_update(request, pk, parentid=None):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }
@@ -4903,24 +4937,28 @@ def astdocument_create(request, parentid=None):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }
@@ -4963,20 +5001,27 @@ def astdocument_update(request, pk, parentid=None):
                     vat_accounts = {}
                     try:
                         from .models import Ref_Constant, Ref_Account
-                        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-                        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
-                        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-                        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+                        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+                        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
+                        
+                        # Convert ConstantName to integer to get AccountId
+                        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+                        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+                        
+                        # Get actual account objects to retrieve account codes
+                        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+                        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
+                        
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
-                            'vat_account_1_display': vat_account_8.AccountCode,
-                            'vat_account_2_display': vat_account_9.AccountCode,
+                            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+                            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+                            'vat_account_1_display': payable_vat_account.AccountCode,
+                            'vat_account_2_display': receivable_vat_account.AccountCode,
                         }
                     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
                         vat_accounts = {
-                            'vat_account_1_id': 8,
-                            'vat_account_2_id': 9,
+                            'vat_account_1_id': 8,  # Payable VAT fallback
+                            'vat_account_2_id': 9,  # Receivable VAT fallback
                             'vat_account_1_display': '3403-01',
                             'vat_account_2_display': '3403-02',
                         }
@@ -5030,24 +5075,28 @@ def astdocument_update(request, pk, parentid=None):
     vat_accounts = {}
     try:
         from .models import Ref_Constant, Ref_Account
-        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)
-        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10)
+        vat_constant_9 = Ref_Constant.objects.get(ConstantID=9)   # Receivable VAT
+        vat_constant_10 = Ref_Constant.objects.get(ConstantID=10) # Payable VAT
         
-        # Get actual account codes for VAT accounts
-        vat_account_8 = Ref_Account.objects.get(AccountId=8)
-        vat_account_9 = Ref_Account.objects.get(AccountId=9)
+        # Convert ConstantName to integer to get AccountId
+        receivable_vat_account_id = int(vat_constant_9.ConstantName)   # Receivable (ConstantID=9)
+        payable_vat_account_id = int(vat_constant_10.ConstantName)    # Payable (ConstantID=10)
+        
+        # Get actual account objects to retrieve account codes
+        receivable_vat_account = Ref_Account.objects.get(AccountId=receivable_vat_account_id)
+        payable_vat_account = Ref_Account.objects.get(AccountId=payable_vat_account_id)
         
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
-            'vat_account_1_display': vat_account_8.AccountCode,
-            'vat_account_2_display': vat_account_9.AccountCode,
+            'vat_account_1_id': payable_vat_account_id,      # Payable VAT (ConstantID=10)
+            'vat_account_2_id': receivable_vat_account_id,   # Receivable VAT (ConstantID=9)
+            'vat_account_1_display': payable_vat_account.AccountCode,
+            'vat_account_2_display': receivable_vat_account.AccountCode,
         }
     except (Ref_Constant.DoesNotExist, Ref_Account.DoesNotExist, ValueError):
         # Fallback values
         vat_accounts = {
-            'vat_account_1_id': 8,  # ConstantID=9 maps to VatAccountId=8
-            'vat_account_2_id': 9,  # ConstantID=10 maps to VatAccountId=9
+            'vat_account_1_id': 8,  # Payable VAT fallback
+            'vat_account_2_id': 9,  # Receivable VAT fallback
             'vat_account_1_display': '3403-01',
             'vat_account_2_display': '3403-02',
         }

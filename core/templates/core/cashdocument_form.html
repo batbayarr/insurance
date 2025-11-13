@@ -917,12 +917,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // VAT account mapping based on document type (using database constants)
     const vatAccountMapping = {
-        1: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 1,3,16 -> VAT 10
-        3: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
-        16: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
-        2: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 2,4,17 -> VAT 9
-        4: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
-        17: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
+        1: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 1,3,16 -> Payable VAT (ConstantID=10)
+        3: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
+        16: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
+        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 2,4,17 -> Receivable VAT (ConstantID=9)
+        4: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
+        17: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
     };
     
     // Function to set VAT account based on document type

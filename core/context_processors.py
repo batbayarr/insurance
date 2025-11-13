@@ -38,8 +38,8 @@ def global_constants(request):
         'CASHIER': '',
         'CONSTANT_7': '',  # Placeholder for any additional constant
         'CONSTANT_8': '',  # Placeholder for any additional constant
-        'VAT_ACCOUNT_RECEIVABLE': '8',  # Default VAT Receivable Account ID
-        'VAT_ACCOUNT_PAYABLE': '9',     # Default VAT Payable Account ID
+        'VAT_ACCOUNT_RECEIVABLE': '9',  # Default VAT Receivable Account ID
+        'VAT_ACCOUNT_PAYABLE': '10',     # Default VAT Payable Account ID
         'CONSTANT_11': '',  # Placeholder for any additional constant
         'CONSTANT_12': '',  # Placeholder for any additional constant
         'CONSTANT_13': '',  # Placeholder for any additional constant
