@@ -184,7 +184,7 @@ def refaccount_list(request):
                 elif doc_type.ParentId == 2:
                     account_type_filter = '2'
                 else:
-                    account_type_filter = '1,2'
+                    account_type_filter = '1,2,3,42,43'
             except Ref_Document_Type.DoesNotExist:
                 pass
 
