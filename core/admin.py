@@ -278,7 +278,7 @@ class AstBeginningBalanceAdmin(admin.ModelAdmin):
 
 @admin.register(Ref_Asset_Card)
 class RefAssetCardAdmin(admin.ModelAdmin):
-    list_display = ('AssetCardId', 'AssetId', 'AssetCardCode', 'AssetCardName', 'ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'ClientId', 'CreatedDate', 'CreatedBy')
+    list_display = ('AssetCardId', 'AssetId', 'AssetCardCode', 'AssetCardName', 'ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'CumulatedDepreciation', 'ClientId', 'CreatedDate', 'CreatedBy')
     list_filter = ('AssetId__AssetTypeId', 'CreatedDate', 'CreatedBy', 'ClientId')
     search_fields = ('AssetCardCode', 'AssetCardName', 'AssetId__AssetName', 'AssetId__AssetCode', 'ClientId__ClientName', 'ClientId__ClientCode')
     ordering = ('AssetCardCode',)
@@ -289,7 +289,7 @@ class RefAssetCardAdmin(admin.ModelAdmin):
             'fields': ('AssetId', 'AssetCardCode', 'AssetCardName', 'ClientId')
         }),
         ('Asset Details', {
-            'fields': ('ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense')
+            'fields': ('ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'CumulatedDepreciation')
         }),
         ('Audit Information', {
             'fields': ('CreatedDate', 'CreatedBy', 'ModifiedDate', 'ModifiedBy'),

@@ -30,7 +30,9 @@ input[type="number"] {
     {
         "DocumentId": {{ document.DocumentId }},
         "DocumentTypeId": {{ document.DocumentTypeId.DocumentTypeId }},
+        "DocumentDate": "{{ document.DocumentDate|date:'Y-m-d' }}",
         "AccountId": {% if document.AccountId %}{{ document.AccountId.AccountId }}{% else %}null{% endif %},
+        "WarehouseId": {% if document.WarehouseId %}{{ document.WarehouseId.WarehouseId }}{% else %}null{% endif %},
         "TemplateId": {% if document.TemplateId %}{{ document.TemplateId.TemplateId }}{% else %}null{% endif %},
         "IsVat": {% if document.IsVat %}true{% else %}false{% endif %},
         "ClientId": {{ document.ClientId.ClientId }},
@@ -102,7 +104,7 @@ input[type="number"] {
                                            class="inventory-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
                                            placeholder="Click to select inventory" 
                                            readonly 
-                                           onclick="openInventoryPopup(this, '{{ item.DocumentItemId }}')"
+                                           onclick="openInventoryPopupWithContext(this, '{{ item.DocumentItemId }}')"
                                            title="{% if item.InventoryId %}{{ item.InventoryId.InventoryName }}{% endif %}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                         <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -629,7 +631,7 @@ window.addNewRow = function() {
                 <input type="text" class="inventory-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
                        placeholder="Click to select inventory" 
                        readonly 
-                       onclick="openInventoryPopup(this, 'new_${newRowCounter}')">
+                       onclick="openInventoryPopupWithContext(this, 'new_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -705,8 +707,36 @@ window.removeRow = function(button) {
 
 
 
-// The openInventoryPopup function is provided by the inventory_selection_modal.html
-// No wrapper needed - the modal's function is already global
+// Helper function to open inventory popup with document context
+function openInventoryPopupWithContext(inputElement, rowId) {
+    // Get document data from the JSON script tag
+    const documentDataScript = document.getElementById('document-data');
+    if (documentDataScript) {
+        try {
+            const documentData = JSON.parse(documentDataScript.textContent);
+            const context = {
+                documentDate: documentData.DocumentDate || null,
+                warehouseId: documentData.WarehouseId || null,
+                accountId: documentData.AccountId || null
+            };
+            // Call the modal's openInventoryPopup function with context
+            if (typeof window.openInventoryPopup === 'function') {
+                window.openInventoryPopup(inputElement, rowId, context);
+            }
+        } catch (e) {
+            console.error('Error parsing document data:', e);
+            // Fallback to regular call without context
+            if (typeof window.openInventoryPopup === 'function') {
+                window.openInventoryPopup(inputElement, rowId);
+            }
+        }
+    } else {
+        // Fallback to regular call without context
+        if (typeof window.openInventoryPopup === 'function') {
+            window.openInventoryPopup(inputElement, rowId);
+        }
+    }
+}
 
 // Function to add a new detail row (blank row for manual entry)
 window.addNewDetailRow = function() {

@@ -10,16 +10,318 @@
         <div>
             <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ҮНДСЭН ХӨРӨНГИЙН КАРТ</h1>            
         </div>
-        {% if perms.core.add_ref_asset_card %}
-        <a href="{% url 'core:ref_asset_card_create' %}" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    </div>
+
+    {% if not is_modal %}
+    <div class="space-y-6">
+        <!-- Master Grid - Assets -->
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+                <div>
+                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Үндсэн хөрөнгө (Мастер)</h2>
+                </div>
+                <a href="{% url 'core:refasset_create' %}" 
+                   class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Үндсэн хөрөнгийн карт нэмэх
+                    <span class="text-xs">НЭМЭХ</span>
+                </a>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн огноо</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан огноо</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдлүүд</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for asset in master_assets %}
+                        <tr class="hover:bg-gray-50 cursor-pointer {% if selected_asset_id == asset.AssetId|stringformat:'s' %}bg-blue-50{% endif %}" 
+                            onclick="selectAsset({{ asset.AssetId }})">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ asset.AssetCode }}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ asset.AssetName }}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ asset.AssetTypeId.AssetTypeName }}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if asset.CreatedBy %}{{ asset.CreatedBy.username }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if asset.CreatedDate %}{{ asset.CreatedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if asset.ModifiedBy %}{{ asset.ModifiedBy.username }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if asset.ModifiedDate %}{{ asset.ModifiedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap border-r border-gray-200">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if not asset.IsDelete %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if not asset.IsDelete %}Идэвхтэй{% else %}Устгасан{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <a href="{% url 'core:refasset_update' asset.AssetId %}" 
+                                       class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </a>
+                                    <button type="button" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                                            title="Устгах"
+                                            onclick="event.stopPropagation(); Silicon4Delete.showModal('{% url 'core:refasset_delete' asset.AssetId %}', '{{ asset.AssetCode }} - {{ asset.AssetName }}')">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="px-2 py-1 text-center text-xs text-gray-500">
+                                Үндсэн хөрөнгө олдсонгүй
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination for Assets -->
+            {% if asset_paginator and asset_paginator.num_pages > 1 %}
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="text-sm text-gray-700">
+                    Нийт <span class="font-medium">{{ asset_paginator.count }}</span> бичлэгээс <span class="font-medium">{{ master_assets.start_index }}</span> - <span class="font-medium">{{ master_assets.end_index }}</span> бичлэг харагдаж байна
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if master_assets.has_other_pages %}
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if master_assets.has_previous %}
+                            <a href="?asset_page={{ master_assets.previous_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                            <span class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                {% for num in asset_paginator.page_range %}
+                                    {% if master_assets.number == num %}
+                                    <span class="px-2 py-1 text-sm rounded-md bg-blue-400 text-white hover:bg-blue-500">
+                                        {{ num }}
+                                    </span>
+                                    {% elif num > master_assets.number|add:'-3' and num < master_assets.number|add:'3' %}
+                                    <a href="?asset_page={{ num }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                                       class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                                        {{ num }}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% if master_assets.has_next %}
+                            <a href="?asset_page={{ master_assets.next_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
         </a>
         {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Detail Grid - Asset Cards -->
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+                <div>
+                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Үндсэн хөрөнгийн карт (Дэлгэрэнгүй)</h2>
+                    {% if selected_asset %}
+                        <p class="text-xs text-gray-600 mt-1">Харуулж байна: <strong>{{ selected_asset.AssetCode }} - {{ selected_asset.AssetName }}</strong></p>
+                    {% else %}
+                        <p class="text-xs text-gray-600 mt-1">Үүсгэсэн хөрөнгө сонгоно уу</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'core:ref_asset_card_create' %}{% if selected_asset_id %}?selected_asset={{ selected_asset_id }}{% endif %}" 
+                   class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span class="text-xs">ДЭЛГЭЭРНГҮЙ НЭМЭХ</span>
+                </a>
     </div>
     
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">КАРТ №</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ТАЙЛБАР</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдвэрлэсэн</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хүлээн авсан</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АШИГЛАХ САР</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ӨДРИЙН ЭЛЭГДЭЛ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ ОГНОО</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЗАССАН ОГНОО</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЛҮҮД</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for card in asset_cards %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ card.AssetCardCode }}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {{ card.AssetCardName|default:"-" }}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.ManufacturedDate %}{{ card.ManufacturedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.ReceivedDate %}{{ card.ReceivedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right">
+                                {% if card.MonthsToUse %}{{ card.MonthsToUse }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right">
+                                {% if card.UnitCost %}{{ card.UnitCost|floatformat:2 }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right">
+                                {% if card.UnitPrice %}{{ card.UnitPrice|floatformat:2 }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right">
+                                {% if card.DailyExpense %}{{ card.DailyExpense|floatformat:2 }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right">
+                                {% if card.CumulatedDepreciation %}{{ card.CumulatedDepreciation|floatformat:2 }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.ClientId %}{{ card.ClientId.ClientName }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.CreatedBy %}{{ card.CreatedBy.username }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.CreatedDate %}{{ card.CreatedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.ModifiedBy %}{{ card.ModifiedBy.username }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                                {% if card.ModifiedDate %}{{ card.ModifiedDate|date:"Y-m-d" }}{% else %}-{% endif %}
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                    <a href="{% url 'core:ref_asset_card_update' card.AssetCardId %}" 
+                                       class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </a>
+                                    <button type="button" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                                            title="Устгах"
+                                            onclick="Silicon4Delete.showModal('{% url 'core:ref_asset_card_delete' card.AssetCardId %}', '{{ card.AssetCardCode }} - {{ card.AssetId.AssetName }}')">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="15" class="px-2 py-1 text-center text-xs text-gray-500">
+                                {% if selected_asset %}Энэ үндсэн хөрөнгийн карт олдсонгүй{% else %}Картуудыг харахын тулд үндсэн хөрөнгийг сонгоно уу{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination for Asset Cards -->
+            {% if paginator and paginator.num_pages > 1 %}
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="text-sm text-gray-700">
+                    Нийт <span class="font-medium">{{ paginator.count }}</span> бичлэгээс <span class="font-medium">{{ asset_cards.start_index }}</span> - <span class="font-medium">{{ asset_cards.end_index }}</span> бичлэг харагдаж байна
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if asset_cards.has_other_pages %}
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if asset_cards.has_previous %}
+                            <a href="?page={{ asset_cards.previous_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                            <span class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                {% for num in paginator.page_range %}
+                                    {% if asset_cards.number == num %}
+                                    <span class="px-2 py-1 text-sm rounded-md bg-blue-400 text-white hover:bg-blue-500">
+                                        {{ num }}
+                                    </span>
+                                    {% elif num > asset_cards.number|add:'-3' and num < asset_cards.number|add:'3' %}
+                                    <a href="?page={{ num }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                                       class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                                        {{ num }}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% if asset_cards.has_next %}
+                            <a href="?page={{ asset_cards.next_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Modal Mode - Original single table layout -->
     <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
         {% if asset_cards %}
         <div class="overflow-x-auto">
@@ -38,7 +340,6 @@
                             <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Төлөв</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-11">Үйлдлүүд</th>
                         </tr>
-                        {% if not is_modal %}
                         <tr class="bg-gray-100">
                             <td class="px-1 py-1 border border-gray-300 w-20">
                                 <input type="text" name="asset_code" value="{{ filters.asset_code|default:'' }}" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Filter..." onchange="this.form.submit()">
@@ -69,7 +370,6 @@
                                 <a href="{% url 'core:ref_asset_card_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">Clear</a>
                             </td>
                         </tr>
-                        {% endif %}
                     </thead>
                     <tbody class="bg-white">
                         {% for asset_card in asset_cards %}
@@ -239,6 +539,7 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
 {% if not is_modal %}
@@ -266,6 +567,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+{% if not is_modal %}
+// Asset selection function
+function selectAsset(assetId) {
+    const params = new URLSearchParams();
+    params.append('selected_asset', assetId);
+    
+    // Reset card page to 1 when selecting new asset
+    params.append('page', '1');
+    
+    window.location.href = '?' + params.toString();
+}
+{% endif %}
 </script>
 
 {% endblock %}

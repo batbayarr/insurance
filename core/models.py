@@ -251,6 +251,7 @@ class Ref_Asset_Card(models.Model):
     UnitCost = models.DecimalField(max_digits=24, decimal_places=6, default=0)   
     UnitPrice = models.DecimalField(max_digits=24, decimal_places=6, default=0)
     DailyExpense = models.DecimalField(max_digits=24, decimal_places=6, default=0)
+    CumulatedDepreciation = models.DecimalField(max_digits=24, decimal_places=6, default=0, null=True, blank=True)
     CreatedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_asset_cards', db_column='CreatedBy')
     ModifiedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name='modified_asset_cards', db_column='ModifiedBy')
     CreatedDate = models.DateField(auto_now_add=True)

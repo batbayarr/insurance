@@ -54,6 +54,8 @@ urlpatterns = [
     path('trial-closing-entry/', views.trial_closing_entry, name='trial_closing_entry'),
     path('api/depreciation-summary/', views.api_depreciation_summary, name='api_depreciation_summary'),
     path('api/asset-depreciation-expenses/', views.api_asset_depreciation_expenses, name='api_asset_depreciation_expenses'),
+    path('api/calculate-depreciation/', views.api_calculate_depreciation, name='api_calculate_depreciation'),
+    path('api/calculate-closing-record/', views.api_calculate_closing_record, name='api_calculate_closing_record'),
     
     
     # Cash Document Details
@@ -128,6 +130,7 @@ urlpatterns = [
     # JSON API Endpoints
     path('api/assets/', views.assets_json, name='assets_json'),
     path('api/clients/', views.clients_json, name='clients_json'),
+    path('api/accounts/', views.api_accounts_json, name='api_accounts_json'),
     path('api/client-lookup-by-name/', views.api_client_lookup_by_name, name='api_client_lookup_by_name'),
     path('api/account-lookup-by-code/', views.api_account_lookup_by_code, name='api_account_lookup_by_code'),
     path('api/cash-import-bulk/', views.api_cash_import_bulk, name='api_cash_import_bulk'),
@@ -177,6 +180,8 @@ urlpatterns = [
     path('reports/y-balance/', views.y_balance, name='y_balance'),
     path('api/account-statement/', views.account_statement_detail, name='account_statement_detail'),
     path('api/subsidiary-ledger/', views.subsidiary_ledger_detail, name='subsidiary_ledger_detail'),
+    path('api/inventory-balance-warehouse/', views.api_get_inventory_balance_warehouse, name='api_get_inventory_balance_warehouse'),
+    path('api/inventory-list/', views.api_get_inventory_list, name='api_get_inventory_list'),
     
     # Depreciation
     path('depreciation/calculate/', views.calculate_depreciation_view, name='calculate_depreciation'),

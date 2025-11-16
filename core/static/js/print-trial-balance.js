@@ -28,8 +28,11 @@
      * Format number with Mongolian locale
      */
     function formatNumber(value, decimals = 2) {
-        if (value === null || value === undefined || isNaN(value)) return '0.00';
-        return parseFloat(value).toLocaleString('en-US', {
+        if (value === null || value === undefined || value === '') return '';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '';
+        if (num === 0) return '';
+        return num.toLocaleString('en-US', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         });
@@ -53,17 +56,16 @@
     }
 
     /**
-     * Get current date/time formatted
+     * Get current date/time formatted as YYYY-MM-DD, Цаг: H:M
      */
     function getCurrentDateTime() {
         const now = new Date();
-        return now.toLocaleString('mn-MN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}, Цаг: ${hours}:${minutes}`;
     }
 
     /**
@@ -106,7 +108,12 @@
                     return;
                 }
                 
-                let value = item[fieldName] || '';
+                let value = item[fieldName];
+                
+                // Handle null, undefined, or NaN values
+                if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+                    value = '';
+                }
                 
                 // Format numeric values
                 let isNumeric = false;
@@ -118,6 +125,13 @@
                     fieldName === 'EndingBalanceCredit') {
                     value = formatNumber(value, 2);
                     isNumeric = true;
+                } else {
+                    // Ensure string values don't show NaN
+                    if (typeof value === 'number' && isNaN(value)) {
+                        value = '';
+                    } else {
+                        value = String(value || '');
+                    }
                 }
                 
                 // Right-align numeric columns, left-align text
@@ -144,17 +158,17 @@
             if (header === 'Дансны код' || header === 'Дансны нэр') {
                 value = 'НИЙТ:';
             } else if (fieldName === 'BeginningBalanceDebit') {
-                value = formatNumber(totals.beginDebit || 0, 2);
+                value = formatNumber(totals.beginDebit, 2);
             } else if (fieldName === 'BeginningBalanceCredit') {
-                value = formatNumber(totals.beginCredit || 0, 2);
+                value = formatNumber(totals.beginCredit, 2);
             } else if (fieldName === 'DebitAmount') {
-                value = formatNumber(totals.debitAmount || 0, 2);
+                value = formatNumber(totals.debitAmount, 2);
             } else if (fieldName === 'CreditAmount') {
-                value = formatNumber(totals.creditAmount || 0, 2);
+                value = formatNumber(totals.creditAmount, 2);
             } else if (fieldName === 'EndingBalanceDebit') {
-                value = formatNumber(totals.endDebit || 0, 2);
+                value = formatNumber(totals.endDebit, 2);
             } else if (fieldName === 'EndingBalanceCredit') {
-                value = formatNumber(totals.endCredit || 0, 2);
+                value = formatNumber(totals.endCredit, 2);
             }
             
             const alignClass = (fieldName && fieldName !== 'AccountCode' && fieldName !== 'AccountName') ? ' class="text-right"' : '';
@@ -172,6 +186,7 @@
         const fieldMapping = getDataFieldMapping();
         const tableRows = generateTableRows(config.allData, config.columnHeaders, fieldMapping);
         const totalsRow = generateTotalsRow(config.columnHeaders, fieldMapping, config.totals);
+        const printDate = getCurrentDateTime();
         
         const html = `<!DOCTYPE html>
 <html lang="mn">
@@ -260,6 +275,8 @@
         
         th.text-right {
             text-align: right;
+            width: 12%;
+            min-width: 100px;
         }
         
         td {
@@ -270,6 +287,8 @@
         
         td.text-right {
             text-align: right;
+            width: 12%;
+            min-width: 100px;
         }
         
         tbody tr:nth-child(even) {
@@ -294,7 +313,26 @@
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 1cm;
+                margin: 1cm 1cm 2cm 1cm; /* Extra bottom margin for signature line and page numbers */
+                
+                @bottom-left {
+                    content: "Хянасан................................................................                                                  Бэлтгэсэн................................................................                                                  ";
+                    font-size: 9pt;
+                    color: #000;
+                }
+                
+                @bottom-center {
+                    content: "Хэвлэсэн огноо: ${escapeTemplateLiteral(printDate)}";
+                    font-size: 9pt;
+                    color: #000;
+                    white-space: nowrap;
+                }
+                
+                @bottom-right {
+                    content: "Хуудас " counter(page) " / " counter(pages);
+                    font-size: 9pt;
+                    color: #000;
+                }
             }
             
             body {
@@ -550,4 +588,3 @@
         });
     };
 })();
-

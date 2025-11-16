@@ -13,7 +13,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
+import logging
 from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
+
+logger = logging.getLogger(__name__)
 from django.db import connection, connections, transaction
 from .forms import Ref_AccountForm, RefClientForm, Ref_Client_BankForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
 from .utils import get_available_databases, set_database
@@ -952,8 +955,36 @@ def refinventory_create(request):
             inventory = form.save(commit=False)
             inventory.CreatedBy = request.user
             inventory.save()
+            
+            # Check if this is an AJAX request from modal
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Inventory item created successfully!',
+                    'inventory': {
+                        'InventoryId': inventory.InventoryId,
+                        'InventoryCode': inventory.InventoryCode,
+                        'InventoryName': inventory.InventoryName,
+                        'InventoryTypeId': inventory.InventoryTypeId.InventoryTypeId if inventory.InventoryTypeId else None,
+                        'InventoryTypeName': inventory.InventoryTypeId.InventoryTypeName if inventory.InventoryTypeId else None,
+                        'MeasurementId': inventory.MeasurementId.MeasurementId if inventory.MeasurementId else None,
+                        'MeasurementName': inventory.MeasurementId.MeasurementName if inventory.MeasurementId else None,
+                        'UnitCost': str(inventory.UnitCost) if inventory.UnitCost else None,
+                        'UnitPrice': str(inventory.UnitPrice) if inventory.UnitPrice else None,
+                        'IsActive': inventory.IsActive
+                    }
+                })
+            
             messages.success(request, 'Inventory item created successfully.')
             return redirect('core:refinventory_list')
+        else:
+            # Check if this is an AJAX request from modal
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Validation failed',
+                    'errors': form.errors
+                }, status=400)
     else:
         form = RefInventoryForm()
     
@@ -972,8 +1003,36 @@ def refinventory_update(request, pk):
             inventory = form.save(commit=False)
             inventory.ModifiedBy = request.user
             inventory.save()
+            
+            # Check if this is an AJAX request from modal
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Inventory item updated successfully!',
+                    'inventory': {
+                        'InventoryId': inventory.InventoryId,
+                        'InventoryCode': inventory.InventoryCode,
+                        'InventoryName': inventory.InventoryName,
+                        'InventoryTypeId': inventory.InventoryTypeId.InventoryTypeId if inventory.InventoryTypeId else None,
+                        'InventoryTypeName': inventory.InventoryTypeId.InventoryTypeName if inventory.InventoryTypeId else None,
+                        'MeasurementId': inventory.MeasurementId.MeasurementId if inventory.MeasurementId else None,
+                        'MeasurementName': inventory.MeasurementId.MeasurementName if inventory.MeasurementId else None,
+                        'UnitCost': str(inventory.UnitCost) if inventory.UnitCost else None,
+                        'UnitPrice': str(inventory.UnitPrice) if inventory.UnitPrice else None,
+                        'IsActive': inventory.IsActive
+                    }
+                })
+            
             messages.success(request, 'Inventory item updated successfully.')
             return redirect('core:refinventory_list')
+        else:
+            # Check if this is an AJAX request from modal
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Validation failed',
+                    'errors': form.errors
+                }, status=400)
     else:
         form = RefInventoryForm(instance=inventory)
     
@@ -1128,17 +1187,34 @@ def get_cash_documents_master(request):
         # Get date range parameters
         start_date = request.GET.get('start_date', '')
         end_date = request.GET.get('end_date', '')
+        selected_document = request.GET.get('selected_document', '')
         
         # Base query - only non-deleted records
         documents_query = Cash_Document.objects.select_related(
             'AccountId', 'ClientId', 'CurrencyId', 'DocumentTypeId', 'TemplateId', 'CreatedBy'
         ).filter(IsDelete=False)
         
-        # Apply date range filter
-        if start_date:
-            documents_query = documents_query.filter(DocumentDate__gte=start_date)
-        if end_date:
-            documents_query = documents_query.filter(DocumentDate__lte=end_date)
+        # If selected_document is provided, filter to only that document
+        # This is more efficient than fetching all documents and filtering on frontend
+        if selected_document and selected_document.strip():
+            try:
+                document_id = int(selected_document)
+                # Filter by document ID - this takes priority over date range
+                documents_query = documents_query.filter(DocumentId=document_id)
+                # When filtering by specific document, skip date range filter
+                # (we want to show the document even if it's outside the date range)
+                start_date = ''  # Clear date filters
+                end_date = ''
+            except (ValueError, TypeError):
+                # Invalid document ID, return empty result
+                documents_query = documents_query.none()
+        
+        # Apply date range filter (only if not filtering by specific document)
+        if not (selected_document and selected_document.strip()):
+            if start_date:
+                documents_query = documents_query.filter(DocumentDate__gte=start_date)
+            if end_date:
+                documents_query = documents_query.filter(DocumentDate__lte=end_date)
         
         # Order by document ID (newest first)
         documents_query = documents_query.order_by('-DocumentId')
@@ -1616,12 +1692,12 @@ def cashdocument_update(request, pk):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/core/cashdocuments/',
+                    'redirect_url': f'/core/cashdocuments/?selected_document={pk}',
                     'deleted_details': deleted_count
                 })
             
-            # Redirect to master detail page without selected_document parameter
-            return redirect('core:cashdocument_master_detail')
+            # Redirect to master detail page
+            return redirect(f'/core/cashdocuments/?selected_document={pk}')
         else:
             # Debug: Print form errors
             print("Form errors:", form.errors)
@@ -2886,150 +2962,14 @@ def bulk_manage_inv_details(request, document_id):
 
 @login_required
 @permission_required('core.view_refasset', raise_exception=True)
-def asset_master_detail_modal(request):
-    """Modal version of asset master detail view"""
-    # Get filter parameters
-    selected_asset_type_id = request.GET.get('asset_type', '')
-    selected_asset_id = request.GET.get('selected_asset', '')
-    page = request.GET.get('page', 1)
-    
-    # Get all asset types for dropdown
-    asset_types = Ref_Asset_Type.objects.filter(IsActive=True).order_by('AssetTypeName')
-    
-    # Get all assets with related data
-    assets = RefAsset.objects.select_related('AssetTypeId').order_by('AssetCode')
-    
-    # Apply asset type filter if provided
-    if selected_asset_type_id:
-        assets = assets.filter(AssetTypeId__AssetTypeId=selected_asset_type_id)
-    
-    # Apply additional filters
-    asset_code_filter = request.GET.get('asset_code', '')
-    asset_name_filter = request.GET.get('asset_name', '')
-    status_filter = request.GET.get('status', '')
-    
-    if asset_code_filter:
-        assets = assets.filter(AssetCode__icontains=asset_code_filter)
-    
-    if asset_name_filter:
-        assets = assets.filter(AssetName__icontains=asset_name_filter)
-    
-    if status_filter:
-        if status_filter == 'active':
-            assets = assets.filter(IsDelete=False)
-        elif status_filter == 'inactive':
-            assets = assets.filter(IsDelete=True)
-    
-    # Pagination
-    paginator = Paginator(assets, 20)  # Show 20 assets per page
-    try:
-        assets = paginator.page(page)
-    except PageNotAnInteger:
-        assets = paginator.page(1)
-    except EmptyPage:
-        assets = paginator.page(paginator.num_pages)
-    
-    # Get selected asset and its cards
-    selected_asset = None
-    asset_cards = []
-    
-    if selected_asset_id:
-        try:
-            selected_asset = RefAsset.objects.select_related('AssetTypeId').get(AssetId=selected_asset_id)
-            asset_cards = Ref_Asset_Card.objects.select_related('AssetId', 'EmployeeId').filter(
-                AssetId=selected_asset
-            ).order_by('AssetCardId')
-        except RefAsset.DoesNotExist:
-            selected_asset = None
-    
-    return render(request, 'core/refasset_master_detail_modal.html', {
-        'asset_types': asset_types,
-        'assets': assets,
-        'selected_asset_type_id': selected_asset_type_id,
-        'selected_asset': selected_asset,
-        'selected_asset_id': selected_asset_id,
-        'asset_cards': asset_cards,
-        'paginator': paginator,
-        'filters': {
-            'asset_code': asset_code_filter,
-            'asset_name': asset_name_filter,
-            'status': status_filter,
-        }
-    })
-
-
-@login_required
-@permission_required('core.view_refasset', raise_exception=True)
 def asset_master_detail(request):
-    """Master-detail view for asset management with dropdown filtering"""
-    # Get filter parameters
-    selected_asset_type_id = request.GET.get('asset_type', '')
-    selected_asset_id = request.GET.get('selected_asset', '')
-    page = request.GET.get('page', 1)
-    
-    # Get all asset types for dropdown
-    asset_types = Ref_Asset_Type.objects.filter(IsActive=True).order_by('AssetTypeName')
-    
-    # Get all assets with related data
-    assets = RefAsset.objects.select_related('AssetTypeId').order_by('AssetCode')
-    
-    # Apply asset type filter if provided
-    if selected_asset_type_id:
-        assets = assets.filter(AssetTypeId__AssetTypeId=selected_asset_type_id)
-    
-    # Apply additional filters
-    asset_code_filter = request.GET.get('asset_code', '')
-    asset_name_filter = request.GET.get('asset_name', '')
-    status_filter = request.GET.get('status', '')
-    
-    if asset_code_filter:
-        assets = assets.filter(AssetCode__icontains=asset_code_filter)
-    
-    if asset_name_filter:
-        assets = assets.filter(AssetName__icontains=asset_name_filter)
-    
-    if status_filter:
-        if status_filter == 'active':
-            assets = assets.filter(IsDelete=False)
-        elif status_filter == 'inactive':
-            assets = assets.filter(IsDelete=True)
-    
-    # Pagination
-    paginator = Paginator(assets, 20)  # Show 20 assets per page
-    try:
-        assets = paginator.page(page)
-    except PageNotAnInteger:
-        assets = paginator.page(1)
-    except EmptyPage:
-        assets = paginator.page(paginator.num_pages)
-    
-    # Get selected asset and its cards
-    selected_asset = None
-    asset_cards = []
-    
-    if selected_asset_id:
-        try:
-            selected_asset = RefAsset.objects.select_related('AssetTypeId').get(AssetId=selected_asset_id)
-            asset_cards = Ref_Asset_Card.objects.select_related('AssetId', 'EmployeeId').filter(
-                AssetId=selected_asset
-            ).order_by('AssetCardId')
-        except RefAsset.DoesNotExist:
-            selected_asset = None
-    
-    return render(request, 'core/refasset_master_detail.html', {
-        'asset_types': asset_types,
-        'assets': assets,
-        'selected_asset_type_id': selected_asset_type_id,
-        'selected_asset': selected_asset,
-        'selected_asset_id': selected_asset_id,
-        'asset_cards': asset_cards,
-        'paginator': paginator,
-        'filters': {
-            'asset_code': asset_code_filter,
-            'asset_name': asset_name_filter,
-            'status': status_filter,
-        }
-    })
+    """Redirect to ref_asset_card_list which now includes master-detail functionality"""
+    # Preserve query parameters when redirecting
+    query_params = request.GET.urlencode()
+    redirect_url = reverse('core:ref_asset_card_list')
+    if query_params:
+        redirect_url += '?' + query_params
+    return redirect(redirect_url)
 
 
 @login_required
@@ -3043,7 +2983,7 @@ def refasset_create(request):
             asset.CreatedBy = request.user
             asset.save()
             messages.success(request, 'Asset created successfully.')
-            return redirect('core:asset_master_detail')
+            return redirect('core:ref_asset_card_list')
     else:
         form = RefAssetForm()
     
@@ -3066,7 +3006,7 @@ def refasset_update(request, pk):
             asset.ModifiedBy = request.user
             asset.save()
             messages.success(request, 'Asset updated successfully.')
-            return redirect('core:asset_master_detail')
+            return redirect('core:ref_asset_card_list')
     else:
         form = RefAssetForm(instance=asset)
     
@@ -3098,35 +3038,91 @@ def refasset_delete(request, pk):
             messages.success(request, 'Asset deleted successfully.')
         except ProtectedError as e:
             messages.error(request, f'Cannot delete asset "{asset.AssetCode} - {asset.AssetName}" because it is referenced by other records. Please remove all references first.')
-        return redirect('core:asset_master_detail')
+        return redirect('core:ref_asset_card_list')
     
     # GET request without modal parameter - redirect to list
-    return redirect('core:asset_master_detail')
+    return redirect('core:ref_asset_card_list')
 
 
 @login_required
 @permission_required('core.view_ref_asset_card', raise_exception=True)
 def ref_asset_card_list(request):
-    """List all asset cards with filtering and pagination"""
-    # Get filter parameters
+    """List all asset cards with filtering and pagination - Master-Detail view"""
+    # Get filter parameters for assets (master table)
+    selected_asset_type_id = request.GET.get('asset_type', '')
+    selected_asset_id = request.GET.get('selected_asset', '')
+    asset_page = request.GET.get('asset_page', 1)
+    
+    # Get filter parameters for asset cards (detail table)
     asset_filter = request.GET.get('asset', '')
     asset_code_filter = request.GET.get('asset_code', '')
     asset_name_filter = request.GET.get('asset_name', '')
     status_filter = request.GET.get('status', '')
-    page = request.GET.get('page', 1)
+    card_page = request.GET.get('page', 1)
     
-    # Get all asset cards with related data
-    asset_cards = Ref_Asset_Card.objects.select_related('AssetId', 'ClientId').order_by('AssetCardId')
+    # Get all asset types for dropdown filter
+    asset_types = Ref_Asset_Type.objects.filter(IsActive=True).order_by('AssetTypeName')
     
-    # Apply filters
-    if asset_filter:
+    # Get all assets with related data (for master table)
+    assets = RefAsset.objects.select_related('AssetTypeId', 'CreatedBy', 'ModifiedBy').order_by('AssetCode')
+    
+    # Apply asset type filter if provided
+    if selected_asset_type_id:
+        assets = assets.filter(AssetTypeId__AssetTypeId=selected_asset_type_id)
+    
+    # Apply asset filters
+    asset_code_filter_master = request.GET.get('asset_code', '')
+    asset_name_filter_master = request.GET.get('asset_name', '')
+    status_filter_master = request.GET.get('status', '')
+    
+    if asset_code_filter_master:
+        assets = assets.filter(AssetCode__icontains=asset_code_filter_master)
+    
+    if asset_name_filter_master:
+        assets = assets.filter(AssetName__icontains=asset_name_filter_master)
+    
+    if status_filter_master:
+        if status_filter_master == 'active':
+            assets = assets.filter(IsDelete=False)
+        elif status_filter_master == 'inactive':
+            assets = assets.filter(IsDelete=True)
+    
+    # Pagination for assets (master table)
+    asset_paginator = Paginator(assets, 20)  # Show 20 assets per page
+    try:
+        assets = asset_paginator.page(asset_page)
+    except PageNotAnInteger:
+        assets = asset_paginator.page(1)
+    except EmptyPage:
+        assets = asset_paginator.page(asset_paginator.num_pages)
+    
+    # Get selected asset
+    selected_asset = None
+    if selected_asset_id:
+        try:
+            selected_asset = RefAsset.objects.select_related('AssetTypeId', 'CreatedBy', 'ModifiedBy').get(AssetId=selected_asset_id)
+        except RefAsset.DoesNotExist:
+            selected_asset = None
+    
+    # Get all asset cards with related data (for detail table)
+    asset_cards = Ref_Asset_Card.objects.select_related('AssetId', 'ClientId', 'CreatedBy', 'ModifiedBy').order_by('AssetCardId')
+    
+    # Filter asset cards by selected asset if provided
+    if selected_asset_id:
+        asset_cards = asset_cards.filter(AssetId__AssetId=selected_asset_id)
+    elif asset_filter:
+        # Fallback to old asset filter if selected_asset not provided
         asset_cards = asset_cards.filter(AssetId__AssetId=asset_filter)
     
-    if asset_code_filter:
-        asset_cards = asset_cards.filter(AssetCardCode__icontains=asset_code_filter)
+    # Apply asset card filters
+    card_code_filter = request.GET.get('card_code', '')
+    card_name_filter = request.GET.get('card_name', '')
     
-    if asset_name_filter:
-        asset_cards = asset_cards.filter(AssetCardName__icontains=asset_name_filter)
+    if card_code_filter:
+        asset_cards = asset_cards.filter(AssetCardCode__icontains=card_code_filter)
+    
+    if card_name_filter:
+        asset_cards = asset_cards.filter(AssetCardName__icontains=card_name_filter)
     
     if status_filter:
         if status_filter == 'active':
@@ -3147,46 +3143,53 @@ def ref_asset_card_list(request):
     # For modal requests, show more items and no pagination
     is_modal = request.GET.get('modal')
     if is_modal:
-        paginator = None
+        card_paginator = None
     else:
-        # Pagination
-        paginator = Paginator(asset_cards, page_size)
-        page = request.GET.get('page', 1)
+        # Pagination for asset cards (detail table)
+        card_paginator = Paginator(asset_cards, page_size)
         try:
-            asset_cards = paginator.page(page)
+            asset_cards = card_paginator.page(card_page)
         except PageNotAnInteger:
-            asset_cards = paginator.page(1)
+            asset_cards = card_paginator.page(1)
         except EmptyPage:
-            asset_cards = paginator.page(paginator.num_pages)
+            asset_cards = card_paginator.page(card_paginator.num_pages)
     
-    # Get all assets for dropdown filter
-    assets = RefAsset.objects.filter(IsDelete=False).order_by('AssetName')
+    # Get all assets for dropdown filter (for asset card filters)
+    all_assets = RefAsset.objects.filter(IsDelete=False).order_by('AssetName')
     
     # Check if this is a modal request
     if is_modal:
         return render(request, 'core/refassetcard_list.html', {
             'asset_cards': asset_cards,
-            'assets': assets,
+            'assets': all_assets,
             'filters': {
                 'asset': asset_filter,
                 'asset_code': asset_code_filter,
                 'asset_name': asset_name_filter,
                 'status': status_filter,
             },
-            'paginator': paginator,
+            'paginator': card_paginator,
             'is_modal': True
         })
     
     return render(request, 'core/refassetcard_list.html', {
         'asset_cards': asset_cards,
-        'assets': assets,
+        'assets': all_assets,  # For dropdown filter
+        'master_assets': assets,  # For master table
+        'asset_types': asset_types,
+        'selected_asset_type_id': selected_asset_type_id,
+        'selected_asset': selected_asset,
+        'selected_asset_id': selected_asset_id,
+        'asset_paginator': asset_paginator,
         'filters': {
             'asset': asset_filter,
-            'asset_code': asset_code_filter,
-            'asset_name': asset_name_filter,
-            'status': status_filter,
+            'asset_code': asset_code_filter_master,
+            'asset_name': asset_name_filter_master,
+            'card_code': card_code_filter,
+            'card_name': card_name_filter,
+            'status': status_filter_master,
         },
-        'paginator': paginator,
+        'paginator': card_paginator,
         'page_size': page_size,
         'is_modal': False
     })
@@ -3218,7 +3221,7 @@ def ref_asset_card_create(request):
                 })
             else:
                 messages.success(request, 'Asset card created successfully.')
-                return redirect('core:asset_master_detail')
+                return redirect('core:ref_asset_card_list')
         else:
             # Check if this is an AJAX request (from modal)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -3265,7 +3268,7 @@ def ref_asset_card_update(request, pk):
                 })
             else:
                 messages.success(request, 'Asset card updated successfully.')
-                return redirect('core:asset_master_detail')
+                return redirect('core:ref_asset_card_list')
         else:
             # Check if this is an AJAX request (from modal)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -3305,10 +3308,10 @@ def ref_asset_card_delete(request, pk):
             messages.success(request, 'Asset card deleted successfully.')
         except ProtectedError as e:
             messages.error(request, f'Cannot delete asset card "{asset_card.AssetCardCode}" because it is referenced by other records. Please remove all references first.')
-        return redirect('core:asset_master_detail')
+        return redirect('core:ref_asset_card_list')
     
     # GET request without modal parameter - redirect to list
-    return redirect('core:asset_master_detail')
+    return redirect('core:ref_asset_card_list')
 def get_next_document_number(request):
     """API endpoint to get the next document number for a given DocumentTypeId"""
     document_type_id = request.GET.get('document_type_id')
@@ -3724,41 +3727,6 @@ def invbeginningbalance_delete(request, balance_id):
 # ==================== JSON API ENDPOINTS ====================
 
 @login_required
-def assets_json(request):
-    """JSON endpoint for assets data"""
-    assets = RefAsset.objects.filter(IsDelete=False).order_by('AssetName')
-    data = {
-        'assets': [
-            {
-                'AssetId': asset.AssetId,
-                'AssetName': asset.AssetName,
-                'AssetCode': asset.AssetCode,
-                'AssetTypeName': asset.AssetTypeId.AssetTypeName if asset.AssetTypeId else ''
-            }
-            for asset in assets
-        ]
-    }
-    return JsonResponse(data)
-
-
-@login_required
-def clients_json(request):
-    """JSON endpoint for clients data"""
-    clients = RefClient.objects.filter(IsDelete=False).order_by('ClientName')
-    data = {
-        'clients': [
-            {
-                'ClientId': client.ClientId,
-                'ClientName': client.ClientName,
-                'ClientCode': client.ClientCode
-            }
-            for client in clients
-        ]
-    }
-    return JsonResponse(data)
-
-
-@login_required
 @permission_required('core.view_refclient', raise_exception=True)
 def api_client_lookup_by_name(request):
     """API endpoint to lookup client by name (case-insensitive exact match)"""
@@ -4052,10 +4020,10 @@ def get_cash_documents_filtered(request):
             # Default behavior: exclude depreciation (13) and closing (14) entries
             all_documents = all_documents.exclude(DocumentTypeId__in=[13, 14])
         
-        # Get ALL cash document details for ЖУРНАЛ tab
+        # Get ALL cash document details for ЖУРНАЛ tab (only from non-deleted documents)
         all_details = Cash_DocumentDetail.objects.select_related(
-            'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy'
-        ).order_by('-DocumentId__DocumentId')
+            'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy', 'CashFlowId'
+        ).filter(DocumentId__IsDelete=False).order_by('-DocumentId__DocumentId')
         
         # Apply date filtering to details if provided
         if start_date:
@@ -4106,8 +4074,10 @@ def get_cash_documents_filtered(request):
         details_data = []
         for detail in all_details:
             details_data.append({
+                'document_id': detail.DocumentId.DocumentId,  # Add document_id for navigation
                 'document_no': detail.DocumentId.DocumentNo,
                 'document_date': detail.DocumentId.DocumentDate.strftime('%Y-%m-%d'),
+                'document_id': detail.DocumentId.DocumentId,
                 'account_code': detail.AccountId.AccountCode if detail.AccountId else '',
                 'account_name': detail.AccountId.AccountName if detail.AccountId else '',
                 'client_name': detail.ClientId.ClientName if detail.ClientId else '',
@@ -4118,6 +4088,7 @@ def get_cash_documents_filtered(request):
                 'currency_exchange': float(detail.CurrencyExchange) if detail.CurrencyExchange else 0.0,
                 'debit_amount': float(detail.DebitAmount) if detail.DebitAmount else 0.0,
                 'credit_amount': float(detail.CreditAmount) if detail.CreditAmount else 0.0,
+                'cash_flow_name': detail.CashFlowId.Description if detail.CashFlowId else '',
                 'user_name': detail.DocumentId.CreatedBy.username if detail.DocumentId.CreatedBy else '',
             })
         
@@ -4233,10 +4204,11 @@ def get_inv_documents_filtered(request):
         if page_size > 2000:
             page_size = 2000
         
-        # Get ALL inventory documents (active only, exclude deleted) with related data
+        # Get ALL inventory documents (both active and deleted) with related data
+        # Frontend will filter by IsDelete status for different tabs
         all_documents = Inv_Document.objects.select_related(
             'DocumentTypeId', 'AccountId', 'ClientId', 'TemplateId', 'CreatedBy', 'WarehouseId'
-        ).prefetch_related('document_items__InventoryId').filter(IsDelete=False).order_by('-DocumentDate').distinct()
+        ).prefetch_related('document_items__InventoryId').order_by('-DocumentDate').distinct()
         
         # Apply date filtering if provided
         if start_date:
@@ -4248,10 +4220,10 @@ def get_inv_documents_filtered(request):
         if document_type_id:
             all_documents = all_documents.filter(DocumentTypeId=document_type_id)
         
-        # Get ALL inventory document details for ЖУРНАЛ tab
+        # Get ALL inventory document details for ЖУРНАЛ tab (only from non-deleted documents)
         all_details = Inv_Document_Detail.objects.select_related(
             'DocumentId__DocumentTypeId', 'AccountId', 'ClientId', 'CurrencyId', 'DocumentId__CreatedBy'
-        ).order_by('DocumentId__DocumentNo')
+        ).filter(DocumentId__IsDelete=False).order_by('DocumentId__DocumentNo')
         
         # Apply date filtering to details if provided
         if start_date:
@@ -4262,6 +4234,18 @@ def get_inv_documents_filtered(request):
         # Apply DocumentTypeId filter to details if provided
         if document_type_id:
             all_details = all_details.filter(DocumentId__DocumentTypeId=document_type_id)
+        
+        # Pre-fetch document IDs that have items or details for efficient checking
+        document_ids_with_items = set(
+            Inv_Document_Item.objects.filter(
+                DocumentId__in=all_documents.values_list('DocumentId', flat=True)
+            ).values_list('DocumentId', flat=True).distinct()
+        )
+        document_ids_with_details = set(
+            Inv_Document_Detail.objects.filter(
+                DocumentId__in=all_documents.values_list('DocumentId', flat=True)
+            ).values_list('DocumentId', flat=True).distinct()
+        )
         
         # Format documents data for БАРИМТ and УСТГАСАН БАРИМТ tabs
         # Create one row per document-item combination to enable item-by-item searching
@@ -4281,6 +4265,10 @@ def get_inv_documents_filtered(request):
             # Get document items
             document_items = doc.document_items.all()
             
+            # Check if document has items or details
+            has_items = doc.DocumentId in document_ids_with_items
+            has_details = doc.DocumentId in document_ids_with_details
+            
             # Base document data fields
             base_doc_data = {
                 'DocumentId': doc.DocumentId,
@@ -4292,6 +4280,8 @@ def get_inv_documents_filtered(request):
                 'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
                 'UserName': doc.CreatedBy.username if doc.CreatedBy else '',
                 'IsDelete': doc.IsDelete,  # Include delete status for frontend filtering
+                'HasItems': has_items,  # Flag indicating if document has items in inv_document_item
+                'HasDetails': has_details,  # Flag indicating if document has details in inv_document_detail
             }
             
             # If document has items, create one row per item
@@ -4333,6 +4323,7 @@ def get_inv_documents_filtered(request):
         details_data = []
         for detail in all_details:
             details_data.append({
+                'document_id': detail.DocumentId.DocumentId,  # Add document_id for navigation
                 'document_no': detail.DocumentId.DocumentNo,
                 'document_date': detail.DocumentId.DocumentDate.strftime('%Y-%m-%d'),
                 'account_code': detail.AccountId.AccountCode if detail.AccountId else '',
@@ -4437,6 +4428,268 @@ def get_inv_balance_data(request):
         return JsonResponse({
             'success': False,
             'error': f'Error loading balance data: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_invdocument', raise_exception=True)
+@require_http_methods(["GET"])
+def api_get_inventory_balance_warehouse(request):
+    """API endpoint to get inventory balance data filtered by warehouse and account"""
+    from datetime import datetime
+    from decimal import Decimal
+    
+    # Get all required parameters
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    warehouse_id_str = request.GET.get('warehouse_id')
+    account_id_str = request.GET.get('account_id')
+    
+    # Validate all required parameters
+    if not start_date_str or not end_date_str or not warehouse_id_str or not account_id_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'All parameters are required: start_date, end_date, warehouse_id, account_id'
+        }, status=400)
+    
+    try:
+        # Parse dates
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Parse IDs
+        try:
+            warehouse_id = int(warehouse_id_str)
+            account_id = int(account_id_str)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'warehouse_id and account_id must be valid integers'
+            }, status=400)
+        
+        balance_data = []
+        db_alias = get_current_db()
+        try:
+            # Execute the inventory balance warehouse function
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM report_inventory_balance_warehouse(%s, %s, %s::SMALLINT, %s)",
+                    [start_date, end_date, warehouse_id, account_id]
+                )
+                
+                # Get column names
+                columns = [col[0] for col in cursor.description]
+                
+                # Fetch all results
+                results = cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                balance_data = [
+                    dict(zip(columns, row)) for row in results
+                ]
+                
+                # Convert Decimal values to float for JSON serialization
+                for item in balance_data:
+                    for key, value in item.items():
+                        if isinstance(value, Decimal):
+                            item[key] = float(value)
+        finally:
+            connections[db_alias].close()
+        
+        # Enrich balance data with inventory details (UnitCost, UnitPrice, InventoryTypeName)
+        inventory_ids = [item.get('inventoryid') for item in balance_data if item.get('inventoryid')]
+        if inventory_ids:
+            inventory_details = RefInventory.objects.filter(
+                InventoryId__in=inventory_ids,
+                IsDelete=False
+            ).select_related('InventoryTypeId').values(
+                'InventoryId', 'UnitCost', 'UnitPrice', 'InventoryTypeId__InventoryTypeName'
+            )
+            
+            # Create a lookup dictionary for inventory details
+            inventory_lookup = {
+                inv['InventoryId']: {
+                    'unitcost': float(inv['UnitCost']) if inv['UnitCost'] is not None else None,
+                    'unitprice': float(inv['UnitPrice']) if inv['UnitPrice'] is not None else None,
+                    'inventorytypename': inv['InventoryTypeId__InventoryTypeName'] if inv['InventoryTypeId__InventoryTypeName'] else None
+                }
+                for inv in inventory_details
+            }
+            
+            # Merge inventory details into balance data
+            for item in balance_data:
+                inventory_id = item.get('inventoryid')
+                if inventory_id and inventory_id in inventory_lookup:
+                    item['unitcost'] = inventory_lookup[inventory_id]['unitcost']
+                    item['unitprice'] = inventory_lookup[inventory_id]['unitprice']
+                    item['inventorytypename'] = inventory_lookup[inventory_id]['inventorytypename']
+                else:
+                    item['unitcost'] = None
+                    item['unitprice'] = None
+                    item['inventorytypename'] = None
+        
+        return JsonResponse({
+            'success': True,
+            'balance_data': balance_data,
+            'count': len(balance_data)
+        })
+        
+    except ValueError as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Invalid date format. Use YYYY-MM-DD: {str(e)}'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading inventory balance: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_invdocument', raise_exception=True)
+@require_http_methods(["GET"])
+def api_get_inventory_list(request):
+    """JSON API endpoint to get all inventory items for modal selection"""
+    from decimal import Decimal
+    
+    try:
+        # Get all non-deleted inventory items with related data
+        inventory_list = RefInventory.objects.filter(IsDelete=False).select_related(
+            'InventoryTypeId', 'MeasurementId'
+        ).order_by('InventoryName')
+        
+        # Convert to JSON-serializable format
+        inventory_data = []
+        for inv in inventory_list:
+            inventory_data.append({
+                'id': inv.InventoryId,
+                'inventoryid': inv.InventoryId,
+                'code': inv.InventoryCode or '',
+                'inventorycode': inv.InventoryCode or '',
+                'name': inv.InventoryName or '',
+                'inventoryname': inv.InventoryName or '',
+                'type': inv.InventoryTypeId.InventoryTypeName if inv.InventoryTypeId else '',
+                'inventorytypename': inv.InventoryTypeId.InventoryTypeName if inv.InventoryTypeId else '',
+                'unit': inv.MeasurementId.MeasurementName if inv.MeasurementId else '',
+                'measurementname': inv.MeasurementId.MeasurementName if inv.MeasurementId else '',
+                'unitCost': str(inv.UnitCost) if inv.UnitCost is not None else '',
+                'unitcost': float(inv.UnitCost) if inv.UnitCost is not None else None,
+                'unitPrice': str(inv.UnitPrice) if inv.UnitPrice is not None else '',
+                'unitprice': float(inv.UnitPrice) if inv.UnitPrice is not None else None,
+                'isActive': inv.IsActive
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'inventory_data': inventory_data,
+            'count': len(inventory_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error loading inventory list: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_ref_account', raise_exception=True)
+@require_http_methods(["GET"])
+def api_accounts_json(request):
+    """JSON API endpoint to return accounts as JSON for modal selection"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '')
+        name_filter = request.GET.get('name', '')
+        type_filter = request.GET.get('type', '')
+        account_type_filter = request.GET.get('account_type', '')
+        document_type_id = request.GET.get('document_type_id')
+        status_filter = request.GET.get('status', '')
+        
+        # Get all accounts with related data
+        accounts_list = Ref_Account.objects.select_related('AccountTypeId', 'CurrencyId').all()
+        
+        # Apply filters (same logic as refaccount_list)
+        if code_filter:
+            accounts_list = accounts_list.filter(AccountCode__icontains=code_filter)
+        
+        if name_filter:
+            accounts_list = accounts_list.filter(AccountName__icontains=name_filter)
+        
+        if type_filter:
+            accounts_list = accounts_list.filter(AccountTypeId__AccountTypeName__icontains=type_filter)
+        
+        if status_filter:
+            if status_filter == 'active':
+                accounts_list = accounts_list.filter(IsDelete=False)
+            elif status_filter == 'inactive':
+                accounts_list = accounts_list.filter(IsDelete=True)
+        
+        # Handle document_type_id filtering (same logic as refaccount_list)
+        if not account_type_filter and document_type_id:
+            if str(document_type_id) in {'5', '6', '7'}:
+                account_type_filter = '8,9,11'
+            else:
+                try:
+                    doc_type = Ref_Document_Type.objects.get(DocumentTypeId=document_type_id)
+                    if doc_type.ParentId == 1:
+                        account_type_filter = '1'
+                    elif doc_type.ParentId == 2:
+                        account_type_filter = '2'
+                    else:
+                        account_type_filter = '1,2,3,42,43'
+                except Ref_Document_Type.DoesNotExist:
+                    pass
+        
+        if account_type_filter:
+            if ',' in account_type_filter:
+                account_type_ids = [int(x.strip()) for x in account_type_filter.split(',') if x.strip().isdigit()]
+                accounts_list = accounts_list.filter(AccountTypeId__AccountTypeId__in=account_type_ids)
+            else:
+                accounts_list = accounts_list.filter(AccountTypeId__AccountTypeId=account_type_filter)
+        
+        # Order by code
+        accounts_list = accounts_list.order_by('AccountCode')
+        
+        # Convert to JSON-serializable format
+        accounts_data = []
+        for account in accounts_list:
+            # Get currency default value from Ref_Currency.DefaultValue
+            currency_default_value = 'null'
+            if account.CurrencyId:
+                try:
+                    # Use the DefaultValue from Ref_Currency model
+                    if account.CurrencyId.DefaultValue is not None:
+                        currency_default_value = str(account.CurrencyId.DefaultValue)
+                    else:
+                        # Fallback: default to 1 if currency is MNT (CurrencyId == 1)
+                        if account.CurrencyId.CurrencyId == 1:
+                            currency_default_value = '1'
+                except:
+                    currency_default_value = 'null'
+            
+            accounts_data.append({
+                'AccountId': account.AccountId,
+                'AccountCode': account.AccountCode or '',
+                'AccountName': account.AccountName or '',
+                'AccountTypeName': account.AccountTypeId.AccountTypeName if account.AccountTypeId else '',
+                'CurrencyId': account.CurrencyId.CurrencyId if account.CurrencyId else None,
+                'CurrencyName': account.CurrencyId.Currency_name if account.CurrencyId else '',
+                'CurrencyDefaultValue': currency_default_value,
+                'IsDelete': account.IsDelete
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'accounts': accounts_data,
+            'count': len(accounts_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
         }, status=500)
 
 
@@ -4577,6 +4830,7 @@ def get_ast_documents_filtered(request):
         details_data = []
         for detail in all_details:
             details_data.append({
+                'document_id': detail.DocumentId.DocumentId,  # Add document_id for navigation
                 'document_no': detail.DocumentId.DocumentNo,
                 'document_date': detail.DocumentId.DocumentDate.strftime('%Y-%m-%d'),
                 'account_code': detail.AccountId.AccountCode if detail.AccountId else '',
@@ -4813,6 +5067,144 @@ def api_asset_depreciation_expenses(request):
             'success': False,
             'error': f'Error loading asset depreciation expenses: {str(e)}'
         }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_calculate_depreciation(request):
+    """API endpoint to calculate depreciation for a date range"""
+    from datetime import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Find period - first try exact match
+        period = Ref_Period.objects.filter(
+            BeginDate=start_date,
+            EndDate=end_date
+        ).first()
+        
+        # If not found, find period that contains end_date (auto-adjust)
+        if not period:
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=end_date,
+                EndDate__gte=end_date
+            ).first()
+        
+        if not period:
+            return JsonResponse({
+                'success': False,
+                'error': 'No period found for the selected date range'
+            }, status=400)
+        
+        # Call SQL function (cast period_id to SMALLINT as function expects SMALLINT)
+        db_alias = get_current_db()
+        try:
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute("SELECT * FROM calculate_depreciation(%s::SMALLINT, %s)", [period.PeriodId, request.user.id])
+                columns = [col[0] for col in cursor.description]
+                results = [
+                    dict(zip(columns, row))
+                    for row in cursor.fetchall()
+                ]
+        finally:
+            connections[db_alias].close()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully calculated {len(results)} depreciation expense records',
+            'period_id': period.PeriodId,
+            'period_name': period.PeriodName,
+            'adjusted_dates': {
+                'start_date': period.BeginDate.strftime('%Y-%m-%d'),
+                'end_date': period.EndDate.strftime('%Y-%m-%d')
+            },
+            'records_count': len(results)
+        })
+        
+    except Exception as e:
+        logger.error(f'Error calculating depreciation: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error calculating depreciation: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_calculate_closing_record(request):
+    """API endpoint to calculate closing record for a date range"""
+    from datetime import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Find period - first try exact match
+        period = Ref_Period.objects.filter(
+            BeginDate=start_date,
+            EndDate=end_date
+        ).first()
+        
+        # If not found, find period that contains end_date (auto-adjust)
+        if not period:
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=end_date,
+                EndDate__gte=end_date
+            ).first()
+        
+        if not period:
+            return JsonResponse({
+                'success': False,
+                'error': 'No period found for the selected date range'
+            }, status=400)
+        
+        # Call SQL function (returns VOID, cast period_id to SMALLINT as function expects SMALLINT)
+        db_alias = get_current_db()
+        try:
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute("SELECT calculate_closing_record(%s::SMALLINT, %s)", [period.PeriodId, request.user.id])
+                # Function returns VOID, so no need to fetch results
+        finally:
+            connections[db_alias].close()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Successfully calculated closing records',
+            'period_id': period.PeriodId,
+            'period_name': period.PeriodName,
+            'adjusted_dates': {
+                'start_date': period.BeginDate.strftime('%Y-%m-%d'),
+                'end_date': period.EndDate.strftime('%Y-%m-%d')
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f'Error calculating closing record: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error calculating closing record: {str(e)}'
+        }, status=500)
+
 # ==================== ASSET DOCUMENT VIEWS ====================
 @login_required
 @permission_required('core.view_ast_document', raise_exception=True)
@@ -5276,19 +5668,24 @@ def assets_json(request):
 def clients_json(request):
     """API endpoint to return clients as JSON for modal dropdowns"""
     try:
-        clients = RefClient.objects.filter(IsDelete=False).order_by('ClientName')
+        # Use select_related to optimize query and get ClientType data
+        clients = RefClient.objects.filter(IsDelete=False).select_related('ClientType').order_by('ClientName')
         clients_data = []
         
         for client in clients:
             clients_data.append({
                 'ClientId': client.ClientId,
                 'ClientName': client.ClientName,
-                'ClientCode': client.ClientCode
+                'ClientCode': client.ClientCode,
+                'ClientRegister': client.ClientRegister or '',
+                'ClientTypeId': client.ClientType.ClientTypeId if client.ClientType else None,
+                'ClientTypeName': client.ClientType.ClientTypeName if client.ClientType else ''
             })
         
         return JsonResponse({
             'success': True,
-            'clients': clients_data
+            'clients': clients_data,
+            'count': len(clients_data)
         })
         
     except Exception as e:
@@ -7711,45 +8108,65 @@ def api_account_details(request, account_id):
 
 
 @login_required
-@permission_required('core.view_inv_document', raise_exception=True)
+@permission_required('core.view_invdocument', raise_exception=True)
 def get_inventory_documents_master(request):
     """API endpoint for inventory documents master table with date range filtering"""
     try:
         start_date = request.GET.get('start_date', '')
         end_date = request.GET.get('end_date', '')
+        selected_document = request.GET.get('selected_document', '')
         
         documents_query = Inv_Document.objects.select_related(
             'DocumentTypeId', 'ClientId', 'AccountId', 'WarehouseId', 'CreatedBy'
         ).filter(IsDelete=False)
         
-        if start_date:
-            documents_query = documents_query.filter(DocumentDate__gte=start_date)
-        if end_date:
-            documents_query = documents_query.filter(DocumentDate__lte=end_date)
+        # If selected_document is provided, filter to only that document
+        # This takes priority and will return a single record
+        if selected_document and selected_document.strip():
+            try:
+                document_id = int(selected_document)
+                documents_query = documents_query.filter(DocumentId=document_id)
+                # Also apply date range filter if provided (ensures document is within range)
+                if start_date:
+                    documents_query = documents_query.filter(DocumentDate__gte=start_date)
+                if end_date:
+                    documents_query = documents_query.filter(DocumentDate__lte=end_date)
+            except (ValueError, TypeError):
+                documents_query = documents_query.none()
+        else:
+            # Normal filtering: apply date range if provided
+            if start_date:
+                documents_query = documents_query.filter(DocumentDate__gte=start_date)
+            if end_date:
+                documents_query = documents_query.filter(DocumentDate__lte=end_date)
         
-        documents_query = documents_query.order_by('-DocumentDate')
+        documents_query = documents_query.order_by('-DocumentId')
         
         documents_data = []
         for doc in documents_query:
-            documents_data.append({
-                'DocumentId': doc.DocumentId,
-                'DocumentNo': doc.DocumentNo,
-                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
-                'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
-                'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
-                'ClientRegister': doc.ClientId.ClientRegister if doc.ClientId else '',
-                'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d') if doc.DocumentDate else '',
-                'Description': doc.Description or '',
-                'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
-                'AccountName': doc.AccountId.AccountName if doc.AccountId else '',
-                'IsVat': doc.IsVat,
-                'WarehouseCode': doc.WarehouseId.WarehouseCode if doc.WarehouseId else '',
-                'WarehouseName': doc.WarehouseId.WarehouseName if doc.WarehouseId else '',
-                'CostAmount': float(doc.CostAmount) if doc.CostAmount else 0,
-                'PriceAmount': float(doc.PriceAmount) if doc.PriceAmount else 0,
-                'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
-                'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
-            })
+            try:
+                documents_data.append({
+                    'DocumentId': doc.DocumentId,
+                    'DocumentNo': doc.DocumentNo or '',
+                    'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
+                    'DocumentTypeCode': doc.DocumentTypeId.DocumentTypeCode if doc.DocumentTypeId else '',
+                    'ClientName': doc.ClientId.ClientName if doc.ClientId else '',
+                    'ClientRegister': doc.ClientId.ClientRegister if doc.ClientId else '',
+                    'DocumentDate': doc.DocumentDate.strftime('%Y-%m-%d') if doc.DocumentDate else '',
+                    'Description': doc.Description or '',
+                    'AccountCode': doc.AccountId.AccountCode if doc.AccountId else '',
+                    'AccountName': doc.AccountId.AccountName if doc.AccountId else '',
+                    'IsVat': bool(doc.IsVat) if doc.IsVat is not None else False,
+                    'WarehouseCode': doc.WarehouseId.WarehouseCode if doc.WarehouseId else '',
+                    'WarehouseName': doc.WarehouseId.WarehouseName if doc.WarehouseId else '',
+                    'CostAmount': float(doc.CostAmount) if doc.CostAmount is not None else 0,
+                    'PriceAmount': float(doc.PriceAmount) if doc.PriceAmount is not None else 0,
+                    'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
+                    'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
+                })
+            except Exception as doc_error:
+                logger.error(f"Error processing document {doc.DocumentId}: {str(doc_error)}")
+                continue
         
         return JsonResponse({
             'success': True,
@@ -7758,7 +8175,9 @@ def get_inventory_documents_master(request):
         })
         
     except Exception as e:
-        logger.error(f"Error in get_inventory_documents_master: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Error in get_inventory_documents_master: {str(e)}\n{error_trace}")
         return JsonResponse({
             'success': False,
             'error': str(e)

@@ -68,8 +68,25 @@
                             </div>
                         </div>
                     </div>
-                    
-                    
+
+                    <!-- VAT Toggle -->
+                    <div>
+                        <label for="{{ form.IsVat.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            НӨАТ-ТАЙ ЭСЭХ
+                        </label>
+                        <div class="mt-2 flex items-center space-x-3">
+                            {{ form.IsVat }}
+                            <span class="text-sm text-gray-500">Энэ загварт НӨАТ тооцох бол тэмдэглэнэ үү</span>
+                        </div>
+                        {% if form.IsVat.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.IsVat.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
                     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                         <a href="{% url 'core:template_master_detail' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">Буцах</a>
                         <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">

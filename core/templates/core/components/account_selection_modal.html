@@ -55,8 +55,6 @@ window.openAccountPopup = function(inputElement, rowId, options = {}) {
     window.currentAccountRowId = rowId;
     window.currentAccountOptions = options;
     
-    console.log('DEBUG: openAccountPopup called with:', {inputElement, rowId, options});
-    
     // Update modal title and subtitle if provided
     const modalTitle = document.querySelector('#account-selection-modal h3');
     const modalSubtitle = document.querySelector('#account-selection-modal p');
@@ -70,19 +68,11 @@ window.openAccountPopup = function(inputElement, rowId, options = {}) {
     
     // Show the modal
     const modal = document.getElementById('account-selection-modal');
-    console.log('DEBUG: Modal element found:', modal);
     if (modal) {
-        console.log('DEBUG: Modal classes before:', modal.className);
         modal.classList.remove('hidden');
-        console.log('DEBUG: Modal classes after:', modal.className);
-        console.log('DEBUG: Modal is hidden:', modal.classList.contains('hidden'));
-        console.log('DEBUG: Modal style.display:', modal.style.display);
-        console.log('DEBUG: Modal computed style:', window.getComputedStyle(modal).display);
         
         // Load accounts with filters
         loadAccountList(options);
-    } else {
-        console.error('DEBUG: Account selection modal not found!');
     }
 }
 
@@ -94,13 +84,10 @@ window.closeAccountPopup = function() {
 }
 
 window.selectAccount = function(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue) {
-    console.log('DEBUG: selectAccount called with:', {accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue});
-    
     // Check if we're in bulk manage mode (has currentAccountInput and currentAccountRowId)
     if (window.currentAccountInput && window.currentAccountRowId) {
         // Bulk manage mode - populate the specific row
         const row = window.currentAccountInput.closest('tr');
-        console.log('DEBUG: Found row:', row);
         
         if (row) {
             // Look for hidden input with various name patterns
@@ -110,42 +97,19 @@ window.selectAccount = function(accountId, accountCode, accountName, currencyId,
                                row.querySelector('.account-id-input');
             const displayInput = row.querySelector('.account-display-input');
             
-            console.log('DEBUG: Bulk manage mode - found elements:', {
-                hiddenInput, 
-                displayInput, 
-                rowId: window.currentAccountRowId,
-                rowHTML: row.outerHTML.substring(0, 200) + '...'
-            });
-            
-            // Also try alternative selectors
-            const allHiddenInputs = row.querySelectorAll('input[type="hidden"]');
-            console.log('DEBUG: All hidden inputs in row:', Array.from(allHiddenInputs).map(input => ({
-                name: input.name,
-                value: input.value
-            })));
-            
             if (hiddenInput && displayInput) {
                 hiddenInput.value = accountId;
                 displayInput.value = accountCode;
-                console.log('DEBUG: Set account values:', {accountId, displayValue: accountCode});
-            } else {
-                console.log('DEBUG: Missing elements - hiddenInput:', hiddenInput, 'displayInput:', displayInput);
             }
-        } else {
-            console.log('DEBUG: No row found for input element:', window.currentAccountInput);
         }
     } else {
         // Regular form mode - populate main form fields
-        console.log('DEBUG: Regular form mode - populating account form fields');
         const hiddenInput = document.getElementById('AccountId');
         const displayInput = document.getElementById('AccountIdDisplay');
-        
-        console.log('DEBUG: Found account elements:', {hiddenInput, displayInput});
         
         if (hiddenInput && displayInput) {
             hiddenInput.value = accountId;
             displayInput.value = accountCode;
-            console.log('DEBUG: Set AccountId to:', accountId, 'and display to:', accountCode);
         }
         
         // Handle currency fields if they exist
@@ -213,36 +177,46 @@ window.setDefaultExchangeRate = function(currencyDefaultValue) {
 
 // Load account list with specific filter parameters
 window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') {
-    console.log('DEBUG: loadAccountListWithFilters called with:', filterParams);
     const accountListContainer = document.getElementById('account-list-container');
     
     if (!accountListContainer) {
-        console.error('DEBUG: account-list-container not found!');
         return;
     }
     
     // Show loading
     accountListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading accounts...</p></div>';
     
-    // Fetch accounts data and render custom modal
-    const url = `/core/refaccounts/?${filterParams}`;
-    console.log('DEBUG: Fetching accounts from URL:', url);
+    // Parse filterParams to extract query parameters for JSON API
+    const urlParams = new URLSearchParams(filterParams);
+    const apiParams = new URLSearchParams();
+    
+    // Map filter parameters to API parameters
+    if (urlParams.get('code')) apiParams.append('code', urlParams.get('code'));
+    if (urlParams.get('name')) apiParams.append('name', urlParams.get('name'));
+    if (urlParams.get('type')) apiParams.append('type', urlParams.get('type'));
+    if (urlParams.get('account_type')) apiParams.append('account_type', urlParams.get('account_type'));
+    if (urlParams.get('document_type_id')) apiParams.append('document_type_id', urlParams.get('document_type_id'));
+    if (urlParams.get('status')) apiParams.append('status', urlParams.get('status'));
+    
+    // Fetch accounts data from JSON API (much faster than HTML parsing)
+    const url = `/core/api/accounts/?${apiParams.toString()}`;
     
     fetch(url, {
-        credentials: 'include'  // Ensure session cookies are sent for tenant DB routing
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
-        .then(response => {
-            console.log('DEBUG: Fetch response status:', response.status);
-            return response.text();
-        })
-        .then(html => {
-            console.log('DEBUG: Received HTML length:', html.length);
-            // Parse the HTML to extract account data
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const accountRows = doc.querySelectorAll('tbody tr');
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load accounts');
+            }
             
-            if (accountRows.length === 0) {
+            const accounts = data.accounts || [];
+            
+            if (accounts.length === 0) {
                 accountListContainer.innerHTML = `
                     <div class="text-center py-8">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,66 +269,47 @@ window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') 
                     </div>
             `;
             
-            accountRows.forEach((row, index) => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 6) {
-                    const accountCode = cells[0]?.textContent?.trim() || '';
-                    const accountName = cells[1]?.textContent?.trim() || '';
-                    const accountType = cells[2]?.textContent?.trim() || '';
-                    const currency = cells[3]?.textContent?.trim() || '';
-                    
-                    // Extract account ID from the select button onclick
-                    const selectButton = row.querySelector('button[onclick*="selectAccount"]');
-                    let accountId = '';
-                    let currencyId = '';
-                    let currencyName = '';
-                    let defaultValue = '';
-                    
-                    if (selectButton) {
-                        const onclickAttr = selectButton.getAttribute('onclick');
-                        const matches = onclickAttr.match(/selectAccount\('([^']+)',\s*'([^']+)',\s*'([^']+)',\s*([^,]+),\s*'([^']*)',\s*([^)]+)\)/);
-                        if (matches) {
-                            accountId = matches[1];
-                            currencyId = matches[4] || 'null';
-                            currencyName = matches[5] || '';
-                            defaultValue = matches[6] || 'null';
-                        }
-                    }
-                    
-                    // Use full account type name for display
-                    const accountTypeDisplay = accountType || '';
-                    
-                    accountsHtml += `
-                        <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer account-row" 
-                             data-account-code="${accountCode.toLowerCase()}" 
-                             data-account-name="${accountName.toLowerCase()}"
-                             data-account-type="${accountTypeDisplay.toLowerCase()}"
-                             data-account-currency="${(currency || '').toLowerCase()}"
-                             data-row-index="${index}"
-                             onclick="selectAccount('${accountId}', '${accountCode}', '${accountName}', ${currencyId}, '${currencyName}', ${defaultValue})">
-                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
-                                <span class="text-xs text-gray-500">${index + 1}</span>
-                            </div>
-                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${accountCode}</span>
-                            </div>
-                            <div class="col-span-5 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${accountName}</span>
-                            </div>
-                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${accountTypeDisplay}</span>
-                            </div>
-                            <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-600">${currency || '-'}</span>
-                            </div>
-                            <div class="col-span-1 flex items-center justify-center">
-                                <button class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
-                                    Сонгох
-                                </button>
-                            </div>
+            // Build HTML from JSON data (no parsing needed!)
+            accounts.forEach((account, index) => {
+                const accountId = account.AccountId || '';
+                const accountCode = account.AccountCode || '';
+                const accountName = account.AccountName || '';
+                const accountType = account.AccountTypeName || '';
+                const currency = account.CurrencyName || '';
+                const currencyId = account.CurrencyId || null;
+                const currencyName = account.CurrencyName || '';
+                const defaultValue = account.CurrencyDefaultValue || 'null';
+                
+                accountsHtml += `
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer account-row" 
+                         data-account-code="${accountCode.toLowerCase()}" 
+                         data-account-name="${accountName.toLowerCase()}"
+                         data-account-type="${accountType.toLowerCase()}"
+                         data-account-currency="${currency.toLowerCase()}"
+                         data-row-index="${index}"
+                         onclick="selectAccount('${accountId}', '${accountCode}', '${accountName}', ${currencyId || 'null'}, '${currencyName}', ${defaultValue})">
+                        <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
+                            <span class="text-xs text-gray-500">${index + 1}</span>
                         </div>
-                    `;
-                }
+                        <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${accountCode}</span>
+                        </div>
+                        <div class="col-span-5 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${accountName}</span>
+                        </div>
+                        <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${accountType}</span>
+                        </div>
+                        <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-600">${currency || '-'}</span>
+                        </div>
+                        <div class="col-span-1 flex items-center justify-center">
+                            <button class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                                Сонгох
+                            </button>
+                        </div>
+                    </div>
+                `;
             });
             
             accountsHtml += '</div>';
@@ -372,14 +327,12 @@ window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') 
             }
             
             // Initialize account filters and pagination
-            // Use setTimeout to ensure DOM is fully ready after innerHTML update
             setTimeout(() => {
                 initializeAccountFilters();
                 initializeAccountPagination();
             }, 50);
         })
         .catch(error => {
-            console.error('DEBUG: Error loading accounts:', error);
             accountListContainer.innerHTML = `
                 <div class="text-center py-8">
                     <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -394,12 +347,9 @@ window.loadAccountListWithFilters = function(filterParams, currencyFilter = '') 
 }
 
 window.loadAccountList = function(options = {}) {
-    console.log('DEBUG: loadAccountList called with options:', options);
     const accountListContainer = document.getElementById('account-list-container');
-    console.log('DEBUG: accountListContainer found:', accountListContainer);
     
     if (!accountListContainer) {
-        console.error('DEBUG: account-list-container not found!');
         return;
     }
     
@@ -408,11 +358,6 @@ window.loadAccountList = function(options = {}) {
     
     // Show loading
     accountListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading accounts...</p></div>';
-    
-    // Use shared component for loading message if available
-    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
-        Silicon4Message.info('Loading accounts...');
-    }
     
     // Build filter URL based on options (generic)
     let filterParams = 'modal=true&select_mode=true';
@@ -451,7 +396,6 @@ function initializeAccountFilters() {
     // Use event delegation on account-list-container to avoid duplicate listeners
     const accountListContainer = document.getElementById('account-list-container');
     if (!accountListContainer) {
-        console.warn('DEBUG: account-list-container not found for filter initialization');
         return;
     }
     
@@ -629,8 +573,6 @@ function initializeAccountPagination() {
     allAccountRows = Array.from(document.querySelectorAll('.account-row'));
     totalAccountRecords = allAccountRows.length;
     filteredAccountRecords = allAccountRows;
-    
-    console.log(`Account pagination initialized: ${totalAccountRecords} total records`);
     
     // Show pagination if we have more than one page
     const totalPages = Math.ceil(totalAccountRecords / ACCOUNT_RECORDS_PER_PAGE);

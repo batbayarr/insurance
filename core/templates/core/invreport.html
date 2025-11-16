@@ -23,7 +23,7 @@
                 <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <button id="filter-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 СЭРГЭЭХ
             </button>
         </div>
@@ -45,7 +45,10 @@
                 <button id="tab-deleted" onclick="showDeletedDocuments()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     УСТГАСАН БАРИМТ
                 </button>
-            </nav>
+                <button id="tab-unrelated" onclick="showUnrelatedDocuments()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    ГҮЙЛГЭЭНД ХОЛБООГҮЙ БАРИМТ
+                </button>
+                </nav>
         </div>
     </div>
 
@@ -298,7 +301,7 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <button onclick="printDetailView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                        <button onclick="printDetailView()" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             ХЭВЛЭХ
                         </button>
                     </div>
@@ -497,6 +500,9 @@
     let pageSizeBalance = 20;
     let totalPagesBalance = 1;
     
+    // Filter flag for unrelated documents (documents without details)
+    let isUnrelatedFilter = false;
+    
     // API cache
     let apiCache = new Map();
     let currentCacheKey = '';
@@ -690,7 +696,23 @@
         // Clear cache before new API call
         apiCache.clear();
         currentCacheKey = '';
-        isDeleteFilter = false;
+        
+        // Reset pagination to page 1 for all tabs
+        currentPage = 1;
+        currentPageDetail = 1;
+        currentPageBalance = 1;
+        
+        // Reset delete filter and unrelated filter based on active tab
+        if (currentActiveTab === 'deleted') {
+            isDeleteFilter = true;
+            isUnrelatedFilter = false;
+        } else if (currentActiveTab === 'unrelated') {
+            isDeleteFilter = false;
+            isUnrelatedFilter = true;
+        } else {
+            isDeleteFilter = false;
+            isUnrelatedFilter = false;
+        }
         
         // Clear all filter inputs in all tabs before fetching new data
         // Clear filters in НЭР ТӨРЛӨӨР tab
@@ -854,6 +876,21 @@
             }
             // Set delete filter and render
             isDeleteFilter = true;
+            isUnrelatedFilter = false;
+            applyFrontendFilter();
+        } else if (currentActiveTab === 'unrelated') {
+            // Show unrelated documents view (ГҮЙЛГЭЭНД ХОЛБООГҮЙ tab)
+            if (documentsView && detailView) {
+                documentsView.style.display = 'block';
+                detailView.style.display = 'none';
+                if (balanceView) {
+                    balanceView.style.display = 'none';
+                }
+                updateTabStyling('unrelated');
+            }
+            // Set unrelated filter and render
+            isDeleteFilter = false;
+            isUnrelatedFilter = true;
             applyFrontendFilter();
         } else {
             // Show documents view (НЭР ТӨРЛӨӨР tab) - default
@@ -867,6 +904,7 @@
             }
             // Set delete filter to false and render
             isDeleteFilter = false;
+            isUnrelatedFilter = false;
             applyFrontendFilter();
         }
     }
@@ -882,6 +920,16 @@
         if (isDeleteFilter) {
             // Show only deleted documents
             filteredData = documentsData.filter(doc => doc.IsDelete === true);
+        } else if (isUnrelatedFilter) {
+            // Show only active documents without items AND without details (unrelated to transactions)
+            // A document is "unrelated" if it has NO records in either inv_document_item or inv_document_detail
+            filteredData = documentsData.filter(doc => {
+                if (doc.IsDelete === true) return false; // Exclude deleted documents
+                
+                // Document must have neither items nor details
+                // HasItems and HasDetails flags are set by the backend
+                return !doc.HasItems && !doc.HasDetails;
+            });
         } else {
             // Show only active documents
             filteredData = documentsData.filter(doc => doc.IsDelete === false);
@@ -1009,13 +1057,15 @@
             const totalPrice = formatNumber(doc.TotalPrice || 0, 2);
             const userName = doc.UserName || doc.CreatedBy || 'N/A';
             
-            // Add data attribute for document number
+            // Add data attributes for document number and ID
             row.setAttribute('data-document-no', documentNo);
+            row.setAttribute('data-document-id', doc.DocumentId || '');
             
             // Add right-click event listener
             row.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
-                showContextMenu(e, documentNo);
+                const documentId = doc.DocumentId || '';
+                showContextMenu(e, documentNo, documentId);
             });
             
             row.innerHTML = `
@@ -1267,8 +1317,9 @@
                     : '';
                 
                 const documentNo = item.document_no || '';
+                const documentId = item.document_id || '';
                 htmlContent += `
-                    <tr class="hover:bg-gray-50 ${rowBorderClass}" data-document-no="${documentNo}">
+                    <tr class="hover:bg-gray-50 ${rowBorderClass}" data-document-no="${documentNo}" data-document-id="${documentId}">
                         <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${documentNo}</td>
                         <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
                         <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
@@ -1301,8 +1352,9 @@
             row.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 const documentNo = row.getAttribute('data-document-no');
+                const documentId = row.getAttribute('data-document-id');
                 if (documentNo) {
-                    showContextMenu(e, documentNo);
+                    showContextMenu(e, documentNo, documentId);
                 }
             });
         });
@@ -1443,6 +1495,7 @@
         
         // Set to active documents filter
         isDeleteFilter = false;
+        isUnrelatedFilter = false;
         
         // Check if we have data to display
         if (documentsData && documentsData.length > 0) {
@@ -1486,6 +1539,7 @@
         
         // Set to deleted documents filter
         isDeleteFilter = true;
+        isUnrelatedFilter = false;
         
         // Check if we have data to display
         if (documentsData && documentsData.length > 0) {
@@ -1510,6 +1564,49 @@
         }
     }
     
+    function showUnrelatedDocuments() {
+        // Set active tab
+        currentActiveTab = 'unrelated';
+        
+        // Show the documents view
+        document.getElementById('inv-documents-view').style.display = 'block';
+        
+        // Hide the detail view
+        document.getElementById('inv-journal-detail-view').style.display = 'none';
+        
+        // Hide the balance view
+        document.getElementById('inv-balance-view').style.display = 'none';
+        
+        // Update tab styling
+        updateTabStyling('unrelated');
+        
+        // Set to unrelated documents filter
+        isDeleteFilter = false;
+        isUnrelatedFilter = true;
+        
+        // Check if we have data to display
+        if (documentsData && documentsData.length > 0) {
+            applyFrontendFilter();
+        } else {
+            const tbody = document.getElementById('documents-tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load documents unrelated to transactions.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+    
     
     function updateTabStyling(activeTab) {
         // Use IDs for more reliable tab selection
@@ -1517,9 +1614,10 @@
         const tabDetail = document.getElementById('tab-detail');
         const tabBalance = document.getElementById('tab-balance');
         const tabDeleted = document.getElementById('tab-deleted');
+        const tabUnrelated = document.getElementById('tab-unrelated');
         
         // Reset all tabs
-        [tabDocuments, tabDetail, tabBalance, tabDeleted].forEach(tab => {
+        [tabDocuments, tabDetail, tabBalance, tabDeleted, tabUnrelated].forEach(tab => {
             if (tab) {
                 tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
                 tab.classList.add('border-gray-300', 'text-gray-500');
@@ -1539,6 +1637,9 @@
         } else if (activeTab === 'deleted' && tabDeleted) {
             tabDeleted.classList.remove('border-gray-300', 'text-gray-500');
             tabDeleted.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'unrelated' && tabUnrelated) {
+            tabUnrelated.classList.remove('border-gray-300', 'text-gray-500');
+            tabUnrelated.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
         }
     }
     
@@ -1948,20 +2049,25 @@
     }
     
     // Context menu functions
-    function showContextMenu(event, documentNo) {
+    let selectedDocumentIdForContextMenu = null;  // Store document ID for navigation
+    
+    function showContextMenu(event, documentNo, documentId) {
         const contextMenu = document.getElementById('context-menu');
         if (!contextMenu) return;
+        
+        // Store document ID for navigation
+        selectedDocumentIdForContextMenu = documentId || null;
         
         // Position menu at cursor
         contextMenu.style.left = event.pageX + 'px';
         contextMenu.style.top = event.pageY + 'px';
         contextMenu.classList.remove('hidden');
         
-        // Store document number for edit action
+        // Store document number and ID for edit action
         const editButton = document.getElementById('context-menu-edit');
         if (editButton) {
             editButton.onclick = function() {
-                navigateToEdit(documentNo);
+                navigateToInventoryDocumentMasterDetail(documentId || documentNo);
             };
         }
         
@@ -1984,14 +2090,29 @@
         if (contextMenu) {
             contextMenu.classList.add('hidden');
         }
+        selectedDocumentIdForContextMenu = null;
     }
     
-    function navigateToEdit(documentNo) {
-        if (!documentNo) return;
+    function navigateToInventoryDocumentMasterDetail(documentIdOrNo) {
+        if (!documentIdOrNo) return;
         
-        // Navigate to invdocument_master_detail.html with filter parameter
-        const url = `/core/invdocuments/?filter_document_no=${encodeURIComponent(documentNo)}`;
+        // Get date range from filter inputs
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        
+        // Build URL with selected_document, begin_date, and end_date
+        const params = new URLSearchParams({
+            selected_document: documentIdOrNo
+        });
+        
+        if (startDate && endDate) {
+            params.set('begin_date', startDate);
+            params.set('end_date', endDate);
+        }
+        
+        const url = `/core/invdocuments/?${params.toString()}`;
         window.location.href = url;
+        hideContextMenu();
     }
     
     // Event listeners

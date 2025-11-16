@@ -359,7 +359,7 @@ class CashDocumentForm(forms.ModelForm):
         )
         
         # Configure foreign key fields with proper querysets
-        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 16]).order_by('DocumentTypeId')
+        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 15, 16]).order_by('DocumentTypeId')
         self.fields['ClientId'].queryset = RefClient.objects.filter(IsDelete=False).order_by('ClientCode')
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         self.fields['AccountId'].required = True
@@ -685,46 +685,84 @@ class Ref_Asset_CardForm(forms.ModelForm):
         self.fields['ClientId'].empty_label = "Select Client (Optional)"
     
     def clean(self):
-        """Calculate DailyExpense before validation if UnitCost and MonthsToUse are provided"""
+        """Calculate DailyExpense before validation using ReceivedDate and MonthsToUse"""
         from decimal import Decimal, ROUND_HALF_UP
+        from datetime import datetime, date, timedelta
         
         cleaned_data = super().clean()
         unit_cost = cleaned_data.get('UnitCost')
         months_to_use = cleaned_data.get('MonthsToUse')
+        received_date = cleaned_data.get('ReceivedDate')
         daily_expense = cleaned_data.get('DailyExpense')
         
-        # Calculate DailyExpense if UnitCost and MonthsToUse are provided
-        if unit_cost is not None and months_to_use is not None and months_to_use > 0:
-            # DailyExpense = UnitCost / (MonthsToUse * 30 days per month)
-            # Use Decimal for precise calculation and rounding
-            unit_cost_decimal = Decimal(str(unit_cost))
-            months_to_use_decimal = Decimal(str(months_to_use))
-            calculated_daily_expense = unit_cost_decimal / (months_to_use_decimal * Decimal('30'))
+        # Calculate DailyExpense if UnitCost, ReceivedDate, and MonthsToUse are provided
+        if unit_cost is not None and received_date and months_to_use is not None and months_to_use > 0:
+            # Ensure received_date is a date object
+            if isinstance(received_date, str):
+                received_date = datetime.strptime(received_date, '%Y-%m-%d').date()
             
-            # Round to 6 decimal places to match the model field's decimal_places=6
-            # This ensures it fits within max_digits=24, decimal_places=6 constraint
-            calculated_daily_expense = calculated_daily_expense.quantize(
-                Decimal('0.000001'), 
-                rounding=ROUND_HALF_UP
-            )
+            # Calculate end date by adding months manually
+            year = received_date.year
+            month = received_date.month
+            day = received_date.day
             
-            cleaned_data['DailyExpense'] = calculated_daily_expense
+            # Add months
+            new_month = month + months_to_use
+            new_year = year
+            
+            # Handle year rollover
+            while new_month > 12:
+                new_month -= 12
+                new_year += 1
+            
+            # Handle day overflow (e.g., Jan 31 -> Feb doesn't have 31 days)
+            try:
+                end_date = date(new_year, new_month, day)
+            except ValueError:
+                # If day doesn't exist in target month, use last day of that month
+                # Go to first day of next month, then subtract one day
+                if new_month == 12:
+                    end_date = date(new_year + 1, 1, 1)
+                else:
+                    end_date = date(new_year, new_month + 1, 1)
+                end_date = end_date - timedelta(days=1)
+            
+            # Calculate days of usage
+            days_of_usage = (end_date - received_date).days
+            
+            if days_of_usage > 0:
+                # DailyExpense = UnitCost / days of usage
+                unit_cost_decimal = Decimal(str(unit_cost))
+                days_decimal = Decimal(str(days_of_usage))
+                calculated_daily_expense = unit_cost_decimal / days_decimal
+                
+                # Round to 6 decimal places to match the model field's decimal_places=6
+                calculated_daily_expense = calculated_daily_expense.quantize(
+                    Decimal('0.000001'), 
+                    rounding=ROUND_HALF_UP
+                )
+                
+                cleaned_data['DailyExpense'] = calculated_daily_expense
+            else:
+                raise forms.ValidationError({
+                    'MonthsToUse': 'Invalid date range. Days of usage must be greater than 0.'
+                })
         elif unit_cost is not None and months_to_use is not None and months_to_use <= 0:
             raise forms.ValidationError({
                 'MonthsToUse': 'Months to Use must be greater than 0 to calculate Daily Expense.'
             })
         elif daily_expense is None or daily_expense == 0:
             # If DailyExpense is not provided and cannot be calculated, raise an error
-            if unit_cost is None or months_to_use is None:
+            if unit_cost is None or received_date is None or months_to_use is None:
                 raise forms.ValidationError({
-                    'DailyExpense': 'Daily expense should be calculated before submit. Please provide Unit Cost and Months to Use, or enter Daily Expense manually.'
+                    'DailyExpense': 'Daily expense should be calculated before submit. Please provide Unit Cost, Received Date, and Months to Use, or enter Daily Expense manually.'
                 })
         
         return cleaned_data
     
     class Meta:
         model = Ref_Asset_Card
-        fields = ['AssetId', 'AssetCardCode', 'AssetCardName', 'ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'ClientId']
+        fields = ['AssetId', 'AssetCardCode', 'AssetCardName', 'ManufacturedDate', 'ReceivedDate', 'MonthsToUse', 'UnitCost', 'UnitPrice', 'DailyExpense', 'CumulatedDepreciation', 'ClientId']
         widgets = {
             'AssetId': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
@@ -766,6 +804,11 @@ class Ref_Asset_CardForm(forms.ModelForm):
                 'step': '0.000001',
                 'placeholder': 'Enter daily expense'
             }),
+            'CumulatedDepreciation': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'step': '0.000001',
+                'placeholder': 'Enter cumulated depreciation'
+            }),
             'ClientId': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
             })
@@ -780,6 +823,7 @@ class Ref_Asset_CardForm(forms.ModelForm):
             'UnitCost': 'Unit Cost',
             'UnitPrice': 'Unit Price',
             'DailyExpense': 'Daily Expense',
+            'CumulatedDepreciation': 'Cumulated Depreciation',
             'ClientId': 'Client'
         }
 
@@ -1014,7 +1058,7 @@ class Ref_TemplateForm(forms.ModelForm):
     
     class Meta:
         model = Ref_Template
-        fields = ['TemplateName', 'DocumentTypeId', 'AccountId', 'IsDelete']
+        fields = ['TemplateName', 'DocumentTypeId', 'AccountId', 'IsVat', 'IsDelete']
         widgets = {
             'TemplateName': forms.TextInput(attrs={
                 'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full',
@@ -1027,6 +1071,9 @@ class Ref_TemplateForm(forms.ModelForm):
             'AccountId': forms.Select(attrs={
                 'class': 'form-control border border-gray-200 rounded-md px-3 py-2 w-full'
             }),
+            'IsVat': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-300 rounded'
+            }),
             'IsDelete': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             })
@@ -1035,6 +1082,7 @@ class Ref_TemplateForm(forms.ModelForm):
             'TemplateName': 'ЗАГВАРЫН НЭР',
             'DocumentTypeId': 'БАРИМТЫН ТӨРӨЛ',
             'AccountId': 'ДАНС',
+            'IsVat': 'НӨАТ-тай эсэх',
             'IsDelete': 'Идэвхитэй'
         }
 

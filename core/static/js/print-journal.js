@@ -23,8 +23,11 @@
      * Format number with Mongolian locale
      */
     function formatNumber(value, decimals = 2) {
-        if (value === null || value === undefined || isNaN(value)) return '0.00';
-        return parseFloat(value).toLocaleString('en-US', {
+        if (value === null || value === undefined || value === '') return '';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '';
+        if (num === 0) return '';
+        return num.toLocaleString('en-US', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         });
@@ -48,17 +51,16 @@
     }
 
     /**
-     * Get current date/time formatted
+     * Get current date/time formatted as YYYY-MM-DD, Цаг: H:M
      */
     function getCurrentDateTime() {
         const now = new Date();
-        return now.toLocaleString('mn-MN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}, Цаг: ${hours}:${minutes}`;
     }
 
     /**
@@ -94,7 +96,15 @@
         let html = '';
         
         data.forEach((item, index) => {
-            html += '<tr>';
+            // Check if this is the last row of a document batch
+            const currentDocNo = item.document_no || '';
+            const nextItem = data[index + 1];
+            const nextDocNo = nextItem ? (nextItem.document_no || '') : '';
+            const isLastRowInBatch = currentDocNo !== nextDocNo;
+            
+            // Add class for document batch separator
+            const rowClass = isLastRowInBatch ? ' class="doc-batch-end"' : '';
+            html += `<tr${rowClass}>`;
             
             columnHeaders.forEach(header => {
                 const fieldName = fieldMapping[header];
@@ -104,6 +114,11 @@
                 }
                 
                 let value = item[fieldName] || '';
+                
+                // Handle null, undefined, or NaN values
+                if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+                    value = '';
+                }
                 
                 // Format numeric values
                 let isNumeric = false;
@@ -115,6 +130,13 @@
                     isNumeric = true;
                 } else if (fieldName === 'document_date') {
                     value = formatDate(value);
+                } else {
+                    // Ensure string values don't show NaN
+                    if (typeof value === 'number' && isNaN(value)) {
+                        value = '';
+                    } else {
+                        value = String(value || '');
+                    }
                 }
                 
                 // Right-align numeric columns
@@ -134,6 +156,7 @@
     function generatePrintHTML(config) {
         const fieldMapping = getDataFieldMapping();
         const tableRows = generateTableRows(config.allData, config.columnHeaders, fieldMapping);
+        const printDate = getCurrentDateTime();
         
         const html = `<!DOCTYPE html>
 <html lang="mn">
@@ -231,7 +254,26 @@
         /* Now apply our print styles - ensure no base.html styles */
         @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 1cm 1cm 2cm 1cm; /* Extra bottom margin for signature line and page numbers */
+            
+            @bottom-left {
+                content: "Хянасан................................................................                                                  Бэлтгэсэн................................................................                                                  ";
+                font-size: 9pt;
+                color: #000;
+            }
+            
+            @bottom-center {
+                content: "Хэвлэсэн огноо: ${escapeTemplateLiteral(printDate)}";
+                font-size: 9pt;
+                color: #000;
+                white-space: nowrap;
+            }
+            
+            @bottom-right {
+                content: "Хуудас " counter(page) " / " counter(pages);
+                font-size: 9pt;
+                color: #000;
+            }
         }
         
         /* Remove all inherited styles from parent window */
@@ -279,6 +321,7 @@
         .print-info {
             display: flex;
             justify-content: space-between;
+            flex-wrap: wrap;
             font-size: 9pt;
             margin-bottom: 5px;
         }
@@ -298,18 +341,55 @@
             background-color: #f0f0f0;
         }
         
+        .print-table thead tr th {
+            border-bottom: 3px solid #000;
+            padding-bottom: 4px;
+        }
+        
+        .print-table tbody tr:first-child td {
+            padding-top: 6px;
+        }
+        
         .print-table th {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 2px 3px;
             text-align: left;
             font-weight: bold;
+            font-size: 9pt;
             background-color: #e0e0e0;
         }
         
         .print-table td {
-            border: 1px solid #000;
-            padding: 4px;
+            border: 1px solid #d0d0d0;
+            padding: 2px 3px;
             text-align: left;
+        }
+        
+        /* Make Client (Харилцагч) and Description (Гүйлгээний утга) columns wider */
+        .print-table th:nth-child(4),
+        .print-table td:nth-child(4) {
+            min-width: 120px;
+            width: 15%;
+        }
+        
+        .print-table th:nth-child(5),
+        .print-table td:nth-child(5) {
+            min-width: 150px;
+            width: 18%;
+        }
+        
+        .print-table tbody tr {
+            border-top: 1px solid #d0d0d0;
+            border-bottom: 1px solid #d0d0d0;
+        }
+        
+        /* Normal border for document batch separators */
+        .print-table tbody tr.doc-batch-end {
+            border-bottom: 1px solid #000;
+        }
+        
+        .print-table tbody tr.doc-batch-end td {
+            border-bottom: 1px solid #000;
         }
         
         .print-table tbody tr:nth-child(even) {
@@ -348,7 +428,7 @@
         
         .print-totals-row td {
             border-top: 2px solid #000;
-            padding: 6px 4px;
+            padding: 2px 3px;
         }
         
         @media print {
@@ -395,14 +475,17 @@
                 padding: 0 !important;
             }
             
-            .print-header, .print-table, .print-footer {
+            .print-header, .print-footer {
                 display: block !important;
                 visibility: visible !important;
             }
             
             .print-table {
+                display: table !important;
+                visibility: visible !important;
                 page-break-inside: auto;
                 width: 100% !important;
+                max-width: 100% !important;
             }
             
             .print-table tr {
@@ -432,13 +515,14 @@
 <body style="margin: 0 !important; padding: 0 !important; background: #fff !important; width: 100% !important; height: 100% !important;">
     <div class="print-container" style="width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important;">
     <div class="print-buttons">
-        <button class="print-btn" id="print-btn">ХЭВЛЭХ</button>        
+        <button class="print-btn" id="print-btn">ХЭВЛЭХ</button>
+        <button class="excel-btn" id="excel-btn">EXCEL</button>
     </div>
     <div class="print-header">
         <div class="print-title">${escapeTemplateLiteral(config.title)}</div>
         <div class="print-info">
             <span><strong>Огноо:</strong> ${formatDate(config.startDate)} - ${formatDate(config.endDate)}</span>
-            <span><strong>Хэвлэсэн огноо:</strong> ${getCurrentDateTime()}</span>
+            <span><strong>Хэвлэсэн огноо:</strong> ${escapeTemplateLiteral(printDate)}</span>
         </div>
     </div>
     
@@ -617,7 +701,7 @@
         }
         
         // Default values
-        config.title = config.title || 'Journal Report';
+        config.title = config.title || 'ЖУРНАЛ';
         config.startDate = config.startDate || '';
         config.endDate = config.endDate || '';
         

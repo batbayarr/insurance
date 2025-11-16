@@ -16,7 +16,7 @@
             <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span class="text-xs">Нэмэх</span>
+            <span class="text-xs">НЭМЭХ</span>
         </a>
         {% endif %}
     </div>
@@ -32,8 +32,8 @@
                 <label for="end-date" class="text-sm font-medium text-gray-700">Эцсийн огноо:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <button id="apply-date-filter" class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
-                Хайх
+            <button id="apply-date-filter" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                СЭРГЭЭХ
             </button>
         </div>
     </div>
@@ -345,8 +345,8 @@ function initializeDateInputs() {
             console.warn('Failed to clear filters from localStorage:', e);
         }
         
-        // Reset pagination to first page
-        currentPage = 1;
+        // Don't reset currentPage here - it will be calculated in applyFrontendFilter()
+        // based on the document's position in the data
         useDocumentFilter = true;
     }
     
@@ -456,6 +456,14 @@ function initializeDateInputs() {
                 clearAllClientSideFilters(); // Clear all filters before fetching
             }
             skipFilterClear = false; // Reset flag
+            
+            // Ensure selected_document is removed from URL before fetching
+            const currentUrl = new URL(window.location);
+            if (currentUrl.searchParams.has('selected_document')) {
+                currentUrl.searchParams.delete('selected_document');
+                window.history.replaceState({}, '', currentUrl.toString());
+            }
+            
             searchPromise = saveAndFetch(startDateInput.value, endDateInput.value);
         });
         
@@ -566,15 +574,10 @@ function initializeDateInputs() {
     }
     
     // Load initial data
-    // If filtering by documentId, trigger search button click first, then apply documentId filter
     if (useDocumentFilter) {
-        // Step 1: Clear filters first
-        // Step 2: Click "Хайх" button to fetch documents with the date range
-        // Step 3: After fetch completes, apply documentId filter
         if (applyButton) {
-            // Use setTimeout to ensure date inputs are set and filter elements exist
             setTimeout(() => {
-                // Clear all filter inputs explicitly (ensure they're cleared)
+                // Clear all filter inputs
                 const clearFilters = () => {
                     const filterIds = [
                         'filter-document-no', 'filter-document-type', 'filter-client',
@@ -582,68 +585,36 @@ function initializeDateInputs() {
                         'filter-account', 'filter-currency', 'filter-currency-amount',
                         'filter-currency-exchange', 'filter-mnt-amount', 'filter-created-by'
                     ];
-                    
                     filterIds.forEach(id => {
                         const element = document.getElementById(id);
-                        if (element) {
-                            element.value = '';
-                        }
+                        if (element) element.value = '';
                     });
                 };
                 
-                // Clear filters immediately
                 clearFilters();
-                
-                // Clear again after a small delay to catch any late-loading elements
                 setTimeout(clearFilters, 50);
-                
-                // Clear filters using the helper function (preserve selected_document in URL)
                 clearAllClientSideFilters(true);
                 
-                // Step 2: Set flag to indicate this is initial document filter load
-                // This prevents fetchDocuments from applying filter immediately
+                // Set flag to prevent fetchDocuments from applying filter immediately
                 window.isInitialDocumentFilterLoad = true;
                 
-                // Step 3: Set flags to control button handler behavior
-                skipFilterClear = true; // Don't clear filters again (already cleared)
-                isProgrammaticClick = true; // Mark as programmatic click
+                // Set flags to control button handler behavior
+                skipFilterClear = true;
+                isProgrammaticClick = true;
                 
-                // Step 4: Click "Хайх" button to trigger search
-                // The button handler will call saveAndFetch, which calls fetchDocuments
-                applyButton.click();
+                // Call fetchDocuments directly with selectedDocumentId parameter
+                // Backend will filter and return only that document
+                const promiseToUse = fetchDocuments(startDateInput.value, endDateInput.value, selectedDocumentId);
                 
-                // Step 5: Wait for the search promise from button handler
-                // The button handler sets searchPromise, so we can use it
-                // Use a small delay to ensure the promise is set
-                setTimeout(() => {
-                    // Get the promise from the button handler (it's stored in searchPromise variable)
-                    // If searchPromise is not set yet, call fetchDocuments directly as fallback
-                    const promiseToUse = searchPromise || fetchDocuments(startDateInput.value, endDateInput.value);
-                    
-                    // Step 6: After search completes, apply documentId filter
-                    promiseToUse.then(() => {
-                        // Clear the flag
-                        window.isInitialDocumentFilterLoad = false;
-                        
-                        // Small delay to ensure data is fully loaded
-                        setTimeout(() => {
-                            // Apply filter by documentId (this will filter the already-loaded documents)
-                            applyFrontendFilter();
-                            
-                            // Then load document details if selected_document is present
-                            if (selectedDocumentId) {
-                                setTimeout(() => {
-                                    loadDocumentDetails(selectedDocumentId);
-                                }, 100);
-                            }
-                        }, 100);
-                    }).catch(error => {
-                        // Clear the flag on error
-                        window.isInitialDocumentFilterLoad = false;
-                        // Handle error silently - fetchDocuments already shows error message
-                        console.error('Error during search:', error);
-                    });
-                }, 50); // Small delay to let button click handler set the promise
+                promiseToUse.then((data) => {
+                    window.isInitialDocumentFilterLoad = false;
+                    setTimeout(() => {
+                        applyFrontendFilter();
+                    }, 150);
+                }).catch(error => {
+                    window.isInitialDocumentFilterLoad = false;
+                    console.error('Error during search:', error);
+                });
             }, 100);
         }
     } else {
@@ -655,7 +626,7 @@ function initializeDateInputs() {
 }
 
 // Fetch documents from API
-function fetchDocuments(startDate, endDate) {
+function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
     const tbody = document.getElementById('documents-tbody');
     if (!tbody) return Promise.resolve();
     
@@ -668,7 +639,17 @@ function fetchDocuments(startDate, endDate) {
     // Show loading state
     tbody.innerHTML = '<tr><td colspan="13" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
     
-    const url = `/core/api/cash-documents-master/?start_date=${startDate}&end_date=${endDate}`;
+    // Use passed parameter, or check URL as fallback
+    let selectedDocumentId = selectedDocumentIdParam;
+    if (!selectedDocumentId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        selectedDocumentId = urlParams.get('selected_document');
+    }
+    
+    let url = `/core/api/cash-documents-master/?start_date=${startDate}&end_date=${endDate}`;
+    if (selectedDocumentId) {
+        url += `&selected_document=${selectedDocumentId}`;
+    }
     
     // Create new AbortController for this request
     currentApiRequest = new AbortController();
@@ -688,29 +669,22 @@ function fetchDocuments(startDate, endDate) {
         
         if (data.success) {
             allDocumentsData = data.documents;
-            // Don't reset currentPage here - it will be restored from localStorage if needed
             
-            // Check if we're filtering by documentId
-            const urlParams = new URLSearchParams(window.location.search);
-            const selectedDocumentId = urlParams.get('selected_document');
-            
-            // Always apply filter after data is loaded
-            // If selected_document is in URL, it will be filtered automatically by applyFrontendFilter()
-            // If we're in initial document filter load, the calling code will handle it, but we also apply here as backup
-            if (!window.isInitialDocumentFilterLoad) {
-                // Normal flow: apply filters immediately
-                // applyFrontendFilter() will automatically filter by documentId if it's in URL
-                applyFrontendFilter();
-            } else {
-                // Initial load with documentId - filter will be applied after fetch completes
-                // This happens in the setTimeout callback in initializeDateInputs()
-                // But we also apply here as a safeguard to ensure filter is always applied
-                setTimeout(() => {
-                    applyFrontendFilter();
-                }, 50);
+            // If this is initial document filter load, don't call applyFrontendFilter here
+            // The promise chain in initializeDateInputs() will handle it
+            if (window.isInitialDocumentFilterLoad) {
+                return data;
             }
+            
+            // Normal flow: apply filter after data is loaded
+            setTimeout(() => {
+                applyFrontendFilter();
+            }, 10);
+            
+            return data;
         } else {
             tbody.innerHTML = '<tr><td colspan="13" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+            throw new Error(data.error || 'Unknown error');
         }
     })
     .catch(error => {
@@ -744,30 +718,80 @@ function applyFrontendFilter() {
         createdBy: document.getElementById('filter-created-by')?.value.toLowerCase().trim() || ''
     };
     
-    // Check if there are any active filters (excluding documentId filter)
-    const hasActiveFilters = Object.values(filters).some(value => value !== '');
-    
     // Check for selected_document in URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     let selectedDocumentId = urlParams.get('selected_document');
     
-    // Note: We keep selected_document in URL even when other filters are cleared
-    // This allows the documentId filter to persist until explicitly removed
-    
-    // Filter data with null-safe operations
-    filteredData = allDocumentsData.filter(doc => {
-        // If selected_document is in URL, filter to only that document
-        // Convert both to strings for reliable comparison (URL params are strings, DocumentId might be number)
-        if (selectedDocumentId) {
-            const docIdStr = String(doc.DocumentId || '');
-            const selectedIdStr = String(selectedDocumentId);
-            if (docIdStr !== selectedIdStr) {
-                return false; // Exclude documents that don't match the selected documentId
-            }
-            // If we reach here, this document matches the selected documentId
+    // If selected_document is in URL, backend already filtered the data
+    // Check this first before any other filtering logic
+    if (selectedDocumentId) {
+        // Wait for data to be loaded if not ready yet
+        if (!allDocumentsData || allDocumentsData.length === 0) {
+            // Data not ready yet, return early and let fetchDocuments handle it
+            return;
         }
         
-        // Apply other filters only if documentId filter passed (or if no documentId filter)
+        // Backend already filtered, so allDocumentsData should contain only the selected document
+        if (allDocumentsData.length === 1) {
+            const selectedDoc = allDocumentsData[0];
+            
+            // Set filter input value to make filtering explicit and visible to user
+            const documentNoFilter = document.getElementById('filter-document-no');
+            if (documentNoFilter && selectedDoc.DocumentNo) {
+                documentNoFilter.value = selectedDoc.DocumentNo;
+            }
+            
+            // Just show this one document - backend already filtered it!
+            filteredData = [selectedDoc];
+            pageData = [selectedDoc];
+            currentPage = 1;
+            totalPages = 1;
+            
+            // Render immediately
+            renderDocumentsTable(pageData);
+            updatePaginationInfo(1, 1, 1);
+            generatePaginationButtons();
+            
+            // Load details immediately
+            setTimeout(() => {
+                updateRowSelection(selectedDocumentId);
+                loadDocumentDetails(selectedDocumentId);
+            }, 200);
+            
+            // Save filters to localStorage
+            saveAllFiltersToLocalStorage();
+            
+            return; // Exit early
+        } else {
+            // Document not found - backend returned empty or multiple
+            filteredData = [];
+            pageData = [];
+            currentPage = 1;
+            totalPages = 1;
+            renderDocumentsTable(pageData);
+            updatePaginationInfo(0, 0, 0);
+            generatePaginationButtons();
+            return; // Exit early
+        }
+    }
+    
+    // Normal filtering logic (when no selectedDocumentId)
+    // Ensure allDocumentsData exists and is an array before filtering
+    if (!allDocumentsData || !Array.isArray(allDocumentsData)) {
+        // Data not loaded yet, fetch it first
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        if (startDateInput && endDateInput) {
+            fetchDocuments(startDateInput.value, endDateInput.value).then(() => {
+                // Retry applyFrontendFilter after data is loaded
+                applyFrontendFilter();
+            });
+        }
+        return;
+    }
+    
+    filteredData = allDocumentsData.filter(doc => {
+        // Apply all filters
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
         if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
         if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
@@ -786,23 +810,24 @@ function applyFrontendFilter() {
         return true;
     });
     
-    // Calculate pagination
+    // Calculate pagination for normal flow
     totalPages = Math.ceil(filteredData.length / pageSize);
+    
+    // Ensure currentPage is within valid range
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
     
     // Slice data for current page
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, filteredData.length);
-    const pageData = filteredData.slice(startIndex, endIndex);
+    pageData = filteredData.slice(startIndex, endIndex);
     
-    // Render table
+    // Render table and update pagination
     renderDocumentsTable(pageData);
-    
-    // Update pagination
     updatePaginationInfo(startIndex + 1, endIndex, filteredData.length);
+    generatePaginationButtons();
     
-    // Save all filter states to localStorage
+    // Save all filter states to localStorage (normal flow)
     saveAllFiltersToLocalStorage();
 }
 
@@ -966,6 +991,15 @@ function generatePaginationButtons() {
 function changePage(page) {
     if (page < 1 || page > totalPages) return;
     currentPage = page;
+    
+    // Remove selected_document from URL when user manually changes page
+    // This allows normal pagination to work
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.has('selected_document')) {
+        currentUrl.searchParams.delete('selected_document');
+        window.history.replaceState({}, '', currentUrl.toString());
+    }
+    
     applyFrontendFilter();
 }
 
@@ -1230,64 +1264,21 @@ function calculateCashDocumentTotals() {
     let totalDebit = 0;
     let totalCredit = 0;
     
-    // Calculate totals and update currency conversions
+    // Read debit/credit amounts directly from the cells (which contain stored database values)
+    // The database already has the correct calculated values, so we should use those directly
     rows.forEach((row) => {
-        const currencyAmountCell = row.querySelector('td:nth-child(5)'); // Currency Amount column
-        const currencyExchangeCell = row.querySelector('td:nth-child(4)'); // Exchange Rate column
         const debitCell = row.querySelector('td.debit-amount');
         const creditCell = row.querySelector('td.credit-amount');
         
-        if (currencyAmountCell && currencyExchangeCell) {
-            const currencyAmount = parseFloat(currencyAmountCell.textContent.replace(/,/g, '')) || 0;
-            const currencyExchange = parseFloat(currencyExchangeCell.textContent.replace(/,/g, '')) || 0;
-            
-            // Calculate converted amount
-            const convertedAmount = currencyAmount * currencyExchange;
-            
-            // Update debit/credit cells with calculated amounts
-            if (debitCell && creditCell) {
-                // Check if this is a debit or credit entry by looking at the current values
-                const currentDebit = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
-                const currentCredit = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
-                
-                // If there's already a debit amount, this is a debit entry
-                if (currentDebit > 0) {
-                    debitCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    creditCell.textContent = '0.00';
-                    totalDebit += convertedAmount;
-                } 
-                // If there's already a credit amount, this is a credit entry
-                else if (currentCredit > 0) {
-                    debitCell.textContent = '0.00';
-                    creditCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    totalCredit += convertedAmount;
-                }
-                // If both are zero, check the IsDebit field from the row data
-                else {
-                    // Get the IsDebit value from the row's data attribute
-                    const isDebit = row.getAttribute('data-is-debit') === 'true';
-                    
-                    if (isDebit) {
-                        debitCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                        creditCell.textContent = '0.00';
-                        totalDebit += convertedAmount;
-                    } else {
-                        debitCell.textContent = '0.00';
-                        creditCell.textContent = convertedAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                        totalCredit += convertedAmount;
-                    }
-                }
-            }
-        } else {
-            // Fallback: use existing debit/credit amounts if currency conversion not available
-            if (debitCell) {
-                const value = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
-                totalDebit += value;
-            }
-            if (creditCell) {
-                const value = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
-                totalCredit += value;
-            }
+        // Read the actual stored values from the database (displayed in cells)
+        if (debitCell) {
+            const debitValue = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
+            totalDebit += debitValue;
+        }
+        
+        if (creditCell) {
+            const creditValue = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
+            totalCredit += creditValue;
         }
     });
     
@@ -1433,7 +1424,7 @@ function renderDetailContent(html) {
         }
 }
 
-// Update row selection visual state
+// Update row selection visual state and scroll to row
 function updateRowSelection(selectedDocumentId) {
     // Remove selection from all rows
     const allRows = document.querySelectorAll('tbody tr[data-document-id]');
@@ -1441,10 +1432,17 @@ function updateRowSelection(selectedDocumentId) {
         row.classList.remove('bg-blue-50');
     });
     
-    // Add selection to clicked row
+    // Add selection to clicked row and scroll to it
     const selectedRow = document.querySelector(`tr[data-document-id="${selectedDocumentId}"]`);
     if (selectedRow) {
         selectedRow.classList.add('bg-blue-50');
+        
+        // Scroll to the selected row with smooth behavior
+        selectedRow.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center', // Center the row in the viewport
+            inline: 'nearest'
+        });
     }
 }
 

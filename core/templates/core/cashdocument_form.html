@@ -365,14 +365,18 @@
                     </div>
                     <div class="flex justify-start pl-2">
                         <div class="flex items-center">
+                            <input type="hidden"
+                                   id="IsVatHidden"
+                                   name="IsVat"
+                                   value="{% if item and item.IsVat %}true{% else %}false{% endif %}">
                             <input type="checkbox" 
                                    id="customIsVat" 
-                                   name="IsVat" 
                                    value="true"
                                    {% if item and item.IsVat %}checked{% endif %}
-                                   class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer">
-                            <label for="customIsVat" class="ml-3 text-xs text-gray-700 cursor-pointer">
-                                НӨАТ идэвхжүүлэх
+                                   class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-not-allowed"
+                                   disabled>
+                            <label for="customIsVat" class="ml-3 text-xs text-gray-700">
+                                НӨАТ-ын төлөвийг загвараас автоматаар авна
                             </label>
                         </div>
                     </div>
@@ -705,6 +709,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Make CurrencyExchange read-only when CurrencyId is 1
+    function updateCurrencyExchangeReadonly() {
+        const currencyIdField = document.getElementById('CurrencyId');
+        const currencyExchangeInput = document.getElementById('{{ form.CurrencyExchange.id_for_label }}') || 
+                                     document.querySelector('input[name="CurrencyExchange"]');
+        
+        if (!currencyIdField || !currencyExchangeInput) return;
+        
+        const currencyId = parseInt(currencyIdField.value);
+        
+        if (currencyId === 1) {
+            // CurrencyId is 1 (MNT), make CurrencyExchange read-only
+            currencyExchangeInput.readOnly = true;
+            currencyExchangeInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+            currencyExchangeInput.classList.remove('bg-white');
+            // Set value to 1 if empty
+            if (!currencyExchangeInput.value || currencyExchangeInput.value === '') {
+                currencyExchangeInput.value = '1';
+            }
+        } else {
+            // CurrencyId is not 1, make CurrencyExchange editable
+            currencyExchangeInput.readOnly = false;
+            currencyExchangeInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            currencyExchangeInput.classList.add('bg-white');
+        }
+    }
+    
+    // Initialize CurrencyExchange readonly state on page load
+    updateCurrencyExchangeReadonly();
+    
+    // Watch for CurrencyId changes using MutationObserver
+    const currencyIdField = document.getElementById('CurrencyId');
+    if (currencyIdField) {
+        const currencyObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    updateCurrencyExchangeReadonly();
+                }
+            });
+        });
+        currencyObserver.observe(currencyIdField, { 
+            attributes: true, 
+            attributeFilter: ['value'] 
+        });
+        
+        // Also listen for direct value changes (in case value is set programmatically)
+        currencyIdField.addEventListener('change', updateCurrencyExchangeReadonly);
+        
+        // Use input event as well for immediate updates
+        currencyIdField.addEventListener('input', updateCurrencyExchangeReadonly);
+    }
+    
     // Initialize hybrid validation for Description field
     try {
         // Try multiple possible field IDs and selectors
@@ -914,15 +970,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const vatCheckbox = document.getElementById('customIsVat');
     const vatAccountDisplay = document.getElementById('VatAccountIdDisplay');
     const vatAccountHidden = document.getElementById('VatAccountId');
-    
+    const vatHiddenField = document.getElementById('IsVatHidden');
+
+    function syncVatHiddenValue(isChecked) {
+        if (vatHiddenField) {
+            vatHiddenField.value = isChecked ? 'true' : 'false';
+        }
+    }
+
     // VAT account mapping based on document type (using database constants)
     const vatAccountMapping = {
-        1: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 1,3,16 -> Payable VAT (ConstantID=10)
+        1: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 1,3,15,16 -> Payable VAT (ConstantID=10)
         3: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
-        16: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
-        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 2,4,17 -> Receivable VAT (ConstantID=9)
+        15: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
+        16: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
+        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 2,4 -> Receivable VAT (ConstantID=9)
         4: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
-        17: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
     };
     
     // Function to set VAT account based on document type
@@ -951,7 +1014,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 setVatAccountForDocumentType(documentTypeSelect.value);
             }
         }
-        
+        syncVatHiddenValue(!!vatCheckbox.checked);
+
         vatCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 // Get current document type and set appropriate VAT account
@@ -967,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 vatAccountDisplay.value = '';
                 vatAccountHidden.value = '';
             }
+            syncVatHiddenValue(this.checked);
         });
     }
     
@@ -1000,13 +1065,20 @@ document.addEventListener('DOMContentLoaded', function() {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
                     updateTemplateDropdown();
+                    // Also update CurrencyExchange readonly state when account changes
+                    // (CurrencyId is typically set when AccountId is set)
+                    setTimeout(updateCurrencyExchangeReadonly, 100);
                 }
             });
         });
         observer.observe(accountIdField, { attributes: true, attributeFilter: ['value'] });
         
         // Also listen for direct value changes
-        accountIdField.addEventListener('change', updateTemplateDropdown);
+        accountIdField.addEventListener('change', function() {
+            updateTemplateDropdown();
+            // Update CurrencyExchange readonly state when account changes
+            setTimeout(updateCurrencyExchangeReadonly, 100);
+        });
     }
     
     // Initialize template dropdown on page load if editing and both AccountId and DocumentTypeId are present

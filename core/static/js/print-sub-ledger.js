@@ -24,8 +24,11 @@
      * Format number with Mongolian locale
      */
     function formatNumber(value, decimals = 2) {
-        if (value === null || value === undefined || isNaN(value)) return '0.00';
-        return parseFloat(value).toLocaleString('en-US', {
+        if (value === null || value === undefined || value === '') return '';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '';
+        if (num === 0) return '';
+        return num.toLocaleString('en-US', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         });
@@ -49,17 +52,16 @@
     }
 
     /**
-     * Get current date/time formatted
+     * Get current date/time formatted as YYYY-MM-DD, Цаг: H:M
      */
     function getCurrentDateTime() {
         const now = new Date();
-        return now.toLocaleString('mn-MN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}, Цаг: ${hours}:${minutes}`;
     }
 
     /**
@@ -76,7 +78,9 @@
     function getDataFieldMapping() {
         return {
             'Огноо': 'DocumentDate',
-            'Баримтын дугаар': 'DocumentNo',
+            
+            'Баримт': 'DocumentNo',
+            'Код': 'AccountCode',
             'Харилцагч': 'ClientName',
             'Гүйлгээний утга': 'Description',
             'Валют': 'CurrencyName',
@@ -94,7 +98,15 @@
         let html = '';
         
         data.forEach((item, index) => {
-            html += '<tr>';
+            // Check if this is the last row of a document batch
+            const currentDocNo = item.DocumentNo || '';
+            const nextItem = data[index + 1];
+            const nextDocNo = nextItem ? (nextItem.DocumentNo || '') : '';
+            const isLastRowInBatch = currentDocNo !== nextDocNo;
+            
+            // Add class for document batch separator
+            const rowClass = isLastRowInBatch ? ' class="doc-batch-end"' : '';
+            html += `<tr${rowClass}>`;
             
             columnHeaders.forEach(header => {
                 const fieldName = fieldMapping[header];
@@ -103,7 +115,12 @@
                     return;
                 }
                 
-                let value = item[fieldName] || '';
+                let value = item[fieldName];
+                
+                // Handle null, undefined, or NaN values
+                if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+                    value = '';
+                }
                 
                 // Format numeric values
                 let isNumeric = false;
@@ -115,6 +132,13 @@
                     isNumeric = true;
                 } else if (fieldName === 'DocumentDate') {
                     value = formatDate(value);
+                } else {
+                    // Ensure string values don't show NaN
+                    if (typeof value === 'number' && isNaN(value)) {
+                        value = '';
+                    } else {
+                        value = String(value || '');
+                    }
                 }
                 
                 // Right-align numeric columns
@@ -134,6 +158,7 @@
     function generatePrintHTML(config) {
         const fieldMapping = getDataFieldMapping();
         const tableRows = generateTableRows(config.allData, config.columnHeaders, fieldMapping);
+        const printDate = getCurrentDateTime();
         
         // Build metadata info
         const metaInfo = [];
@@ -262,7 +287,26 @@
         /* Now apply our print styles - ensure no base.html styles */
         @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 1cm 1cm 2cm 1cm; /* Extra bottom margin for signature line and page numbers */
+            
+            @bottom-left {
+                content: "Хянасан................................................................                                                  Бэлтгэсэн................................................................                                                  ";
+                font-size: 9pt;
+                color: #000;
+            }
+            
+            @bottom-center {
+                content: "Хэвлэсэн огноо: ${escapeTemplateLiteral(printDate)}";
+                font-size: 9pt;
+                color: #000;
+                white-space: nowrap;
+            }
+            
+            @bottom-right {
+                content: "Хуудас " counter(page) " / " counter(pages);
+                font-size: 9pt;
+                color: #000;
+            }
         }
         
         /* Remove all inherited styles from parent window */
@@ -330,18 +374,55 @@
             background-color: #f0f0f0;
         }
         
+        .print-table thead tr th {
+            border-bottom: 3px solid #000;
+            padding-bottom: 4px;
+        }
+        
+        .print-table tbody tr:first-child td {
+            padding-top: 6px;
+        }
+        
         .print-table th {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 2px 3px;
             text-align: left;
             font-weight: bold;
+            font-size: 9pt;
             background-color: #e0e0e0;
         }
         
         .print-table td {
-            border: 1px solid #000;
-            padding: 4px;
+            border: 1px solid #d0d0d0;
+            padding: 2px 3px;
             text-align: left;
+        }
+        
+        /* Make Client (Харилцагч) and Description (Гүйлгээний утга) columns wider */
+        .print-table th:nth-child(4),
+        .print-table td:nth-child(4) {
+            min-width: 120px;
+            width: 15%;
+        }
+        
+        .print-table th:nth-child(5),
+        .print-table td:nth-child(5) {
+            min-width: 150px;
+            width: 18%;
+        }
+        
+        .print-table tbody tr {
+            border-top: 1px solid #d0d0d0;
+            border-bottom: 1px solid #d0d0d0;
+        }
+        
+        /* Normal border for document batch separators */
+        .print-table tbody tr.doc-batch-end {
+            border-bottom: 1px solid #000;
+        }
+        
+        .print-table tbody tr.doc-batch-end td {
+            border-bottom: 1px solid #000;
         }
         
         .print-table tbody tr:nth-child(even) {
@@ -380,7 +461,7 @@
         
         .print-totals-row td {
             border-top: 2px solid #000;
-            padding: 6px 4px;
+            padding: 2px 3px;
         }
         
         @media print {
@@ -510,15 +591,37 @@
                 return;
             }
             
+            // First, identify the AccountCode column index from header
+            const headerRow = table.querySelector('thead tr');
+            let accountCodeColumnIndex = -1;
+            if (headerRow) {
+                const headers = headerRow.querySelectorAll('th');
+                headers.forEach(function(th, index) {
+                    const headerText = th.textContent.trim();
+                    // Check for "Код" column (AccountCode)
+                    if (headerText === 'Код') {
+                        accountCodeColumnIndex = index;
+                    }
+                });
+            }
+            
             let csvContent = '';
             const rows = table.querySelectorAll('tr');
             
-            rows.forEach(function(row) {
+            rows.forEach(function(row, rowIndex) {
                 const cells = row.querySelectorAll('th, td');
                 const rowData = [];
                 
-                cells.forEach(function(cell) {
+                cells.forEach(function(cell, cellIndex) {
                     let cellText = cell.textContent.trim();
+                    
+                    // For AccountCode column, prefix with tab to force Excel to treat as text
+                    // This prevents Excel from converting numeric codes (like "1010") to numbers
+                    if (cellIndex === accountCodeColumnIndex && cellText !== '') {
+                        // Prefix with tab character to force text format in Excel
+                        cellText = String.fromCharCode(9) + cellText;
+                    }
+                    
                     // Check if we need to quote before escaping
                     // Use indexOf to avoid escape sequence issues in template literal
                     var hasComma = cellText.indexOf(',') !== -1;

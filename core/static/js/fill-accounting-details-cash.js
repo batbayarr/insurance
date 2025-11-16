@@ -135,13 +135,13 @@ function FillAccountingDetailsCashGeneric(config) {
         cashFlowId = templateDetail.CashFlowId;
         console.log(`CashFlowId from template_detail:`, cashFlowId, 'Type:', typeof cashFlowId);
         
-        // Apply VAT logic for document types 1, 2, 3, 4
-        if ([1, 3].includes(docData.DocumentTypeId)) {
-            // Document Types 1 and 3 (Income Documents)
+        // Apply VAT logic for document types 1, 2, 3, 4, 15, 16
+        if ([1, 3, 15].includes(docData.DocumentTypeId)) {
+            // Document Types 1, 3, 15 (Income Documents - Payable VAT)
             if (!docData.IsVat) {
                 // Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows
                 currencyAmount = totalAmount;
-                console.log('Rule: Type 1/3, IsVat=false, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                console.log('Rule: Type 1/3/15, IsVat=false, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
             } else {
                 // IsVat=true
                 if (templateDetail.IsDebit) {
@@ -149,7 +149,7 @@ function FillAccountingDetailsCashGeneric(config) {
                     // Check if this template detail is a VAT account by comparing AccountId with document's VatAccountId
                     const isVatAccount = (parseInt(templateDetail.AccountId) === parseInt(docData.VatAccountId));
                     
-                    console.log('VAT Account Check (Type 1/3, Debit):', {
+                    console.log('VAT Account Check (Type 1/3/15, Debit):', {
                         isVatAccount: isVatAccount,
                         templateAccountId: parseInt(templateDetail.AccountId),
                         vatAccountId: parseInt(docData.VatAccountId)
@@ -158,22 +158,22 @@ function FillAccountingDetailsCashGeneric(config) {
                     if (isVatAccount) {
                         // Case 3: IsDebit=true and accountid=VatAccountId -> CurrencyAmount=VatAmount
                         currencyAmount = vatAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Debit, VAT Account Match, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Debit, VAT Account Match, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else if (templateDetail.AccountId === docData.AccountId) {
                         // Case 2: IsDebit=true and accountid=AccountId -> CurrencyAmount=TotalAmount
                         currencyAmount = totalAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Debit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Debit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else {
                         // Case 4: IsDebit=true and accountid<>VatAccountId and accountid<>AccountId -> CurrencyAmount=NetAmount
                         currencyAmount = netAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Debit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Debit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     }
                 } else {
                     // IsDebit=false (Credit)
                     // Check if this template detail is a VAT account by comparing AccountId with document's VatAccountId
                     const isVatAccount = (parseInt(templateDetail.AccountId) === parseInt(docData.VatAccountId));
                     
-                    console.log('VAT Account Check (Type 1/3, Credit):', {
+                    console.log('VAT Account Check (Type 1/3/15, Credit):', {
                         isVatAccount: isVatAccount,
                         templateAccountId: parseInt(templateDetail.AccountId),
                         vatAccountId: parseInt(docData.VatAccountId)
@@ -182,24 +182,24 @@ function FillAccountingDetailsCashGeneric(config) {
                     if (isVatAccount) {
                         // VAT account (Credit) -> CurrencyAmount=VatAmount
                         currencyAmount = vatAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Credit, VAT Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Credit, VAT Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else if (templateDetail.AccountId === docData.AccountId) {
                         // Main account (Credit) -> CurrencyAmount=TotalAmount
                         currencyAmount = totalAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Credit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Credit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else {
                         // Other account (Credit) -> CurrencyAmount=NetAmount
                         currencyAmount = netAmount;
-                        console.log('Rule: Type 1/3, IsVat=true, Credit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 1/3/15, IsVat=true, Credit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     }
                 }
             }
-        } else if ([2, 4].includes(docData.DocumentTypeId)) {
-            // Document Types 2 and 4 (Expense Documents)
+        } else if ([2, 4, 16].includes(docData.DocumentTypeId)) {
+            // Document Types 2, 4, 16 (Expense Documents - Receivable VAT)
             if (!docData.IsVat) {
                 // Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows
                 currencyAmount = totalAmount;
-                console.log('Rule: Type 2/4, IsVat=false, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                console.log('Rule: Type 2/4/16, IsVat=false, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
             } else {
                 // IsVat=true
                 if (templateDetail.IsDebit) {
@@ -208,7 +208,7 @@ function FillAccountingDetailsCashGeneric(config) {
                     const isVatAccount = (parseInt(templateDetail.AccountId) === parseInt(docData.VatAccountId));
                     const isVatAccountMatch = isVatAccount; // Same as isVatAccount since we're comparing the right fields
                     
-                    console.log('VAT Account Check (Type 2/4):', {
+                    console.log('VAT Account Check (Type 2/4/16):', {
                         isVatAccount: isVatAccount,
                         isVatAccountMatch: isVatAccountMatch,
                         templateAccountId: parseInt(templateDetail.AccountId),
@@ -218,22 +218,22 @@ function FillAccountingDetailsCashGeneric(config) {
                     if (isVatAccount && isVatAccountMatch) {
                         // Case 3: accountid=VatAccountId -> CurrencyAmount=VatAmount
                         currencyAmount = vatAmount;
-                        console.log('Rule: Type 2/4, IsVat=true, Debit, VAT Account Match, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 2/4/16, IsVat=true, Debit, VAT Account Match, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else if (isVatAccount && !isVatAccountMatch) {
                         // Case 3b: VAT account but different ID -> CurrencyAmount=VatAmount (flexible approach)
                         currencyAmount = vatAmount;
-                        console.log('Rule: Type 2/4, IsVat=true, Debit, VAT Account (flexible), CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 2/4/16, IsVat=true, Debit, VAT Account (flexible), CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     } else {
                         // Case 4: accountid<>VatAccountId -> CurrencyAmount=NetAmount
                         currencyAmount = netAmount;
-                        console.log('Rule: Type 2/4, IsVat=true, Debit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 2/4/16, IsVat=true, Debit, Other Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     }
                 } else {
                     // IsDebit=false
                     if (templateDetail.AccountId === docData.AccountId) {
                         // Case 2: accountid=AccountId -> CurrencyAmount=TotalAmount
                         currencyAmount = totalAmount;
-                        console.log('Rule: Type 2/4, IsVat=true, Credit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
+                        console.log('Rule: Type 2/4/16, IsVat=true, Credit, Main Account, CurrencyAmount =', currencyAmount, 'CashFlowId =', cashFlowId);
                     }
                 }
             }

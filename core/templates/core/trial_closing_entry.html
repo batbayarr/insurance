@@ -21,8 +21,11 @@
                 <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <button id="filter-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                Шүүх
+            <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                ХААЛТ ХИЙХ
+            </button>
+            <button id="restore-button" onclick="restoreView()" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                СЭРГЭЭХ
             </button>
         </div>
     </div>
@@ -31,13 +34,13 @@
     <div class="bg-white shadow rounded-lg mb-4">
         <div class="border-b-2 border-gray-300">
             <nav class="flex space-x-2 px-6 p-3">
-                <button onclick="switchToTrialBalanceView()" class="border border-blue-500 text-blue-600 bg-blue-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-trial-balance" onclick="switchToTrialBalanceView()" class="tab-button border border-blue-500 text-blue-600 bg-blue-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     БАЙГУУЛСАН ЭЛЭГДЭЛ
                 </button>
-                <button onclick="switchToDepreciationView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-depreciation" onclick="switchToDepreciationView()" class="tab-button border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     ЭЛЭГДЛИЙН БИЧИЛТ
                 </button>
-                <button onclick="switchToClosingView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                <button id="tab-closing" onclick="switchToClosingView()" class="tab-button border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     ХААЛТЫН БИЧИЛТ
                 </button>
                 <button onclick="printReport()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
@@ -162,7 +165,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <h3 class="text-sm font-medium text-gray-900 mb-1">Огноогоо сонгоно уу</h3>
-                                <p class="text-sm text-gray-500">Эхлэх ба дуусах огноо сонгоод Шүүх товчийг дарна уу.</p>
+                                <p class="text-sm text-gray-500">Эхлэх ба дуусах огноо сонгоод СЭРГЭЭХ товчийг дарна уу.</p>
                             </div>
                         </td>
                     </tr>
@@ -237,7 +240,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <h3 class="text-sm font-medium text-gray-900 mb-1">Огноогоо сонгоно уу</h3>
-                                <p class="text-sm text-gray-500">Эхлэх ба дуусах огноо сонгоод Шүүх товчийг дарна уу.</p>
+                                <p class="text-sm text-gray-500">Эхлэх ба дуусах огноо сонгоод СЭРГЭЭХ товчийг дарна уу.</p>
                             </div>
                         </td>
                     </tr>
@@ -313,6 +316,8 @@
         setDefaultDateValues();
         initializePagination();
         initializePageSizeSelector();
+        // Initialize active tab styling
+        updateTabStyling(0);
     }
     
     function setDefaultDateValues() {
@@ -388,7 +393,7 @@
         }
     }
     
-    function applyDateFilter() {
+    async function applyDateFilter() {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         
@@ -401,21 +406,97 @@
         
         const filterButton = document.getElementById('filter-button');
         if (filterButton) {
-            filterButton.textContent = 'Loading...';
+            filterButton.textContent = 'Тооцоолж байна...';
             filterButton.disabled = true;
         }
         
-        // Fetch all data
-        Promise.all([
-            fetchTrialBalanceData(startDate, endDate),
-            fetchDepreciationJournalData(startDate, endDate),
-            fetchClosingJournalData(startDate, endDate)
-        ]).finally(() => {
+        let adjustedStartDate = startDate;
+        let adjustedEndDate = endDate;
+        
+        try {
+            // Call calculation functions first
+            const [depreciationResult, closingResult] = await Promise.all([
+                callCalculateDepreciation(startDate, endDate),
+                callCalculateClosingRecord(startDate, endDate)
+            ]);
+            
+            // Update dates if they were adjusted
+            if (depreciationResult && depreciationResult.adjusted_dates) {
+                adjustedStartDate = depreciationResult.adjusted_dates.start_date;
+                adjustedEndDate = depreciationResult.adjusted_dates.end_date;
+                
+                // Update date inputs if dates were adjusted
+                document.getElementById('start-date').value = adjustedStartDate;
+                document.getElementById('end-date').value = adjustedEndDate;
+            } else if (closingResult && closingResult.adjusted_dates) {
+                adjustedStartDate = closingResult.adjusted_dates.start_date;
+                adjustedEndDate = closingResult.adjusted_dates.end_date;
+                
+                // Update date inputs if dates were adjusted
+                document.getElementById('start-date').value = adjustedStartDate;
+                document.getElementById('end-date').value = adjustedEndDate;
+            }
+            
+            // Show warnings if there were errors (but don't block)
+            if (!depreciationResult || !depreciationResult.success) {
+                console.warn('Depreciation calculation warning:', depreciationResult?.error || 'Unknown error');
+            }
+            if (!closingResult || !closingResult.success) {
+                console.warn('Closing record calculation warning:', closingResult?.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error during calculations:', error);
+            // Continue with data fetching even if calculations fail
+        }
+        
+        // Update button text for data fetching
+        if (filterButton) {
+            filterButton.textContent = 'Ачаалж байна...';
+        }
+        
+        // Fetch all data using adjusted dates
+        try {
+            await Promise.all([
+                fetchTrialBalanceData(adjustedStartDate, adjustedEndDate),
+                fetchDepreciationJournalData(adjustedStartDate, adjustedEndDate),
+                fetchClosingJournalData(adjustedStartDate, adjustedEndDate)
+            ]);
+        } finally {
             if (filterButton) {
-                filterButton.textContent = 'Шүүх';
+                filterButton.textContent = 'ХААЛТ ХИЙХ';
                 filterButton.disabled = false;
             }
-        });
+        }
+    }
+    
+    async function callCalculateDepreciation(startDate, endDate) {
+        try {
+            const url = `/core/api/calculate-depreciation/?start_date=${startDate}&end_date=${endDate}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error calling calculate depreciation:', error);
+            return {
+                success: false,
+                error: error.message || 'Network error occurred'
+            };
+        }
+    }
+    
+    async function callCalculateClosingRecord(startDate, endDate) {
+        try {
+            const url = `/core/api/calculate-closing-record/?start_date=${startDate}&end_date=${endDate}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error calling calculate closing record:', error);
+            return {
+                success: false,
+                error: error.message || 'Network error occurred'
+            };
+        }
     }
     
     function fetchTrialBalanceData(startDate, endDate) {
@@ -689,17 +770,28 @@
     }
     
     function updateTabStyling(activeIndex) {
-        const tabs = document.querySelectorAll('nav button');
-        tabs.forEach((tab, index) => {
-            if (index < 3) {  // Only style first 3 tabs (not print/excel buttons)
-                tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
-                tab.classList.add('border-gray-300', 'text-gray-500');
+        // Get all tab buttons (first 3 are the main tabs)
+        const tabTrialBalance = document.getElementById('tab-trial-balance');
+        const tabDepreciation = document.getElementById('tab-depreciation');
+        const tabClosing = document.getElementById('tab-closing');
+        
+        // Reset all tabs to inactive state
+        [tabTrialBalance, tabDepreciation, tabClosing].forEach(tab => {
+            if (tab) {
+                tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50', 'font-semibold');
+                tab.classList.add('border-gray-300', 'text-gray-500', 'bg-white');
             }
         });
         
-        if (tabs[activeIndex]) {
-            tabs[activeIndex].classList.remove('border-gray-300', 'text-gray-500');
-            tabs[activeIndex].classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        // Set active tab styling
+        let activeTab = null;
+        if (activeIndex === 0) activeTab = tabTrialBalance;
+        else if (activeIndex === 1) activeTab = tabDepreciation;
+        else if (activeIndex === 2) activeTab = tabClosing;
+        
+        if (activeTab) {
+            activeTab.classList.remove('border-gray-300', 'text-gray-500', 'bg-white');
+            activeTab.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50', 'font-semibold');
         }
     }
     
@@ -774,6 +866,57 @@
         document.body.removeChild(link);
         
         alert('Excel exported successfully!');
+    }
+    
+    async function restoreView() {
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        
+        // If no dates selected, reset to default
+        if (!startDate || !endDate) {
+            setDefaultDateValues();
+            return;
+        }
+        
+        // Clear cache to force fresh data fetch
+        apiCache.clear();
+        
+        // Reset to first tab
+        currentTab = 'trial-balance';
+        currentPage = {
+            'trial-balance': 1,
+            'depreciation': 1,
+            'closing': 1
+        };
+        
+        // Show trial balance view
+        document.getElementById('trial-balance-view').style.display = 'block';
+        document.getElementById('depreciation-view').style.display = 'none';
+        document.getElementById('closing-view').style.display = 'none';
+        
+        // Update tab styling
+        updateTabStyling(0);
+        
+        // Show loading state
+        const restoreButton = document.getElementById('restore-button');
+        if (restoreButton) {
+            restoreButton.textContent = 'Ачаалж байна...';
+            restoreButton.disabled = true;
+        }
+        
+        try {
+            // Fetch data WITHOUT calling calculation functions
+            await Promise.all([
+                fetchTrialBalanceData(startDate, endDate),
+                fetchDepreciationJournalData(startDate, endDate),
+                fetchClosingJournalData(startDate, endDate)
+            ]);
+        } finally {
+            if (restoreButton) {
+                restoreButton.textContent = 'СЭРГЭЭХ';
+                restoreButton.disabled = false;
+            }
+        }
     }
     
     // Event listeners

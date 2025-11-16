@@ -1,4 +1,4 @@
-<!-- Inventory Selection Modal Component -->
+<!-- Inventory Selection Modal Component with Balance Support -->
 <div id="inventory-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-6xl min-w-[1200px] shadow-xl rounded-lg bg-white">
         <!-- Modal Header -->
@@ -14,36 +14,10 @@
             </button>
         </div>
 
-        <!-- Column Filters and Actions -->
-        <div class="mb-4">
-            <div class="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                <div class="col-span-1">
-                    <input type="text" 
-                           id="filter-inventory-code" 
-                           placeholder="Code..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-inventory-name" 
-                           placeholder="Filter by name..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-inventory-type" 
-                           placeholder="Filter by type..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-inventory-unit" 
-                           placeholder="Filter by unit..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-3 flex items-center justify-center space-x-2">
+        <!-- Actions Row -->
+        <div class="mb-4 flex items-center justify-end space-x-2">
                     <button onclick="showAddInventoryForm()" 
-                            class="inline-flex items-center px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                    class="inline-flex items-center px-3 py-1.5 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
                             title="Add New Inventory Item">
                         <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -51,11 +25,9 @@
                         Add
                     </button>
                     <button onclick="clearAllInventoryFilters()" 
-                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors">
-                        Clear
+                    class="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors">
+                Clear Filters
                     </button>
-                </div>
-            </div>
         </div>
 
         <!-- Add/Edit Inventory Form (Hidden by default) -->
@@ -154,6 +126,26 @@
             <!-- Inventory list will be loaded here -->
         </div>
 
+        <!-- Pagination Container -->
+        <div id="inventory-pagination-container" class="mt-4 items-center justify-between border-t border-gray-200 pt-4 hidden">
+            <div class="flex items-center space-x-2">
+                <span id="inventory-pagination-info" class="text-sm text-gray-700"></span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="inventory-pagination-prev" onclick="changeInventoryPage(currentInventoryPage - 1)" 
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Previous
+                </button>
+                <div id="inventory-pagination-buttons" class="flex items-center space-x-1">
+                    <!-- Page number buttons will be generated here -->
+                </div>
+                <button id="inventory-pagination-next" onclick="changeInventoryPage(currentInventoryPage + 1)" 
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Next
+                </button>
+            </div>
+        </div>
+
         <!-- Modal Footer -->
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
             <button onclick="closeInventoryPopup()" 
@@ -165,11 +157,40 @@
 </div>
 
 <script>
+// Global variables for document context
+window.inventoryModalContext = {
+    documentDate: null,
+    warehouseId: null,
+    accountId: null
+};
+
+// Pagination variables
+let currentInventoryPage = 1;
+let inventoryPageSize = 15;
+let totalInventoryPages = 1;
+let allInventoryData = []; // Store all inventory items for filtering and pagination
+
 // Inventory Selection Modal Functions
-window.openInventoryPopup = function(inputElement = null, rowId = null) {
+window.openInventoryPopup = function(inputElement = null, rowId = null, context = null) {
     // Store the current input element and row ID for later use
     window.currentInventoryInput = inputElement;
     window.currentInventoryRowId = rowId;
+    
+    // Store document context if provided
+    if (context) {
+        window.inventoryModalContext.documentDate = context.documentDate || null;
+        window.inventoryModalContext.warehouseId = context.warehouseId || null;
+        window.inventoryModalContext.accountId = context.accountId || null;
+    } else {
+        // Clear context if not provided
+        window.inventoryModalContext.documentDate = null;
+        window.inventoryModalContext.warehouseId = null;
+        window.inventoryModalContext.accountId = null;
+    }
+    
+    // Reset pagination
+    currentInventoryPage = 1;
+    allInventoryData = [];
     
     // Open inventory selection modal
     const modal = document.getElementById('inventory-selection-modal');
@@ -294,6 +315,30 @@ function hideInventoryForm() {
     formContainer.classList.add('hidden');
 }
 
+// Helper function to get CSRF token
+function getCSRFToken() {
+    // Try to get from form input first
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        return csrfInput.value;
+    }
+    
+    // Fallback: try to get from cookie
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue || '';
+}
+
 // Submit inventory form
 function submitInventoryForm(event) {
     event.preventDefault();
@@ -320,27 +365,47 @@ function submitInventoryForm(event) {
     
     // Determine URL and get CSRF token
     const url = isEdit ? `/core/refinventory/${inventoryId}/update/` : '/core/refinventory/create/';
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrfToken = getCSRFToken();
     
     // Use fetch to submit and handle response
     fetch(url, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRFToken': csrfToken ? csrfToken.value : ''
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(response => {
-        if (response.ok) {
+        return response.json().then(data => {
+            if (response.ok && data.success) {
             // Success - hide form and refresh inventory list
             hideInventoryForm();
+                
+                // When adding a new item, display all inventory from ref_inventory
+                // When updating, keep current view (balance or regular list)
+                if (!isEdit) {
+                    // New item created - show all inventory items
+                    loadRegularInventoryList();
+                } else {
+                    // Item updated - refresh current view
             loadInventoryList();
+                }
             
             // Show success message
-            showInventoryMessage(isEdit ? 'Inventory item updated successfully!' : 'Inventory item created successfully!', 'success');
+                showInventoryMessage(data.message || (isEdit ? 'Inventory item updated successfully!' : 'Inventory item created successfully!'), 'success');
         } else {
-            throw new Error('Failed to save inventory item');
-        }
+                // Handle validation errors
+                let errorMessage = data.message || 'Failed to save inventory item';
+                if (data.errors) {
+                    const errorList = Object.keys(data.errors).map(key => {
+                        return `${key}: ${Array.isArray(data.errors[key]) ? data.errors[key].join(', ') : data.errors[key]}`;
+                    }).join('\n');
+                    errorMessage = errorMessage + '\n' + errorList;
+                }
+                showInventoryMessage(errorMessage, 'error');
+            }
+        });
     })
     .catch(error => {
         console.error('Error saving inventory item:', error);
@@ -383,9 +448,7 @@ function showInventoryMessage(message, type) {
 }
 
 // Override soft-delete reload behavior for inventory modal context
-// This ensures the inventory list refreshes instead of reloading the entire page
 document.addEventListener('DOMContentLoaded', function() {
-    // Override the soft-delete reload behavior when delete is triggered from inventory modal
     const originalHandleDeleteSubmit = window.Silicon4SoftDelete?.handleDeleteSubmit;
     if (originalHandleDeleteSubmit && typeof originalHandleDeleteSubmit === 'function') {
         window.Silicon4SoftDelete.handleDeleteSubmit = async function(form) {
@@ -393,10 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const itemName = form.dataset.itemName;
             const deleteUrl = form.action;
             
-            // Check if the delete was triggered from within the inventory modal
-            // The form is created dynamically, so we check if:
-            // 1. The inventory modal is visible
-            // 2. The delete URL is for inventory deletion
             const inventoryModal = document.getElementById('inventory-selection-modal');
             const isInventoryDelete = deleteUrl && deleteUrl.includes('/refinventory/') && deleteUrl.includes('/delete/');
             const isInventoryModalContext = inventoryModal && 
@@ -404,10 +463,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                           isInventoryDelete;
             
             try {
-                // Show loading state
                 this.showLoading(true);
                 
-                // Make API call
                 const response = await fetch(deleteUrl, {
                     method: 'POST',
                     headers: {
@@ -423,34 +480,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Show success message
                     this.showSuccessMessage(`"${itemName}" has been deleted successfully.`);
-                    
-                    // Remove item from list or refresh
                     this.removeItemFromList(itemId);
-                    
-                    // Close modal
                     this.closeModal();
                     
-                    // Check if we're in inventory modal context
                     if (isInventoryModalContext) {
-                        // Refresh inventory list instead of reloading page
-            setTimeout(() => {
+                        setTimeout(() => {
                             if (typeof loadInventoryList === 'function') {
-                loadInventoryList();
+                                loadInventoryList();
                             }
                         }, 500);
                     } else {
-                        // Normal page context - reload page
                         setTimeout(() => {
                             window.location.reload();
-            }, 1000);
+                        }, 1000);
                     }
-                    
                 } else {
                     this.showErrorMessage(result.message || 'Error deleting item');
                 }
-                
             } catch (error) {
                 console.error('Delete error:', error);
                 this.showErrorMessage('Network error occurred while deleting item');
@@ -468,41 +515,361 @@ function loadInventoryList() {
     // Show loading
     inventoryListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading inventory items...</p></div>';
     
-    // Use shared component for loading message if available
-    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
-        Silicon4Message.info('Loading inventory items...');
-    }
+    // Check if all context parameters are available
+    const context = window.inventoryModalContext;
+    const hasAllContext = context.documentDate && context.warehouseId && context.accountId;
     
-    // Fetch inventories data and render custom modal
-    const url = `/core/refinventory/?modal=true&select_mode=true`;
-    
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            // Parse the HTML to extract inventory data
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const inventoryRows = doc.querySelectorAll('tbody tr');
-            
-            if (inventoryRows.length === 0) {
-                inventoryListContainer.innerHTML = `
-                    <div class="text-center py-8">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory items found</h3>
-                        <p class="mt-1 text-sm text-gray-500">No inventory items match the current filter criteria.</p>
-                    </div>
-                `;
-                return;
+    if (hasAllContext) {
+        // Calculate dates: beginDate = documentDate - 1 day, endDate = documentDate
+        const documentDate = new Date(context.documentDate);
+        const beginDate = new Date(documentDate);
+        beginDate.setDate(beginDate.getDate() - 1);
+        
+        const startDateStr = beginDate.toISOString().split('T')[0];
+        const endDateStr = documentDate.toISOString().split('T')[0];
+        
+        // Load all inventory items first, then merge balance data
+        Promise.all([
+            // Load all inventory items from JSON API (much faster than HTML parsing)
+            fetch(`/core/api/inventory-list/`).then(r => r.json()),
+            // Load balance data
+            fetch(`/core/api/inventory-balance-warehouse/?start_date=${startDateStr}&end_date=${endDateStr}&warehouse_id=${context.warehouseId}&account_id=${context.accountId}`).then(r => r.json())
+        ])
+        .then(([inventoryResponse, balanceData]) => {
+            if (!inventoryResponse.success) {
+                throw new Error(inventoryResponse.error || 'Failed to load inventory');
             }
             
-            // Create custom inventory list HTML
+            // Convert JSON inventory data to our format
+            const inventoryData = inventoryResponse.inventory_data.map(item => ({
+                id: item.id,
+                inventoryid: item.inventoryid,
+                code: item.code,
+                inventorycode: item.inventorycode,
+                name: item.name,
+                inventoryname: item.inventoryname,
+                type: item.type,
+                inventorytypename: item.inventorytypename,
+                unit: item.unit,
+                measurementname: item.measurementname,
+                unitCost: item.unitCost,
+                unitcost: item.unitcost,
+                unitPrice: item.unitPrice,
+                unitprice: item.unitprice,
+                // Initialize balance fields
+                endingquantity: null,
+                endingcost: null
+            }));
+            
+            // Merge balance data if available
+            if (balanceData.success && balanceData.balance_data) {
+                const balanceLookup = {};
+                balanceData.balance_data.forEach(b => {
+                    balanceLookup[b.inventoryid] = b;
+                });
+                
+                inventoryData.forEach(item => {
+                    const balanceItem = balanceLookup[item.inventoryid];
+                    if (balanceItem) {
+                        item.endingquantity = balanceItem.endingquantity;
+                        item.endingcost = balanceItem.endingcost;
+                        // Update unit cost/price from balance data if available
+                        if (balanceItem.unitcost !== undefined && balanceItem.unitcost !== null) {
+                            item.unitcost = balanceItem.unitcost;
+                            item.unitCost = balanceItem.unitcost.toString();
+                        }
+                        if (balanceItem.unitprice !== undefined && balanceItem.unitprice !== null) {
+                            item.unitprice = balanceItem.unitprice;
+                            item.unitPrice = balanceItem.unitprice.toString();
+                        }
+                        if (balanceItem.inventorytypename) {
+                            item.inventorytypename = balanceItem.inventorytypename;
+                            item.type = balanceItem.inventorytypename;
+                        }
+                    }
+                });
+            }
+            
+            // Store all data and render with pagination
+            allInventoryData = inventoryData;
+            currentInventoryPage = 1;
+            renderInventoryTable(inventoryData, true); // true = balance view (shows balance columns)
+            })
+            .catch(error => {
+            console.error('Error loading inventory or balance data:', error);
+                // Fallback to regular inventory list
+                loadRegularInventoryList();
+            });
+    } else {
+        // Fallback to regular inventory list
+        loadRegularInventoryList();
+    }
+}
+
+// Pagination helper functions
+function changeInventoryPage(page) {
+    if (page < 1 || page > totalInventoryPages) return;
+    currentInventoryPage = page;
+    applyInventoryFiltersAndPagination();
+}
+
+function updateInventoryPaginationInfo(filteredCount, displayedCount, startIndex) {
+    const paginationInfo = document.getElementById('inventory-pagination-info');
+    if (paginationInfo) {
+        if (filteredCount === 0) {
+            paginationInfo.textContent = 'No items found';
+        } else {
+            const endIndex = Math.min(startIndex + displayedCount, filteredCount);
+            paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredCount} items`;
+        }
+    }
+    
+    // Update prev/next buttons
+    const prevBtn = document.getElementById('inventory-pagination-prev');
+    const nextBtn = document.getElementById('inventory-pagination-next');
+    if (prevBtn) {
+        prevBtn.disabled = currentInventoryPage === 1;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentInventoryPage === totalInventoryPages || totalInventoryPages === 0;
+    }
+}
+
+function generateInventoryPaginationButtons() {
+    const paginationButtons = document.getElementById('inventory-pagination-buttons');
+    if (!paginationButtons) return;
+    
+    paginationButtons.innerHTML = '';
+    
+    if (totalInventoryPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentInventoryPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalInventoryPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${
+            i === currentInventoryPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changeInventoryPage(i));
+        paginationButtons.appendChild(button);
+    }
+}
+
+function renderInventoryTable(data, isBalanceView = false) {
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    if (!inventoryListContainer) return;
+    
+    if (data.length === 0) {
+        inventoryListContainer.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory items found</h3>
+                <p class="mt-1 text-sm text-gray-500">No inventory items match the current filter criteria.</p>
+            </div>
+        `;
+        // Hide pagination
+        const paginationContainer = document.getElementById('inventory-pagination-container');
+        if (paginationContainer) {
+            paginationContainer.classList.add('hidden');
+        }
+        return;
+    }
+    
+    // Apply filters first
+    const codeFilter = document.getElementById('filter-inventory-code');
+    const nameFilter = document.getElementById('filter-inventory-name');
+    const codeTerm = codeFilter ? codeFilter.value.toLowerCase().trim() : '';
+    const nameTerm = nameFilter ? nameFilter.value.toLowerCase().trim() : '';
+    
+    let filteredData = data.filter(item => {
+        const code = (item.inventorycode || item.code || '').toLowerCase();
+        const name = (item.inventoryname || item.name || '').toLowerCase();
+        const codeMatch = !codeTerm || code.includes(codeTerm);
+        const nameMatch = !nameTerm || name.includes(nameTerm);
+        return codeMatch && nameMatch;
+    });
+    
+    // Calculate pagination
+    totalInventoryPages = Math.ceil(filteredData.length / inventoryPageSize);
+    if (totalInventoryPages === 0) totalInventoryPages = 1; // Ensure at least 1 page
+    if (currentInventoryPage > totalInventoryPages) currentInventoryPage = 1;
+    
+    // Get paginated data
+    const startIndex = (currentInventoryPage - 1) * inventoryPageSize;
+    const endIndex = startIndex + inventoryPageSize;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
+    
+    // Update pagination info
+    updateInventoryPaginationInfo(filteredData.length, paginatedData.length, startIndex);
+    
+    // Render table
+    if (isBalanceView) {
+        renderBalanceViewTable(paginatedData);
+    } else {
+        renderRegularViewTable(paginatedData);
+    }
+    
+    // Show pagination if needed
+    const paginationContainer = document.getElementById('inventory-pagination-container');
+    if (paginationContainer) {
+        if (totalInventoryPages > 1) {
+            paginationContainer.classList.remove('hidden');
+            paginationContainer.classList.add('flex');
+            generateInventoryPaginationButtons();
+        } else {
+            paginationContainer.classList.add('hidden');
+            paginationContainer.classList.remove('flex');
+        }
+    }
+    
+    // Initialize filter functionality
+    initializeInventorySearchFilter();
+}
+
+function renderBalanceViewTable(data) {
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    if (!inventoryListContainer) return;
+    
+    let inventoriesHtml = `
+        <div class="space-y-0">
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 60px 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="border-r border-gray-200 px-2">
+                    <div class="mb-1">Code</div>
+                    <input type="text" 
+                           id="filter-inventory-code" 
+                           placeholder="Filter..." 
+                           class="w-full px-1.5 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-200 px-2">
+                    <div class="mb-1">Inventory Name</div>
+                    <input type="text" 
+                           id="filter-inventory-name" 
+                           placeholder="Filter..." 
+                           class="w-full px-1.5 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-200 px-2">Type</div>
+                <div class="border-r border-gray-200 px-2">Unit</div>
+                <div class="border-r border-gray-200 px-2">Unit Cost</div>
+                <div class="border-r border-gray-200 px-2">Unit Price</div>
+                <div class="border-r border-gray-200 px-2">Ending Qty</div>
+                <div class="border-r border-gray-200 px-2">Ending Cost</div>
+                <div class="border-r border-gray-200 px-2 text-center">Select</div>
+                <div class="px-2 text-center">Actions</div>
+            </div>
+    `;
+    
+    data.forEach(item => {
+        const inventoryId = item.inventoryid || '';
+        const inventoryCode = item.inventorycode || '-';
+        const inventoryName = item.inventoryname || '';
+        const inventoryType = item.inventorytypename || '-';
+        const inventoryUnit = item.measurementname || '-';
+        const unitCost = item.unitcost !== undefined && item.unitcost !== null ? parseFloat(item.unitcost).toFixed(6) : '-';
+        const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : '-';
+        const endingQuantity = item.endingquantity !== undefined && item.endingquantity !== null ? parseFloat(item.endingquantity).toFixed(6) : '-';
+        const endingCost = item.endingcost !== undefined && item.endingcost !== null ? parseFloat(item.endingcost).toFixed(2) : '-';
+        
+        const formattedInventoryName = inventoryCode && inventoryCode !== '-' ? 
+            `${inventoryCode} - ${inventoryName}` : inventoryName;
+        
+        const unitCostForSelect = item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : '';
+        const unitPriceForSelect = item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '';
+        
+        inventoriesHtml += `
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 60px 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer inventory-row" 
+                 data-inventory-code="${inventoryCode.toLowerCase()}" 
+                 data-inventory-name="${inventoryName.toLowerCase()}" 
+                 onclick="selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')">
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900">${inventoryCode}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900">${inventoryName}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900">${inventoryType}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900">${inventoryUnit}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900 font-mono">${endingQuantity}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-200 px-2">
+                    <span class="text-sm text-gray-900 font-mono">${endingCost}</span>
+                </div>
+                <div class="flex items-center justify-center border-r border-gray-200 px-2">
+                    <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')" 
+                            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                        Select
+                    </button>
+                </div>
+                <div class="flex items-center justify-center space-x-1">
+                    <button onclick="event.stopPropagation(); updateInventory('${inventoryId}', '${inventoryName}')" 
+                            class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                            title="Update Inventory Item">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                    <button type="button"
+                            class="inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                            title="Delete Inventory Item"
+                            data-soft-delete
+                            data-item-id="${inventoryId}"
+                            data-item-name="${formattedInventoryName}"
+                            data-delete-url="/core/refinventory/${inventoryId}/delete/">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    inventoriesHtml += '</div>';
+    inventoryListContainer.innerHTML = inventoriesHtml;
+}
+
+function renderRegularViewTable(data) {
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    if (!inventoryListContainer) return;
+    
             let inventoriesHtml = `
                 <div class="space-y-0">
-                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <div class="col-span-1 border-r border-gray-200 px-2">Code</div>
-                        <div class="col-span-2 border-r border-gray-200 px-2">Inventory Name</div>
+            <div class="grid grid-cols-12 gap-0 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="col-span-1 border-r border-gray-200 px-2">
+                    <div class="mb-1">Code</div>
+                    <input type="text" 
+                           id="filter-inventory-code" 
+                           placeholder="Filter..." 
+                           class="w-full px-1.5 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2 border-r border-gray-200 px-2">
+                    <div class="mb-1">Inventory Name</div>
+                    <input type="text" 
+                           id="filter-inventory-name" 
+                           placeholder="Filter..." 
+                           class="w-full px-1.5 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
                         <div class="col-span-2 border-r border-gray-200 px-2">Type</div>
                         <div class="col-span-1 border-r border-gray-200 px-2">Unit</div>
                         <div class="col-span-2 border-r border-gray-200 px-2">Unit Cost</div>
@@ -512,41 +879,26 @@ function loadInventoryList() {
                     </div>
             `;
             
-            inventoryRows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    const inventoryCode = cells[0]?.textContent?.trim() || '-';
-                    const inventoryName = cells[1]?.textContent?.trim() || '';
-                    const inventoryType = cells[2]?.textContent?.trim() || '-';
-                    const inventoryUnit = cells[3]?.textContent?.trim() || '-';
-                    
-                    // Extract inventory ID and unit cost/price from the select button onclick
-                    const selectButton = row.querySelector('button[onclick*="selectInventory"]');
-                    let inventoryId = '';
-                    let unitCost = '-';
-                    let unitPrice = '-';
-                    
-                    if (selectButton) {
-                        const onclickAttr = selectButton.getAttribute('onclick');
-                        const matches = onclickAttr.match(/selectInventory\('([^']+)',\s*'([^']+)',\s*'([^']*)',\s*'([^']*)'\)/);
-                        if (matches) {
-                            inventoryId = matches[1];
-                            unitCost = matches[3] || '-';
-                            unitPrice = matches[4] || '-';
-                        }
-                    }
-                    
-                    // Format inventory name to match bulk manage template format: "CODE - NAME"
+    data.forEach(item => {
+        const inventoryId = item.inventoryid || item.id || '';
+        const inventoryCode = item.inventorycode || item.code || '-';
+        const inventoryName = item.inventoryname || item.name || '';
+        const inventoryType = item.inventorytypename || item.type || '-';
+        const inventoryUnit = item.measurementname || item.unit || '-';
+        const unitCost = item.unitcost !== undefined && item.unitcost !== null ? parseFloat(item.unitcost).toFixed(6) : (item.unitCost || '-');
+        const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : (item.unitPrice || '-');
+        
                     const formattedInventoryName = inventoryCode && inventoryCode !== '-' ? 
                         `${inventoryCode} - ${inventoryName}` : inventoryName;
                     
+        const unitCostForSelect = (item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : '') || item.unitCost || '';
+        const unitPriceForSelect = (item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '') || item.unitPrice || '';
+        
                     inventoriesHtml += `
                         <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer inventory-row" 
                              data-inventory-code="${inventoryCode.toLowerCase()}" 
                              data-inventory-name="${inventoryName.toLowerCase()}" 
-                             data-inventory-type="${inventoryType.toLowerCase()}"
-                             data-inventory-unit="${inventoryUnit.toLowerCase()}"
-                             onclick="selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCost}', '${unitPrice}')">
+                 onclick="selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')">
                             <div class="col-span-1 flex items-center border-r border-gray-200 px-2">
                                 <span class="text-sm text-gray-900">${inventoryCode}</span>
                             </div>
@@ -566,7 +918,7 @@ function loadInventoryList() {
                                 <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
                             </div>
                             <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-2">
-                                <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCost}', '${unitPrice}')" 
+                    <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')" 
                                         class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                                     Select
                                 </button>
@@ -593,19 +945,70 @@ function loadInventoryList() {
                             </div>
                         </div>
                     `;
-                }
             });
             
             inventoriesHtml += '</div>';
             inventoryListContainer.innerHTML = inventoriesHtml;
+}
+
+function applyInventoryFiltersAndPagination() {
+    if (allInventoryData.length === 0) return;
+    
+    // Determine if we're in balance view or regular view
+    const isBalanceView = allInventoryData.length > 0 && allInventoryData[0].hasOwnProperty('endingquantity');
+    renderInventoryTable(allInventoryData, isBalanceView);
+}
+
+function renderInventoryListWithBalance(balanceData) {
+    // Store all data
+    allInventoryData = balanceData;
+    currentInventoryPage = 1;
+    
+    // Render with pagination
+    renderInventoryTable(balanceData, true);
+}
+
+function loadRegularInventoryList() {
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    if (!inventoryListContainer) return;
+    
+    // Show loading
+    inventoryListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading inventory items...</p></div>';
+    
+    // Fetch inventories data from JSON API (much faster than HTML parsing)
+    fetch(`/core/api/inventory-list/`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load inventory');
+            }
             
-            // Add search filter functionality
-            initializeInventorySearchFilter();
+            // Convert JSON inventory data to our format
+            const inventoryData = data.inventory_data.map(item => ({
+                id: item.id,
+                inventoryid: item.inventoryid,
+                code: item.code,
+                inventorycode: item.inventorycode,
+                name: item.name,
+                inventoryname: item.inventoryname,
+                type: item.type,
+                inventorytypename: item.inventorytypename,
+                unit: item.unit,
+                measurementname: item.measurementname,
+                unitCost: item.unitCost,
+                unitcost: item.unitcost,
+                unitPrice: item.unitPrice,
+                unitprice: item.unitprice
+            }));
+            
+            // Store all data and render with pagination
+            allInventoryData = inventoryData;
+            currentInventoryPage = 1;
+            renderInventoryTable(inventoryData, false);
         })
         .catch(error => {
             console.error('Error loading inventory items:', error);
             
-            // Use shared component for error message if available
             if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
                 Silicon4Message.error('load-inventory-failed');
             }
@@ -626,75 +1029,31 @@ function loadInventoryList() {
 function initializeInventorySearchFilter() {
     const codeFilter = document.getElementById('filter-inventory-code');
     const nameFilter = document.getElementById('filter-inventory-name');
-    const typeFilter = document.getElementById('filter-inventory-type');
-    const unitFilter = document.getElementById('filter-inventory-unit');
     
-    if (!codeFilter || !nameFilter || !typeFilter || !unitFilter) return;
+    if (!codeFilter || !nameFilter) return;
     
-    // Function to apply all filters
+    // Debounce function for filter input
+    let filterTimeout;
     function applyInventoryFilters() {
-        const codeTerm = codeFilter.value.toLowerCase().trim();
-        const nameTerm = nameFilter.value.toLowerCase().trim();
-        const typeTerm = typeFilter.value.toLowerCase().trim();
-        const unitTerm = unitFilter.value.toLowerCase().trim();
-        
-        const inventoryRows = document.querySelectorAll('.inventory-row');
-        let visibleCount = 0;
-        
-        inventoryRows.forEach(row => {
-            const inventoryCode = row.getAttribute('data-inventory-code') || '';
-            const inventoryName = row.getAttribute('data-inventory-name') || '';
-            const inventoryType = row.getAttribute('data-inventory-type') || '';
-            const inventoryUnit = row.getAttribute('data-inventory-unit') || '';
-            
-            const codeMatch = !codeTerm || inventoryCode.includes(codeTerm);
-            const nameMatch = !nameTerm || inventoryName.includes(nameTerm);
-            const typeMatch = !typeTerm || inventoryType.includes(typeTerm);
-            const unitMatch = !unitTerm || inventoryUnit.includes(unitTerm);
-            
-            if (codeMatch && nameMatch && typeMatch && unitMatch) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Show/hide "no results" message
-        const noResultsMsg = document.getElementById('no-results-message');
-        const hasActiveFilters = codeTerm || nameTerm || typeTerm || unitTerm;
-        
-        if (hasActiveFilters && visibleCount === 0) {
-            if (!noResultsMsg) {
-                const container = document.getElementById('inventory-list-container');
-                const noResultsDiv = document.createElement('div');
-                noResultsDiv.id = 'no-results-message';
-                noResultsDiv.className = 'text-center py-8 text-gray-500';
-                noResultsDiv.innerHTML = `
-                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p class="text-sm">No inventory items found matching the current filters</p>
-                `;
-                container.appendChild(noResultsDiv);
-            }
-        } else if (noResultsMsg) {
-            noResultsMsg.remove();
-        }
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => {
+            // Reset to page 1 when filtering
+            currentInventoryPage = 1;
+            // Re-render with filters and pagination
+            applyInventoryFiltersAndPagination();
+        }, 300);
     }
     
-    // Add event listeners to all filter inputs
-    [codeFilter, nameFilter, typeFilter, unitFilter].forEach(input => {
-        input.addEventListener('input', applyInventoryFilters);
-    });
+    // Add event listeners to filter inputs (code and name only)
+    codeFilter.addEventListener('input', applyInventoryFilters);
+    nameFilter.addEventListener('input', applyInventoryFilters);
     
     // Clear all filters function
     window.clearAllInventoryFilters = function() {
         codeFilter.value = '';
         nameFilter.value = '';
-        typeFilter.value = '';
-        unitFilter.value = '';
-        applyInventoryFilters();
+        currentInventoryPage = 1;
+        applyInventoryFiltersAndPagination();
     };
     
     // Clear filters when modal is closed
@@ -707,18 +1066,8 @@ function initializeInventorySearchFilter() {
                         // Clear all filters
                         codeFilter.value = '';
                         nameFilter.value = '';
-                        typeFilter.value = '';
-                        unitFilter.value = '';
-                        // Show all rows again
-                        const inventoryRows = document.querySelectorAll('.inventory-row');
-                        inventoryRows.forEach(row => {
-                            row.style.display = '';
-                        });
-                        // Remove no results message
-                        const noResultsMsg = document.getElementById('no-results-message');
-                        if (noResultsMsg) {
-                            noResultsMsg.remove();
-                        }
+                        currentInventoryPage = 1;
+                        allInventoryData = [];
                     }
                 }
             });
@@ -730,3 +1079,4 @@ function initializeInventorySearchFilter() {
 
 <!-- Include Delete Modal Component -->
 {% include 'core/components/delete_modal.html' %}
+

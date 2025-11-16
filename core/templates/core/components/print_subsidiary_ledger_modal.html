@@ -230,18 +230,34 @@ function populateSubsidiaryLedgerModal(data, balanceData) {
             document.getElementById('modal-ledger-client-info').classList.add('hidden');
         }
 
+        // Store all documents and initialize pagination (documents are already grouped by the API)
+        allDocuments = data.documents || [];
+        currentPageLedger = 1;
+        
+        // Calculate totals from all documents (matching account statement modal pattern)
+        let calculatedTotalDebit = 0;
+        let calculatedTotalCredit = 0;
+        
+        allDocuments.forEach(doc => {
+            if (doc.details && Array.isArray(doc.details)) {
+                doc.details.forEach(detail => {
+                    // Only count details that match the account (IsMatchingAccount)
+                    if (detail.IsMatchingAccount) {
+                        calculatedTotalDebit += parseFloat(detail.DebitAmount || 0);
+                        calculatedTotalCredit += parseFloat(detail.CreditAmount || 0);
+                    }
+                });
+            }
+        });
+        
         // Populate balance summary from trial balance data
         const beginningBalance = (balanceData.beginningBalanceDebit || 0) + (balanceData.beginningBalanceCredit || 0);
         const endingBalance = (balanceData.endingBalanceDebit || 0) + (balanceData.endingBalanceCredit || 0);
         
         document.getElementById('modal-ledger-beginning-balance').textContent = formatCurrency(beginningBalance);
-        document.getElementById('modal-ledger-total-debit').textContent = formatCurrency(data.total_debit);
-        document.getElementById('modal-ledger-total-credit').textContent = formatCurrency(data.total_credit);
+        document.getElementById('modal-ledger-total-debit').textContent = formatCurrency(calculatedTotalDebit);
+        document.getElementById('modal-ledger-total-credit').textContent = formatCurrency(calculatedTotalCredit);
         document.getElementById('modal-ledger-ending-balance').textContent = formatCurrency(endingBalance);
-
-        // Store all documents and initialize pagination (documents are already grouped by the API)
-        allDocuments = data.documents || [];
-        currentPageLedger = 1;
         
         if (allDocuments.length > 0) {
             displayDocuments();
@@ -317,9 +333,9 @@ function createDocumentGroup(doc) {
     details.className = 'border-t border-gray-200 border-l-2 border-r-2 border-b-2 border-blue-200 bg-blue-50';
     details.id = `details-${doc.DocumentId}`;
     
-    // Calculate totals for this document
-    const docTotalDebit = doc.details.reduce((sum, detail) => sum + (detail.DebitAmount || 0), 0);
-    const docTotalCredit = doc.details.reduce((sum, detail) => sum + (detail.CreditAmount || 0), 0);
+    // Calculate totals for this document (all details, matching account statement modal pattern)
+    const docTotalDebit = doc.details.reduce((sum, detail) => sum + parseFloat(detail.DebitAmount || 0), 0);
+    const docTotalCredit = doc.details.reduce((sum, detail) => sum + parseFloat(detail.CreditAmount || 0), 0);
     
     const table = document.createElement('div');
     table.className = 'overflow-x-auto';

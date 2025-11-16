@@ -108,21 +108,21 @@
                             <td class="px-2 py-1">
                                 <select name="is_debit_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Select Type</option>
-                                    <option value="true" {% if detail.IsDebit %}selected{% endif %}>Debit</option>
-                                    <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Credit</option>
+                                    <option value="true" {% if detail.IsDebit %}selected{% endif %}>Дебит</option>
+                                    <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Кредит</option>
                                 </select>
                             </td>
                             <td class="px-2 py-1">
                                 <input type="number" name="debit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
                                        value="{% if detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
-                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                                       placeholder="0.00">
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                                       placeholder="0.00" readonly>
                             </td>
                             <td class="px-2 py-1">
                                 <input type="number" name="credit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
                                        value="{% if not detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
-                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                                       placeholder="0.00">
+                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                                       placeholder="0.00" readonly>
                             </td>
                             <td class="px-2 py-1">
                                 <select name="cashflow_id_{{ detail.DocumentDetailId }}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -390,19 +390,19 @@ function addNewDetailRowForCash(rowData) {
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Type</option>
-                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Debit</option>
-                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Credit</option>
+                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Дебит</option>
+                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -669,8 +669,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (data.success) {
-                    // Redirect to master detail page
-                    window.location.href = `/core/cashdocuments/`;
+                    // Redirect to master detail page with selected document
+                    window.location.href = `/core/cashdocuments/?selected_document=${documentId}`;
                 } else {
                     alert(`Error: ${data.error || data.message}`);
                 }
@@ -937,19 +937,19 @@ function createPrePopulatedRow(rowData) {
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Type</option>
-                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Debit</option>
-                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Credit</option>
+                <option value="true" ${rowData.isDebit ? 'selected' : ''}>Дебит</option>
+                <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -1054,19 +1054,19 @@ window.addNewRow = function() {
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Type</option>
-                <option value="true">Debit</option>
-                <option value="false">Credit</option>
+                <option value="true">Дебит</option>
+                <option value="false">Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
-                   placeholder="0.00">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                   placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -1362,29 +1362,8 @@ function addEventListenersToRow(row) {
         });
     }
     
-    // Add validation for debit/credit amounts
-    const debitInput = row.querySelector('input[name*="debit_amount"]');
-    const creditInput = row.querySelector('input[name*="credit_amount"]');
-    
-    if (debitInput && creditInput) {
-        // When debit amount is entered, clear credit amount
-        debitInput.addEventListener('input', function() {
-            const debitValue = parseFloat(this.value) || 0;
-            if (debitValue > 0) {
-                creditInput.value = '0.00';
-            }
-            updateBalanceDisplay();
-        });
-        
-        // When credit amount is entered, clear debit amount
-        creditInput.addEventListener('input', function() {
-            const creditValue = parseFloat(this.value) || 0;
-            if (creditValue > 0) {
-                debitInput.value = '0.00';
-            }
-            updateBalanceDisplay();
-        });
-    }
+    // Note: Debit/Credit amount inputs are readonly and calculated automatically
+    // No event listeners needed since users cannot manually edit these fields
 }
 
 

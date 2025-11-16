@@ -147,10 +147,6 @@
                         class="hidden sm:inline-flex border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
                     ХЭВЛЭХ
                 </button>
-                <button id="export-transactions-top"
-                        class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
-                    EXCEL
-                </button>
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -167,7 +163,6 @@
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Валютын дүн</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дт дүн</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Кт дүн</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">МӨНГӨН ГҮЙЛГЭЭНИЙ МӨР</th>
                     </tr>
                     <tr class="bg-gray-100">
                         <th class="px-2 py-1 border border-gray-300">
@@ -210,10 +205,6 @@
                             <input type="text" id="filter-credit-amount" placeholder="Кт..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                         </th>
-                        <th class="px-2 py-1 border border-gray-300">
-                            <input type="text" id="filter-cashflow-name" placeholder="Мөнгөн гүйлгээ..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white">
@@ -223,6 +214,7 @@
                         data-document-no="{{ row.DocumentNo }}"
                         data-document-id="{{ row.DocumentId }}"
                         data-document-source="{{ row.DocumentSource }}"
+                        data-document-type-id="{{ row.DocumentTypeId|default:'' }}"
                         data-account-code="{{ row.AccountCode|default:'' }}"
                         data-client-name="{{ row.ClientName|default:'' }}"
                         data-description="{{ row.Description|default:'' }}"
@@ -230,8 +222,7 @@
                         data-currency-exchange="{{ row.CurrencyExchange }}"
                         data-currency-amount="{{ row.CurrencyAmount }}"
                         data-debit-amount="{{ row.DebitAmount }}"
-                        data-credit-amount="{{ row.CreditAmount }}"
-                        data-cashflow-name="{{ row.CashFlowName|default:'' }}">
+                        data-credit-amount="{{ row.CreditAmount }}">
                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
                             {{ row.DocumentDate|date:"Y-m-d" }}
                         </td>
@@ -278,19 +269,12 @@
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
-                            {% if row.CashFlowName %}
-                                {{ row.CashFlowName }}
-                            {% else %}
-                                <span class="text-gray-400">-</span>
-                            {% endif %}
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="bg-gray-50">
                     <tr class="border-t border-gray-300">
-                        <td colspan="9" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
+                        <td colspan="8" class="px-3 py-2 text-sm text-gray-900 border border-gray-300">НИЙТ:</td>
                         <td class="px-3 py-2 text-sm text-gray-900 text-right border border-gray-300" id="total-debit-amount">
                             <span>0.00</span>
                         </td>
@@ -340,10 +324,6 @@
                         <button id="print-transactions" 
                                 class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
                             ХЭВЛЭХ
-                        </button>
-                        <button id="export-transactions" 
-                                class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
-                            EXCEL
                         </button>
                     </div>
                 </div>
@@ -446,8 +426,7 @@ function setupInlineFilters() {
         'filter-currency-exchange',
         'filter-currency-amount',
         'filter-debit-amount',
-        'filter-credit-amount',
-        'filter-cashflow-name'
+        'filter-credit-amount'
     ];
     
     filterInputs.forEach(filterId => {
@@ -473,8 +452,7 @@ function applyAllFilters() {
             'filter-currency-exchange': parseFloat(row.dataset.currencyExchange) || 0,
             'filter-currency-amount': parseFloat(row.dataset.currencyAmount) || 0,
             'filter-debit-amount': parseFloat(row.dataset.debitAmount) || 0,
-            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0,
-            'filter-cashflow-name': row.dataset.cashflowName?.toLowerCase() || ''
+            'filter-credit-amount': parseFloat(row.dataset.creditAmount) || 0
         };
         
         for (const [filterId, value] of Object.entries(filters)) {
@@ -482,7 +460,7 @@ function applyAllFilters() {
             if (filterInput && filterInput.value.trim()) {
                 const filterValue = filterInput.value.toLowerCase().trim();
                 
-                if (filterId.includes('date') || filterId.includes('no') || filterId.includes('code') || filterId.includes('name') || filterId.includes('description') || filterId.includes('currency-name') || filterId.includes('cashflow-name')) {
+                if (filterId.includes('date') || filterId.includes('no') || filterId.includes('code') || filterId.includes('name') || filterId.includes('description') || filterId.includes('currency-name')) {
                     // Text filters
                     if (!value.includes(filterValue)) {
                         return false;
@@ -781,7 +759,16 @@ function handleViewTransaction() {
     
     // Navigate to appropriate master-detail view based on document source
     let url = '';
-    if (documentSource === 'cash') {
+    
+    // Get document type ID if available
+    const documentTypeId = selectedRow.dataset.documentTypeId;
+    const docTypeIdNum = documentTypeId ? parseInt(documentTypeId, 10) : null;
+    
+    // Cash document type IDs: 1, 2, 3, 4, 15, 16
+    const cashDocumentTypeIds = [1, 2, 3, 4, 15, 16];
+    const isCashDocumentType = docTypeIdNum !== null && cashDocumentTypeIds.includes(docTypeIdNum);
+    
+    if (documentSource === 'cash' || isCashDocumentType) {
         const params = new URLSearchParams({
             selected_document: documentId
         });
@@ -853,7 +840,9 @@ function handlePrintTransactions() {
     const endBalance = endBalanceDebit + endBalanceCredit;
 
     const headers = Array.from(document.querySelectorAll('#subsidiary-ledger-table thead tr:first-child th'))
-        .map(th => th.textContent.trim());
+        .map(th => th.textContent.trim())
+        .filter(header => header !== 'МӨНГӨН ГҮЙЛГЭЭНИЙ МӨР') // Exclude Cash Flow column from print
+        .map(header => header === 'Баримтын дугаар' ? 'Баримт' : header); // Change "Баримтын дугаар" to "Баримт" for print
 
     // Use the new print-sub-ledger.js function
     if (typeof window.printSubLedgerTable === 'function') {
@@ -867,8 +856,8 @@ function handlePrintTransactions() {
             CurrencyAmount: parseFloat(row.dataset.currencyAmount) || 0,
             CurrencyExchange: parseFloat(row.dataset.currencyExchange) || 0,
             DebitAmount: parseFloat(row.dataset.debitAmount) || 0,
-            CreditAmount: parseFloat(row.dataset.creditAmount) || 0,
-            CashFlowName: row.dataset.cashflowName || ''
+            CreditAmount: parseFloat(row.dataset.creditAmount) || 0
+            // CashFlowName excluded - not needed for print
         }));
 
         window.printSubLedgerTable({
@@ -894,38 +883,6 @@ function handlePrintTransactions() {
     } else {
         alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
     }
-}
-
-function handleExportTransactions() {
-    if (!filteredRows || filteredRows.length === 0) {
-        alert('Экспорт хийх мэдээлэл алга байна.');
-        return;
-    }
-
-    const headers = Array.from(document.querySelectorAll('#subsidiary-ledger-table thead tr:first-child th'))
-        .map(th => th.textContent.trim());
-    const rows = filteredRows.map(row => {
-        const cells = row.querySelectorAll('td');
-        return Array.from(cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
-    });
-
-    let csvContent = '';
-    csvContent += headers.map(h => '"' + h.replace(/"/g, '""') + '"').join(',') + '\n';
-    rows.forEach(row => {
-        const line = row.map(value => '"' + value.replace(/"/g, '""') + '"').join(',');
-        csvContent += line + '\n';
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'trial_edit_account_and_sub_ledger_' + new Date().toISOString().split('T')[0] + '.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 }
 
 // Event listeners for pagination
@@ -966,16 +923,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const printButtonTop = document.getElementById('print-transactions-top');
     if (printButtonTop) {
         printButtonTop.addEventListener('click', handlePrintTransactions);
-    }
-
-    const exportButton = document.getElementById('export-transactions');
-    if (exportButton) {
-        exportButton.addEventListener('click', handleExportTransactions);
-    }
-
-    const exportButtonTop = document.getElementById('export-transactions-top');
-    if (exportButtonTop) {
-        exportButtonTop.addEventListener('click', handleExportTransactions);
     }
 });
 })();

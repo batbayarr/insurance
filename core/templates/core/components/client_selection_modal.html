@@ -402,26 +402,26 @@ window.loadClientList = function(options = null) {
         `;
     }, 10000); // 10 second timeout
     
-    // Fetch clients data and render custom modal
-    const typePart = options.clientTypeId ? `&client_type_id=${options.clientTypeId}` : '';
-    const url = `/core/refclients/?modal=true&select_mode=true${typePart}`;
+    // Fetch clients data from JSON API (much faster than HTML parsing)
+    const url = '/core/api/clients/';
     
     fetch(url, {
-        credentials: 'include'  // Ensure session cookies are sent for tenant DB routing
+        credentials: 'include',  // Ensure session cookies are sent for tenant DB routing
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
         .then(response => {
-            return response.text();
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
         })
-        .then(html => {
+        .then(data => {
             // Clear the timeout since we got a response
             clearTimeout(loadingTimeout);
             
-            // Parse the HTML to extract client data
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const clientRows = doc.querySelectorAll('tbody tr');
-            
-            if (clientRows.length === 0) {
+            if (!data.success || !data.clients || data.clients.length === 0) {
                 clientListContainer.innerHTML = `
                     <div class="text-center py-8">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -434,7 +434,7 @@ window.loadClientList = function(options = null) {
                 return;
             }
             
-            // Create custom client list HTML
+            // Create custom client list HTML from JSON data
             let clientsHtml = `
                 <div class="space-y-0">
                     <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -485,95 +485,72 @@ window.loadClientList = function(options = null) {
                     </div>
             `;
             
-            clientRows.forEach((row, index) => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    const clientCode = cells[0]?.textContent?.trim() || '';
-                    const clientName = cells[1]?.textContent?.trim() || '';
-                    const clientRegister = cells[2]?.textContent?.trim() || '';
-                    const clientType = cells[3]?.textContent?.trim() || '';
-                    
-                    // Extract client ID and client type name from the select button onclick
-                    const selectButton = row.querySelector('button[onclick*="selectClient"]');
-                    let clientId = '';
-                    let clientTypeName = clientType; // Default to the cell content
-                    
-                    if (selectButton) {
-                        const onclickAttr = selectButton.getAttribute('onclick');
-                        const matches = onclickAttr.match(/selectClient\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/);
-                        if (matches) {
-                            clientId = matches[1];
-                        }
-                    }
-                    
-                    // Try to get the full client type name from the row's data attributes or title
-                    const clientTypeCell = cells[3];
-                    if (clientTypeCell) {
-                        const title = clientTypeCell.getAttribute('title');
-                        if (title && title !== clientType) {
-                            clientTypeName = title;
-                        }
-                    }
-                    
-                    // Escape special characters to prevent XSS and onclick issues
-                    const escapedClientId = clientId.replace(/'/g, "\\'");
-                    const escapedClientCode = clientCode.replace(/'/g, "\\'");
-                    const escapedClientName = clientName.replace(/'/g, "\\'");
-                    
-                    clientsHtml += `
-                        <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer client-row" 
-                             data-client-code="${clientCode.toLowerCase()}" 
-                             data-client-name="${clientName.toLowerCase()}"
-                             data-client-register="${(clientRegister || '').toLowerCase()}"
-                             data-client-type="${clientTypeName.toLowerCase()}"
-                             data-row-index="${index}"
-                             data-client-id="${escapedClientId}"
-                             data-client-code-value="${escapedClientCode}"
-                             data-client-name-value="${escapedClientName}">
-                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
-                                <span class="text-xs text-gray-500">${index + 1}</span>
-                            </div>
-                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${clientCode}</span>
-                            </div>
-                            <div class="col-span-3 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${clientName}</span>
-                            </div>
-                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-600">${clientRegister || '-'}</span>
-                            </div>
-                            <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
-                                <span class="text-sm text-gray-900">${clientTypeName}</span>
-                            </div>
-                            <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-2">
-                                <div class="flex items-center space-x-1">
-                                    <button class="update-client-btn inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                                            title="Update Client">
-                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </button>
-                                    <button type="button"
-                                            class="inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
-                                            title="Delete Client"
-                                            data-soft-delete
-                                            data-item-id="${escapedClientId}"
-                                            data-item-name="${escapedClientCode} - ${escapedClientName}"
-                                            data-delete-url="/core/refclients/${escapedClientId}/delete/">
-                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-span-1 flex items-center justify-center">
-                                <button class="select-client-btn inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
-                                    Сонгох
+            // Build rows from JSON data (much faster than HTML parsing)
+            data.clients.forEach((client, index) => {
+                const clientId = client.ClientId;
+                const clientCode = client.ClientCode || '';
+                const clientName = client.ClientName || '';
+                const clientRegister = client.ClientRegister || '';
+                const clientTypeName = client.ClientTypeName || '';
+                
+                // Escape special characters to prevent XSS and onclick issues
+                const escapedClientId = String(clientId).replace(/'/g, "\\'");
+                const escapedClientCode = clientCode.replace(/'/g, "\\'");
+                const escapedClientName = clientName.replace(/'/g, "\\'");
+                
+                clientsHtml += `
+                    <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer client-row" 
+                         data-client-code="${clientCode.toLowerCase()}" 
+                         data-client-name="${clientName.toLowerCase()}"
+                         data-client-register="${(clientRegister || '').toLowerCase()}"
+                         data-client-type="${clientTypeName.toLowerCase()}"
+                         data-row-index="${index}"
+                         data-client-id="${escapedClientId}"
+                         data-client-code-value="${escapedClientCode}"
+                         data-client-name-value="${escapedClientName}">
+                        <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
+                            <span class="text-xs text-gray-500">${index + 1}</span>
+                        </div>
+                        <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${clientCode}</span>
+                        </div>
+                        <div class="col-span-3 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${clientName}</span>
+                        </div>
+                        <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-600">${clientRegister || '-'}</span>
+                        </div>
+                        <div class="col-span-2 flex items-center border-r border-gray-200 px-2">
+                            <span class="text-sm text-gray-900">${clientTypeName}</span>
+                        </div>
+                        <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-2">
+                            <div class="flex items-center space-x-1">
+                                <button class="update-client-btn inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                        title="Update Client">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button type="button"
+                                        class="inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                        title="Delete Client"
+                                        data-soft-delete
+                                        data-item-id="${escapedClientId}"
+                                        data-item-name="${escapedClientCode} - ${escapedClientName}"
+                                        data-delete-url="/core/refclients/${escapedClientId}/delete/">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
-                    `;
-                }
+                        <div class="col-span-1 flex items-center justify-center">
+                            <button class="select-client-btn inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                                Сонгох
+                            </button>
+                        </div>
+                    </div>
+                `;
             });
             
             clientsHtml += '</div>';
