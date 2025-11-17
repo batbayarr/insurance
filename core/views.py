@@ -2291,9 +2291,15 @@ def bulk_manage_details(request, document_id):
             total_amount = float(document.CurrencyAmount * document.CurrencyExchange)
             vat_amount = (total_amount * vat_percent) / (100 + vat_percent)
             
-        except (Ref_Constant.DoesNotExist, ValueError, AttributeError):
+        except (Ref_Constant.DoesNotExist, ValueError, AttributeError) as e:
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f'VAT constant lookup failed: {e}. Using fallback VAT rate.')
             vat_percent = 10.0  # Default fallback
-            vat_amount = 0
+            # Still calculate VAT amount with fallback rate
+            total_amount = float(document.CurrencyAmount * document.CurrencyExchange)
+            vat_amount = (total_amount * vat_percent) / (100 + vat_percent)
     
     return render(request, 'core/cashdocumentdetail_bulk_manage.html', {
         'document': document,
