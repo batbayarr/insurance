@@ -1489,6 +1489,13 @@ def api_cashdocument_search(request):
         }, status=500)
 
 
+def _get_form_error_message(form):
+    for field, errors in form.errors.items():
+        if errors:
+            return errors[0]
+    return 'Формын шалгалтын алдаа гарлаа.'
+
+
 @login_required
 @permission_required('core.add_cash_document', raise_exception=True)
 def cashdocument_create(request):
@@ -1508,11 +1515,7 @@ def cashdocument_create(request):
                             # If encoding fails, skip this field or handle it
                             continue
             
-            print(f"POST data: {request.POST}")
             form = CashDocumentForm(request.POST)
-            print(f"Form is valid: {form.is_valid()}")
-            if not form.is_valid():
-                print(f"Form errors: {form.errors}")
             if form.is_valid():
                 try:
                     cash_document = form.save(commit=False)
@@ -1580,6 +1583,11 @@ def cashdocument_create(request):
                     messages.error(request, f'Error creating cash document: {str(e)}')
             else:
                 # Handle form validation errors
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'error': _get_form_error_message(form)
+                    }, status=400)
                 for field, errors in form.errors.items():
                     for error in errors:
                         messages.error(request, f"{field}: {error}")
@@ -1699,8 +1707,11 @@ def cashdocument_update(request, pk):
             # Redirect to master detail page
             return redirect(f'/core/cashdocuments/?selected_document={pk}')
         else:
-            # Debug: Print form errors
-            print("Form errors:", form.errors)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': _get_form_error_message(form)
+                }, status=400)
             messages.error(request, 'Please correct the errors below.')
     else:
         # Check if document date is in locked period BEFORE showing form

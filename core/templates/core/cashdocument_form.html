@@ -477,6 +477,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Clear Cash Document master-detail client-side filters when arriving from "НЭМЭХ"
+    try {
+        localStorage.removeItem('cashdocument_all_filters');
+        localStorage.removeItem('cashdocument_selected_document');
+    } catch (error) {
+        console.warn('Failed to clear cashdocument filters from localStorage:', error);
+    }
+    
     // Declare commonly used elements once at the top to avoid redeclaration errors
     const documentTypeSelect = document.getElementById('id_DocumentTypeId');
     const accountIdField = document.getElementById('AccountId');
@@ -963,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
         amountFieldId: 'id_CurrencyMNT',
         vatAmountFieldId: 'customVatAmount',
         totalAmountFieldId: 'id_CurrencyMNT',
-        vatRate: {{ VAT_RATE_PERCENT }}
+        vatRate: parseFloat('{{ VAT_RATE_PERCENT|default_if_none:10 }}') || 10
     });
     
     // Auto-populate VAT account when VAT is enabled
@@ -980,12 +988,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // VAT account mapping based on document type (using database constants)
     const vatAccountMapping = {
-        1: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 1,3,15,16 -> Payable VAT (ConstantID=10)
+        1: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },    // Types 1,3,15,18 -> Payable VAT (ConstantID=10)
         3: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
         15: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
+        18: { id: '{{ vat_accounts.vat_account_1_id }}', display: '{{ vat_accounts.vat_account_1_display }}' },
         16: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
-        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 2,4 -> Receivable VAT (ConstantID=9)
+        2: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },    // Types 2,4,17 -> Receivable VAT (ConstantID=9)
         4: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
+        17: { id: '{{ vat_accounts.vat_account_2_id }}', display: '{{ vat_accounts.vat_account_2_display }}' },
     };
     
     // Function to set VAT account based on document type
@@ -1046,10 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen for account selection changes to update templates
     
     // Get saved TemplateId from Django template (if editing)
-    let savedTemplateId = null;
-    {% if item and item.TemplateId %}
-    savedTemplateId = '{{ item.TemplateId.TemplateId }}';
-    {% endif %}
+    let savedTemplateId = ('{% if item and item.TemplateId %}{{ item.TemplateId.TemplateId }}{% endif %}').trim() || null;
     
     // Store saved TemplateId on the select element for later use (multiple ways for reliability)
     if (templateSelect && savedTemplateId) {

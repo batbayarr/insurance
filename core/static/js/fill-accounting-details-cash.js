@@ -17,7 +17,7 @@ function FillAccountingDetailsCashGeneric(config) {
         documentDataId = 'document-data',
         firstTableId = 'details-tbody',
         secondTableId = 'details-tbody', // Cash documents use the same table
-        documentTypes = [1, 2, 3, 4], // Cash document types
+        documentTypes = [1, 2, 3, 4, 15, 16, 17, 18], // Cash document types
         debugPrefix = 'FillAccountingDetailsCash',
         addDetailRowFunction = null,
         updateBalanceDisplayFunction = null
@@ -136,7 +136,7 @@ function FillAccountingDetailsCashGeneric(config) {
         console.log(`CashFlowId from template_detail:`, cashFlowId, 'Type:', typeof cashFlowId);
         
         // Apply VAT logic for document types 1, 2, 3, 4, 15, 16
-        if ([1, 3, 15].includes(docData.DocumentTypeId)) {
+        if ([1, 3, 15, 18].includes(docData.DocumentTypeId)) {
             // Document Types 1, 3, 15 (Income Documents - Payable VAT)
             if (!docData.IsVat) {
                 // Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows
@@ -194,7 +194,7 @@ function FillAccountingDetailsCashGeneric(config) {
                     }
                 }
             }
-        } else if ([2, 4, 16].includes(docData.DocumentTypeId)) {
+        } else if ([2, 4, 16, 17].includes(docData.DocumentTypeId)) {
             // Document Types 2, 4, 16 (Expense Documents - Receivable VAT)
             if (!docData.IsVat) {
                 // Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows

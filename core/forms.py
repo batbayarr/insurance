@@ -359,7 +359,7 @@ class CashDocumentForm(forms.ModelForm):
         )
         
         # Configure foreign key fields with proper querysets
-        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 15, 16]).order_by('DocumentTypeId')
+        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 15, 16, 17, 18]).order_by('DocumentTypeId')
         self.fields['ClientId'].queryset = RefClient.objects.filter(IsDelete=False).order_by('ClientCode')
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         self.fields['AccountId'].required = True
@@ -386,14 +386,6 @@ class CashDocumentForm(forms.ModelForm):
         else:
             # For new documents, show all active bank accounts
             self.fields['ClientBankId'].queryset = Ref_Client_Bank.objects.filter(IsActive=True).order_by('BankName', 'BankAccount')
-        
-        # Add HTMX attributes for dynamic form handling
-        self.fields['DocumentNo'].widget.attrs.update({
-            'hx-post': '/core/cashdocument/validate/',
-            'hx-trigger': 'blur',
-            'hx-target': '#document-no-error',
-            'hx-swap': 'innerHTML'
-        })
         
         # Ensure Description field is properly configured
         if 'Description' in self.fields:
@@ -488,12 +480,13 @@ class CashDocumentForm(forms.ModelForm):
         
         # Check for duplicate document numbers (excluding current instance if editing)
         instance = getattr(self, 'instance', None)
+        duplicate_error = 'Баримтын дугаар давхардсан байна. Засна уу.'
         if instance and instance.pk:
             if Cash_Document.objects.filter(DocumentNo=document_no).exclude(pk=instance.pk).exists():
-                raise forms.ValidationError('Document number already exists.')
+                raise forms.ValidationError(duplicate_error)
         else:
             if Cash_Document.objects.filter(DocumentNo=document_no).exists():
-                raise forms.ValidationError('Document number already exists.')
+                raise forms.ValidationError(duplicate_error)
         
         return document_no
     
