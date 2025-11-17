@@ -1311,15 +1311,6 @@ function loadTemplateDetails(templateId) {
                     vatCheckbox.dispatchEvent(new Event('change'));
                 }
                 
-                // Handle CashFlowId if available
-                if (data.template.CashFlowId) {
-                    // You can add logic here to populate cash flow related fields
-                    // For example, if you have a cash flow dropdown or display field:
-                    // const cashFlowDisplay = document.getElementById('CashFlowIdDisplay');
-                    // if (cashFlowDisplay) {
-                    //     cashFlowDisplay.value = data.template.CashFlowDescription;
-                    // }
-                }
             }
         })
         .catch(error => {

@@ -236,7 +236,7 @@
     "CurrencyId": {{ document.CurrencyId.CurrencyId }},
     "CurrencyExchange": {{ document.CurrencyExchange|default:'1.0' }},
     "CurrencyAmount": {{ document.CurrencyAmount|default:'0' }},
-    "CashFlowId": {% if document.TemplateId and document.TemplateId.CashFlowId %}{{ document.TemplateId.CashFlowId.CashFlowId }}{% else %}null{% endif %},
+    "CashFlowId": null,
     "template_details": [
         {% for detail in template_details %}
         {

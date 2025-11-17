@@ -7513,8 +7513,6 @@ def api_template_details(request, template_id):
                 'AccountName': template.AccountId.AccountName if template.AccountId else None,
                 'DocumentTypeId': template.DocumentTypeId.DocumentTypeId,
                 'DocumentTypeName': template.DocumentTypeId.Description,
-                'CashFlowId': template.CashFlowId.CashFlowId if template.CashFlowId else None,
-                'CashFlowDescription': template.CashFlowId.Description if template.CashFlowId else None,
                 'IsVat': template.IsVat
             },
             'template_details': details_data
