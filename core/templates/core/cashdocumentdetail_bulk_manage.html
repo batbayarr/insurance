@@ -530,7 +530,7 @@ const documentData = {
     currencyAmount: {{ document.CurrencyAmount|default:'0' }},
     vatAccountId: {% if document.VatAccountId %}{{ document.VatAccountId.AccountId }}{% else %}null{% endif %},
     vatAccountCode: {% if document.VatAccountId %}'{{ document.VatAccountId.AccountCode|escapejs }}'{% else %}null{% endif %},
-    vatAmount: {{ document.VatAmount|default:'0' }}
+    vatAmount: {{ vat_amount|default:'0' }}
 };
 
 // Create lookup maps for accounts and clients
