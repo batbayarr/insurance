@@ -218,8 +218,20 @@ class RefAsset(models.Model):
         db_column='AssetTypeId',
         related_name='assets'
     )
-    CreatedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_assets', default=1)
-    ModifiedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name='modified_assets', default=1)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='created_assets',
+        db_column='CreatedBy',
+        default=1,
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='modified_assets',
+        db_column='ModifiedBy',
+        default=1,
+    )
     IsDelete = models.BooleanField(default=False)
     CreatedDate = models.DateField(auto_now_add=True)
     ModifiedDate = models.DateField(auto_now=True)
