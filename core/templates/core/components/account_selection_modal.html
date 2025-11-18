@@ -611,9 +611,10 @@ function showAccountPage(pageNumber) {
     
     currentAccountPage = pageNumber;
     
-    // IMPORTANT: Only modify display for rows that pass the filter (are in filteredAccountRecords)
-    // Hide all rows that are in filteredAccountRecords (these are the visible/filtered rows)
-    filteredAccountRecords.forEach(row => {
+    // IMPORTANT: First hide ALL rows (from allAccountRows) to ensure non-matching rows are hidden
+    // This is critical for filtering to work correctly
+    const allRows = allAccountRows.length > 0 ? allAccountRows : Array.from(document.querySelectorAll('.account-row'));
+    allRows.forEach(row => {
         row.style.display = 'none';
     });
     

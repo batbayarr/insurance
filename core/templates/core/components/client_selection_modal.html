@@ -835,9 +835,10 @@ function showClientPage(pageNumber) {
     
     currentClientPage = pageNumber;
     
-    // IMPORTANT: Only modify display for rows that pass the filter (are in filteredClientRecords)
-    // Hide all rows that are in filteredClientRecords (these are the visible/filtered rows)
-    filteredClientRecords.forEach(row => {
+    // IMPORTANT: First hide ALL rows (from allClientRows) to ensure non-matching rows are hidden
+    // This is critical for filtering to work correctly
+    const allRows = allClientRows.length > 0 ? allClientRows : Array.from(document.querySelectorAll('.client-row'));
+    allRows.forEach(row => {
         row.style.display = 'none';
     });
     
