@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, Ref_Inventory_Type, Ref_Measurement, RefInventory, Ref_Document_Type, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Ref_Client_Bank, RefAsset, Ref_Asset_Type, Ref_Asset_Card, Inv_Beginning_Balance, Ast_Document, Ast_Document_Item, Ast_Document_Detail, Ref_Asset_Depreciation_Account, Ref_Template, Ref_Template_Detail, Ref_CashFlow
 
 
@@ -60,11 +61,27 @@ class Ref_AccountForm(forms.ModelForm):
                 query = query.exclude(pk=self.instance.pk)
             
             if query.exists():
-                raise forms.ValidationError(
-                    f'Дансны код "{account_code}" бүртгэгдсэн байна. Өөр код оруулна уу.'
-                )
+                raise forms.ValidationError('Энэ данс жагсаалтанд байна.')
         
         return account_code
+    
+    def clean_AccountName(self):
+        """Validate that AccountName is unique"""
+        account_name = self.cleaned_data.get('AccountName')
+        
+        if account_name:
+            # Check if an account with this name already exists
+            # Exclude the current instance if we're updating
+            query = Ref_Account.objects.filter(AccountName=account_name)
+            
+            # If we're updating an existing account, exclude it from the check
+            if self.instance and self.instance.pk:
+                query = query.exclude(pk=self.instance.pk)
+            
+            if query.exists():
+                raise forms.ValidationError('Энэ данс жагсаалтанд байна.')
+        
+        return account_name
     
     class Meta:
         model = Ref_Account
@@ -168,6 +185,46 @@ class RefClientForm(forms.ModelForm):
             raise forms.ValidationError('Client name cannot exceed 100 characters.')
         
         return client_name
+    
+    def clean(self):
+        """Validate that the combination of ClientName and ClientRegister is unique"""
+        cleaned_data = super().clean()
+        client_name = cleaned_data.get('ClientName')
+        client_register = cleaned_data.get('ClientRegister')
+        
+        if client_name:
+            # Normalize client_name (remove extra whitespace)
+            client_name = ' '.join(client_name.strip().split())
+            
+            # Normalize client_register (strip whitespace, treat empty as None)
+            if client_register:
+                client_register = client_register.strip()
+                if not client_register:
+                    client_register = None
+            else:
+                client_register = None
+            
+            # Check for existing client with same combination
+            instance = getattr(self, 'instance', None)
+            query = RefClient.objects.filter(ClientName=client_name)
+            
+            # Handle ClientRegister: if None, check for None or empty string
+            if client_register is None:
+                query = query.filter(Q(ClientRegister__isnull=True) | Q(ClientRegister=''))
+            else:
+                query = query.filter(ClientRegister=client_register)
+            
+            # Exclude current instance if editing
+            if instance and instance.pk:
+                query = query.exclude(pk=instance.pk)
+            
+            if query.exists():
+                raise forms.ValidationError({
+                    'ClientName': 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?',
+                    'ClientRegister': 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?'
+                })
+        
+        return cleaned_data
     
     class Meta:
         model = RefClient

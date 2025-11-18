@@ -182,8 +182,171 @@
     </div>
 </div>
 
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
 <script>
+// Message Modal Function
+function showMessageModal(message, type = 'error', title = null) {
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to alert if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to alert');
+        alert(message);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Update icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Update message
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Update button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on OK button for accessibility
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 100);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    let validationState = {
+        combinationValid: false,
+        isChecking: false
+    };
+    const clientId = {% if client %}{{ client.ClientId }}{% else %}null{% endif %};
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    async function checkClientNameRegisterUniqueness(clientName, clientRegister) {
+        if (validationState.isChecking) return true; // Allow submission if already checking
+        validationState.isChecking = true;
+        try {
+            const params = new URLSearchParams();
+            if (clientName) params.append('client_name', clientName);
+            if (clientRegister) params.append('client_register', clientRegister);
+            if (clientId) params.append('client_id', clientId);
+            
+            const response = await fetch(`/core/api/check-client-name-register-uniqueness/?${params.toString()}`, {
+                credentials: 'include',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.combination_exists) {
+                    showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                    validationState.combinationValid = false;
+                    return false;
+                } else {
+                    validationState.combinationValid = true;
+                    return true;
+                }
+            } else {
+                console.error('Validation error:', data.error);
+                return true; // Allow submission if API fails
+            }
+        } catch (error) {
+            console.error('Error checking uniqueness:', error);
+            return true; // Allow submission if API fails
+        } finally {
+            validationState.isChecking = false;
+        }
+    }
+
+    const debouncedCheck = debounce(async function() {
+        const clientNameInput = document.querySelector('input[name="ClientName"]');
+        const clientRegisterInput = document.querySelector('input[name="ClientRegister"]');
+        
+        if (!clientNameInput) return;
+        
+        const clientName = clientNameInput.value.trim();
+        const clientRegister = clientRegisterInput ? clientRegisterInput.value.trim() : '';
+        
+        if (!clientName || clientName === '') {
+            validationState.combinationValid = true;
+            return;
+        }
+        
+        await checkClientNameRegisterUniqueness(clientName, clientRegister);
+    }, 500);
+
     // Auto-focus on the first input field
     const firstInput = document.querySelector('input[type="text"]');
     if (firstInput) {
@@ -193,6 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form validation
     const form = document.querySelector('form');
     const clientNameInput = document.querySelector('input[name="ClientName"]');
+    const clientRegisterInput = document.querySelector('input[name="ClientRegister"]');
     const clientCodeInput = document.querySelector('input[name="ClientCode"]');
     
     if (clientNameInput) {
@@ -201,6 +365,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (value.length > 100) {
                 this.value = value.substring(0, 100);
             }
+            debouncedCheck();
+        });
+        clientNameInput.addEventListener('blur', function() {
+            debouncedCheck();
+        });
+    }
+    
+    if (clientRegisterInput) {
+        clientRegisterInput.addEventListener('input', function() {
+            debouncedCheck();
+        });
+        clientRegisterInput.addEventListener('blur', function() {
+            debouncedCheck();
         });
     }
     
@@ -214,14 +391,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Prevent form submission if required fields are empty
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         const clientName = document.querySelector('input[name="ClientName"]');
         const clientType = document.querySelector('select[name="ClientType"]');
         const clientCode = document.querySelector('input[name="ClientCode"]');
+        const clientRegister = document.querySelector('input[name="ClientRegister"]');
         
         if (!clientCode || !clientCode.value.trim()) {
             e.preventDefault();
-            alert('Харилцагчийн кодыг оруулна уу.');
+            showMessageModal('Харилцагчийн кодыг оруулна уу.', 'error', 'Алдаа');
             if (clientCode) {
                 clientCode.focus();
             }
@@ -230,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!clientName || !clientName.value.trim()) {
             e.preventDefault();
-            alert('Харилцагчийн нэрийг оруулна уу.');
+            showMessageModal('Харилцагчийн нэрийг оруулна уу.', 'error', 'Алдаа');
             if (clientName) {
                 clientName.focus();
             }
@@ -239,13 +417,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!clientType || !clientType.value) {
             e.preventDefault();
-            alert('Харилцагчийн төрлийг сонгоно уу.');
+            showMessageModal('Харилцагчийн төрлийг сонгоно уу.', 'error', 'Алдаа');
             if (clientType) {
                 clientType.focus();
             }
             return false;
         }
+        
+        // Check uniqueness before submitting
+        const clientNameValue = clientName.value.trim();
+        const clientRegisterValue = clientRegister ? clientRegister.value.trim() : '';
+        if (clientNameValue) {
+            const isValid = await checkClientNameRegisterUniqueness(clientNameValue, clientRegisterValue);
+            if (!isValid) {
+                e.preventDefault();
+                return false;
+            }
+        }
     });
+    
+    // Display server-side form errors in message modal
+    {% if form.errors %}
+        let errorMessages = [];
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                errorMessages.push('{{ error|escapejs }}');
+            {% endfor %}
+        {% endfor %}
+        if (errorMessages.length > 0) {
+            showMessageModal(errorMessages.join('\n'), 'error', 'Алдаа');
+        }
+    {% endif %}
     
     // Add loading state to submit button
     const submitButton = document.querySelector('button[type="submit"]');

@@ -133,6 +133,8 @@ urlpatterns = [
     path('api/accounts/', views.api_accounts_json, name='api_accounts_json'),
     path('api/client-lookup-by-name/', views.api_client_lookup_by_name, name='api_client_lookup_by_name'),
     path('api/account-lookup-by-code/', views.api_account_lookup_by_code, name='api_account_lookup_by_code'),
+    path('api/check-account-uniqueness/', views.check_account_uniqueness, name='check_account_uniqueness'),
+    path('api/check-client-name-register-uniqueness/', views.check_client_name_register_uniqueness, name='check_client_name_register_uniqueness'),
     path('api/cash-import-bulk/', views.api_cash_import_bulk, name='api_cash_import_bulk'),
     path('api/refclienttypes/', views.refclient_types_json, name='refclient_types_json'),
     

@@ -337,6 +337,91 @@ def refaccount_delete(request, pk):
                     'message': f'Account "{account.AccountCode} - {account.AccountName}" is already deleted.'
                 })
             
+            # Check if account is used in Cash_Document (AccountId or VatAccountId)
+            if Cash_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Cash_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Cash_DocumentDetail
+            if Cash_DocumentDetail.objects.filter(AccountId=account).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Inv_Document (AccountId or VatAccountId)
+            if Inv_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Inv_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Inv_Document_Detail
+            if Inv_Document_Detail.objects.filter(AccountId=account).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Ast_Document (AccountId or VatAccountId)
+            if Ast_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Ast_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Ast_Document_Detail
+            if Ast_Document_Detail.objects.filter(AccountId=account).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in CashBeginningBalance
+            if CashBeginningBalance.objects.filter(AccountID=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Inv_Beginning_Balance
+            if Inv_Beginning_Balance.objects.filter(AccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Ast_Beginning_Balance
+            if Ast_Beginning_Balance.objects.filter(AccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Ref_Asset_Depreciation_Account (AssetAccountId, DepreciationAccountId, ExpenseAccountId)
+            if Ref_Asset_Depreciation_Account.objects.filter(AssetAccountId=account, IsDelete=False).exists() or \
+               Ref_Asset_Depreciation_Account.objects.filter(DepreciationAccountId=account, IsDelete=False).exists() or \
+               Ref_Asset_Depreciation_Account.objects.filter(ExpenseAccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in AstDepreciationExpense (DebitAccountId, CreditAccountId, AccountId)
+            # Note: AstDepreciationExpense doesn't have IsDelete field, so check all records
+            if AstDepreciationExpense.objects.filter(DebitAccountId=account).exists() or \
+               AstDepreciationExpense.objects.filter(CreditAccountId=account).exists() or \
+               AstDepreciationExpense.objects.filter(AccountId=account).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+                })
+            
             # Perform soft delete
             account.IsDelete = True
             account.save()
@@ -358,6 +443,71 @@ def refaccount_delete(request, pk):
             # Check if already deleted
             if account.IsDelete:
                 messages.warning(request, f'Account "{account.AccountCode} - {account.AccountName}" is already deleted.')
+                return redirect('core:refaccount_list')
+            
+            error_message = 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
+            
+            # Check if account is used in Cash_Document (AccountId or VatAccountId)
+            if Cash_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Cash_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Cash_DocumentDetail
+            if Cash_DocumentDetail.objects.filter(AccountId=account).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Inv_Document (AccountId or VatAccountId)
+            if Inv_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Inv_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Inv_Document_Detail
+            if Inv_Document_Detail.objects.filter(AccountId=account).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ast_Document (AccountId or VatAccountId)
+            if Ast_Document.objects.filter(AccountId=account, IsDelete=False).exists() or \
+               Ast_Document.objects.filter(VatAccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ast_Document_Detail
+            if Ast_Document_Detail.objects.filter(AccountId=account).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in CashBeginningBalance
+            if CashBeginningBalance.objects.filter(AccountID=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Inv_Beginning_Balance
+            if Inv_Beginning_Balance.objects.filter(AccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ast_Beginning_Balance
+            if Ast_Beginning_Balance.objects.filter(AccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ref_Asset_Depreciation_Account (AssetAccountId, DepreciationAccountId, ExpenseAccountId)
+            if Ref_Asset_Depreciation_Account.objects.filter(AssetAccountId=account, IsDelete=False).exists() or \
+               Ref_Asset_Depreciation_Account.objects.filter(DepreciationAccountId=account, IsDelete=False).exists() or \
+               Ref_Asset_Depreciation_Account.objects.filter(ExpenseAccountId=account, IsDelete=False).exists():
+                messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in AstDepreciationExpense (DebitAccountId, CreditAccountId, AccountId)
+            # Note: AstDepreciationExpense doesn't have IsDelete field, so check all records
+            if AstDepreciationExpense.objects.filter(DebitAccountId=account).exists() or \
+               AstDepreciationExpense.objects.filter(CreditAccountId=account).exists() or \
+               AstDepreciationExpense.objects.filter(AccountId=account).exists():
+                messages.error(request, error_message)
                 return redirect('core:refaccount_list')
             
             # Perform soft delete
@@ -576,60 +726,60 @@ def refclient_delete(request, pk):
                     'message': f'Client "{client.ClientCode} - {client.ClientName}" is already deleted.'
                 })
             
-            # Check if client exists in inv_document table
-            if Inv_Document.objects.filter(ClientId=client).exists():
+            # Check if client exists in inv_document table (non-deleted records)
+            if Inv_Document.objects.filter(ClientId=client, IsDelete=False).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
-            # Check if client exists in inv_document_detail table (non-null)
+            # Check if client exists in inv_document_detail table (non-null, non-deleted records)
             if Inv_Document_Detail.objects.filter(ClientId=client).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
-            # Check if client exists in cash_document table
-            if Cash_Document.objects.filter(ClientId=client).exists():
+            # Check if client exists in cash_document table (non-deleted records)
+            if Cash_Document.objects.filter(ClientId=client, IsDelete=False).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
-            # Check if client exists in cash_document_detail table
+            # Check if client exists in cash_document_detail table (non-deleted records)
             if Cash_DocumentDetail.objects.filter(ClientId=client).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
-            # Check if client exists in ast_document table
-            if Ast_Document.objects.filter(ClientId=client).exists():
+            # Check if client exists in ast_document table (non-deleted records)
+            if Ast_Document.objects.filter(ClientId=client, IsDelete=False).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
-            # Check if client exists in ast_document_detail table (non-null)
+            # Check if client exists in ast_document_detail table (non-null, non-deleted records)
             if Ast_Document_Detail.objects.filter(ClientId=client).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
             # Check if client exists in cash_beginning_balance table (non-deleted records)
             if CashBeginningBalance.objects.filter(ClientID=client, IsDelete=False).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
             # Check if client exists in ast_beginning_balance table (non-null, non-deleted records)
             if Ast_Beginning_Balance.objects.filter(ClientId=client, IsDelete=False).exists():
                 return JsonResponse({
                     'success': False,
-                    'message': 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй'
+                    'message': 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
             # Perform soft delete
@@ -657,44 +807,44 @@ def refclient_delete(request, pk):
                 messages.warning(request, f'Client "{client.ClientCode} - {client.ClientName}" is already deleted.')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in inv_document table
-            if Inv_Document.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+            # Check if client exists in inv_document table (non-deleted records)
+            if Inv_Document.objects.filter(ClientId=client, IsDelete=False).exists():
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in inv_document_detail table (non-null)
+            # Check if client exists in inv_document_detail table (non-null, non-deleted records)
             if Inv_Document_Detail.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in cash_document table
-            if Cash_Document.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+            # Check if client exists in cash_document table (non-deleted records)
+            if Cash_Document.objects.filter(ClientId=client, IsDelete=False).exists():
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in cash_document_detail table
+            # Check if client exists in cash_document_detail table (non-deleted records)
             if Cash_DocumentDetail.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in ast_document table
-            if Ast_Document.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+            # Check if client exists in ast_document table (non-deleted records)
+            if Ast_Document.objects.filter(ClientId=client, IsDelete=False).exists():
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
-            # Check if client exists in ast_document_detail table (non-null)
+            # Check if client exists in ast_document_detail table (non-null, non-deleted records)
             if Ast_Document_Detail.objects.filter(ClientId=client).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
             # Check if client exists in cash_beginning_balance table (non-deleted records)
             if CashBeginningBalance.objects.filter(ClientID=client, IsDelete=False).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
             # Check if client exists in ast_beginning_balance table (non-null, non-deleted records)
             if Ast_Beginning_Balance.objects.filter(ClientId=client, IsDelete=False).exists():
-                messages.error(request, 'Тухайн харилцагчаар гүйлгээ хийгдсэн, эсвэл эхний үлдэгдэл оруулсан тул устгах боломжгүй')
+                messages.error(request, 'Энэ харилцагчаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refclient_list')
             
             # Perform soft delete
@@ -4710,6 +4860,120 @@ def api_accounts_json(request):
         }, status=500)
 
 
+@login_required
+@permission_required('core.view_ref_account', raise_exception=True)
+@require_http_methods(["GET"])
+def check_account_uniqueness(request):
+    """API endpoint to check if AccountCode or AccountName already exists"""
+    try:
+        account_code = request.GET.get('account_code', '').strip()
+        account_name = request.GET.get('account_name', '').strip()
+        account_id = request.GET.get('account_id')  # For update operations
+        
+        result = {
+            'success': True,
+            'account_code_exists': False,
+            'account_name_exists': False,
+            'message': ''
+        }
+        
+        # Check AccountCode uniqueness
+        if account_code:
+            query = Ref_Account.objects.filter(AccountCode=account_code)
+            if account_id:
+                try:
+                    account_id = int(account_id)
+                    query = query.exclude(pk=account_id)
+                except (ValueError, TypeError):
+                    pass
+            
+            if query.exists():
+                result['account_code_exists'] = True
+                result['message'] = 'Энэ данс жагсаалтанд байна.'
+        
+        # Check AccountName uniqueness
+        if account_name:
+            query = Ref_Account.objects.filter(AccountName=account_name)
+            if account_id:
+                try:
+                    account_id = int(account_id)
+                    query = query.exclude(pk=account_id)
+                except (ValueError, TypeError):
+                    pass
+            
+            if query.exists():
+                result['account_name_exists'] = True
+                if not result['message']:
+                    result['message'] = 'Энэ данс жагсаалтанд байна.'
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_refclient', raise_exception=True)
+@require_http_methods(["GET"])
+def check_client_name_register_uniqueness(request):
+    """API endpoint to check if ClientName and ClientRegister combination already exists"""
+    try:
+        client_name = request.GET.get('client_name', '').strip()
+        client_register = request.GET.get('client_register', '').strip()
+        client_id = request.GET.get('client_id')  # For update operations
+        
+        result = {
+            'success': True,
+            'combination_exists': False,
+            'message': ''
+        }
+        
+        # Normalize client_name (remove extra whitespace)
+        if client_name:
+            client_name = ' '.join(client_name.split())
+        
+        # Normalize client_register (strip whitespace, treat empty as None)
+        if client_register:
+            client_register = client_register.strip()
+            if not client_register:
+                client_register = None
+        else:
+            client_register = None
+        
+        # Check combination uniqueness
+        if client_name:
+            query = RefClient.objects.filter(ClientName=client_name)
+            
+            # Handle ClientRegister: if None, check for None or empty string
+            if client_register is None:
+                query = query.filter(Q(ClientRegister__isnull=True) | Q(ClientRegister=''))
+            else:
+                query = query.filter(ClientRegister=client_register)
+            
+            # Exclude current instance if updating
+            if client_id:
+                try:
+                    client_id = int(client_id)
+                    query = query.exclude(pk=client_id)
+                except (ValueError, TypeError):
+                    pass
+            
+            if query.exists():
+                result['combination_exists'] = True
+                result['message'] = 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?'
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
 # ==================== ASSET JOURNAL VIEWS ====================
 
 @login_required
@@ -8358,12 +8622,44 @@ def template_delete(request, pk):
     
     # Check if user owns this template
     if template.CreatedBy != request.user:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'You do not have permission to delete this template.'
+            }, status=403)
         messages.error(request, 'You do not have permission to delete this template.')
-    else:
+        return redirect('core:template_master_detail')
+    
+    # Check if template is used in any documents
+    is_used_in_cash = Cash_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    is_used_in_inv = Inv_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    is_used_in_ast = Ast_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    
+    if is_used_in_cash or is_used_in_inv or is_used_in_ast:
+        error_message = 'Энэ загвараар гүйлгээ хийсэн байна. Эхлээд гүйлгээгээ устгана уу'
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': error_message
+            }, status=400)
+        
+        # For regular POST requests, show error message and redirect
+        messages.error(request, error_message)
+        return redirect('core:template_master_detail')
+    
+    # Template is not used, proceed with deletion
         template.IsDelete = True
         template.save()
-        messages.success(request, 'Template deleted successfully.')
     
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': 'Template deleted successfully.'
+        })
+    
+    messages.success(request, 'Template deleted successfully.')
     return redirect('core:template_master_detail')
 
 

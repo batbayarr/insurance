@@ -160,14 +160,166 @@ function showMessageModal(message, type = 'error', title = null) {
     }
 }
 
-// Show validation errors in modal
+// Client-side validation state
+let validationState = {
+    accountCodeValid: false,
+    accountNameValid: false,
+    isChecking: false
+};
+
+// Get account ID if updating
+const accountId = {% if item %}{{ item.AccountId }}{% else %}null{% endif %};
+
+// Debounce function for validation
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Check account uniqueness via API
+async function checkAccountUniqueness(accountCode, accountName) {
+    if (validationState.isChecking) return true;
+    
+    validationState.isChecking = true;
+    
+    try {
+        const params = new URLSearchParams();
+        if (accountCode) params.append('account_code', accountCode);
+        if (accountName) params.append('account_name', accountName);
+        if (accountId) params.append('account_id', accountId);
+        
+        const response = await fetch(`/core/api/check-account-uniqueness/?${params.toString()}`, {
+            credentials: 'include',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.account_code_exists || data.account_name_exists) {
+                showMessageModal(data.message || 'Энэ данс жагсаалтанд байна.', 'error', 'Алдаа');
+                if (data.account_code_exists) {
+                    validationState.accountCodeValid = false;
+                }
+                if (data.account_name_exists) {
+                    validationState.accountNameValid = false;
+                }
+                return false;
+            } else {
+                if (accountCode) validationState.accountCodeValid = true;
+                if (accountName) validationState.accountNameValid = true;
+                return true;
+            }
+        } else {
+            console.error('Validation error:', data.error);
+            return true; // Allow submission if API fails
+        }
+    } catch (error) {
+        console.error('Error checking uniqueness:', error);
+        return true; // Allow submission if API fails
+    } finally {
+        validationState.isChecking = false;
+    }
+}
+
+// Debounced validation function
+const debouncedCheck = debounce(async function(field, value) {
+    if (!value || value.trim() === '') {
+        if (field === 'code') validationState.accountCodeValid = true;
+        if (field === 'name') validationState.accountNameValid = true;
+        return;
+    }
+    
+    if (field === 'code') {
+        await checkAccountUniqueness(value, null);
+    } else if (field === 'name') {
+        await checkAccountUniqueness(null, value);
+    }
+}, 500);
+
+// Add event listeners for client-side validation
 document.addEventListener('DOMContentLoaded', function() {
+    const accountCodeInput = document.getElementById('{{ form.AccountCode.id_for_label }}');
+    const accountNameInput = document.getElementById('{{ form.AccountName.id_for_label }}');
+    const form = document.querySelector('form');
+    
+    // Validate AccountCode on blur/change
+    if (accountCodeInput) {
+        accountCodeInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value) {
+                debouncedCheck('code', value);
+            }
+        });
+        
+        accountCodeInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value) {
+                debouncedCheck('code', value);
+            } else {
+                validationState.accountCodeValid = true;
+            }
+        });
+    }
+    
+    // Validate AccountName on blur/change
+    if (accountNameInput) {
+        accountNameInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value) {
+                debouncedCheck('name', value);
+            }
+        });
+        
+        accountNameInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value) {
+                debouncedCheck('name', value);
+            } else {
+                validationState.accountNameValid = true;
+            }
+        });
+    }
+    
+    // Prevent form submission if validation fails
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            const accountCode = accountCodeInput ? accountCodeInput.value.trim() : '';
+            const accountName = accountNameInput ? accountNameInput.value.trim() : '';
+            
+            // Check both fields before submission
+            if (accountCode || accountName) {
+                const isValid = await checkAccountUniqueness(accountCode, accountName);
+                if (!isValid) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+    
+    // Show validation errors from server-side validation
     {% if form.errors %}
-        {% if form.AccountCode.errors %}
-            {% for error in form.AccountCode.errors %}
-                showMessageModal('{{ error|escapejs }}', 'error', 'Алдаа');
+        let errorMessages = [];
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                errorMessages.push('{{ error|escapejs }}');
             {% endfor %}
-        {% endif %}
+        {% endfor %}
+        
+        if (errorMessages.length > 0) {
+            // Show all errors in modal
+            showMessageModal(errorMessages.join('\n'), 'error', 'Алдаа');
+        }
     {% endif %}
 });
 </script>

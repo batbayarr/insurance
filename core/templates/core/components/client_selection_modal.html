@@ -186,12 +186,35 @@ window.showAddClientForm = function() {
     
     // Load client types before showing form
     populateClientTypes();
+    
+    // Add event listeners for validation
+    setTimeout(() => {
+        const clientNameInput = document.getElementById('client-name');
+        const clientRegisterInput = document.getElementById('client-register');
+        
+        if (clientNameInput) {
+            // Remove existing listeners to avoid duplicates
+            const newNameInput = clientNameInput.cloneNode(true);
+            clientNameInput.parentNode.replaceChild(newNameInput, clientNameInput);
+            newNameInput.addEventListener('input', debouncedCheckClient);
+            newNameInput.addEventListener('blur', debouncedCheckClient);
+        }
+        
+        if (clientRegisterInput) {
+            // Remove existing listeners to avoid duplicates
+            const newRegisterInput = clientRegisterInput.cloneNode(true);
+            clientRegisterInput.parentNode.replaceChild(newRegisterInput, clientRegisterInput);
+            newRegisterInput.addEventListener('input', debouncedCheckClient);
+            newRegisterInput.addEventListener('blur', debouncedCheckClient);
+        }
+    }, 100);
+    
     // Show form
     formContainer.classList.remove('hidden');
 }
 
 // Show edit client form
-window.updateClient = function(clientId, clientCode, clientName) {
+window.updateClient = function(clientId, clientCode, clientName, clientRegister = '') {
     const formContainer = document.getElementById('client-form-container');
     const formTitle = document.getElementById('form-title');
     const submitText = document.getElementById('submit-text');
@@ -201,6 +224,10 @@ window.updateClient = function(clientId, clientCode, clientName) {
     clientIdInput.value = clientId;
     document.getElementById('client-code').value = clientCode;
     document.getElementById('client-name').value = clientName;
+    const clientRegisterInput = document.getElementById('client-register');
+    if (clientRegisterInput) {
+        clientRegisterInput.value = clientRegister;
+    }
     
     // Update form title and button text
     formTitle.textContent = 'Edit Client';
@@ -208,6 +235,29 @@ window.updateClient = function(clientId, clientCode, clientName) {
     
     // Load client types then show form and select current (if any)
     populateClientTypes(clientId);
+    
+    // Add event listeners for validation
+    setTimeout(() => {
+        const clientNameInput = document.getElementById('client-name');
+        const clientRegisterInput = document.getElementById('client-register');
+        
+        if (clientNameInput) {
+            // Remove existing listeners to avoid duplicates
+            const newNameInput = clientNameInput.cloneNode(true);
+            clientNameInput.parentNode.replaceChild(newNameInput, clientNameInput);
+            newNameInput.addEventListener('input', debouncedCheckClient);
+            newNameInput.addEventListener('blur', debouncedCheckClient);
+        }
+        
+        if (clientRegisterInput) {
+            // Remove existing listeners to avoid duplicates
+            const newRegisterInput = clientRegisterInput.cloneNode(true);
+            clientRegisterInput.parentNode.replaceChild(newRegisterInput, clientRegisterInput);
+            newRegisterInput.addEventListener('input', debouncedCheckClient);
+            newRegisterInput.addEventListener('blur', debouncedCheckClient);
+        }
+    }, 100);
+    
     // Show form
     formContainer.classList.remove('hidden');
 }
@@ -219,20 +269,31 @@ window.hideClientForm = function() {
 }
 
 // Submit client form
-window.submitClientForm = function(event) {
+window.submitClientForm = async function(event) {
     event.preventDefault();
     
     const form = document.getElementById('client-form');
     const formData = new FormData(form);
     const clientId = document.getElementById('client-id').value;
     const isEdit = clientId !== '';
+    
     // Basic client-side validation to avoid silent server validation failures
     const codeVal = (document.getElementById('client-code')?.value || '').trim();
     const nameVal = (document.getElementById('client-name')?.value || '').trim();
     const typeVal = (document.getElementById('client-type')?.value || '').trim();
+    const registerVal = (document.getElementById('client-register')?.value || '').trim();
+    
     if (!codeVal || !nameVal || !typeVal) {
-        showMessage('Please fill Client Code, Client Name and Client Type.', 'error');
+        showMessageModal('Please fill Client Code, Client Name and Client Type.', 'error', 'Алдаа');
         return;
+    }
+    
+    // Check uniqueness before submitting
+    if (nameVal) {
+        const isValid = await checkClientNameRegisterUniqueness(nameVal, registerVal, clientId);
+        if (!isValid) {
+            return; // Don't submit if validation fails
+        }
     }
     
     // Show loading state
@@ -275,7 +336,23 @@ window.submitClientForm = function(event) {
                 loadClientList();
                 showMessage(data.message, 'success');
             } else {
-                showMessage(data.message + (data.errors ? ': ' + JSON.stringify(data.errors) : ''), 'error');
+                // Show errors in message modal
+                let errorMessage = data.message || 'Validation failed';
+                if (data.errors) {
+                    // Format Django form errors
+                    const errorList = [];
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        if (Array.isArray(errors)) {
+                            errorList.push(...errors);
+                        } else {
+                            errorList.push(errors);
+                        }
+                    }
+                    if (errorList.length > 0) {
+                        errorMessage = errorList.join('\n');
+                    }
+                }
+                showMessageModal(errorMessage, 'error', 'Алдаа');
             }
         } else {
             // Handle HTML response (regular form submission)
@@ -283,7 +360,10 @@ window.submitClientForm = function(event) {
             if (!response.ok) throw new Error('Failed to save client');
             // Heuristic: if returned HTML still contains the form with errorlist, treat as error
             const hasError = /errorlist/gi.test(text) || /id=\"client-form\"/gi.test(text) && /error/gi.test(text);
-            if (hasError) throw new Error('Server validation failed. Check Client Type and fields.');
+            if (hasError) {
+                showMessageModal('Server validation failed. Check Client Type and fields.', 'error', 'Алдаа');
+                return;
+            }
             // Success - hide form and refresh client list
             hideClientForm();
             loadClientList();
@@ -292,7 +372,7 @@ window.submitClientForm = function(event) {
     })
     .catch(error => {
         console.error('Error saving client:', error);
-        showMessage('Error saving client. Please try again.', 'error');
+        showMessageModal('Error saving client. Please try again.', 'error', 'Алдаа');
     })
     .finally(() => {
         // Reset loading state
@@ -329,6 +409,168 @@ window.showMessage = function(message, type) {
         }, 3000);
     }
 }
+
+// Message Modal Function
+function showMessageModal(message, type = 'error', title = null) {
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to alert if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to alert');
+        alert(message);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Update icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Update message
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Update button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on OK button for accessibility
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 100);
+    }
+}
+
+// Validation state
+let clientValidationState = {
+    combinationValid: false,
+    isChecking: false
+};
+
+function debounceClientValidation(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+async function checkClientNameRegisterUniqueness(clientName, clientRegister, clientId) {
+    if (clientValidationState.isChecking) return true;
+    clientValidationState.isChecking = true;
+    try {
+        const params = new URLSearchParams();
+        if (clientName) params.append('client_name', clientName);
+        if (clientRegister) params.append('client_register', clientRegister);
+        if (clientId) params.append('client_id', clientId);
+        
+        const response = await fetch(`/core/api/check-client-name-register-uniqueness/?${params.toString()}`, {
+            credentials: 'include',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.combination_exists) {
+                showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                clientValidationState.combinationValid = false;
+                return false;
+            } else {
+                clientValidationState.combinationValid = true;
+                return true;
+            }
+        } else {
+            console.error('Validation error:', data.error);
+            return true; // Allow submission if API fails
+        }
+    } catch (error) {
+        console.error('Error checking uniqueness:', error);
+        return true; // Allow submission if API fails
+    } finally {
+        clientValidationState.isChecking = false;
+    }
+}
+
+const debouncedCheckClient = debounceClientValidation(async function() {
+    const clientNameInput = document.getElementById('client-name');
+    const clientRegisterInput = document.getElementById('client-register');
+    const clientIdInput = document.getElementById('client-id');
+    
+    if (!clientNameInput) return;
+    
+    const clientName = clientNameInput.value.trim();
+    const clientRegister = clientRegisterInput ? clientRegisterInput.value.trim() : '';
+    const clientId = clientIdInput ? clientIdInput.value : '';
+    
+    if (!clientName || clientName === '') {
+        clientValidationState.combinationValid = true;
+        return;
+    }
+    
+    await checkClientNameRegisterUniqueness(clientName, clientRegister, clientId);
+}, 500);
 
 // Delete client function
 window.deleteClient = function(clientId, clientCode, clientName) {
@@ -498,6 +740,8 @@ window.loadClientList = function(options = null) {
                 const escapedClientCode = clientCode.replace(/'/g, "\\'");
                 const escapedClientName = clientName.replace(/'/g, "\\'");
                 
+                const escapedClientRegister = (clientRegister || '').replace(/'/g, "\\'");
+                
                 clientsHtml += `
                     <div class="grid grid-cols-12 gap-0 px-4 py-1 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer client-row" 
                          data-client-code="${clientCode.toLowerCase()}" 
@@ -507,7 +751,8 @@ window.loadClientList = function(options = null) {
                          data-row-index="${index}"
                          data-client-id="${escapedClientId}"
                          data-client-code-value="${escapedClientCode}"
-                         data-client-name-value="${escapedClientName}">
+                         data-client-name-value="${escapedClientName}"
+                         data-client-register-value="${escapedClientRegister}">
                         <div class="col-span-1 flex items-center justify-center border-r border-gray-200 px-1">
                             <span class="text-xs text-gray-500">${index + 1}</span>
                         </div>
@@ -640,9 +885,10 @@ function addClientRowEventListeners() {
             const clientId = row.getAttribute('data-client-id');
             const clientCode = row.getAttribute('data-client-code-value');
             const clientName = row.getAttribute('data-client-name-value');
+            const clientRegister = row.getAttribute('data-client-register-value') || '';
             
             if (clientId && clientCode && clientName) {
-                updateClient(clientId, clientCode, clientName);
+                updateClient(clientId, clientCode, clientName, clientRegister);
             }
         });
     });
@@ -1074,3 +1320,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Include Delete Modal Component -->
 {% include 'core/components/delete_modal.html' %}
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}

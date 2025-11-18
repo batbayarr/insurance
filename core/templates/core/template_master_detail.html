@@ -188,7 +188,99 @@
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
 <script>
+// Message Modal Function
+function showMessageModal(message, type = 'error', title = null) {
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to alert if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to alert');
+        alert(message);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Update icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Update message
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Update button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on OK button for accessibility
+    if (okButton) {
+        setTimeout(() => okButton.focus(), 100);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let selectedTemplateId = null;
     
@@ -371,11 +463,100 @@ document.addEventListener('DOMContentLoaded', function() {
             const templateName = this.getAttribute('data-template-name');
             const deleteUrl = `/core/templates/${templateId}/delete/`;
             
-            // Use the existing generic delete modal
-            Silicon4Delete.showModal(deleteUrl, templateName, function() {
-                // Optional callback after successful deletion
-                console.log('Template deleted successfully');
+            // Custom delete handler that checks for error responses
+            const modal = document.getElementById('delete-modal');
+            const modalText = document.getElementById('delete-modal-text');
+            const confirmButton = document.getElementById('delete-confirm-btn');
+            
+            if (!modal || !modalText || !confirmButton) {
+                console.error('Delete modal elements not found');
+                return;
+            }
+            
+            // Update modal content
+            modalText.textContent = `Та устгахдаа итгэлтэй байна уу? "${templateName}"`;
+            
+            // Remove existing event listeners
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            // Add new event listener
+            newConfirmButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Show loading state
+                newConfirmButton.disabled = true;
+                newConfirmButton.textContent = 'Устгаж байна...';
+                
+                // Get CSRF token
+                let csrfToken = document.querySelector('meta[name="csrf-token"]');
+                let csrfValue = '';
+                
+                if (csrfToken) {
+                    csrfValue = csrfToken.getAttribute('content');
+                } else {
+                    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                    if (csrfInput) {
+                        csrfValue = csrfInput.value;
+                    }
+                }
+                
+                if (!csrfValue) {
+                    console.error('CSRF token not found');
+                    showMessageModal('CSRF token not found', 'error', 'Алдаа');
+                    newConfirmButton.disabled = false;
+                    newConfirmButton.textContent = 'Устгах';
+                    return;
+                }
+                
+                // Make delete request with AJAX header
+                fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfValue,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'csrfmiddlewaretoken=' + encodeURIComponent(csrfValue)
+                })
+                .then(response => {
+                    // Check if response is JSON (error response)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => {
+                            if (!data.success) {
+                                // Show error in message modal
+                                modal.classList.add('hidden');
+                                showMessageModal(data.message || 'Устгах боломжгүй', 'error', 'Алдаа');
+                                newConfirmButton.disabled = false;
+                                newConfirmButton.textContent = 'Устгах';
+                                return;
+                            }
+                            // Success - reload page
+                            window.location.reload();
+                        });
+                    }
+                    
+                    // Regular HTML response (success)
+                    if (response.ok) {
+                        modal.classList.add('hidden');
+                        window.location.reload();
+                    } else {
+                        throw new Error('Delete failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    modal.classList.add('hidden');
+                    showMessageModal('Устгах үед алдаа гарлаа', 'error', 'Алдаа');
+                    newConfirmButton.disabled = false;
+                    newConfirmButton.textContent = 'Устгах';
+                });
             });
+            
+            // Show modal
+            modal.classList.remove('hidden');
         });
     });
     
