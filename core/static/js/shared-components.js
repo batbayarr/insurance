@@ -772,6 +772,19 @@ window.Silicon4Delete = {
         // Update modal content
         modalText.textContent = `Are you sure you want to delete "${itemName}"?`;
         
+        // Extract item ID from deleteUrl if possible (for cash documents: /core/cashdocuments/{id}/delete/)
+        // or inventory documents: /core/invdocuments/{id}/delete/)
+        let itemId = null;
+        const cashDocMatch = deleteUrl.match(/\/cashdocuments\/(\d+)\/delete/);
+        if (cashDocMatch) {
+            itemId = cashDocMatch[1];
+        }
+        // Add inventory document ID extraction
+        const invDocMatch = deleteUrl.match(/\/invdocuments\/(\d+)\/delete/);
+        if (invDocMatch) {
+            itemId = invDocMatch[1];
+        }
+        
         // Remove existing event listeners
         const newConfirmButton = confirmButton.cloneNode(true);
         confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
@@ -812,20 +825,95 @@ window.Silicon4Delete = {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfValue,
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: 'csrfmiddlewaretoken=' + encodeURIComponent(csrfValue)
+                body: JSON.stringify({
+                    item_id: itemId || itemName,
+                    item_name: itemName
+                })
             })
             .then(response => {
-                if (response.ok) {
-                    Silicon4Message.success('item-deleted');
-                    if (callback) callback();
-                    // Close modal
-                    Silicon4Delete.closeModal();
-                    // Reload page to reflect changes
-                    window.location.reload();
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        if (data.success) {
+                            Silicon4Message.success('item-deleted');
+                            if (callback) callback();
+                            // Close modal
+                            Silicon4Delete.closeModal();
+                            
+                            // Check if we're on cash document master detail page
+                            const isCashDocumentPage = window.location.pathname.includes('/cashdocuments/') && 
+                                                     document.getElementById('cash-document-container') &&
+                                                     typeof allDocumentsData !== 'undefined';
+                            
+                            // Check if we're on inventory document master detail page
+                            const isInvDocumentPage = window.location.pathname.includes('/invdocuments/') && 
+                                                     document.getElementById('inventory-document-container') &&
+                                                     typeof allDocumentsData !== 'undefined';
+                            
+                            if ((isCashDocumentPage || isInvDocumentPage) && itemId) {
+                                // Optimized refresh for cash/inventory document page - no full page reload
+                                const documentId = itemId;
+                                
+                                if (documentId) {
+                                    // Remove from allDocumentsData array
+                                    if (Array.isArray(allDocumentsData)) {
+                                        allDocumentsData = allDocumentsData.filter(doc => doc.DocumentId != documentId);
+                                    }
+                                    
+                                    // Remove row from DOM
+                                    const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
+                                    if (row) {
+                                        row.remove();
+                                    }
+                                    
+                                    // Clear detail grid if this document was selected
+                                    const detailContainer = document.getElementById('detail-grid-container');
+                                    if (detailContainer) {
+                                        const urlParams = new URLSearchParams(window.location.search);
+                                        const selectedDocumentId = urlParams.get('selected_document');
+                                        if (selectedDocumentId == documentId) {
+                                            detailContainer.innerHTML = '';
+                                            // Remove from URL
+                                            const currentUrl = new URL(window.location);
+                                            currentUrl.searchParams.delete('selected_document');
+                                            window.history.replaceState({}, '', currentUrl.toString());
+                                        }
+                                    }
+                                    
+                                    // Re-apply filters and pagination (fast - just client-side filtering)
+                                    if (typeof applyFrontendFilter === 'function') {
+                                        // Reset to page 1 if current page becomes empty
+                                        const startIndex = (typeof currentPage !== 'undefined' ? currentPage - 1 : 0) * (typeof pageSize !== 'undefined' ? pageSize : 15);
+                                        const remainingAfterDelete = typeof filteredData !== 'undefined' && filteredData ? filteredData.filter(doc => doc.DocumentId != documentId).length : 0;
+                                        if (remainingAfterDelete <= startIndex && typeof currentPage !== 'undefined' && currentPage > 1) {
+                                            currentPage = Math.max(1, Math.ceil(remainingAfterDelete / (typeof pageSize !== 'undefined' ? pageSize : 15)));
+                                        }
+                                        applyFrontendFilter();
+                                    }
+                                }
+                            } else {
+                                // For other pages, use the existing reload behavior
+                                window.location.reload();
+                            }
+                        } else {
+                            throw new Error(data.message || 'Delete failed');
+                        }
+                    });
                 } else {
-                    throw new Error('Delete failed');
+                    // Handle HTML response (fallback)
+                    if (response.ok) {
+                        Silicon4Message.success('item-deleted');
+                        if (callback) callback();
+                        // Close modal
+                        Silicon4Delete.closeModal();
+                        // Reload page to reflect changes
+                        window.location.reload();
+                    } else {
+                        throw new Error('Delete failed');
+                    }
                 }
             })
             .catch(error => {

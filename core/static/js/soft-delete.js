@@ -96,10 +96,54 @@ class Silicon4SoftDelete {
                 // Close modal
                 this.closeModal();
                 
-                // Refresh the list after a short delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                // Check if we're on cash document master detail page
+                const isCashDocumentPage = window.location.pathname.includes('/cashdocuments/') && 
+                                         document.getElementById('cash-document-container') &&
+                                         typeof allDocumentsData !== 'undefined';
+                
+                if (isCashDocumentPage) {
+                    // Optimized refresh for cash document page - no full page reload
+                    // Remove from allDocumentsData array
+                    if (Array.isArray(allDocumentsData)) {
+                        allDocumentsData = allDocumentsData.filter(doc => doc.DocumentId != itemId);
+                    }
+                    
+                    // Remove row from DOM
+                    const row = document.querySelector(`tr[data-document-id="${itemId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    // Clear detail grid if this document was selected
+                    const detailContainer = document.getElementById('detail-grid-container');
+                    if (detailContainer) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const selectedDocumentId = urlParams.get('selected_document');
+                        if (selectedDocumentId == itemId) {
+                            detailContainer.innerHTML = '';
+                            // Remove from URL
+                            const currentUrl = new URL(window.location);
+                            currentUrl.searchParams.delete('selected_document');
+                            window.history.replaceState({}, '', currentUrl.toString());
+                        }
+                    }
+                    
+                    // Re-apply filters and pagination (fast - just client-side filtering)
+                    if (typeof applyFrontendFilter === 'function') {
+                        // Reset to page 1 if current page becomes empty
+                        const startIndex = (currentPage - 1) * pageSize;
+                        const remainingAfterDelete = filteredData ? filteredData.filter(doc => doc.DocumentId != itemId).length : 0;
+                        if (remainingAfterDelete <= startIndex && currentPage > 1) {
+                            currentPage = Math.max(1, Math.ceil(remainingAfterDelete / pageSize));
+                        }
+                        applyFrontendFilter();
+                    }
+                } else {
+                    // For other pages, use the existing reload behavior
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
                 
             } else {
                 this.showErrorMessage(result.message || 'Error deleting item');

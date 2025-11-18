@@ -294,7 +294,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    async function checkClientNameRegisterUniqueness(clientName, clientRegister) {
+    async function checkClientNameRegisterUniqueness(clientName, clientRegister, options = {}) {
+        const showModalOnDuplicate = options.showModalOnDuplicate !== false;
+        
         if (validationState.isChecking) return true; // Allow submission if already checking
         validationState.isChecking = true;
         try {
@@ -311,7 +313,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 if (data.combination_exists) {
-                    showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                    if (showModalOnDuplicate) {
+                        showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                    }
                     validationState.combinationValid = false;
                     return false;
                 } else {
@@ -344,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        await checkClientNameRegisterUniqueness(clientName, clientRegister);
+        await checkClientNameRegisterUniqueness(clientName, clientRegister, { showModalOnDuplicate: false });
     }, 500);
 
     // Auto-focus on the first input field
@@ -428,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const clientNameValue = clientName.value.trim();
         const clientRegisterValue = clientRegister ? clientRegister.value.trim() : '';
         if (clientNameValue) {
-            const isValid = await checkClientNameRegisterUniqueness(clientNameValue, clientRegisterValue);
+            const isValid = await checkClientNameRegisterUniqueness(clientNameValue, clientRegisterValue, { showModalOnDuplicate: true });
             if (!isValid) {
                 e.preventDefault();
                 return false;

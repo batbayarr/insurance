@@ -290,7 +290,7 @@ window.submitClientForm = async function(event) {
     
     // Check uniqueness before submitting
     if (nameVal) {
-        const isValid = await checkClientNameRegisterUniqueness(nameVal, registerVal, clientId);
+        const isValid = await checkClientNameRegisterUniqueness(nameVal, registerVal, clientId, { showModalOnDuplicate: true });
         if (!isValid) {
             return; // Don't submit if validation fails
         }
@@ -517,7 +517,9 @@ function debounceClientValidation(func, wait) {
     };
 }
 
-async function checkClientNameRegisterUniqueness(clientName, clientRegister, clientId) {
+async function checkClientNameRegisterUniqueness(clientName, clientRegister, clientId, options = {}) {
+    const showModalOnDuplicate = options.showModalOnDuplicate !== false;
+    
     if (clientValidationState.isChecking) return true;
     clientValidationState.isChecking = true;
     try {
@@ -534,7 +536,9 @@ async function checkClientNameRegisterUniqueness(clientName, clientRegister, cli
         
         if (data.success) {
             if (data.combination_exists) {
-                showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                if (showModalOnDuplicate) {
+                    showMessageModal(data.message || 'Харилцагчийн нэр болон регистрийн дугаарын хослол давхардаж байна. Нягтална уу?', 'error', 'Алдаа');
+                }
                 clientValidationState.combinationValid = false;
                 return false;
             } else {
@@ -569,7 +573,7 @@ const debouncedCheckClient = debounceClientValidation(async function() {
         return;
     }
     
-    await checkClientNameRegisterUniqueness(clientName, clientRegister, clientId);
+    await checkClientNameRegisterUniqueness(clientName, clientRegister, clientId, { showModalOnDuplicate: false });
 }, 500);
 
 // Delete client function
