@@ -27,7 +27,7 @@
                 <table class="min-w-full divide-y divide-gray-200 border border-gray-200" style="table-layout: auto;">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДУГААР</th>
+                            <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="display: none;">ДУГААР</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС *</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХАРИЛЦАГЧ *</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ВАЛЮТ *</th>
@@ -44,10 +44,10 @@
                     <tbody id="details-tbody" class="bg-white divide-y divide-gray-200">
                         {% for detail in document_details %}
                         <tr class="hover:bg-gray-50 existing-row" data-detail-id="{{ detail.DocumentDetailId }}">
-                            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="display: none;">
                                 {{ detail.DocumentDetailId }}
                             </td>
-                            <td class="px-2 py-1">
+                            <td class="px-2 py-1" style="min-width: 160px;">
                                 <div class="relative">
                                     <input type="hidden" name="account_id_{{ detail.DocumentDetailId }}" 
                                            value="{% if detail.AccountId %}{{ detail.AccountId.AccountId }}{% endif %}" 
@@ -83,50 +83,50 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-2 py-1">
+                            <td class="px-2 py-1" style="min-width: 70px;">
                                 <select name="currency_id_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Currency</option>
+                                    <option value="">Валют</option>
                                     {% for currency in currencies %}
                                     <option value="{{ currency.CurrencyId }}" {% if detail.CurrencyId and currency.CurrencyId == detail.CurrencyId.CurrencyId %}selected{% endif %}>
-                                        {{ currency.CurrencyId }} - {{ currency.Currency_name }}
+                                        {{ currency.Currency_name }}
                                     </option>
                                     {% endfor %}
                                 </select>
                             </td>
-                            <td class="px-2 py-1">
+                            <td class="px-2 py-1" style="width: 110px;">
                                 <input type="number" name="currency_exchange_{{ detail.DocumentDetailId }}" step="0.000001" min="0" 
                                        value="{% if detail.CurrencyExchange %}{{ detail.CurrencyExchange|floatformat:4 }}{% else %}{{ document.CurrencyExchange|floatformat:4|default:'1.0000' }}{% endif %}"
                                        class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                                        placeholder="1.0000">
                             </td>
                             <td class="px-2 py-1">
-                                <input type="number" name="currency_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0" required
+                                <input type="text" inputmode="decimal" name="currency_amount_{{ detail.DocumentDetailId }}" required
                                        value="{% if detail.CurrencyAmount %}{{ detail.CurrencyAmount|floatformat:2 }}{% endif %}"
-                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                                        placeholder="0.00">
                             </td>
                             <td class="px-2 py-1">
                                 <select name="is_debit_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Type</option>
+                                    <option value="">Сонгох</option>
                                     <option value="true" {% if detail.IsDebit %}selected{% endif %}>Дебит</option>
                                     <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Кредит</option>
                                 </select>
                             </td>
                             <td class="px-2 py-1">
-                                <input type="number" name="debit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
+                                <input type="text" inputmode="decimal" name="debit_amount_{{ detail.DocumentDetailId }}"
                                        value="{% if detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
-                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                                       class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                                        placeholder="0.00" readonly>
                             </td>
                             <td class="px-2 py-1">
-                                <input type="number" name="credit_amount_{{ detail.DocumentDetailId }}" step="0.000001" min="0"
+                                <input type="text" inputmode="decimal" name="credit_amount_{{ detail.DocumentDetailId }}"
                                        value="{% if not detail.IsDebit %}{{ detail.CurrencyAmount|floatformat:2 }}{% else %}0.00{% endif %}"
-                                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+                                       class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                                        placeholder="0.00" readonly>
                             </td>
                             <td class="px-2 py-1">
                                 <select name="cashflow_id_{{ detail.DocumentDetailId }}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Cash Flow</option>
+                                    <option value="">Мөнгөн гүйлгээний утга</option>
                                     {% for cash_flow in cash_flows %}
                                     <option value="{{ cash_flow.CashFlowId }}" {% if detail.CashFlowId and cash_flow.CashFlowId == detail.CashFlowId.CashFlowId %}selected{% endif %}>
                                         {{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}
@@ -134,7 +134,7 @@
                                     {% endfor %}
                                 </select>
                             </td>
-                            <td class="px-2 py-1">
+                            <td class="px-2 py-1" style="width: 120px;">
                                 <select name="contract_id_{{ detail.DocumentDetailId }}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Select Contract</option>
                                     {% for contract in contracts %}
@@ -336,10 +336,10 @@ function addNewDetailRowForCash(rowData) {
     const isDebitValue = rowData.isDebit ? 'true' : 'false';
     
     row.innerHTML = `
-        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="display: none;">
             <span class="text-green-600 font-medium">NEW</span>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 160px;">
             <div class="relative">
                 <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" value="${rowData.accountId}" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
@@ -369,50 +369,50 @@ function addNewDetailRowForCash(rowData) {
                 </div>
             </div>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 70px;">
             <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют</option>
                 {% for currency in currencies %}
-                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.Currency_name }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 110px;">
             <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyExchange).toFixed(4)}"
                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="1.0000">
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+            <input type="text" inputmode="decimal" name="new_currency_amount_${newRowCounter}" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.00">
         </td>
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
+                <option value="">Сонгох</option>
                 <option value="true" ${rowData.isDebit ? 'selected' : ''}>Дебит</option>
                 <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_debit_amount_${newRowCounter}" value="${debitAmount}"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_credit_amount_${newRowCounter}" value="${creditAmount}"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Cash Flow</option>
+                <option value="">Мөнгөн гүйлгээний утга</option>
                 {% for cash_flow in cash_flows %}
                 <option value="{{ cash_flow.CashFlowId }}" ${rowData.cashFlowId && rowData.cashFlowId == '{{ cash_flow.CashFlowId }}' ? 'selected' : ''}>{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 120px;">
             <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Contract</option>
                 {% for contract in contracts %}
@@ -546,6 +546,57 @@ const clientLookup = {
     {% endfor %}
 };
 
+function normalizeNumericValue(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+    if (typeof value !== 'string') {
+        value = String(value);
+    }
+    return value.replace(/,/g, '').trim();
+}
+
+function parseNumericValue(value, defaultValue = 0) {
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '') {
+        return defaultValue;
+    }
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function formatNumericString(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '' || isNaN(normalized)) {
+        return normalized;
+    }
+    const isNegative = normalized.startsWith('-');
+    const absoluteValue = isNegative ? normalized.slice(1) : normalized;
+    const [intPartRaw, decimalPart] = absoluteValue.split('.');
+    const formattedInt = intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const sign = isNegative ? '-' : '';
+    return decimalPart !== undefined ? `${sign}${formattedInt}.${decimalPart}` : `${sign}${formattedInt}`;
+}
+
+function setFormattedNumericValue(input, value) {
+    if (!input) return;
+    input.value = formatNumericString(value);
+}
+
+function formatInputValue(input) {
+    if (!input) return;
+    input.value = formatNumericString(input.value);
+}
+
+function formatAllNumericDisplays() {
+    document.querySelectorAll('input[name*="currency_amount"], input[name*="debit_amount"], input[name*="credit_amount"]').forEach((input) => {
+        formatInputValue(input);
+    });
+}
+
 
 document.addEventListener('DOMContentLoaded', function() {
     const addNewRowBtn = document.getElementById('add-new-row-btn');
@@ -613,8 +664,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const accountId = row.querySelector('input[name*="account_id"]')?.value || row.querySelector('input[name*="new_account_id"]')?.value;
                 const clientId = row.querySelector('input[name*="client_id"]')?.value || row.querySelector('input[name*="new_client_id"]')?.value;
                 const currencyId = row.querySelector('select[name*="currency_id"]')?.value || row.querySelector('select[name*="new_currency_id"]')?.value;
-                const currencyExchange = row.querySelector('input[name*="currency_exchange"]')?.value || row.querySelector('input[name*="new_currency_exchange"]')?.value;
-                const currencyAmount = row.querySelector('input[name*="currency_amount"]')?.value || row.querySelector('input[name*="new_currency_amount"]')?.value;
+                const currencyExchange = normalizeNumericValue(row.querySelector('input[name*="currency_exchange"]')?.value || row.querySelector('input[name*="new_currency_exchange"]')?.value || '');
+                const currencyAmount = normalizeNumericValue(row.querySelector('input[name*="currency_amount"]')?.value || row.querySelector('input[name*="new_currency_amount"]')?.value || '');
                 const isDebit = row.querySelector('select[name*="is_debit"]')?.value || row.querySelector('select[name*="new_is_debit"]')?.value;
                 const cashflowId = row.querySelector('select[name*="cashflow_id"]')?.value || row.querySelector('select[name*="new_cashflow_id"]')?.value;
                 const contractId = row.querySelector('select[name*="contract_id"]')?.value || row.querySelector('select[name*="new_contract_id"]')?.value;
@@ -706,6 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Force recalculate all existing amounts on page load
     forceRecalculateAllAmounts();
+    formatAllNumericDisplays();
     
     // Fix incorrect debit/credit logic for existing rows (only if FillAccountingDetails hasn't run)
     if (!window.fillAccountingDetailsHasRun) {
@@ -883,10 +935,10 @@ function createPrePopulatedRow(rowData) {
     const isDebitValue = rowData.isDebit ? 'true' : 'false';
     
     row.innerHTML = `
-        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="display: none;">
             <span class="text-green-600 font-medium">NEW</span>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 160px;">
             <div class="relative">
                 <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" value="${rowData.accountId}" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
@@ -916,50 +968,50 @@ function createPrePopulatedRow(rowData) {
                 </div>
             </div>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 70px;">
             <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют</option>
                 {% for currency in currencies %}
-                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                <option value="{{ currency.CurrencyId }}" ${rowData.currencyId == '{{ currency.CurrencyId }}' ? 'selected' : ''}>{{ currency.Currency_name }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 110px;">
             <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyExchange).toFixed(4)}"
                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="1.0000">
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+            <input type="text" inputmode="decimal" name="new_currency_amount_${newRowCounter}" value="${parseFloat(rowData.currencyAmount).toFixed(2)}" required
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.00">
         </td>
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
+                <option value="">Сонгох</option>
                 <option value="true" ${rowData.isDebit ? 'selected' : ''}>Дебит</option>
                 <option value="false" ${!rowData.isDebit ? 'selected' : ''}>Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="${debitAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_debit_amount_${newRowCounter}" value="${debitAmount}"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="${creditAmount}"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_credit_amount_${newRowCounter}" value="${creditAmount}"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Cash Flow</option>
+                <option value="">Мөнгөн гүйлгээний утга</option>
                 {% for cash_flow in cash_flows %}
                 <option value="{{ cash_flow.CashFlowId }}">{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 120px;">
             <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Contract</option>
                 {% for contract in contracts %}
@@ -1002,10 +1054,10 @@ window.addNewRow = function() {
     const row = document.createElement('tr');
     row.className = 'hover:bg-gray-50 new-row';
     row.innerHTML = `
-        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+        <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="display: none;">
             <span class="text-green-600 font-medium">NEW</span>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 160px;">
             <div class="relative">
                 <input type="hidden" name="new_account_id_${newRowCounter}" class="account-id-input" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
@@ -1033,50 +1085,50 @@ window.addNewRow = function() {
                 </div>
             </div>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="min-width: 70px;">
             <select name="new_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют</option>
                 {% for currency in currencies %}
-                                        <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
+                                        <option value="{{ currency.CurrencyId }}">{{ currency.Currency_name }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 110px;">
             <input type="number" name="new_currency_exchange_${newRowCounter}" step="0.000001" min="0" value="{{ document.CurrencyExchange|floatformat:4|default:'1.0000' }}"
                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="1.0000">
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_currency_amount_${newRowCounter}" step="0.000001" min="0" required
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+            <input type="text" inputmode="decimal" name="new_currency_amount_${newRowCounter}" required
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.00">
         </td>
         <td class="px-2 py-1">
             <select name="new_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
+                <option value="">Сонгох</option>
                 <option value="true">Дебит</option>
                 <option value="false">Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_debit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_debit_amount_${newRowCounter}" value="0.00"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
-            <input type="number" name="new_credit_amount_${newRowCounter}" step="0.000001" min="0" value="0.00"
-                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-gray-100 cursor-not-allowed" 
+            <input type="text" inputmode="decimal" name="new_credit_amount_${newRowCounter}" value="0.00"
+                   class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs text-right bg-gray-100 cursor-not-allowed" 
                    placeholder="0.00" readonly>
         </td>
         <td class="px-2 py-1">
             <select name="new_cashflow_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Cash Flow</option>
+                <option value="">Мөнгөн гүйлгээний утга</option>
                 {% for cash_flow in cash_flows %}
                 <option value="{{ cash_flow.CashFlowId }}">{{ cash_flow.CashFlowId }} - {{ cash_flow.Description }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td class="px-2 py-1">
+        <td class="px-2 py-1" style="width: 120px;">
             <select name="new_contract_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select Contract</option>
                 {% for contract in contracts %}
@@ -1166,18 +1218,18 @@ function updateBalanceDisplay() {
         
         // Add existing row amounts (only if not new row)
         if (existingDebitInput && !newDebitInput) {
-            totalDebit += parseFloat(existingDebitInput.value) || 0;
+            totalDebit += parseNumericValue(existingDebitInput.value, 0);
         }
         if (existingCreditInput && !newCreditInput) {
-            totalCredit += parseFloat(existingCreditInput.value) || 0;
+            totalCredit += parseNumericValue(existingCreditInput.value, 0);
         }
         
         // Add new row amounts (only if new row)
         if (newDebitInput) {
-            totalDebit += parseFloat(newDebitInput.value) || 0;
+            totalDebit += parseNumericValue(newDebitInput.value, 0);
         }
         if (newCreditInput) {
-            totalCredit += parseFloat(newCreditInput.value) || 0;
+            totalCredit += parseNumericValue(newCreditInput.value, 0);
         }
     });
     
@@ -1187,10 +1239,10 @@ function updateBalanceDisplay() {
     const balanceStatusElement = document.getElementById('balance-status');
     
     if (totalDebitElement) {
-        totalDebitElement.textContent = totalDebit.toFixed(2);
+        totalDebitElement.textContent = formatNumericString(totalDebit.toFixed(2));
     }
     if (totalCreditElement) {
-        totalCreditElement.textContent = totalCredit.toFixed(2);
+        totalCreditElement.textContent = formatNumericString(totalCredit.toFixed(2));
     }
     
     // Update balance status
@@ -1203,7 +1255,7 @@ function updateBalanceDisplay() {
             balanceStatusElement.textContent = 'balanced ✓';
             balanceStatusElement.className = 'text-green-600 font-bold';
         } else {
-            balanceStatusElement.textContent = `not balanced (${difference.toFixed(2)})`;
+            balanceStatusElement.textContent = `not balanced (${formatNumericString(difference.toFixed(2))})`;
             balanceStatusElement.className = 'text-red-600 font-bold';
         }
     }
@@ -1219,9 +1271,9 @@ function updateDebitCreditAmounts(currencyAmountInput) {
     }
     
     const row = currencyAmountInput.closest('tr');
-    const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
+    const currencyAmount = parseNumericValue(currencyAmountInput.value, 0);
     const currencyExchangeInput = row.querySelector('input[name*="currency_exchange"]');
-    const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : 1.0;
+    const currencyExchange = currencyExchangeInput ? parseNumericValue(currencyExchangeInput.value, 1.0) : 1.0;
     const isDebitSelect = row.querySelector('select[name*="is_debit"]');
     const debitInput = row.querySelector('input[name*="debit_amount"]');
     const creditInput = row.querySelector('input[name*="credit_amount"]');
@@ -1239,8 +1291,8 @@ function updateDebitCreditAmounts(currencyAmountInput) {
     
     if (debitInput && creditInput && isDebitSelect) {
         // Clear both fields first
-        debitInput.value = '0.00';
-        creditInput.value = '0.00';
+        setFormattedNumericValue(debitInput, '0.00');
+        setFormattedNumericValue(creditInput, '0.00');
         
         // If there's a currency amount and IsDebit is selected, calculate amounts
         if (currencyAmount > 0 && isDebitSelect.value !== '') {
@@ -1248,11 +1300,11 @@ function updateDebitCreditAmounts(currencyAmountInput) {
             
             // Only update debit/credit amounts, not the currency amount
             if (isDebitSelect.value === 'true') {
-                debitInput.value = calculatedAmount;
-                creditInput.value = '0.00';
+                setFormattedNumericValue(debitInput, calculatedAmount);
+                setFormattedNumericValue(creditInput, '0.00');
             } else if (isDebitSelect.value === 'false') {
-                debitInput.value = '0.00';
-                creditInput.value = calculatedAmount;
+                setFormattedNumericValue(debitInput, '0.00');
+                setFormattedNumericValue(creditInput, calculatedAmount);
             }
         }
     }
@@ -1269,12 +1321,12 @@ function updateAmountsFromIsDebit(isDebitSelect) {
     const creditInput = row.querySelector('input[name*="credit_amount"]');
     
     if (currencyAmountInput && debitInput && creditInput) {
-        const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
-        const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) : 1.0;
+        const currencyAmount = parseNumericValue(currencyAmountInput.value, 0);
+        const currencyExchange = currencyExchangeInput ? parseNumericValue(currencyExchangeInput.value, 1.0) : 1.0;
         
         // Clear both fields first
-        debitInput.value = '0.00';
-        creditInput.value = '0.00';
+        setFormattedNumericValue(debitInput, '0.00');
+        setFormattedNumericValue(creditInput, '0.00');
         
         // Auto-populate based on IsDebit selection with exchange rate calculation
         if (currencyAmount > 0 && isDebitSelect.value !== '') {
@@ -1282,11 +1334,11 @@ function updateAmountsFromIsDebit(isDebitSelect) {
             
             // Only update debit/credit amounts, not the currency amount
             if (isDebitSelect.value === 'true') {
-                debitInput.value = calculatedAmount;
-                creditInput.value = '0.00';
+                setFormattedNumericValue(debitInput, calculatedAmount);
+                setFormattedNumericValue(creditInput, '0.00');
             } else if (isDebitSelect.value === 'false') {
-                debitInput.value = '0.00';
-                creditInput.value = calculatedAmount;
+                setFormattedNumericValue(debitInput, '0.00');
+                setFormattedNumericValue(creditInput, calculatedAmount);
             }
         }
     }
@@ -1312,17 +1364,19 @@ function ensureDebitCreditRule(row) {
     const creditInput = row.querySelector('input[name*="credit_amount"]');
     
     if (debitInput && creditInput) {
-        const debitValue = parseFloat(debitInput.value) || 0;
-        const creditValue = parseFloat(creditInput.value) || 0;
+        const debitValue = parseNumericValue(debitInput.value, 0);
+        const creditValue = parseNumericValue(creditInput.value, 0);
         
         // If both have values, keep the larger one and set the other to 0
         if (debitValue > 0 && creditValue > 0) {
             if (debitValue >= creditValue) {
-                creditInput.value = '0.00';
+                setFormattedNumericValue(creditInput, '0.00');
             } else {
-                debitInput.value = '0.00';
+                setFormattedNumericValue(debitInput, '0.00');
             }
         }
+        formatInputValue(debitInput);
+        formatInputValue(creditInput);
     }
 }
 // Add event listeners to a row (works for both existing and new rows)
@@ -1332,6 +1386,10 @@ function addEventListenersToRow(row) {
         currencyAmountInput.addEventListener('input', function() {
             updateDebitCreditAmounts(this);
         });
+        currencyAmountInput.addEventListener('blur', function() {
+            formatInputValue(this);
+        });
+        formatInputValue(currencyAmountInput);
     }
     
     // Add event listener to currency exchange input
@@ -1388,11 +1446,11 @@ function calculateTotalDebit() {
         
         // Add existing row amounts (only if not new row)
         if (existingDebitInput && !newDebitInput) {
-            total += parseFloat(existingDebitInput.value) || 0;
+            total += parseNumericValue(existingDebitInput.value, 0);
         }
         // Add new row amounts (only if new row)
         if (newDebitInput) {
-            total += parseFloat(newDebitInput.value) || 0;
+            total += parseNumericValue(newDebitInput.value, 0);
         }
     });
     
@@ -1420,11 +1478,11 @@ function calculateTotalCredit() {
         
         // Add existing row amounts (only if not new row)
         if (existingCreditInput && !newCreditInput) {
-            total += parseFloat(existingCreditInput.value) || 0;
+            total += parseNumericValue(existingCreditInput.value, 0);
         }
         // Add new row amounts (only if new row)
         if (newCreditInput) {
-            total += parseFloat(newCreditInput.value) || 0;
+            total += parseNumericValue(newCreditInput.value, 0);
         }
     });
     
@@ -1449,8 +1507,8 @@ function fixIncorrectDebitCreditLogic() {
         
         if (isDebitSelect && debitInput && creditInput && currencyAmountInput) {
             const currentIsDebit = isDebitSelect.value;
-            const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
-            const currencyExchange = currencyExchangeInput ? parseFloat(currencyExchangeInput.value) || 1.0 : 1.0;
+            const currencyAmount = parseNumericValue(currencyAmountInput.value, 0);
+            const currencyExchange = currencyExchangeInput ? parseNumericValue(currencyExchangeInput.value, 1.0) : 1.0;
             const calculatedAmount = (currencyAmount * currencyExchange).toFixed(2);
             
             
@@ -1473,15 +1531,15 @@ function fixIncorrectDebitCreditLogic() {
                     // Cash account should be CREDIT for expense documents
                     if (currentIsDebit === 'true') {
                         isDebitSelect.value = 'false';
-                        debitInput.value = '0.00';
-                        creditInput.value = calculatedAmount;
+                        setFormattedNumericValue(debitInput, '0.00');
+                        setFormattedNumericValue(creditInput, calculatedAmount);
                     }
                 } else if (isVatAccount) {
                     // VAT account should be DEBIT for expense documents
                     if (currentIsDebit === 'false') {
                         isDebitSelect.value = 'true';
-                        debitInput.value = calculatedAmount;
-                        creditInput.value = '0.00';
+                        setFormattedNumericValue(debitInput, calculatedAmount);
+                        setFormattedNumericValue(creditInput, '0.00');
                     }
                 }
             }
@@ -1503,19 +1561,19 @@ function forceRecalculateAllAmounts() {
         const creditInput = row.querySelector('input[name*="credit_amount"]');
         
         if (currencyAmountInput && currencyExchangeInput && isDebitSelect && debitInput && creditInput) {
-            const originalCurrencyAmount = parseFloat(currencyAmountInput.value) || 0;
-            const currencyExchange = parseFloat(currencyExchangeInput.value) || 1.0;
+            const originalCurrencyAmount = parseNumericValue(currencyAmountInput.value, 0);
+            const currencyExchange = parseNumericValue(currencyExchangeInput.value, 1.0);
             
             if (originalCurrencyAmount > 0 && isDebitSelect.value !== '') {
                 const calculatedAmount = (currencyExchange * originalCurrencyAmount).toFixed(2);
                 
                 // Only update debit/credit values, not the currency amount
                 if (isDebitSelect.value === 'true') {
-                    debitInput.value = calculatedAmount;
-                    creditInput.value = '0.00';
+                    setFormattedNumericValue(debitInput, calculatedAmount);
+                    setFormattedNumericValue(creditInput, '0.00');
                 } else if (isDebitSelect.value === 'false') {
-                    debitInput.value = '0.00';
-                    creditInput.value = calculatedAmount;
+                    setFormattedNumericValue(debitInput, '0.00');
+                    setFormattedNumericValue(creditInput, calculatedAmount);
                 }
             }
         }
