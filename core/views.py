@@ -173,7 +173,7 @@ def refaccount_list(request):
     # - Inventory documents (5,6,7) → account types 8,9,11
     # - ParentId == 1 → account type 1
     # - ParentId == 2 → account type 2
-    # - Otherwise → account types 1,2
+    # - Otherwise → account types 1,2,3,42,43,44,51,55,67,68
     if not account_type_filter and document_type_id:
         # Inventory documents: 5, 6, 7 → account types 8, 9, 11
         if str(document_type_id) in {'5', '6', '7'}:
@@ -187,7 +187,7 @@ def refaccount_list(request):
                 elif doc_type.ParentId == 2:
                     account_type_filter = '2'
                 else:
-                    account_type_filter = '1,2,3,42,43'
+                    account_type_filter = '1,2,3,42,43,44,51,55,67,68'
             except Ref_Document_Type.DoesNotExist:
                 pass
 
@@ -4805,7 +4805,7 @@ def api_accounts_json(request):
                     elif doc_type.ParentId == 2:
                         account_type_filter = '2'
                     else:
-                        account_type_filter = '1,2,3,42,43'
+                        account_type_filter = '1,2,3,42,43,44,51,55,67,68'
                 except Ref_Document_Type.DoesNotExist:
                     pass
         
