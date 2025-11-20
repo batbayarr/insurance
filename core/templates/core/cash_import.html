@@ -18,6 +18,9 @@
                 <p class="text-sm text-gray-600">Excel-оос мэдээллийг хуулахдаа 6 баганатай мэдээлэл шаардлагатай: Огноо, Гүйлгээний утга, Дебит дүн, Кредит дүн, Данс, Харилцагч</p>
             </div>
             <div class="flex space-x-2">
+                <button id="add-row-button" onclick="addNewRow()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    МӨР НЭМЭХ
+                </button>
                 <button id="import-button" onclick="importCashDocuments()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                     ИМПОРТЛОХ
                 </button>
@@ -35,20 +38,21 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-16">№</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-16">Устгах</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Огноо</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-100">Гүйлгээний утга</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Дебит дүн</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Кредит дүн</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-16">Данс</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-32">Харилцагч</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Сонгох</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-20">Загвар</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-60">Загварын нэр</th>
                     </tr>
                 </thead>
                 <tbody id="import-table-body" class="bg-white">
                     <tr id="empty-state">
-                        <td colspan="9" class="px-2 py-2 text-center text-gray-500 border border-gray-300">
-                            Excel-оос мэдээллийг хуулж, энд дараад (Ctrl+V) тавина уу
+                        <td colspan="10" class="px-2 py-2 text-center text-gray-500 border border-gray-300">
+                            Excel-ээс мэдээллийг хуулж (Ctrl+C), энд дараад (Ctrl+V) дарна  уу?
                         </td>
                     </tr>
                 </tbody>
@@ -122,12 +126,99 @@
 </div>
 
 <script>
+    // Message Modal Function
+    function showMessageModal(message, type = 'error', title = null) {
+        const modal = document.getElementById('message-modal');
+        if (!modal) {
+            console.warn('Message modal not found, falling back to alert');
+            alert(message);
+            return;
+        }
+        
+        const iconContainer = document.getElementById('message-modal-icon-container');
+        const titleElement = document.getElementById('message-modal-title');
+        const textElement = document.getElementById('message-modal-text');
+        const okButton = document.getElementById('message-modal-ok-btn');
+        
+        // Hide all icons
+        const icons = {
+            error: document.getElementById('message-modal-icon-error'),
+            success: document.getElementById('message-modal-icon-success'),
+            warning: document.getElementById('message-modal-icon-warning'),
+            info: document.getElementById('message-modal-icon-info')
+        };
+        
+        Object.values(icons).forEach(icon => {
+            if (icon) icon.classList.add('hidden');
+        });
+        
+        // Set styles based on type
+        const typeConfig = {
+            error: {
+                bgClass: 'bg-red-100',
+                btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+                defaultTitle: 'Алдаа'
+            },
+            success: {
+                bgClass: 'bg-green-100',
+                btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+                defaultTitle: 'Амжилттай'
+            },
+            warning: {
+                bgClass: 'bg-yellow-100',
+                btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+                defaultTitle: 'Анхааруулга'
+            },
+            info: {
+                bgClass: 'bg-blue-100',
+                btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+                defaultTitle: 'Мэдээлэл'
+            }
+        };
+        
+        const config = typeConfig[type] || typeConfig.error;
+        
+        // Update icon container background
+        if (iconContainer) {
+            iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+        }
+        
+        // Show appropriate icon
+        if (icons[type]) {
+            icons[type].classList.remove('hidden');
+        }
+        
+        // Update title
+        if (titleElement) {
+            titleElement.textContent = title || config.defaultTitle;
+        }
+        
+        // Update message (preserve line breaks)
+        if (textElement) {
+            textElement.innerHTML = message.replace(/\n/g, '<br>');
+        }
+        
+        // Update button style
+        if (okButton) {
+            okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 focus:outline-none focus:ring-2`;
+        }
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Focus on OK button for accessibility
+        if (okButton) {
+            setTimeout(() => okButton.focus(), 100);
+        }
+    }
+
     let importedData = [];
     let currentPage = 1;
     const rowsPerPage = 20;
     let currentRowIndex = null;
     let allTemplates = [];
     let filteredTemplates = [];
+    let invalidRowIndices = []; // Track which rows have validation errors
 
     // Initialize paste handler
     document.addEventListener('DOMContentLoaded', function() {
@@ -266,9 +357,10 @@
             importedData.push({
                 DocumentDate: dateString,
                 Description: descriptionWithImport,
-                DebitAmount: parseFloat(cells[3].replace(/,/g, '')) || 0, // Excel column 3 is Дебит дүн
-                CreditAmount: Math.abs(parseFloat(cells[2].replace(/,/g, '')) || 0), // Excel column 2 is Кредит дүн, ensure non-negative
+                DebitAmount: parseFloat(cells[3].replace(/,/g, '')) || 0, // Excel column 3 is Дебит дүн - use as-is
+                CreditAmount: parseFloat(cells[2].replace(/,/g, '')) || 0, // Excel column 2 is Кредит дүн - use as-is, no calculation
                 AccountCode: cells[4] || '',
+                AccountId: null, // Will be populated after lookup or modal selection
                 ClientCode: cells[5] || '', // Excel column 5 is Харилцагч (ClientName)
                 ClientId: null, // Will be populated after lookup
                 ClientMatched: false, // Flag to track if client was matched
@@ -327,7 +419,7 @@
         const tbody = document.getElementById('import-table-body');
         
         if (!importedData || importedData.length === 0) {
-            tbody.innerHTML = '<tr id="empty-state"><td colspan="9" class="px-2 py-2 text-center text-gray-500 border border-gray-300">Excel-оос мэдээллийг хуулж, энд дараад (Ctrl+V) тавина уу</td></tr>';
+            tbody.innerHTML = '<tr id="empty-state"><td colspan="10" class="px-2 py-2 text-center text-gray-500 border border-gray-300">Excel-оос мэдээллийг хуулж, энд дараад (Ctrl+V) тавина уу</td></tr>';
             document.getElementById('pagination-container').style.display = 'none';
             return;
         }
@@ -344,84 +436,220 @@
         pageData.forEach((rowData, index) => {
             const actualRowIndex = startIndex + index; // Use 0-based index for array
             const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50';
+            
+            // Mark row as invalid if it's in the invalidRowIndices array
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                row.className = 'hover:bg-red-100 bg-red-50 border-red-300';
+            } else {
+                row.className = 'hover:bg-gray-50';
+            }
 
             // Row number
             const rowNumCell = document.createElement('td');
-            rowNumCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                rowNumCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-red-300 bg-red-50';
+            } else {
+                rowNumCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            }
             rowNumCell.textContent = actualRowIndex + 1;
             row.appendChild(rowNumCell);
 
-            // DocumentDate - as plain text
-            const dateCell = document.createElement('td');
-            dateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
-            dateCell.textContent = rowData.DocumentDate || '';
-            row.appendChild(dateCell);
-
-            // Description
-            const descCell = document.createElement('td');
-            descCell.className = 'px-2 py-1 text-sm text-gray-900 border border-gray-300';
-            descCell.textContent = rowData.Description || '';
-            row.appendChild(descCell);
-
-            // DebitAmount - format to 2 decimal places with thousands separator
-            const debitCell = document.createElement('td');
-            debitCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300';
-            debitCell.textContent = parseFloat(rowData.DebitAmount || 0).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            row.appendChild(debitCell);
-
-            // CreditAmount - format to 2 decimal places with thousands separator
-            const creditCell = document.createElement('td');
-            creditCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 text-right border border-gray-300';
-            creditCell.textContent = parseFloat(rowData.CreditAmount || 0).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            row.appendChild(creditCell);
-
-            // AccountCode (Данс)
-            const accountCell = document.createElement('td');
-            accountCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
-            accountCell.textContent = rowData.AccountCode || '';
-            row.appendChild(accountCell);
-
-            // ClientCode (Харилцагч) - show red if not matched, add action button
-            const clientCell = document.createElement('td');
-            clientCell.className = 'px-2 py-1 whitespace-nowrap text-sm border border-gray-300';
-            
-            const clientContainer = document.createElement('div');
-            clientContainer.className = 'flex items-center space-x-2';
-            
-            // Client name/text
-            const clientTextSpan = document.createElement('span');
-            if (rowData.ClientCode && !rowData.ClientMatched) {
-                clientTextSpan.classList.add('text-red-600', 'font-semibold');
-                clientTextSpan.textContent = rowData.ClientCode || '';
+            // Delete action cell
+            const deleteCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                deleteCell.className = 'px-2 py-1 text-center border border-red-300 bg-red-50';
             } else {
-                clientTextSpan.classList.add('text-gray-900');
-                clientTextSpan.textContent = rowData.ClientCode || '';
+                deleteCell.className = 'px-2 py-1 text-center border border-gray-300';
             }
-            clientContainer.appendChild(clientTextSpan);
-            
-            // Action button (small icon)
-            const actionButton = document.createElement('button');
-            actionButton.className = 'text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors';
-            actionButton.title = 'Харилцагч сонгох';
-            actionButton.onclick = (e) => {
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors';
+            deleteButton.title = 'Мөр устгах';
+            deleteButton.onclick = (e) => {
                 e.stopPropagation();
-                openClientPopupForImport(actualRowIndex, clientCell);
+                removeImportedRow(actualRowIndex);
             };
-            
-            // Add user/selection icon
-            actionButton.innerHTML = `
+            deleteButton.innerHTML = `
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             `;
-            clientContainer.appendChild(actionButton);
+            deleteCell.appendChild(deleteButton);
+            row.appendChild(deleteCell);
+
+            // DocumentDate - editable input
+            const dateCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                dateCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
+            } else {
+                dateCell.className = 'px-2 py-1 border border-gray-300';
+            }
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.className = 'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
+            dateInput.value = rowData.DocumentDate || '';
+            dateInput.onchange = () => {
+                importedData[actualRowIndex].DocumentDate = dateInput.value;
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                    renderTable(); // Re-render to remove red mark
+                }
+            };
+            dateCell.appendChild(dateInput);
+            row.appendChild(dateCell);
+
+            // Description - editable input
+            const descCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                descCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
+            } else {
+                descCell.className = 'px-2 py-1 border border-gray-300';
+            }
+            const descInput = document.createElement('input');
+            descInput.type = 'text';
+            descInput.className = 'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
+            descInput.value = rowData.Description ? rowData.Description.replace(':имп', '') : '';
+            descInput.onchange = () => {
+                let desc = descInput.value.trim();
+                if (desc && !desc.endsWith(':имп')) {
+                    desc += ':имп';
+                }
+                importedData[actualRowIndex].Description = desc;
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                    renderTable(); // Re-render to remove red mark
+                }
+            };
+            descCell.appendChild(descInput);
+            row.appendChild(descCell);
+
+            // DebitAmount - editable input
+            const debitCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                debitCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
+            } else {
+                debitCell.className = 'px-2 py-1 border border-gray-300';
+            }
+            const debitInput = document.createElement('input');
+            debitInput.type = 'number';
+            debitInput.step = '0.01';
+            debitInput.min = '0';
+            debitInput.className = 'w-full px-2 py-1 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
+            debitInput.value = rowData.DebitAmount || 0;
+            debitInput.onchange = () => {
+                importedData[actualRowIndex].DebitAmount = parseFloat(debitInput.value) || 0;
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                }
+                renderTable(); // Re-render to update display
+            };
+            debitCell.appendChild(debitInput);
+            row.appendChild(debitCell);
+
+            // CreditAmount - editable input
+            const creditCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                creditCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
+            } else {
+                creditCell.className = 'px-2 py-1 border border-gray-300';
+            }
+            const creditInput = document.createElement('input');
+            creditInput.type = 'number';
+            creditInput.step = '0.01';
+            creditInput.min = '0';
+            creditInput.className = 'w-full px-2 py-1 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
+            creditInput.value = rowData.CreditAmount || 0;
+            creditInput.onchange = () => {
+                importedData[actualRowIndex].CreditAmount = parseFloat(creditInput.value) || 0;
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                }
+                renderTable(); // Re-render to update display
+            };
+            creditCell.appendChild(creditInput);
+            row.appendChild(creditCell);
+
+            // AccountCode (Данс) - readonly, clickable to open account selection modal
+            const accountCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                accountCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
+            } else {
+                accountCell.className = 'px-2 py-1 border border-gray-300';
+            }
+            const accountContainer = document.createElement('div');
+            accountContainer.className = 'relative';
+            const accountDisplayInput = document.createElement('input');
+            accountDisplayInput.type = 'text';
+            accountDisplayInput.readOnly = true;
+            accountDisplayInput.className = 'w-full px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500';
+            accountDisplayInput.value = rowData.AccountCode || '';
+            accountDisplayInput.placeholder = 'Click to select account';
+            accountDisplayInput.onclick = () => {
+                openAccountPopupForImport(actualRowIndex, accountDisplayInput);
+            };
+            accountContainer.appendChild(accountDisplayInput);
+            
+            // Add dropdown icon
+            const accountIcon = document.createElement('div');
+            accountIcon.className = 'absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none';
+            accountIcon.innerHTML = `
+                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            `;
+            accountContainer.appendChild(accountIcon);
+            
+            // Add hidden AccountId input
+            const hiddenAccountId = document.createElement('input');
+            hiddenAccountId.type = 'hidden';
+            hiddenAccountId.className = 'account-id-input';
+            hiddenAccountId.value = rowData.AccountId || '';
+            accountContainer.appendChild(hiddenAccountId);
+            
+            accountCell.appendChild(accountContainer);
+            row.appendChild(accountCell);
+
+            // ClientCode (Харилцагч) - readonly, clickable to open client selection modal
+            const clientCell = document.createElement('td');
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                clientCell.className = 'px-2 py-1 whitespace-nowrap text-sm border border-red-300 bg-red-50';
+            } else {
+                clientCell.className = 'px-2 py-1 whitespace-nowrap text-sm border border-gray-300';
+            }
+            
+            const clientContainer = document.createElement('div');
+            clientContainer.className = 'relative';
+            
+            // Client display input - readonly and clickable
+            const clientDisplayInput = document.createElement('input');
+            clientDisplayInput.type = 'text';
+            clientDisplayInput.readOnly = true;
+            let clientDisplayValue = rowData.ClientCode || '';
+            if (rowData.ClientCode && !rowData.ClientMatched) {
+                clientDisplayInput.classList.add('text-red-600', 'font-semibold');
+            } else {
+                clientDisplayInput.classList.add('text-gray-900');
+            }
+            clientDisplayInput.className = 'w-full px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ' + (rowData.ClientCode && !rowData.ClientMatched ? 'text-red-600 font-semibold' : 'text-gray-900');
+            clientDisplayInput.value = clientDisplayValue;
+            clientDisplayInput.placeholder = 'Click to select client';
+            clientDisplayInput.onclick = () => {
+                openClientPopupForImport(actualRowIndex, clientCell);
+            };
+            clientContainer.appendChild(clientDisplayInput);
+            
+            // Add dropdown icon
+            const clientIcon = document.createElement('div');
+            clientIcon.className = 'absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none';
+            clientIcon.innerHTML = `
+                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            `;
+            clientContainer.appendChild(clientIcon);
             
             // Add hidden ClientId input
             const hiddenClientId = document.createElement('input');
@@ -435,13 +663,17 @@
 
             // TemplateId (Загвар) - with Edit button
             const templateCell = document.createElement('td');
-            templateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                templateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-red-300 bg-red-50';
+            } else {
+                templateCell.className = 'px-2 py-1 whitespace-nowrap text-sm text-gray-900 border border-gray-300';
+            }
             
             const templateContainer = document.createElement('div');
             templateContainer.className = 'flex items-center space-x-2';
             
             const editButton = document.createElement('button');
-            editButton.textContent = 'Засах';
+            editButton.textContent = 'Сонгох';
             editButton.className = 'px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors';
             editButton.onclick = () => openTemplateModal(actualRowIndex, rowData.AccountCode, rowData.DebitAmount, rowData.CreditAmount);
             templateContainer.appendChild(editButton);
@@ -479,7 +711,11 @@
 
             // TemplateName (Загварын нэр)
             const templateNameCell = document.createElement('td');
-            templateNameCell.className = 'px-2 py-1 text-sm text-gray-900 border border-gray-300';
+            if (invalidRowIndices.includes(actualRowIndex)) {
+                templateNameCell.className = 'px-2 py-1 text-sm text-gray-900 border border-red-300 bg-red-50';
+            } else {
+                templateNameCell.className = 'px-2 py-1 text-sm text-gray-900 border border-gray-300';
+            }
             templateNameCell.textContent = rowData.TemplateName || '';
             row.appendChild(templateNameCell);
 
@@ -532,7 +768,53 @@
     // Clear table function
     function clearTable() {
         importedData = [];
+        invalidRowIndices = []; // Clear invalid row indices
         currentPage = 1;
+        renderTable();
+        updateImportButtonState();
+    }
+
+    // Add new empty row
+    function addNewRow() {
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        importedData.push({
+            DocumentDate: todayString,
+            Description: ':имп',
+            DebitAmount: 0,
+            CreditAmount: 0,
+            AccountCode: '',
+            AccountId: null,
+            ClientCode: '',
+            ClientId: null,
+            ClientMatched: false,
+            DocumentTypeId: null,
+            TemplateId: null,
+            TemplateName: '',
+            IsVat: false
+        });
+        
+        // Go to last page to show the new row
+        const totalPages = Math.ceil(importedData.length / rowsPerPage);
+        currentPage = totalPages;
+        
+        renderTable();
+        updateImportButtonState();
+    }
+
+    // Remove a single imported row
+    function removeImportedRow(rowIndex) {
+        if (rowIndex === null || rowIndex < 0 || rowIndex >= importedData.length) {
+            return;
+        }
+        importedData.splice(rowIndex, 1);
+        
+        const totalPages = Math.max(1, Math.ceil(Math.max(importedData.length, 1) / rowsPerPage));
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        
         renderTable();
         updateImportButtonState();
     }
@@ -684,6 +966,11 @@
         }
         importedData[currentRowIndex].IsVat = isVat || false; // Populate IsVat from template
         
+        // Remove from invalid rows if it was marked
+        if (invalidRowIndices.includes(currentRowIndex)) {
+            invalidRowIndices = invalidRowIndices.filter(idx => idx !== currentRowIndex);
+        }
+        
         // Re-render table to show updated values
         renderTable();
         updateImportButtonState();
@@ -694,18 +981,24 @@
 
     // Store current row index being edited for client selection
     let currentClientRowIndex = null;
+    
+    // Store current row index being edited for account selection
+    let currentAccountRowIndex = null;
 
-    // Open client popup for import (when clicking red client name)
+    // Open client popup for import (when clicking client field)
     function openClientPopupForImport(rowIndex, cellElement) {
         currentClientRowIndex = rowIndex;
         
+        // Find the input element within the cell
+        const inputElement = cellElement.querySelector('input[type="text"]') || cellElement;
+        
         // Store reference to cell element for later use
-        window.currentClientInput = cellElement;
+        window.currentClientInput = inputElement;
         window.currentClientRowId = `import-row-${rowIndex}`;
         
         // Use existing openClientPopup function from modal
         if (typeof window.openClientPopup === 'function') {
-            window.openClientPopup(cellElement, `import-row-${rowIndex}`, {});
+            window.openClientPopup(inputElement, `import-row-${rowIndex}`, {});
         } else {
             // Fallback: open modal directly
             const modal = document.getElementById('client-selection-modal');
@@ -713,6 +1006,32 @@
                 modal.classList.remove('hidden');
                 if (typeof window.loadClientList === 'function') {
                     window.loadClientList({});
+                }
+            }
+        }
+    }
+    
+    // Open account popup for import (when clicking account field)
+    function openAccountPopupForImport(rowIndex, inputElement) {
+        currentAccountRowIndex = rowIndex;
+        
+        // Store reference to input element for later use
+        window.currentAccountInput = inputElement;
+        window.currentAccountRowId = `import-row-${rowIndex}`;
+        
+        // Use existing openAccountPopup function from modal
+        if (typeof window.openAccountPopup === 'function') {
+            window.openAccountPopup(inputElement, `import-row-${rowIndex}`, {
+                modalTitle: 'Select Account',
+                modalSubtitle: 'Choose an account for cash transactions'
+            });
+        } else {
+            // Fallback: open modal directly
+            const modal = document.getElementById('account-selection-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (typeof window.loadAccountList === 'function') {
+                    window.loadAccountList({});
                 }
             }
         }
@@ -733,7 +1052,14 @@
                     // Update importedData
                     importedData[currentClientRowIndex].ClientId = clientId;
                     importedData[currentClientRowIndex].ClientCode = `${clientCode} - ${clientName}`; // Update to show code and name
+                    importedData[currentClientRowIndex].ClientCodeOriginal = clientCode; // Store original code for validation
+                    importedData[currentClientRowIndex].ClientName = clientName; // Store client name
                     importedData[currentClientRowIndex].ClientMatched = true;
+                    
+                    // Remove from invalid rows if it was marked
+                    if (invalidRowIndices.includes(currentClientRowIndex)) {
+                        invalidRowIndices = invalidRowIndices.filter(idx => idx !== currentClientRowIndex);
+                    }
                     
                     // Clear the stored reference
                     currentClientRowIndex = null;
@@ -760,9 +1086,56 @@
         }
     }
     
+    // Override selectAccount to handle our import case
+    // This will run after the modal component is loaded
+    let accountSelectionOverrideSetup = false;
+    function setupAccountSelectionOverride() {
+        if (accountSelectionOverrideSetup) return; // Already setup
+        
+        if (typeof window.selectAccount === 'function') {
+            accountSelectionOverrideSetup = true;
+            const originalSelectAccount = window.selectAccount;
+            window.selectAccount = function(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue) {
+                // Check if we're in import mode (currentAccountRowIndex is set)
+                if (currentAccountRowIndex !== null && currentAccountRowIndex >= 0 && currentAccountRowIndex < importedData.length) {
+                    // Update importedData
+                    importedData[currentAccountRowIndex].AccountId = accountId;
+                    importedData[currentAccountRowIndex].AccountCode = accountCode;
+                    
+                    // Remove from invalid rows if it was marked
+                    if (invalidRowIndices.includes(currentAccountRowIndex)) {
+                        invalidRowIndices = invalidRowIndices.filter(idx => idx !== currentAccountRowIndex);
+                    }
+                    
+                    // Clear the stored reference
+                    currentAccountRowIndex = null;
+                    window.currentAccountInput = null;
+                    window.currentAccountRowId = null;
+                    
+                    // Re-render table to show updated values
+                    renderTable();
+                    
+                    // Close modal
+                    if (typeof window.closeAccountPopup === 'function') {
+                        window.closeAccountPopup();
+                    }
+                    
+                    return; // Don't call original function
+                }
+                
+                // Call original function for other cases
+                return originalSelectAccount(accountId, accountCode, accountName, currencyId, currencyName, currencyDefaultValue);
+            };
+        } else {
+            // If selectAccount not yet defined, try again after a short delay
+            setTimeout(setupAccountSelectionOverride, 100);
+        }
+    }
+    
     // Setup override when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
         setupClientSelectionOverride();
+        setupAccountSelectionOverride();
         updateImportButtonState();
     });
 
@@ -774,85 +1147,283 @@
         }
     }
 
-    // Import cash documents
-    async function importCashDocuments() {
-        if (importedData.length === 0) {
-            alert('Импортлох мэдээлэл байхгүй байна');
-            return;
+    // Validate period lock for a date
+    async function checkPeriodLock(dateValue) {
+        if (!dateValue) {
+            return { isLocked: false, message: '' };
         }
-
-        // Validate all rows have required fields
+        
+        try {
+            const response = await fetch(`/core/api/check-period-lock/?date=${dateValue}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (!response.ok) {
+                return { isLocked: false, message: '' };
+            }
+            
+            const data = await response.json();
+            return { isLocked: data.is_locked || false, message: data.message || '' };
+        } catch (error) {
+            console.error('Period lock check error:', error);
+            return { isLocked: false, message: '' };
+        }
+    }
+    
+    // Validate all records before import
+    async function validateAllRecords() {
         const validationErrors = [];
-        for (let i = 0; i < importedData.length; i++) {
-            const row = importedData[i];
-            if (!row.ClientId) {
-                validationErrors.push(`Мөр ${i + 1}: Харилцагч сонгоогүй байна`);
-            }
-            if (!row.DocumentTypeId) {
-                validationErrors.push(`Мөр ${i + 1}: Загвар сонгоогүй байна`);
-            }
-            if (!row.AccountCode || row.AccountCode.trim() === '') {
-                validationErrors.push(`Мөр ${i + 1}: Данс заавал шаардлагатай`);
-            }
-            if (!row.DocumentDate) {
-                validationErrors.push(`Мөр ${i + 1}: Огноо заавал шаардлагатай`);
-            }
-            if (!row.Description || row.Description.trim() === '') {
-                validationErrors.push(`Мөр ${i + 1}: Гүйлгээний утга заавал шаардлагатай`);
-            }
-        }
-
-        if (validationErrors.length > 0) {
-            alert('Дараах алдаанууд байна:\n\n' + validationErrors.join('\n'));
-            return;
-        }
-
-        // Lookup AccountId for all rows
-        const rowsToImport = [];
-        const accountLookupErrors = [];
+        const validRecords = [];
+        const invalidRowIndices = []; // Track which row indices have errors
         
         for (let i = 0; i < importedData.length; i++) {
             const row = importedData[i];
-            const accountCode = row.AccountCode.trim();
+            const rowNum = i + 1;
+            let rowValid = true;
             
-            try {
-                const response = await fetch(`/core/api/account-lookup-by-code/?account_code=${encodeURIComponent(accountCode)}`);
-                const data = await response.json();
-                
-                if (data.success && data.account) {
-                    rowsToImport.push({
-                        DocumentTypeId: row.DocumentTypeId,
-                        DocumentDate: row.DocumentDate,
-                        Description: row.Description.trim(),
-                        ClientId: row.ClientId,
-                        AccountCode: accountCode,
-                        TemplateId: row.TemplateId || null,
-                        IsVat: row.IsVat || false,
-                        DebitAmount: parseFloat(row.DebitAmount) || 0,
-                        CreditAmount: parseFloat(row.CreditAmount) || 0
-                    });
-                } else {
-                    accountLookupErrors.push(`Мөр ${i + 1}: Данс "${accountCode}" олдсонгүй`);
+            // Validate required fields
+            if (!row.DocumentDate) {
+                validationErrors.push(`Мөр ${rowNum}: Огноо заавал шаардлагатай`);
+                rowValid = false;
+            }
+            
+            if (!row.Description || row.Description.trim() === '' || row.Description.trim() === ':имп') {
+                validationErrors.push(`Мөр ${rowNum}: Гүйлгээний утга заавал шаардлагатай`);
+                rowValid = false;
+            }
+            
+            if (!row.AccountCode || row.AccountCode.trim() === '') {
+                validationErrors.push(`Мөр ${rowNum}: Данс заавал шаардлагатай`);
+                rowValid = false;
+            }
+            
+            if (!row.ClientId) {
+                validationErrors.push(`Мөр ${rowNum}: Харилцагч сонгоогүй байна`);
+                rowValid = false;
+            }
+            
+            if (!row.DocumentTypeId) {
+                validationErrors.push(`Мөр ${rowNum}: Загвар сонгоогүй байна`);
+                rowValid = false;
+            }
+            
+            // Validate amounts - use as-is from Excel, no calculation
+            const debitAmount = parseFloat(row.DebitAmount) || 0;
+            const creditAmount = parseFloat(row.CreditAmount) || 0;
+            
+            // Check if at least one amount is non-zero
+            if (debitAmount === 0 && creditAmount === 0) {
+                validationErrors.push(`Мөр ${rowNum}: Дебит эсвэл Кредит дүн заавал шаардлагатай`);
+                rowValid = false;
+            }
+            
+            // Either debit OR credit must have value, but not both
+            if (debitAmount !== 0 && creditAmount !== 0) {
+                validationErrors.push(`Мөр ${rowNum}: Дебит болон Кредит дүн нэгэн зэрэг байж болохгүй`);
+                rowValid = false;
+            }
+            
+            // Check period lock
+            if (row.DocumentDate && rowValid) {
+                const periodCheck = await checkPeriodLock(row.DocumentDate);
+                if (periodCheck.isLocked) {
+                    validationErrors.push(`Мөр ${rowNum}: ${periodCheck.message || 'Тухайн сар цоожлогдсон байна'}`);
+                    rowValid = false;
                 }
-            } catch (error) {
-                accountLookupErrors.push(`Мөр ${i + 1}: Данс "${accountCode}" шалгахад алдаа гарлаа: ${error.message}`);
+            }
+            
+            // Validate AccountId exists (if set) or lookup AccountCode
+            if (row.AccountCode && row.AccountCode.trim() && rowValid) {
+                try {
+                    let accountId = row.AccountId;
+                    if (!accountId) {
+                        // Lookup by AccountCode
+                        const response = await fetch(`/core/api/account-lookup-by-code/?account_code=${encodeURIComponent(row.AccountCode.trim())}`);
+                        const data = await response.json();
+                        if (data.success && data.account) {
+                            accountId = data.account.AccountId;
+                            row.AccountId = accountId;
+                        } else {
+                            validationErrors.push(`Мөр ${rowNum}: Данс "${row.AccountCode}" олдсонгүй`);
+                            rowValid = false;
+                        }
+                    } else {
+                        // Validate AccountId exists
+                        const response = await fetch(`/core/api/account-lookup-by-code/?account_code=${encodeURIComponent(row.AccountCode.trim())}`);
+                        const data = await response.json();
+                        if (!data.success || !data.account || data.account.AccountId != accountId) {
+                            validationErrors.push(`Мөр ${rowNum}: Данс "${row.AccountCode}" ID тохирохгүй байна`);
+                            rowValid = false;
+                        }
+                    }
+                } catch (error) {
+                    validationErrors.push(`Мөр ${rowNum}: Данс шалгахад алдаа гарлаа: ${error.message}`);
+                    rowValid = false;
+                }
+            }
+            
+            // Validate ClientId exists
+            if (row.ClientId && rowValid) {
+                try {
+                    // Use stored client name if available, otherwise extract from combined string
+                    let clientNameForLookup = row.ClientName;
+                    
+                    // If ClientName is not stored, try to extract from ClientCode (format: "CODE - NAME")
+                    if (!clientNameForLookup && row.ClientCode && row.ClientCode.includes(' - ')) {
+                        const parts = row.ClientCode.split(' - ');
+                        if (parts.length > 1) {
+                            clientNameForLookup = parts.slice(1).join(' - ').trim();
+                        }
+                    }
+                    
+                    // If still no name, use ClientCode as fallback (for cases where it's just the name)
+                    if (!clientNameForLookup) {
+                        clientNameForLookup = row.ClientCode || '';
+                    }
+                    
+                    if (!clientNameForLookup) {
+                        validationErrors.push(`Мөр ${rowNum}: Харилцагч мэдээлэл дутуу байна`);
+                        rowValid = false;
+                    } else {
+                        const response = await fetch(`/core/api/client-lookup-by-name/?client_name=${encodeURIComponent(clientNameForLookup)}`);
+                        const data = await response.json();
+                        if (!data.success || !data.found || data.client.ClientId != row.ClientId) {
+                            validationErrors.push(`Мөр ${rowNum}: Харилцагч ID тохирохгүй байна`);
+                            rowValid = false;
+                        }
+                    }
+                } catch (error) {
+                    validationErrors.push(`Мөр ${rowNum}: Харилцагч шалгахад алдаа гарлаа: ${error.message}`);
+                    rowValid = false;
+                }
+            }
+            
+            // Validate TemplateId exists (if provided)
+            if (row.TemplateId && rowValid) {
+                try {
+                    const response = await fetch(`/core/api/templates/${row.TemplateId}/details/`);
+                    const data = await response.json();
+                    if (!data.success || !data.template) {
+                        validationErrors.push(`Мөр ${rowNum}: Загвар ID ${row.TemplateId} олдсонгүй`);
+                        rowValid = false;
+                    }
+                } catch (error) {
+                    validationErrors.push(`Мөр ${rowNum}: Загвар шалгахад алдаа гарлаа: ${error.message}`);
+                    rowValid = false;
+                }
+            }
+            
+            // Validate DocumentTypeId exists
+            if (row.DocumentTypeId && rowValid) {
+                // DocumentTypeId validation will be done server-side, but we can check if it's a valid cash document type
+                const validCashDocTypes = [1, 2, 3, 4, 15, 16, 17, 18];
+                if (!validCashDocTypes.includes(parseInt(row.DocumentTypeId))) {
+                    validationErrors.push(`Мөр ${rowNum}: Баримтын төрөл буруу байна`);
+                    rowValid = false;
+                }
+            }
+            
+            if (rowValid) {
+                validRecords.push({
+                    rowIndex: i,
+                    rowData: row
+                });
+            } else {
+                invalidRowIndices.push(i);
             }
         }
+        
+        return {
+            valid: validationErrors.length === 0,
+            errors: validationErrors,
+            validRecords: validRecords,
+            invalidRowIndices: invalidRowIndices
+        };
+    }
+    
+        // Mark invalid rows with red background in the table
+        function markInvalidRows(validationResult) {
+            // Store invalid row indices globally
+            invalidRowIndices = validationResult.invalidRowIndices || [];
+            
+            // Re-render table to show red marks on invalid rows
+            renderTable();
+        }
 
-        if (accountLookupErrors.length > 0) {
-            alert('Дараах дансууд олдсонгүй:\n\n' + accountLookupErrors.join('\n'));
+    // Import cash documents
+    async function importCashDocuments() {
+        if (importedData.length === 0) {
+            if (typeof showMessageModal === 'function') {
+                showMessageModal('Импортлох мэдээлэл байхгүй байна', 'error', 'Алдаа');
+            } else {
+                alert('Импортлох мэдээлэл байхгүй байна');
+            }
             return;
         }
 
-        if (rowsToImport.length === 0) {
-            alert('Импортлох мэдээлэл байхгүй байна');
-            return;
-        }
-
-        // Disable button during import
+        // Disable button during validation
         const importButton = document.getElementById('import-button');
         if (importButton) {
             importButton.disabled = true;
+            importButton.textContent = 'Шалгаж байна...';
+        }
+
+        // Validate all records
+        const validationResult = await validateAllRecords();
+        
+        // Mark invalid rows in the table with red background
+        markInvalidRows(validationResult);
+        
+        // If there are ANY errors, reject import completely
+        if (validationResult.errors.length > 0) {
+            // Show error modal - all records must be correct
+            const errorMessage = 'Бүх гүйлгээ алдаагүй байх ёстой тул, улаан өнгөтэй гүйлгээнүүдийг засна уу?';
+            showMessageModal(errorMessage, 'error', 'Алдаа');
+            
+            // Stop import - user must fix all errors first
+            if (importButton) {
+                importButton.disabled = false;
+                importButton.textContent = 'ИМПОРТЛОХ';
+                updateImportButtonState();
+            }
+            return;
+        }
+        
+        // If no valid records, show error and stop
+        if (validationResult.validRecords.length === 0) {
+            const errorMessage = 'Бүх гүйлгээ алдаагүй байх ёстой тул, улаан өнгөтэй гүйлгээнүүдийг засна уу?';
+            showMessageModal(errorMessage, 'error', 'Алдаа');
+            
+            if (importButton) {
+                importButton.disabled = false;
+                importButton.textContent = 'ИМПОРТЛОХ';
+                updateImportButtonState();
+            }
+            return;
+        }
+
+        // Prepare validated rows for import
+        const rowsToImport = validationResult.validRecords.map(item => {
+            const row = item.rowData;
+            return {
+                DocumentTypeId: row.DocumentTypeId,
+                DocumentDate: row.DocumentDate,
+                Description: row.Description.trim(),
+                ClientId: row.ClientId,
+                AccountId: row.AccountId,
+                AccountCode: row.AccountCode.trim(),
+                TemplateId: row.TemplateId || null,
+                IsVat: row.IsVat || false,
+                DebitAmount: parseFloat(row.DebitAmount) || 0,
+                CreditAmount: parseFloat(row.CreditAmount) || 0
+            };
+        });
+        
+        // Update button text
+        if (importButton) {
             importButton.textContent = 'ИМПОРТЛОЖ БАЙНА...';
         }
 
@@ -869,7 +1440,8 @@
             const result = await response.json();
 
             if (result.success) {
-                alert(`Амжилттай! ${result.count} бичиг импортлогдлоо.\n\nБичигүүдийн дугаар:\n${result.document_numbers.join('\n')}`);
+                const successMessage = `Амжилттай! ${result.count} бичиг импортлогдлоо.\n\nБичигүүдийн дугаар:\n${result.document_numbers.join('\n')}`;
+                showMessageModal(successMessage, 'success', 'Амжилттай');
                 // Optionally clear table after successful import
                 // clearTable();
             } else {
@@ -877,10 +1449,10 @@
                 if (result.errors && result.errors.length > 0) {
                     errorMessage += '\n\n' + result.errors.join('\n');
                 }
-                alert(errorMessage);
+                showMessageModal(errorMessage, 'error', 'Алдаа');
             }
         } catch (error) {
-            alert(`Импорт хийхэд алдаа гарлаа: ${error.message}`);
+            showMessageModal(`Импорт хийхэд алдаа гарлаа: ${error.message}`, 'error', 'Алдаа');
         } finally {
             // Re-enable button
             if (importButton) {
@@ -910,5 +1482,11 @@
 
 <!-- Include Client Selection Modal Component -->
 {% include 'core/components/client_selection_modal.html' %}
+
+<!-- Include Account Selection Modal Component -->
+{% include 'core/components/account_selection_modal.html' %}
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
 
 {% endblock %}
