@@ -4738,8 +4738,10 @@ def api_get_inventory_list(request):
                 'inventoryname': inv.InventoryName or '',
                 'type': inv.InventoryTypeId.InventoryTypeName if inv.InventoryTypeId else '',
                 'inventorytypename': inv.InventoryTypeId.InventoryTypeName if inv.InventoryTypeId else '',
+                'inventorytypeid': inv.InventoryTypeId.InventoryTypeId if inv.InventoryTypeId else None,
                 'unit': inv.MeasurementId.MeasurementName if inv.MeasurementId else '',
                 'measurementname': inv.MeasurementId.MeasurementName if inv.MeasurementId else '',
+                'measurementid': inv.MeasurementId.MeasurementId if inv.MeasurementId else None,
                 'unitCost': str(inv.UnitCost) if inv.UnitCost is not None else '',
                 'unitcost': float(inv.UnitCost) if inv.UnitCost is not None else None,
                 'unitPrice': str(inv.UnitPrice) if inv.UnitPrice is not None else '',
@@ -5947,26 +5949,59 @@ def assets_json(request):
 
 @login_required
 def clients_json(request):
-    """API endpoint to return clients as JSON for modal dropdowns"""
+    """API endpoint to return clients as JSON for modal dropdowns with pagination support"""
     try:
         # Use select_related to optimize query and get ClientType data
-        clients = RefClient.objects.filter(IsDelete=False).select_related('ClientType').order_by('ClientName')
-        clients_data = []
+        clients_queryset = RefClient.objects.filter(IsDelete=False).select_related('ClientType').order_by('ClientName')
         
-        for client in clients:
+        # Support pagination parameters
+        page = request.GET.get('page', '1')
+        page_size = request.GET.get('page_size', '100')  # Default to 100 for modal, can be increased
+        
+        try:
+            page = int(page)
+            page_size = int(page_size)
+            # Limit max page size to prevent memory issues
+            if page_size > 500:
+                page_size = 500
+        except (ValueError, TypeError):
+            page = 1
+            page_size = 100
+        
+        # Use values() to optimize query - only fetch needed fields
+        paginator = Paginator(clients_queryset.values(
+            'ClientId', 'ClientName', 'ClientCode', 'ClientRegister', 
+            'ClientType__ClientTypeId', 'ClientType__ClientTypeName'
+        ), page_size)
+        
+        try:
+            clients_page = paginator.page(page)
+        except PageNotAnInteger:
+            clients_page = paginator.page(1)
+        except EmptyPage:
+            clients_page = paginator.page(paginator.num_pages)
+        
+        # Build response data
+        clients_data = []
+        for client in clients_page:
             clients_data.append({
-                'ClientId': client.ClientId,
-                'ClientName': client.ClientName,
-                'ClientCode': client.ClientCode,
-                'ClientRegister': client.ClientRegister or '',
-                'ClientTypeId': client.ClientType.ClientTypeId if client.ClientType else None,
-                'ClientTypeName': client.ClientType.ClientTypeName if client.ClientType else ''
+                'ClientId': client['ClientId'],
+                'ClientName': client['ClientName'],
+                'ClientCode': client['ClientCode'],
+                'ClientRegister': client['ClientRegister'] or '',
+                'ClientTypeId': client['ClientType__ClientTypeId'],
+                'ClientTypeName': client['ClientType__ClientTypeName'] or ''
             })
         
         return JsonResponse({
             'success': True,
             'clients': clients_data,
-            'count': len(clients_data)
+            'count': len(clients_data),
+            'total_count': paginator.count,
+            'page': clients_page.number,
+            'num_pages': paginator.num_pages,
+            'has_next': clients_page.has_next(),
+            'has_previous': clients_page.has_previous()
         })
         
     except Exception as e:
@@ -5992,6 +6027,58 @@ def refclient_types_json(request):
         return JsonResponse({
             'success': True,
             'client_types': types_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def refinventory_types_json(request):
+    """API endpoint to return inventory types as JSON for modal dropdowns"""
+    try:
+        from .models import Ref_Inventory_Type
+        inventory_types = Ref_Inventory_Type.objects.all().order_by('InventoryTypeName')
+        types_data = []
+        
+        for inv_type in inventory_types:
+            types_data.append({
+                'InventoryTypeId': inv_type.InventoryTypeId,
+                'InventoryTypeName': inv_type.InventoryTypeName
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'inventory_types': types_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def refmeasurements_json(request):
+    """API endpoint to return measurement units as JSON for modal dropdowns"""
+    try:
+        from .models import Ref_Measurement
+        measurements = Ref_Measurement.objects.all().order_by('MeasurementName')
+        measurements_data = []
+        
+        for measurement in measurements:
+            measurements_data.append({
+                'MeasurementId': measurement.MeasurementId,
+                'MeasurementName': measurement.MeasurementName
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'measurements': measurements_data
         })
         
     except Exception as e:

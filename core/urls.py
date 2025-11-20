@@ -137,6 +137,8 @@ urlpatterns = [
     path('api/check-client-name-register-uniqueness/', views.check_client_name_register_uniqueness, name='check_client_name_register_uniqueness'),
     path('api/cash-import-bulk/', views.api_cash_import_bulk, name='api_cash_import_bulk'),
     path('api/refclienttypes/', views.refclient_types_json, name='refclient_types_json'),
+    path('api/refinventorytypes/', views.refinventory_types_json, name='refinventory_types_json'),
+    path('api/refmeasurements/', views.refmeasurements_json, name='refmeasurements_json'),
     
 
     # Beginning Balance (Generic)
