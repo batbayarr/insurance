@@ -12,6 +12,13 @@
  * @param {Function} config.addDetailRowFunction - Function to add detail rows (must be defined in each template)
  * @param {Function} config.updateBalanceDisplayFunction - Function to update balance display (must be defined in each template)
  */
+
+// Global state shared between template scripts and this helper so we know
+// when auto-fill is running vs when the user is manually editing rows.
+window.cashAutoFillState = window.cashAutoFillState || {
+    isRunning: false,
+    manualEditing: false
+};
 function FillAccountingDetailsCashGeneric(config) {
     const {
         documentDataId = 'document-data',
@@ -322,31 +329,50 @@ function setupFillAccountingDetailsCashListeners(config) {
         debugPrefix = 'FillAccountingDetailsCash'
     } = config;
 
-    // Attach event listeners to trigger FillAccountingDetailsCash
     const firstTable = document.getElementById(firstTableId);
-    if (firstTable) {
-        firstTable.addEventListener('input', function(e) {
-            if (e.target.matches('input[name*="currency_amount"], input[name*="currency_exchange"]')) {
-                // Call the local FillAccountingDetails function instead of generic
-                if (typeof window.FillAccountingDetails === 'function') {
-                    window.FillAccountingDetails();
-                } else {
-                    console.error('Local FillAccountingDetails function not found');
-                }
-            }
-        });
-
-        firstTable.addEventListener('change', function(e) {
-            if (e.target.matches('select[name*="currency_id"]')) {
-                // Call the local FillAccountingDetails function instead of generic
-                if (typeof window.FillAccountingDetails === 'function') {
-                    window.FillAccountingDetails();
-                } else {
-                    console.error('Local FillAccountingDetails function not found');
-                }
-            }
-        });
+    if (!firstTable) {
+        console.warn(`${debugPrefix}: first table '${firstTableId}' not found for listener setup`);
+        return;
     }
+
+    const guardAutoFill = (callback) => {
+        return function guardedHandler(event) {
+            const state = window.cashAutoFillState || {};
+            if (state.isRunning || state.manualEditing) {
+                return;
+            }
+            callback(event);
+        };
+    };
+
+    const triggerFill = () => {
+        if (typeof window.FillAccountingDetails === 'function') {
+            window.FillAccountingDetails();
+        } else {
+            console.error('Local FillAccountingDetails function not found');
+        }
+    };
+
+    const inputHandler = guardAutoFill((e) => {
+        if (e.target.matches('input[name*="currency_amount"], input[name*="currency_exchange"]')) {
+            triggerFill();
+        }
+    });
+
+    const changeHandler = guardAutoFill((e) => {
+        if (e.target.matches('select[name*="currency_id"]')) {
+            triggerFill();
+        }
+    });
+
+    firstTable.addEventListener('input', inputHandler);
+    firstTable.addEventListener('change', changeHandler);
+
+    // expose a reset utility so templates can re-enable auto-fill if needed
+    window.resetCashAutoFillState = function resetCashAutoFillState() {
+        window.cashAutoFillState = window.cashAutoFillState || {};
+        window.cashAutoFillState.manualEditing = false;
+    };
 }
 
 // Make the function available globally
