@@ -3364,6 +3364,15 @@ def ref_asset_card_list(request):
 @permission_required('core.add_ref_asset_card', raise_exception=True)
 def ref_asset_card_create(request):
     """Create a new asset card"""
+    selected_asset_id = request.GET.get('selected_asset', '')
+    selected_asset = None
+    
+    if selected_asset_id:
+        try:
+            selected_asset = RefAsset.objects.get(AssetId=selected_asset_id, IsDelete=False)
+        except RefAsset.DoesNotExist:
+            selected_asset = None
+    
     if request.method == 'POST':
         form = Ref_Asset_CardForm(request.POST)
         if form.is_valid():
@@ -3399,10 +3408,15 @@ def ref_asset_card_create(request):
                 }, status=400)
     else:
         form = Ref_Asset_CardForm()
+        # Pre-populate AssetId if selected_asset is provided
+        if selected_asset:
+            form.fields['AssetId'].initial = selected_asset.AssetId
     
     return render(request, 'core/refassetcard_form.html', {
         'form': form,
-        'title': 'Үндсэн хөрөнгийн карт нэмэх'
+        'title': 'Үндсэн хөрөнгийн карт нэмэх',
+        'selected_asset': selected_asset,
+        'selected_asset_id': selected_asset_id
     })
 
 
@@ -4041,9 +4055,10 @@ def astbeginningbalance_create(request):
             quantity = request.POST.get('Quantity')
             unit_cost = request.POST.get('UnitCost')
             unit_price = request.POST.get('UnitPrice')
+            cumulated_depreciation = request.POST.get('CumulatedDepreciation')
             client_id = request.POST.get('ClientId')
             
-            print(f"DEBUG: Form data received - AccountId: {account_id}, AssetCardId: {asset_card_id}, Quantity: {quantity}, UnitCost: {unit_cost}, UnitPrice: {unit_price}, ClientId: {client_id}")
+            print(f"DEBUG: Form data received - AccountId: {account_id}, AssetCardId: {asset_card_id}, Quantity: {quantity}, UnitCost: {unit_cost}, UnitPrice: {unit_price}, CumulatedDepreciation: {cumulated_depreciation}, ClientId: {client_id}")
             
             # Validate required fields
             if not all([account_id, asset_card_id, quantity, unit_cost, unit_price]):
@@ -4058,6 +4073,7 @@ def astbeginningbalance_create(request):
                 Quantity=quantity,
                 UnitCost=unit_cost,
                 UnitPrice=unit_price,
+                CumulatedDepreciation=cumulated_depreciation if cumulated_depreciation else 0,
                 ClientId_id=client_id if client_id else None,
                 CreatedBy=request.user
             )
@@ -4088,7 +4104,8 @@ def astbeginningbalance_update(request, balance_id):
             quantity = request.POST.get('Quantity')
             unit_cost = request.POST.get('UnitCost')
             unit_price = request.POST.get('UnitPrice')
-            employee_id = request.POST.get('EmployeeId')
+            cumulated_depreciation = request.POST.get('CumulatedDepreciation')
+            client_id = request.POST.get('ClientId')
             
             # Validate required fields
             if not all([account_id, asset_card_id, quantity, unit_cost, unit_price]):
@@ -4101,7 +4118,8 @@ def astbeginningbalance_update(request, balance_id):
             balance.Quantity = quantity
             balance.UnitCost = unit_cost
             balance.UnitPrice = unit_price
-            balance.EmployeeId_id = employee_id if employee_id else None
+            balance.CumulatedDepreciation = cumulated_depreciation if cumulated_depreciation else 0
+            balance.ClientId_id = client_id if client_id else None
             balance.ModifiedBy = request.user
             balance.save()
             
@@ -5488,6 +5506,72 @@ def api_calculate_closing_record(request):
             'error': f'Error calculating closing record: {str(e)}'
         }, status=500)
 
+
+@login_required
+@require_http_methods(["GET"])
+def api_calculate_cost_adjustment(request):
+    """API endpoint to calculate cost adjustment for a date range"""
+    from datetime import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Find period - first try exact match
+        period = Ref_Period.objects.filter(
+            BeginDate=start_date,
+            EndDate=end_date
+        ).first()
+        
+        # If not found, find period that contains end_date (auto-adjust)
+        if not period:
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=end_date,
+                EndDate__gte=end_date
+            ).first()
+        
+        if not period:
+            return JsonResponse({
+                'success': False,
+                'error': 'No period found for the selected date range'
+            }, status=400)
+        
+        # Call SQL function (returns VOID, cast period_id to SMALLINT as function expects SMALLINT)
+        db_alias = get_current_db()
+        try:
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute("SELECT calculate_cost_adjustment(%s::SMALLINT)", [period.PeriodId])
+                # Function returns VOID, so no need to fetch results
+        finally:
+            connections[db_alias].close()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Successfully calculated cost adjustment',
+            'period_id': period.PeriodId,
+            'period_name': period.PeriodName,
+            'adjusted_dates': {
+                'start_date': period.BeginDate.strftime('%Y-%m-%d'),
+                'end_date': period.EndDate.strftime('%Y-%m-%d')
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f'Error calculating cost adjustment: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error calculating cost adjustment: {str(e)}'
+        }, status=500)
+
 # ==================== ASSET DOCUMENT VIEWS ====================
 @login_required
 @permission_required('core.view_ast_document', raise_exception=True)
@@ -5953,6 +6037,15 @@ def clients_json(request):
     try:
         # Use select_related to optimize query and get ClientType data
         clients_queryset = RefClient.objects.filter(IsDelete=False).select_related('ClientType').order_by('ClientName')
+        
+        # Filter by client_type_id if provided
+        client_type_id = request.GET.get('client_type_id', '')
+        if client_type_id:
+            try:
+                client_type_id = int(client_type_id)
+                clients_queryset = clients_queryset.filter(ClientType__ClientTypeId=client_type_id)
+            except (ValueError, TypeError):
+                pass
         
         # Support pagination parameters
         page = request.GET.get('page', '1')

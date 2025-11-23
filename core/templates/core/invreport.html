@@ -26,6 +26,9 @@
             <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 СЭРГЭЭХ
             </button>
+            <button id="cost-adjustment-button" onclick="callCalculateCostAdjustment()" class="bg-green-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                ӨРТӨГ ЗАЛРУУЛАХ
+            </button>
         </div>
     </div>
 
@@ -2113,6 +2116,43 @@
         const url = `/core/invdocuments/?${params.toString()}`;
         window.location.href = url;
         hideContextMenu();
+    }
+    
+    // Calculate cost adjustment
+    async function callCalculateCostAdjustment() {
+        const startDate = document.getElementById('start-date')?.value;
+        const endDate = document.getElementById('end-date')?.value;
+        
+        if (!startDate || !endDate) {
+            alert('Эхлэх ба дуусах огноо сонгоно уу');
+            return;
+        }
+        
+        const button = document.getElementById('cost-adjustment-button');
+        const originalText = button.textContent;
+        
+        try {
+            button.textContent = 'Тооцоолж байна...';
+            button.disabled = true;
+            
+            const url = `/core/api/calculate-cost-adjustment/?start_date=${startDate}&end_date=${endDate}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Өртөг амжилттай залрууллаа');
+                // Optionally refresh the data
+                applyDateFilter();
+            } else {
+                alert('Алдаа: ' + (data.error || 'Өртөг залруулахад алдаа гарлаа'));
+            }
+        } catch (error) {
+            console.error('Error calculating cost adjustment:', error);
+            alert('Сүлжээний алдаа гарлаа');
+        } finally {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
     }
     
     // Event listeners

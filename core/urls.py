@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/asset-depreciation-expenses/', views.api_asset_depreciation_expenses, name='api_asset_depreciation_expenses'),
     path('api/calculate-depreciation/', views.api_calculate_depreciation, name='api_calculate_depreciation'),
     path('api/calculate-closing-record/', views.api_calculate_closing_record, name='api_calculate_closing_record'),
+    path('api/calculate-cost-adjustment/', views.api_calculate_cost_adjustment, name='api_calculate_cost_adjustment'),
     
     
     # Cash Document Details
