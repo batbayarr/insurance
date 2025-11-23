@@ -1,6 +1,6 @@
 -- PostgreSQL Depreciation Calculation Function
 -- Calculates depreciation expenses for a given period
--- Uses calculate_ast_balance to check asset quantities
+-- Uses report_assetcard_balance to check asset quantities
 -- Updates ast_depreciation_expense table
 
 DROP FUNCTION IF EXISTS public.calculate_depreciation(SMALLINT);
@@ -79,7 +79,7 @@ BEGIN
         CURRENT_DATE,
         p_user_id, -- ModifiedBy (session user ID)
         CURRENT_DATE
-    FROM calculate_ast_balance(v_end_date) bal
+    FROM report_assetcard_balance(v_end_date) bal
     INNER JOIN ref_asset_card rac ON bal.assetcardid = rac."AssetCardId"
     INNER JOIN ref_asset_depreciation_account rada 
         ON bal.accountid = rada."AssetAccountId"

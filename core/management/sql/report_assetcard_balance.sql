@@ -14,6 +14,8 @@ RETURNS TABLE (
     assetid INTEGER,
     assetcode VARCHAR(5),
     assetname VARCHAR(50),
+    assettypeid SMALLINT,
+    assettypename VARCHAR(50),
     assetcardid INTEGER,
     assetcardcode VARCHAR(5),
     assetcardname VARCHAR(50),
@@ -107,6 +109,8 @@ BEGIN
         ras."AssetId",
         ras."AssetCode",
         ras."AssetName",
+        ras."AssetTypeId",
+        rat."AssetTypeName",
         rac."AssetCardId",
         rac."AssetCardCode",
         rac."AssetCardName",
@@ -140,6 +144,7 @@ BEGIN
     INNER JOIN ref_account ra ON aac."AccountId" = ra."AccountId"
     INNER JOIN ref_asset_card rac ON aac."AssetCardId" = rac."AssetCardId"
     INNER JOIN ref_asset ras ON aac."AssetId" = ras."AssetId"
+    LEFT JOIN ref_asset_type rat ON ras."AssetTypeId" = rat."AssetTypeId"
     LEFT JOIN starting_balances sb ON aac."AccountId" = sb."AccountId" 
         AND aac."AssetCardId" = sb."AssetCardId"
     LEFT JOIN income_transactions it ON aac."AccountId" = it."AccountId" 
