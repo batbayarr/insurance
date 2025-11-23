@@ -1,10 +1,10 @@
 <!-- Inventory Selection Modal Component with Balance Support -->
 <div id="inventory-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-6xl min-w-[1200px] shadow-xl rounded-lg bg-white">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-6xl min-w-[1200px] shadow-xl rounded-lg bg-white">
         <!-- Modal Header -->
-        <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
             <div>
-                <h3 class="text-xl font-semibold text-gray-900">Бараа материал сонгох</h3>                
+                <h3 class="text-lg font-medium text-gray-900">Бараа материал сонгох</h3>                
             </div>
             <button onclick="closeInventoryPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -14,90 +14,90 @@
         </div>
 
         <!-- Actions Row -->
-        <div class="mb-4 flex items-center justify-end space-x-2">
+        <div class="mb-2 flex items-center justify-end space-x-2">
                     <button onclick="showAddInventoryForm()" 
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                    class="inline-flex items-center px-2 py-1 text-xs font-bold text-white bg-green-600 hover:bg-green-700 hover:text-white rounded shadow-sm transition-all duration-200 border border-green-600 hover:border-green-700"
                             title="Шинэ бараа материал нэмэх">
-                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Нэмэх
+                        НЭМЭХ
                     </button>
                     <button onclick="clearAllInventoryFilters()" 
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                  Цэвэрлэх
                     </button>
         </div>
 
         <!-- Add/Edit Inventory Form (Hidden by default) -->
-        <div id="inventory-form-container" class="mb-4 hidden">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h4 id="inventory-form-title" class="text-lg font-medium text-gray-900">Шинэ бараа материал нэмэх</h4>
+        <div id="inventory-form-container" class="mb-2 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 id="inventory-form-title" class="text-sm font-medium text-gray-900">Шинэ бараа материал нэмэх</h4>
                     <button onclick="hideInventoryForm()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
                 
                 <form id="inventory-form" onsubmit="submitInventoryForm(event)">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
-                            <label for="inventory-code" class="block text-sm font-medium text-gray-700 mb-1">Барааны код</label>
+                            <label for="inventory-code" class="block text-xs font-medium text-gray-700 mb-1">Барааны код</label>
                             <input type="text" id="inventory-code" name="InventoryCode" maxlength="5"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="inventory-name" class="block text-sm font-medium text-gray-700 mb-1">Барааны нэр *</label>
+                            <label for="inventory-name" class="block text-xs font-medium text-gray-700 mb-1">Барааны нэр *</label>
                             <input type="text" id="inventory-name" name="InventoryName" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="inventory-type" class="block text-sm font-medium text-gray-700 mb-1">Барааны төрөл *</label>
+                            <label for="inventory-type" class="block text-xs font-medium text-gray-700 mb-1">Барааны төрөл *</label>
                             <select id="inventory-type" name="InventoryTypeId" required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Төрөл сонгох</option>
                                 <!-- Options will be populated dynamically from database -->
                             </select>
                         </div>
                         <div>
-                            <label for="inventory-measurement" class="block text-sm font-medium text-gray-700 mb-1">Хэмжих нэгж *</label>
+                            <label for="inventory-measurement" class="block text-xs font-medium text-gray-700 mb-1">Хэмжих нэгж *</label>
                             <select id="inventory-measurement" name="MeasurementId" required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Нэгж сонгох</option>
                                 <!-- Options will be populated dynamically from database -->
                             </select>
                         </div>
                         <div>
-                            <label for="inventory-unit-cost" class="block text-sm font-medium text-gray-700 mb-1">Нэгжийн өртөг *</label>
+                            <label for="inventory-unit-cost" class="block text-xs font-medium text-gray-700 mb-1">Нэгжийн өртөг *</label>
                             <input type="number" id="inventory-unit-cost" name="UnitCost" step="0.000001" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="inventory-unit-price" class="block text-sm font-medium text-gray-700 mb-1">Нэгжийн үнэ *</label>
+                            <label for="inventory-unit-price" class="block text-xs font-medium text-gray-700 mb-1">Нэгжийн үнэ *</label>
                             <input type="number" id="inventory-unit-price" name="UnitPrice" step="0.000001" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-2">
                             <label class="flex items-center">
                                 <input type="checkbox" id="inventory-active" name="IsActive" checked
                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                                <span class="ml-2 text-xs text-gray-700">Идэвхтэй</span>
                             </label>
                         </div>
                     </div>
                     
-                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-blue-200">
+                    <div class="flex justify-end space-x-2 mt-2 pt-2 border-t border-blue-200">
                         <button type="button" onclick="hideInventoryForm()" 
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500">
                             Цуцлах
                         </button>
                         <button type="submit" id="inventory-submit-btn"
-                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                class="px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-500">
                             <span id="inventory-submit-text">Бараа материал нэмэх</span>
                             <span id="inventory-submit-loading" class="hidden">
-                                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
@@ -117,29 +117,29 @@
         </div>
 
         <!-- Pagination Container -->
-        <div id="inventory-pagination-container" class="mt-4 items-center justify-between border-t border-gray-200 pt-4 hidden">
+        <div id="inventory-pagination-container" class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 hidden">
             <div class="flex items-center space-x-2">
-                <span id="inventory-pagination-info" class="text-sm text-gray-700"></span>
+                <span id="inventory-pagination-info" class="text-xs text-gray-700"></span>
             </div>
             <div class="flex items-center space-x-2">
                 <button id="inventory-pagination-prev" onclick="changeInventoryPage(currentInventoryPage - 1)" 
-                        class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                     Өмнөх
                 </button>
                 <div id="inventory-pagination-buttons" class="flex items-center space-x-1">
                     <!-- Page number buttons will be generated here -->
                 </div>
                 <button id="inventory-pagination-next" onclick="changeInventoryPage(currentInventoryPage + 1)" 
-                        class="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                     Дараах
                 </button>
             </div>
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
             <button onclick="closeInventoryPopup()" 
-                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    class="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                 Цуцлах
             </button>
         </div>
@@ -151,7 +151,8 @@
 window.inventoryModalContext = {
     documentDate: null,
     warehouseId: null,
-    accountId: null
+    accountId: null,
+    documentTypeId: null
 };
 
 // Pagination variables
@@ -171,11 +172,13 @@ window.openInventoryPopup = function(inputElement = null, rowId = null, context 
         window.inventoryModalContext.documentDate = context.documentDate || null;
         window.inventoryModalContext.warehouseId = context.warehouseId || null;
         window.inventoryModalContext.accountId = context.accountId || null;
+        window.inventoryModalContext.documentTypeId = context.documentTypeId || null;
     } else {
         // Clear context if not provided
         window.inventoryModalContext.documentDate = null;
         window.inventoryModalContext.warehouseId = null;
         window.inventoryModalContext.accountId = null;
+        window.inventoryModalContext.documentTypeId = null;
     }
     
     // Reset pagination
@@ -664,10 +667,23 @@ function loadInventoryList() {
                 });
             }
             
+            // Filter inventory items based on document type
+            // For document types 6, 7, 8: only show items with endingquantity > 0
+            const documentTypeId = window.inventoryModalContext.documentTypeId;
+            let filteredInventoryData = inventoryData;
+            
+            if (documentTypeId && [6, 7, 8].includes(parseInt(documentTypeId))) {
+                filteredInventoryData = inventoryData.filter(item => {
+                    const endingQty = parseFloat(item.endingquantity) || 0;
+                    return endingQty > 0;
+                });
+                console.log(`Filtered inventory for document type ${documentTypeId}: showing ${filteredInventoryData.length} items with endingquantity > 0 out of ${inventoryData.length} total`);
+            }
+            
             // Store all data and render with pagination
-            allInventoryData = inventoryData;
+            allInventoryData = filteredInventoryData;
             currentInventoryPage = 1;
-            renderInventoryTable(inventoryData, true); // true = balance view (shows balance columns)
+            renderInventoryTable(filteredInventoryData, true); // true = balance view (shows balance columns)
             })
             .catch(error => {
             console.error('Error loading inventory or balance data:', error);
@@ -728,7 +744,7 @@ function generateInventoryPaginationButtons() {
     for (let i = startPage; i <= endPage; i++) {
         const button = document.createElement('button');
         button.textContent = i;
-        button.className = `px-2 py-1 text-sm rounded-md ${
+        button.className = `px-2 py-1 text-xs rounded-md ${
             i === currentInventoryPage 
                 ? 'bg-blue-400 text-white hover:bg-blue-500' 
                 : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
@@ -878,16 +894,16 @@ function renderBalanceViewTable(data) {
                     <span class="text-sm text-gray-900">${inventoryUnit}</span>
                 </div>
                 <div class="flex items-center justify-end border-r border-gray-300 px-1">
-                    <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
+                    <span class="text-sm text-gray-900">${unitCost}</span>
                 </div>
                 <div class="flex items-center justify-end border-r border-gray-300 px-1">
-                    <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
+                    <span class="text-sm text-gray-900">${unitPrice}</span>
                 </div>
                 <div class="flex items-center justify-end border-r border-gray-300 px-1">
-                    <span class="text-sm text-gray-900 font-mono">${endingQuantity}</span>
+                    <span class="text-sm text-gray-900">${endingQuantity}</span>
                 </div>
                 <div class="flex items-center justify-end border-r border-gray-300 px-1">
-                    <span class="text-sm text-gray-900 font-mono">${endingCost}</span>
+                    <span class="text-sm text-gray-900">${endingCost}</span>
                 </div>
                 <div class="flex items-center justify-center border-r border-gray-300 px-1">
                     <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')" 
@@ -899,7 +915,7 @@ function renderBalanceViewTable(data) {
                     <button onclick="event.stopPropagation(); updateInventory('${inventoryId}', '${inventoryName}')" 
                             class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
                             title="Update Inventory Item">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
@@ -910,7 +926,7 @@ function renderBalanceViewTable(data) {
                             data-item-id="${inventoryId}"
                             data-item-name="${formattedInventoryName}"
                             data-delete-url="/core/refinventory/${inventoryId}/delete/">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </button>
@@ -986,10 +1002,10 @@ function renderRegularViewTable(data) {
                                 <span class="text-sm text-gray-900">${inventoryUnit}</span>
                             </div>
                             <div class="col-span-2 flex items-center justify-end border-r border-gray-300 px-1">
-                                <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
+                                <span class="text-sm text-gray-900">${unitCost}</span>
                             </div>
                             <div class="col-span-2 flex items-center justify-end border-r border-gray-300 px-1">
-                                <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
+                                <span class="text-sm text-gray-900">${unitPrice}</span>
                             </div>
                             <div class="col-span-1 flex items-center justify-center border-r border-gray-300 px-1">
                     <button onclick="event.stopPropagation(); selectInventory('${inventoryId}', '${formattedInventoryName}', '${unitCostForSelect}', '${unitPriceForSelect}')" 
@@ -997,11 +1013,11 @@ function renderRegularViewTable(data) {
                                     Сонгох
                                 </button>
                             </div>
-                            <div class="col-span-1 flex items-center justify-end space-x-2 px-1">
+                            <div class="col-span-1 flex items-center justify-end space-x-1 px-1">
                                 <button onclick="event.stopPropagation(); updateInventory('${inventoryId}', '${inventoryName}')" 
                                         class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
                                         title="Update Inventory Item">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
@@ -1012,7 +1028,7 @@ function renderRegularViewTable(data) {
                                         data-item-id="${inventoryId}"
                                         data-item-name="${formattedInventoryName}"
                                         data-delete-url="/core/refinventory/${inventoryId}/delete/">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>

@@ -200,8 +200,8 @@ window.closeAssetPopup = function() {
     }
 }
 
-window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '') {
-    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice});
+window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '', cumulatedDepreciation = '') {
+    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice, cumulatedDepreciation});
     // Check if we're in bulk manage mode (has currentAssetInput and currentAssetRowId)
     if (window.currentAssetInput && window.currentAssetRowId) {
         // Bulk manage mode - populate the specific row
@@ -214,8 +214,9 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
             const displayInput = row.querySelector('.asset-card-display-input');
             const unitCostInput = row.querySelector('.unit-cost-input');
             const unitPriceInput = row.querySelector('.unit-price-input');
+            const cumulatedDepreciationInput = row.querySelector('.cumulated-depreciation-input');
             
-            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput, rowId: window.currentAssetRowId});
+            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput, rowId: window.currentAssetRowId});
             
             if (hiddenInput && displayInput) {
                 hiddenInput.value = assetCardId;
@@ -226,14 +227,23 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
                 console.error('DEBUG: Missing hiddenInput or displayInput', {hiddenInput, displayInput});
             }
             
-            // Populate unit cost and unit price if inputs exist
+            // Populate unit cost, unit price, and cumulated depreciation if inputs exist
+            // Normalize values to "0" if empty or "-"
+            const normalizedUnitCost = (unitCost && unitCost !== '-' && unitCost.trim() !== '') ? unitCost : '0';
+            const normalizedUnitPrice = (unitPrice && unitPrice !== '-' && unitPrice.trim() !== '') ? unitPrice : '0';
+            const normalizedCumulatedDepreciation = (cumulatedDepreciation && cumulatedDepreciation !== '-' && cumulatedDepreciation.trim() !== '') ? cumulatedDepreciation : '0';
+            
             if (unitCostInput) {
-                unitCostInput.value = unitCost;
-                console.log('DEBUG: Set UnitCost to:', unitCost);
+                unitCostInput.value = normalizedUnitCost;
+                console.log('DEBUG: Set UnitCost to:', normalizedUnitCost);
             }
             if (unitPriceInput) {
-                unitPriceInput.value = unitPrice;
-                console.log('DEBUG: Set UnitPrice to:', unitPrice);
+                unitPriceInput.value = normalizedUnitPrice;
+                console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
+            }
+            if (cumulatedDepreciationInput) {
+                cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
+                console.log('DEBUG: Set CumulatedDepreciation to:', normalizedCumulatedDepreciation);
             }
             
             // Trigger calculation if we're in bulk manage mode
@@ -250,8 +260,9 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
         const displayInput = document.getElementById('AssetCardIdDisplay');
         const unitCostInput = document.getElementById('UnitCost');
         const unitPriceInput = document.getElementById('UnitPrice');
+        const cumulatedDepreciationInput = document.getElementById('CumulatedDepreciation');
         
-        console.log('DEBUG: Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput});
+        console.log('DEBUG: Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput});
         
         if (hiddenInput && displayInput) {
             hiddenInput.value = assetCardId;
@@ -259,14 +270,49 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
             console.log('DEBUG: Set AssetCardId to:', assetCardId, 'and display to:', assetCardName);
         }
         
-        // Populate unit cost and unit price if inputs exist
-        if (unitCostInput) {
-            unitCostInput.value = unitCost;
-            console.log('DEBUG: Set UnitCost to:', unitCost);
-        }
-        if (unitPriceInput) {
-            unitPriceInput.value = unitPrice;
-            console.log('DEBUG: Set UnitPrice to:', unitPrice);
+        // Populate unit cost, unit price, and cumulated depreciation if inputs exist
+        // Convert "-" or empty values to "0" to ensure valid numbers
+        const normalizedUnitCost = (unitCost && unitCost !== '-' && unitCost.trim() !== '') ? unitCost : '0';
+        const normalizedUnitPrice = (unitPrice && unitPrice !== '-' && unitPrice.trim() !== '') ? unitPrice : '0';
+        const normalizedCumulatedDepreciation = (cumulatedDepreciation && cumulatedDepreciation !== '-' && cumulatedDepreciation.trim() !== '') ? cumulatedDepreciation : '0';
+        
+        // If values are still missing or invalid, try to fetch from asset card data
+        if ((normalizedUnitCost === '0' || normalizedUnitPrice === '0') && assetCardId) {
+            // Try to get values from data attributes if available in the modal
+            const assetRow = document.querySelector(`[data-asset-card-id="${assetCardId}"]`);
+            if (assetRow) {
+                const dataUnitCost = assetRow.getAttribute('data-unit-cost');
+                const dataUnitPrice = assetRow.getAttribute('data-unit-price');
+                const dataCumulatedDepreciation = assetRow.getAttribute('data-cumulated-depreciation');
+                if (dataUnitCost && dataUnitCost !== '-') {
+                    if (unitCostInput) unitCostInput.value = dataUnitCost;
+                }
+                if (dataUnitPrice && dataUnitPrice !== '-') {
+                    if (unitPriceInput) unitPriceInput.value = dataUnitPrice;
+                }
+                if (dataCumulatedDepreciation && dataCumulatedDepreciation !== '-') {
+                    if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = dataCumulatedDepreciation;
+                }
+            } else {
+                // Set to 0 if no data available
+                if (unitCostInput) unitCostInput.value = normalizedUnitCost;
+                if (unitPriceInput) unitPriceInput.value = normalizedUnitPrice;
+                if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
+            }
+        } else {
+            // Use normalized values
+            if (unitCostInput) {
+                unitCostInput.value = normalizedUnitCost;
+                console.log('DEBUG: Set UnitCost to:', normalizedUnitCost);
+            }
+            if (unitPriceInput) {
+                unitPriceInput.value = normalizedUnitPrice;
+                console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
+            }
+            if (cumulatedDepreciationInput) {
+                cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
+                console.log('DEBUG: Set CumulatedDepreciation to:', normalizedCumulatedDepreciation);
+            }
         }
     }
     
@@ -647,25 +693,48 @@ function loadAssetList() {
                     const assetCardCode = cells[0]?.textContent?.trim() || '-';
                     const assetCardName = cells[1]?.textContent?.trim() || '';
                     const assetName = cells[2]?.textContent?.trim() || '-';
-                    const unitCost = cells[3]?.textContent?.trim() || '-';
-                    const unitPrice = cells[4]?.textContent?.trim() || '-';
                     const employee = cells[5]?.textContent?.trim() || '-';
                     
-                    // Extract asset card ID from the select button
+                    // Extract asset card ID, unitCost, unitPrice, and cumulatedDepreciation from the select button onclick
                     const selectButton = row.querySelector('button[onclick*="selectAsset"]');
                     let assetCardId = '';
+                    let unitCost = '0';
+                    let unitPrice = '0';
+                    let cumulatedDepreciation = '0';
                     
                     console.log('DEBUG: Processing row, selectButton:', selectButton);
                     
                     if (selectButton) {
                         const onclickAttr = selectButton.getAttribute('onclick');
                         console.log('DEBUG: onclick attribute:', onclickAttr);
-                        const matches = onclickAttr.match(/selectAsset\('([^']+)'/);
+                        // Extract all parameters from selectAsset call: selectAsset('id', 'name', 'assetName', 'unitCost', 'unitPrice', 'cumulatedDepreciation')
+                        const matches = onclickAttr.match(/selectAsset\('([^']+)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'\)/);
                         if (matches) {
                             assetCardId = matches[1];
-                            console.log('DEBUG: Extracted assetCardId:', assetCardId);
+                            // matches[2] is assetCardName, matches[3] is assetName
+                            unitCost = matches[4] || '0';
+                            unitPrice = matches[5] || '0';
+                            cumulatedDepreciation = matches[6] || '0';
+                            console.log('DEBUG: Extracted from onclick - assetCardId:', assetCardId, 'unitCost:', unitCost, 'unitPrice:', unitPrice, 'cumulatedDepreciation:', cumulatedDepreciation);
                         } else {
-                            console.log('DEBUG: No match found for assetCardId');
+                            // Fallback: try older format without cumulatedDepreciation
+                            const oldMatches = onclickAttr.match(/selectAsset\('([^']+)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'\)/);
+                            if (oldMatches) {
+                                assetCardId = oldMatches[1];
+                                unitCost = oldMatches[4] || '0';
+                                unitPrice = oldMatches[5] || '0';
+                                cumulatedDepreciation = '0';
+                                console.log('DEBUG: Extracted from old format - assetCardId:', assetCardId, 'unitCost:', unitCost, 'unitPrice:', unitPrice);
+                            } else {
+                                // Fallback: try to extract just the ID
+                                const idMatch = onclickAttr.match(/selectAsset\('([^']+)'/);
+                                if (idMatch) {
+                                    assetCardId = idMatch[1];
+                                    console.log('DEBUG: Extracted assetCardId only:', assetCardId);
+                                } else {
+                                    console.log('DEBUG: No match found for assetCardId');
+                                }
+                            }
                         }
                     } else {
                         console.log('DEBUG: No select button found');
@@ -677,7 +746,7 @@ function loadAssetList() {
                              data-asset-name="${assetCardName.toLowerCase()}" 
                              data-asset-type="${assetName.toLowerCase()}"
                              data-employee="${employee.toLowerCase()}"
-                             onclick="selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}')">
+                             onclick="selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}', '${cumulatedDepreciation}')">
                             <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
                                 <span class="text-sm font-medium text-gray-900">${assetCardCode}</span>
                             </div>
@@ -697,7 +766,7 @@ function loadAssetList() {
                                 <span class="text-sm text-gray-900">${employee}</span>
                             </div>
                             <div class="col-span-1 px-4 flex items-center justify-center">
-                                <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}')" 
+                                <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}', '${cumulatedDepreciation}')" 
                                         class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                                     Select
                                 </button>

@@ -698,17 +698,17 @@ class RefAssetForm(forms.ModelForm):
         fields = ['AssetCode', 'AssetName', 'AssetTypeId', 'IsDelete']
         widgets = {
             'AssetCode': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
                 'maxlength': '5',
                 'placeholder': 'Enter asset code'
             }),
             'AssetName': forms.TextInput(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
+                'class': 'mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm',
                 'maxlength': '50',
                 'placeholder': 'Enter asset name'
             }),
             'AssetTypeId': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
+                'class': 'mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-accounting-blue focus:ring-accounting-blue sm:text-sm'
             }),
             'IsDelete': forms.CheckboxInput(attrs={
                 'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-300 rounded'

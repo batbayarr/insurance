@@ -400,7 +400,7 @@
     </table>
     
     <div class="print-footer">
-        <div>Silicon4 Accounting System</div>
+        <div>Silicon-AI Accounting System</div>
     </div>
     
     <div class="print-actions no-print">

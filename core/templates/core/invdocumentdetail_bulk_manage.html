@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Manage Inventory Document Items - {{ document.DocumentNo }} - Silicon4 Accounting{% endblock %}
+{% block title %}Manage Inventory Document Items - {{ document.DocumentNo }} - Silicon-AI Accounting{% endblock %}
 
 {% block content %}
 <style>
@@ -707,7 +707,8 @@ function openInventoryPopupWithContext(inputElement, rowId) {
             const context = {
                 documentDate: documentData.DocumentDate || null,
                 warehouseId: documentData.WarehouseId || null,
-                accountId: documentData.AccountId || null
+                accountId: documentData.AccountId || null,
+                documentTypeId: documentData.DocumentTypeId || null
             };
             // Call the modal's openInventoryPopup function with context
             if (typeof window.openInventoryPopup === 'function') {

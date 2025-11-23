@@ -43,11 +43,11 @@
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">#</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХӨРӨНГӨ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ТОО ХЭМЖЭЭ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АНХНЫ ӨРТӨГ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ӨРТӨГ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НИЙТ ҮНЭ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЛДЭГДЭЛ ӨРТӨГ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ОГНОО</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЭЛ</th>
@@ -75,15 +75,15 @@
                         <tr class="balance-row"
                             data-account="{{ balance.AccountId.AccountCode|lower }} {{ balance.AccountId.AccountName|lower }}"
                             data-asset="{{ balance.AssetCardId.AssetCardCode|lower }} {{ balance.AssetCardId.AssetCardName|lower }}"
-                            data-quantity="{{ balance.Quantity }}" data-unitcost="{{ balance.UnitCost }}" data-unitprice="{{ balance.UnitPrice }}">
+                            data-quantity="{{ balance.Quantity }}" data-unitcost="{{ balance.UnitCost }}" data-unitprice="{{ balance.UnitPrice }}" data-cumulateddepreciation="{{ balance.CumulatedDepreciation|default:0 }}">
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center"><span class="row-index">1</span></td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200"><span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span></td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.AssetCardId.AssetCardName }}</td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="qty-val">{{ balance.Quantity|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.ClientId.ClientName|default:"-" }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="ucost-val">{{ balance.UnitCost|floatformat:2 }}</span></td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="uprice-val">{{ balance.UnitPrice|floatformat:2 }}</span></td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tcost-val">-</span></td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="tprice-val">-</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="cumulated-depreciation-val">{{ balance.CumulatedDepreciation|default:0|floatformat:2 }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="remaining-cost-val">-</span></td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedDate|date:"Y-m-d" }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.CreatedBy.username|default:"-" }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
@@ -105,9 +105,11 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-gray-50">
-                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="6"></td>
-                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-cost">-</span></td>
-                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-price">-</span></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="4"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-unit-cost">-</span></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-cumulated-depreciation">-</span></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-remaining-cost">-</span></td>
                             <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="3"></td>
                         </tr>
                     </tfoot>
@@ -174,7 +176,7 @@
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
             <div>
-                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">ҮНДСЭН ХӨРӨНГӨН ҮЛДЭГДЭЛ</h3>
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-900">ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ</h3>
                 
             </div>
             <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -256,9 +258,20 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Client Selection -->
+                <!-- Cumulated Depreciation -->
                 <div>
-                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ЭД ХАРИУЦАГЧ</label>
+                    <label for="CumulatedDepreciation" class="block text-sm font-medium text-gray-700 mb-1">ЭЛЭГДЭЛ</label>
+                    <input type="number" 
+                           id="CumulatedDepreciation" 
+                           name="CumulatedDepreciation" 
+                           step="0.000001" 
+                           min="0" 
+                           placeholder="0.000000"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Client Selection -->                <div>
+Y                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ЭД ХАРИУЦАГЧ</label>
                     <div class="relative">
                         <input type="text" 
                                id="ClientIdDisplay" 
@@ -316,6 +329,7 @@
         "Quantity": "{{ balance.Quantity }}",
         "UnitCost": "{{ balance.UnitCost }}",
         "UnitPrice": "{{ balance.UnitPrice }}",
+        "CumulatedDepreciation": "{{ balance.CumulatedDepreciation|default:0 }}",
         "ClientId": {{ balance.ClientId.ClientId|default:"null" }},
         "client_name": "{{ balance.ClientId.ClientName|default:'' }}",
         "CreatedDate": "{{ balance.CreatedDate|date:'Y-m-d' }}",
@@ -365,10 +379,6 @@ function astFormatNumber(num, decimals = 2) {
 }
 
 function astFormatNumbersAndRows() {
-    document.querySelectorAll('.qty-val').forEach(el => {
-        const v = parseFloat((el.textContent || '').replace(/,/g, ''));
-        if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
-    });
     document.querySelectorAll('.ucost-val').forEach(el => {
         const v = parseFloat((el.textContent || '').replace(/,/g, ''));
         if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
@@ -377,15 +387,33 @@ function astFormatNumbersAndRows() {
         const v = parseFloat((el.textContent || '').replace(/,/g, ''));
         if (!isNaN(v)) el.textContent = astFormatNumber(v, 2);
     });
+    document.querySelectorAll('.cumulated-depreciation-val').forEach(el => {
+        const v = parseFloat((el.textContent || '').replace(/,/g, ''));
+        if (!isNaN(v)) {
+            // For cumulated depreciation, show "0.00" instead of "-" for zero values
+            el.textContent = (v === 0 || isNaN(v)) ? '0.00' : v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+    });
 
     document.querySelectorAll('tr.balance-row').forEach(row => {
         const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
         const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
-        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
-        const tcostEl = row.querySelector('.tcost-val');
-        const tpriceEl = row.querySelector('.tprice-val');
-        if (tcostEl) tcostEl.textContent = astFormatNumber(qty * ucost, 2);
-        if (tpriceEl) tpriceEl.textContent = astFormatNumber(qty * uprice, 2);
+        const cumulatedDepreciation = parseFloat(row.getAttribute('data-cumulateddepreciation')) || 0;
+        const cumulatedDepreciationEl = row.querySelector('.cumulated-depreciation-val');
+        const remainingCostEl = row.querySelector('.remaining-cost-val');
+        if (cumulatedDepreciationEl) {
+            // For cumulated depreciation, show "0.00" instead of "-" for zero values
+            cumulatedDepreciationEl.textContent = (cumulatedDepreciation === 0 || isNaN(cumulatedDepreciation)) 
+                ? '0.00' 
+                : cumulatedDepreciation.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        if (remainingCostEl) {
+            // Calculate remaining cost: (UnitCost - CumulatedDepreciation) * Quantity
+            const remainingCost = (ucost - cumulatedDepreciation) * qty;
+            remainingCostEl.textContent = (remainingCost === 0 || isNaN(remainingCost)) 
+                ? '0.00' 
+                : remainingCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
     });
 }
 
@@ -417,20 +445,42 @@ function astSetupInlineFilters() {
 
 function astRecalculateSummary() {
     const rows = document.querySelectorAll('.balance-row');
-    let totalCost = 0;
-    let totalPrice = 0;
+    let totalUnitCost = 0;
+    let totalCumulatedDepreciation = 0;
+    let totalRemainingCost = 0;
     rows.forEach(row => {
         if (row.style.display === 'none') return;
         const qty = parseFloat(row.getAttribute('data-quantity')) || 0;
         const ucost = parseFloat(row.getAttribute('data-unitcost')) || 0;
-        const uprice = parseFloat(row.getAttribute('data-unitprice')) || 0;
-        totalCost += qty * ucost;
-        totalPrice += qty * uprice;
+        const cumulatedDepreciation = parseFloat(row.getAttribute('data-cumulateddepreciation')) || 0;
+        // Total unit cost = UnitCost * Quantity
+        totalUnitCost += ucost * qty;
+        totalCumulatedDepreciation += cumulatedDepreciation;
+        // Remaining cost = (UnitCost - CumulatedDepreciation) * Quantity
+        const remainingCost = (ucost - cumulatedDepreciation) * qty;
+        totalRemainingCost += remainingCost;
     });
-    const costEl = document.getElementById('ast-total-cost');
-    const priceEl = document.getElementById('ast-total-price');
-    if (costEl) costEl.textContent = astFormatNumber(totalCost, 2);
-    if (priceEl) priceEl.textContent = astFormatNumber(totalPrice, 2);
+    const unitCostEl = document.getElementById('ast-total-unit-cost');
+    const cumulatedDepreciationEl = document.getElementById('ast-total-cumulated-depreciation');
+    const remainingCostEl = document.getElementById('ast-total-remaining-cost');
+    if (unitCostEl) {
+        // For unit cost total, show "0.00" instead of "-" for zero values
+        unitCostEl.textContent = (totalUnitCost === 0 || isNaN(totalUnitCost))
+            ? '0.00'
+            : totalUnitCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    if (cumulatedDepreciationEl) {
+        // For cumulated depreciation total, show "0.00" instead of "-" for zero values
+        cumulatedDepreciationEl.textContent = (totalCumulatedDepreciation === 0 || isNaN(totalCumulatedDepreciation))
+            ? '0.00'
+            : totalCumulatedDepreciation.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    if (remainingCostEl) {
+        // For remaining cost total, show "0.00" instead of "-" for zero values
+        remainingCostEl.textContent = (totalRemainingCost === 0 || isNaN(totalRemainingCost))
+            ? '0.00'
+            : totalRemainingCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
 }
 
 let astCurrentPage = 1;
@@ -538,20 +588,48 @@ function addNewBalance() {
     isEditMode = false;
     document.getElementById('modal-title').textContent = 'ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ';
     document.getElementById('submit-text').textContent = 'Add Balance';
-    document.getElementById('balance-form').reset();
-    document.getElementById('balance-id').value = '';
     
     // Set form action for create
     document.getElementById('balance-form').action = '/core/astbeginningbalances/create/';
     console.log('DEBUG: Form action set to:', document.getElementById('balance-form').action);
     
-    // Clear selections
+    // Clear all form fields manually (don't use reset() as it might interfere with hidden fields)
+    document.getElementById('balance-id').value = '';
     document.getElementById('AccountId').value = '';
     document.getElementById('AccountIdDisplay').value = '';
     document.getElementById('AssetCardId').value = '';
     document.getElementById('AssetCardIdDisplay').value = '';
     document.getElementById('ClientId').value = '';
     document.getElementById('ClientIdDisplay').value = '';
+    
+    // Set Quantity to 1 by default when adding
+    const quantityInput = document.getElementById('Quantity');
+    if (quantityInput) {
+        quantityInput.value = '1';
+    }
+    
+    // Clear UnitCost, UnitPrice, and CumulatedDepreciation - they will be populated when asset card is selected
+    const unitCostInput = document.getElementById('UnitCost');
+    const unitPriceInput = document.getElementById('UnitPrice');
+    const cumulatedDepreciationInput = document.getElementById('CumulatedDepreciation');
+    if (unitCostInput) {
+        unitCostInput.value = '';
+        unitCostInput.readOnly = true;
+        unitCostInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        unitCostInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
+    if (unitPriceInput) {
+        unitPriceInput.value = '';
+        unitPriceInput.readOnly = true;
+        unitPriceInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        unitPriceInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
+    if (cumulatedDepreciationInput) {
+        cumulatedDepreciationInput.value = '';
+        cumulatedDepreciationInput.readOnly = true;
+        cumulatedDepreciationInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        cumulatedDepreciationInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
     
     document.getElementById('balance-modal').classList.remove('hidden');
 }
@@ -577,8 +655,29 @@ function editBalance(balanceId) {
     document.getElementById('Quantity').value = balance.Quantity;
     document.getElementById('UnitCost').value = balance.UnitCost;
     document.getElementById('UnitPrice').value = balance.UnitPrice;
+    document.getElementById('CumulatedDepreciation').value = balance.CumulatedDepreciation || '0';
     document.getElementById('ClientId').value = balance.ClientId || '';
     document.getElementById('ClientIdDisplay').value = balance.client_name || '';
+    
+    // Keep UnitCost, UnitPrice, and CumulatedDepreciation read-only even when editing
+    const unitCostInput = document.getElementById('UnitCost');
+    const unitPriceInput = document.getElementById('UnitPrice');
+    const cumulatedDepreciationInput = document.getElementById('CumulatedDepreciation');
+    if (unitCostInput) {
+        unitCostInput.readOnly = true;
+        unitCostInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        unitCostInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
+    if (unitPriceInput) {
+        unitPriceInput.readOnly = true;
+        unitPriceInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        unitPriceInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
+    if (cumulatedDepreciationInput) {
+        cumulatedDepreciationInput.readOnly = true;
+        cumulatedDepreciationInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+        cumulatedDepreciationInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
+    }
     
     document.getElementById('balance-modal').classList.remove('hidden');
 }
@@ -665,23 +764,49 @@ function handleFormSubmit(event) {
     }
 
     // Check if required fields are filled
-    const accountId = document.getElementById('AccountId').value;
-    const assetCardId = document.getElementById('AssetCardId').value;
-    const quantity = document.getElementById('Quantity').value;
-    const unitCost = document.getElementById('UnitCost').value;
-    const unitPrice = document.getElementById('UnitPrice').value;
-    const clientId = document.getElementById('ClientId').value;
+    const accountIdElement = document.getElementById('AccountId');
+    const assetCardIdElement = document.getElementById('AssetCardId');
+    const quantityElement = document.getElementById('Quantity');
+    const unitCostElement = document.getElementById('UnitCost');
+    const unitPriceElement = document.getElementById('UnitPrice');
+    
+    const accountId = accountIdElement ? accountIdElement.value : '';
+    const assetCardId = assetCardIdElement ? assetCardIdElement.value : '';
+    const quantity = quantityElement ? quantityElement.value : '';
+    const unitCost = unitCostElement ? unitCostElement.value : '';
+    const unitPrice = unitPriceElement ? unitPriceElement.value : '';
+    const clientId = document.getElementById('ClientId') ? document.getElementById('ClientId').value : '';
     
     console.log('DEBUG: Required fields check:');
-    console.log(`  AccountId: ${accountId}`);
-    console.log(`  AssetCardId: ${assetCardId}`);
-    console.log(`  Quantity: ${quantity}`);
-    console.log(`  UnitCost: ${unitCost}`);
-    console.log(`  UnitPrice: ${unitPrice}`);
-    console.log(`  ClientId: ${clientId}`);
+    console.log(`  AccountId element: ${accountIdElement ? 'found' : 'NOT FOUND'}, value: "${accountId}"`);
+    console.log(`  AssetCardId element: ${assetCardIdElement ? 'found' : 'NOT FOUND'}, value: "${assetCardId}"`);
+    console.log(`  Quantity: "${quantity}"`);
+    console.log(`  UnitCost: "${unitCost}"`);
+    console.log(`  UnitPrice: "${unitPrice}"`);
+    console.log(`  ClientId: "${clientId}"`);
     
-    if (!accountId || !assetCardId || !quantity || !unitCost || !unitPrice) {
-        alert('Please fill in all required fields');
+    // Validate required fields - allow "0" as valid value for unitCost and unitPrice
+    const unitCostNum = parseFloat(unitCost);
+    const unitPriceNum = parseFloat(unitPrice);
+    const quantityNum = parseFloat(quantity);
+    
+    console.log('DEBUG: Validation check - parsed values:');
+    console.log(`  accountId: "${accountId}" (truthy: ${!!accountId}, type: ${typeof accountId})`);
+    console.log(`  assetCardId: "${assetCardId}" (truthy: ${!!assetCardId}, type: ${typeof assetCardId})`);
+    console.log(`  quantity: "${quantity}" (parsed: ${quantityNum}, valid: ${!isNaN(quantityNum) && quantityNum > 0})`);
+    console.log(`  unitCost: "${unitCost}" (parsed: ${unitCostNum}, valid: ${!isNaN(unitCostNum)})`);
+    console.log(`  unitPrice: "${unitPrice}" (parsed: ${unitPriceNum}, valid: ${!isNaN(unitPriceNum)})`);
+    
+    if (!accountId || accountId.trim() === '' || !assetCardId || assetCardId.trim() === '' || !quantity || isNaN(quantityNum) || quantityNum <= 0 || isNaN(unitCostNum) || isNaN(unitPriceNum)) {
+        const missingFields = [];
+        if (!accountId || accountId.trim() === '') missingFields.push('Account (ДАНС)');
+        if (!assetCardId || assetCardId.trim() === '') missingFields.push('Asset Card (ҮНДСЭН ХӨРӨНГӨ)');
+        if (!quantity || isNaN(quantityNum) || quantityNum <= 0) missingFields.push('Quantity (ТОО ХЭМЖЭЭ)');
+        if (isNaN(unitCostNum) || unitCost === '' || unitCost.trim() === '') missingFields.push('Unit Cost (НЭГЖ ӨРТӨГ)');
+        if (isNaN(unitPriceNum) || unitPrice === '' || unitPrice.trim() === '') missingFields.push('Unit Price (НЭГЖ ҮНЭ)');
+        
+        console.error('DEBUG: Validation failed. Missing fields:', missingFields);
+        alert(`Бүх шаардлагатай талбаруудыг бөглөнө үү. Дутсан: ${missingFields.join(', ')}`);
         event.preventDefault();
         return false;
     }

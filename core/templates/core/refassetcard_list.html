@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Үндсэн хөрөнгийн карт - Silicon4 Accounting{% endblock %}
+{% block title %}Үндсэн хөрөнгийн карт - Silicon-AI Accounting{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -18,7 +18,7 @@
         <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
             <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
                 <div>
-                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Үндсэн хөрөнгө (Мастер)</h2>
+                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Үндсэн хөрөнгө </h2>
                 </div>
                 <a href="{% url 'core:refasset_create' %}" 
                    class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -158,7 +158,7 @@
         <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
             <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
                 <div>
-                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Үндсэн хөрөнгийн карт (Дэлгэрэнгүй)</h2>
+                    <h2 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Картын мэдээлэл </h2>
                     {% if selected_asset %}
                         <p class="text-xs text-gray-600 mt-1">Харуулж байна: <strong>{{ selected_asset.AssetCode }} - {{ selected_asset.AssetName }}</strong></p>
                     {% else %}
@@ -170,7 +170,7 @@
                     <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span class="text-xs">ДЭЛГЭЭРНГҮЙ НЭМЭХ</span>
+                    <span class="text-xs">ДЭЛГЭРЭНГҮЙ МЭДЭЭЛЭЛ НЭМЭХ</span>
                 </a>
     </div>
     
@@ -179,7 +179,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">КАРТ №</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ТАЙЛБАР</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 180px;">ТАЙЛБАР</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдвэрлэсэн</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хүлээн авсан</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АШИГЛАХ САР</th>
@@ -189,9 +189,7 @@
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ ОГНОО</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЗАССАН ОГНОО</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ОГНОО</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЛҮҮД</th>
                         </tr>
                     </thead>
@@ -201,7 +199,7 @@
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 {{ card.AssetCardCode }}
                             </td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 180px;">
                                 {{ card.AssetCardName|default:"-" }}
                             </td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
@@ -234,12 +232,6 @@
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 {% if card.CreatedDate %}{{ card.CreatedDate|date:"Y-m-d" }}{% else %}-{% endif %}
                             </td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                                {% if card.ModifiedBy %}{{ card.ModifiedBy.username }}{% else %}-{% endif %}
-                            </td>
-                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                                {% if card.ModifiedDate %}{{ card.ModifiedDate|date:"Y-m-d" }}{% else %}-{% endif %}
-                            </td>
                             <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
                                 <div class="flex items-center justify-end space-x-1 lg:space-x-2">
                                     <a href="{% url 'core:ref_asset_card_update' card.AssetCardId %}" 
@@ -261,7 +253,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="15" class="px-2 py-1 text-center text-xs text-gray-500">
+                            <td colspan="13" class="px-2 py-1 text-center text-xs text-gray-500">
                                 {% if selected_asset %}Энэ үндсэн хөрөнгийн карт олдсонгүй{% else %}Картуудыг харахын тулд үндсэн хөрөнгийг сонгоно уу{% endif %}
                             </td>
                         </tr>
@@ -395,7 +387,7 @@
                             <td class="px-1 py-1 whitespace-nowrap text-right text-sm font-medium border border-gray-300 w-11">
                                 {% if is_modal %}
                                 <div class="flex items-center justify-end space-x-2">
-                                    <button onclick="selectAsset('{{ asset_card.AssetCardId }}', '{{ asset_card.AssetCardName }}', '{{ asset_card.AssetId.AssetName }}', '{{ asset_card.UnitCost|floatformat:2 }}', '{{ asset_card.UnitPrice|floatformat:2 }}')" 
+                                    <button onclick="selectAsset('{{ asset_card.AssetCardId }}', '{{ asset_card.AssetCardName }}', '{{ asset_card.AssetId.AssetName }}', '{{ asset_card.UnitCost|floatformat:2 }}', '{{ asset_card.UnitPrice|floatformat:2 }}', '{{ asset_card.CumulatedDepreciation|default:0|floatformat:2 }}')" 
                                             class="text-accounting-blue hover:text-accounting-blue-dark font-medium px-3 py-1 rounded hover:bg-blue-50">
                                         Сонгох
                                     </button>

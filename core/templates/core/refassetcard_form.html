@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ title }} - Silicon4 Accounting{% endblock %}
+{% block title %}{{ title }} - Silicon-AI Accounting{% endblock %}
 
 {% block content %}
 <div class="bg-gray-100 p-4">
@@ -53,7 +53,14 @@
                     </div>
                     <div class="flex justify-start pl-2">
                         <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
-                            {{ form.AssetId }}
+                            {% if selected_asset %}
+                                <select id="id_AssetId" name="AssetId" disabled class="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-gray-100 cursor-not-allowed">
+                                    <option value="{{ selected_asset.AssetId }}" selected>{{ selected_asset.AssetCode }} - {{ selected_asset.AssetName }}</option>
+                                </select>
+                                <input type="hidden" name="AssetId" value="{{ selected_asset.AssetId }}">
+                            {% else %}
+                                {{ form.AssetId }}
+                            {% endif %}
                         </div>
                         {% if form.AssetId.errors %}
                         <div class="mt-1 text-xs text-red-600">
@@ -68,13 +75,21 @@
                 <!-- Employee -->
                 <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
                     <div class="flex items-center border-r border-gray-200 pr-2">
-                        <label for="{{ form.EmployeeId.id_for_label }}" class="text-xs text-gray-700 font-normal uppercase">
+                        <label for="EmployeeIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
                             ЭД ХАРИУЦАГЧ:
                         </label>
                     </div>
                     <div class="flex justify-start pl-2">
-                        <div class="[&_input]:border-gray-300 [&_select]:border-gray-300 [&_input]:border [&_select]:border [&_input]:text-xs [&_select]:text-xs">
-                            {{ form.EmployeeId }}
+                        <div class="[&_input]:border-gray-300 [&_input]:border [&_input]:text-xs w-full">
+                            <input type="text"
+                                   id="EmployeeIdDisplay"
+                                   name="EmployeeIdDisplay"
+                                   readonly
+                                   placeholder="Click to select employee..."
+                                   onclick="openClientPopup(this, null, { clientTypeId: 3 })"
+                                   value="{% if asset_card and asset_card.ClientId %}{{ asset_card.ClientId.ClientCode }} - {{ asset_card.ClientId.ClientName }}{% endif %}"
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded cursor-pointer bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <input type="hidden" id="id_ClientId" name="ClientId" value="{{ form.ClientId.value|default:'' }}">
                         </div>
                         {% if form.EmployeeId.errors %}
                         <div class="mt-1 text-xs text-red-600">
@@ -376,8 +391,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedAssetId = urlParams.get('selected_asset');
     if (selectedAssetId) {
         const assetSelect = document.getElementById('id_AssetId');
-        if (assetSelect) {
+        if (assetSelect && !assetSelect.disabled) {
             assetSelect.value = selectedAssetId;
+            // Disable the field so user cannot change it
+            assetSelect.disabled = true;
+            assetSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+            // Create hidden input to ensure value is submitted
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'AssetId';
+            hiddenInput.value = selectedAssetId;
+            assetSelect.parentNode.appendChild(hiddenInput);
         }
     }
     
@@ -418,4 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Include Client Selection Modal -->
+{% include 'core/components/client_selection_modal.html' %}
 {% endblock %}

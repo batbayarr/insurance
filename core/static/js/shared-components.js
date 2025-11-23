@@ -1,5 +1,5 @@
 /**
- * Silicon4 Accounting - Shared JavaScript Components
+ * Silicon-AI Accounting - Shared JavaScript Components
  * Behavior-only functions (styling handled by CSS)
  */
 

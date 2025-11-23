@@ -341,7 +341,7 @@ function generatePrintContent(config, data) {
             ${generateDetailsTable(data)}
             
             <div class="footer">
-                <p>Silicon4 Accounting System</p>
+                <p>Silicon-AI Accounting System</p>
                 <p>Хэвлэсэн: ${new Date().toLocaleString('mn-MN')}</p>
             </div>
             

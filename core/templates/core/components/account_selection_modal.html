@@ -109,7 +109,10 @@ window.selectAccount = function(accountId, accountCode, accountName, currencyId,
         
         if (hiddenInput && displayInput) {
             hiddenInput.value = accountId;
-            displayInput.value = accountCode;
+            displayInput.value = `${accountCode} - ${accountName}`;
+            console.log('DEBUG: Account selected - AccountId:', accountId, 'Display:', displayInput.value);
+        } else {
+            console.error('DEBUG: AccountId or AccountIdDisplay not found:', {hiddenInput, displayInput});
         }
         
         // Handle currency fields if they exist
