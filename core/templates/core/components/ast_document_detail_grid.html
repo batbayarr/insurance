@@ -40,21 +40,19 @@
                         </div>
                     </td>
                     <td class="px-1 py-1 text-right border-r border-gray-200">
-                        <span class="text-xs text-gray-900">{{ item.Quantity|floatformat:6 }}</span>
+                        <span class="text-xs text-gray-900">{{ item.Quantity|floatformat:2|intcomma }}</span>
                     </td>
                     <td class="px-1 py-1 text-right border-r border-gray-200">
-                        <span class="text-xs text-gray-900">{{ item.UnitCost|floatformat:6 }}</span>
+                        <span class="text-xs text-gray-900">{{ item.UnitCost|floatformat:2|intcomma }}</span>
                     </td>
                     <td class="px-1 py-1 text-right border-r border-gray-200">
-                        <span class="text-xs text-gray-900">{{ item.UnitPrice|floatformat:6 }}</span>
+                        <span class="text-xs text-gray-900">{{ item.UnitPrice|floatformat:2|intcomma }}</span>
                     </td>
                     <td class="px-1 py-1 text-right border-r border-gray-200 total-cost">
-                        {% widthratio item.Quantity 1 item.UnitCost as total_cost %}
-                        {{ total_cost|floatformat:2|intcomma }}
+                        <span class="text-xs text-gray-900">{% widthratio item.Quantity 1 item.UnitCost as total_cost %}{{ total_cost|floatformat:2|intcomma }}</span>
                     </td>
                     <td class="px-1 py-1 text-right border-r border-gray-200 total-price">
-                        {% widthratio item.Quantity 1 item.UnitPrice as total_price %}
-                        {{ total_price|floatformat:2|intcomma }}
+                        <span class="text-xs text-gray-900">{% widthratio item.Quantity 1 item.UnitPrice as total_price %}{{ total_price|floatformat:2|intcomma }}</span>
                     </td>
                 </tr>
                 {% empty %}
@@ -73,10 +71,10 @@
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
                     <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                        <span id="asset-total-cost" class="font-medium text-blue-600">0.00</span>
+                        <span id="asset-total-cost" class="text-xs text-gray-900">0.00</span>
                     </td>
                     <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                        <span id="asset-total-price" class="font-medium text-purple-600">0.00</span>
+                        <span id="asset-total-price" class="text-xs text-gray-900">0.00</span>
                     </td>
                 </tr>
             </tfoot>
@@ -142,16 +140,16 @@
                             </div>
                         </td>
                         <td class="px-1 py-1 text-right border-r border-gray-200">
-                            <span class="text-xs text-gray-900">{{ detail.CurrencyExchange|floatformat:4 }}</span>
+                            <span class="text-xs text-gray-900">{{ detail.CurrencyExchange|floatformat:4|intcomma }}</span>
                         </td>
                         <td class="px-1 py-1 text-right border-r border-gray-200">
-                            <span class="text-xs text-gray-900">{{ detail.CurrencyAmount|floatformat:2 }}</span>
+                            <span class="text-xs text-gray-900">{{ detail.CurrencyAmount|floatformat:2|intcomma }}</span>
                         </td>
                         <td class="px-1 py-1 text-right border-r border-gray-200 debit-amount">
-                            {% if detail.DebitAmount %}{{ detail.DebitAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                            <span class="text-xs text-gray-900">{% if detail.DebitAmount %}{{ detail.DebitAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span>
                         </td>
                         <td class="px-1 py-1 text-right border-r border-gray-200 credit-amount">
-                            {% if detail.CreditAmount %}{{ detail.CreditAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}
+                            <span class="text-xs text-gray-900">{% if detail.CreditAmount %}{{ detail.CreditAmount|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span>
                         </td>
                     </tr>
                     {% empty %}
@@ -171,10 +169,10 @@
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                            <span id="display-total-debit" class="font-medium text-red-600">0.00</span>
+                            <span id="display-total-debit" class="text-xs text-gray-900">0.00</span>
                         </td>
                         <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">
-                            <span id="display-total-credit" class="font-medium text-green-600">0.00</span>
+                            <span id="display-total-credit" class="text-xs text-gray-900">0.00</span>
                         </td>
                     </tr>
                 </tfoot>
@@ -183,3 +181,22 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Try to call the calculation functions if they're available
+if (typeof window.calculateAssetItemTotals === 'function' && typeof window.calculateAssetAccountingTotals === 'function') {
+    // Multiple execution attempts to ensure they run
+    window.calculateAssetItemTotals();
+    window.calculateAssetAccountingTotals();
+    
+    setTimeout(() => {
+        window.calculateAssetItemTotals();
+        window.calculateAssetAccountingTotals();
+    }, 50);
+    
+    setTimeout(() => {
+        window.calculateAssetItemTotals();
+        window.calculateAssetAccountingTotals();
+    }, 100);
+}
+</script>

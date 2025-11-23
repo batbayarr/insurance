@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Manage Asset Document Items - {{ document.DocumentNo }} - Silicon-AI Accounting{% endblock %}
 
@@ -54,21 +55,25 @@ input[type="number"] {
 
     <!-- Main Form -->
     <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
-        <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Хөрөнгийн бичилт</h3>
-                </div>
-                <button type="button" id="add-new-asset-row-btn" 
-                        class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Add New Row</span>
-                </button>
-            </div>
-        </div>
+        
+
+
+
+
         <div class="p-4">
+            <div class="px-4 py-2 lg:px-6 border-b border-gray-200" style="padding-right: 0px !important;">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Хөрөнгийн бичилт</h3>
+                    </div>
+                    
+                    <button type="button" id="add-new-asset-row-btn"
+                            class="inline-flex items-center justify-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <span>МӨР НЭМЭХ</span>
+                    </button>
+                </div>
+            </div>
+
             {% csrf_token %}
             
             <!-- Details Table -->
@@ -101,7 +106,7 @@ input[type="number"] {
                                     <input type="text" 
                                            value="{% if item.AssetCardId %}{% if item.AssetCardId.AssetCardCode %}{{ item.AssetCardId.AssetCardCode }} - {% endif %}{{ item.AssetCardId.AssetCardName }}{% endif %}" 
                                            class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
-                                           placeholder="Click to select asset card" 
+                                           placeholder="Хөрөнгийн карт сонгох" 
                                            readonly 
                                            onclick="openAssetPopup(this, '{{ item.DocumentItemId }}')">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -130,16 +135,16 @@ input[type="number"] {
                                        placeholder="0.000000">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
-                                <input type="number" name="total_cost_{{ item.DocumentItemId }}" min="0" readonly
-                                       value="{% widthratio item.Quantity 1 item.UnitCost %}"
-                                       class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
-                                       placeholder="0.000000">
+                                <input type="text" name="total_cost_{{ item.DocumentItemId }}" readonly
+                                       value="{% widthratio item.Quantity 1 item.UnitCost as total_cost %}{{ total_cost|floatformat:2|intcomma }}"
+                                       class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly bg-gray-50" 
+                                       placeholder="0.00">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
-                                <input type="number" name="total_price_{{ item.DocumentItemId }}" min="0" readonly
-                                       value="{% widthratio item.Quantity 1 item.UnitPrice %}"
-                                       class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly" 
-                                       placeholder="0.000000">
+                                <input type="text" name="total_price_{{ item.DocumentItemId }}" readonly
+                                       value="{% widthratio item.Quantity 1 item.UnitPrice as total_price %}{{ total_price|floatformat:2|intcomma }}"
+                                       class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly bg-gray-50" 
+                                       placeholder="0.00">
                             </td>
                             <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
                                 <div class="flex items-center justify-end space-x-1 lg:space-x-2">
@@ -177,17 +182,14 @@ input[type="number"] {
             <!-- Accounting Details Section -->
             {% if not user.groups.all.0.name == 'baraa_nyarav' %}
             <div class="mt-8">
-                <div class="px-4 py-2 lg:px-6 border-b border-gray-200">
+                <div class="px-4 py-2 lg:px-6 border-b border-gray-200"  style="padding-right: 0px !important;">
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журанлын бичилт</h3>
                         </div>
                         <button type="button" id="add-new-detail-row-btn" 
-                                class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            <span>Add New Row</span>
+                                class="inline-flex items-center justify-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span>МӨР НЭМЭХ</span>
                         </button>
                     </div>
                 </div>
@@ -222,7 +224,7 @@ input[type="number"] {
                                 <input type="text" 
                                        value="{% if detail.AccountId %}{{ detail.AccountId.AccountCode }} - {{ detail.AccountId.AccountName }}{% endif %}" 
                                        class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
-                                       placeholder="Click to select account" 
+                                       placeholder="Данс сонгох" 
                                        readonly 
                                       onclick="openAccountPopup(this, 'detail_{{ detail.DocumentDetailId }}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for asset transactions' })">
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -239,7 +241,7 @@ input[type="number"] {
                                 <input type="text" 
                                        value="{% if detail.ClientId %}{{ detail.ClientId.ClientCode }} - {{ detail.ClientId.ClientName }}{% endif %}" 
                                        class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-readonly cursor-pointer" 
-                                       placeholder="Click to select client" 
+                                       placeholder="Харилцагч сонгох" 
                                        readonly 
                                        onclick="openClientPopup(this, 'detail_{{ detail.DocumentDetailId }}')">
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -251,7 +253,7 @@ input[type="number"] {
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
                             <select name="detail_currency_id_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Currency</option>
+                                <option value="">Валют сонгох</option>
                                 {% for currency in currencies %}
                                 <option value="{{ currency.CurrencyId }}" {% if detail.CurrencyId and currency.CurrencyId == detail.CurrencyId.CurrencyId %}selected{% endif %}>
                                     {{ currency.CurrencyId }} - {{ currency.Currency_name }}
@@ -273,9 +275,9 @@ input[type="number"] {
                         </td>
                         <td class="px-2 py-1 text-left border-r border-gray-200">
                             <select name="detail_is_debit_{{ detail.DocumentDetailId }}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Type</option>
-                                <option value="true" {% if detail.IsDebit %}selected{% endif %}>Debit</option>
-                                <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Credit</option>
+                                <option value="">Төрөл сонгох</option>
+                                <option value="true" {% if detail.IsDebit %}selected{% endif %}>Дебит</option>
+                                <option value="false" {% if not detail.IsDebit %}selected{% endif %}>Кредит</option>
                             </select>
                         </td>
                         <td class="px-1 py-1 text-right border-r border-gray-200">
@@ -334,10 +336,10 @@ input[type="number"] {
                         <span class="text-xs"><span id="row-counter">{{ document_items|length }}</span> rows ready to save</span>
                         <div class="flex items-center space-x-2 lg:space-x-3">
                             <span class="text-gray-500 text-xs">Balance:</span>
-                            <span class="text-gray-500 text-xs">Debit:</span>
+                            <span class="text-gray-500 text-xs">Дебит:</span>
                             <span id="total-debit" class="font-medium text-red-600 text-xs">0.00</span>
                             <span class="text-gray-400">|</span>
-                            <span class="text-gray-500 text-xs">Credit:</span>
+                            <span class="text-gray-500 text-xs">Кредит:</span>
                             <span id="total-credit" class="font-medium text-green-600 text-xs">0.00</span>
                             <span id="balance-status" class="ml-2 lg:ml-3 px-2 py-1 lg:px-3 text-xs rounded-full"></span>
                         </div>
@@ -346,12 +348,12 @@ input[type="number"] {
                 <div class="flex space-x-2 lg:space-x-4">
                     <a href="{% url 'core:astdocument_master_detail' %}?selected_document={{ document.DocumentId }}" 
                        class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        Cancel
+                        ЦУЦЛАХ
                     </a>
                     <button type="button" id="save-all-items" 
-                            class="px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="inline-flex items-center justify-center px-2 py-1 lg:px-3 lg:py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             onclick="submitViaAPI();">
-                        Save All Items
+                        ХАДГАЛАХ
                     </button>
                 </div>
             </div>
@@ -365,7 +367,7 @@ input[type="number"] {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
         <h3 class="mt-4 text-xs font-medium text-gray-900">No items found</h3>
-        <p class="mt-2 text-xs text-gray-500">Click "Add New Row" to create your first asset item record.</p>
+        <p class="mt-2 text-xs text-gray-500">Эхний хөрөнгийн бичлэг үүсгэхийн тулд "Шинэ мөр нэмэх" дээр дарна уу.</p>
     </div>
     {% endif %}
 </div>
@@ -382,8 +384,8 @@ input[type="number"] {
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
-<!-- Include generic FillAccountingDetails function -->
-<script src="{% static 'js/fill-accounting-details.js' %}"></script>
+<!-- Include asset-specific FillAccountingDetails function -->
+<script src="{% static 'js/fill-accounting-details-asset.js' %}"></script>
 
 <script>
 // VAT Rate from global constants (available via context processor)
@@ -581,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tolerance = 0.01;
                 
                 if (difference > tolerance) {
-                    alert(`Баланс тэнцэхгүй байна!\nДебит: ${totalDebit.toFixed(2)}\nКредит: ${totalCredit.toFixed(2)}\nЗөрүү: ${difference.toFixed(2)}`);
+                    alert(`Баланс тэнцэхгүй байна!\nДебит: ${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\nКредит: ${totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\nЗөрүү: ${difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
                     return;
                 }
             }
@@ -629,6 +631,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize asset item calculations
     initializeAssetCalculations();
     
+    // Format all existing calculated fields
+    formatAllCalculatedFields();
+    
     // Recalculate all asset totals on page load
     recalculateAllAssetTotals();
     
@@ -665,7 +670,7 @@ window.addNewRow = function() {
             <div class="relative">
                 <input type="hidden" name="new_asset_card_id_${newRowCounter}" class="asset-card-id-input" required>
                 <input type="text" class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
-                       placeholder="Click to select asset card" 
+                                       placeholder="Хөрөнгийн карт сонгох"
                        readonly 
                        onclick="openAssetPopup(this, 'new_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -691,14 +696,14 @@ window.addNewRow = function() {
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_total_cost_${newRowCounter}" min="0" readonly
+            <input type="text" name="new_total_cost_${newRowCounter}" readonly
                    class="total-cost-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
-                   placeholder="0.000000">
+                   placeholder="0.00">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_total_price_${newRowCounter}" min="0" readonly
+            <input type="text" name="new_total_price_${newRowCounter}" readonly
                    class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
-                   placeholder="0.000000">
+                   placeholder="0.00">
         </td>
         <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
             <div class="flex items-center justify-end space-x-1 lg:space-x-2">
@@ -713,6 +718,11 @@ window.addNewRow = function() {
     `;
     tbody.appendChild(row);
     addAssetCalculationListeners(row);
+    
+    // Automatically fill accounting details when a new row is added
+    if (typeof window.FillAccountingDetails === 'function') {
+        window.FillAccountingDetails();
+    }
 }
 
 // Function to remove a new row
@@ -721,6 +731,11 @@ window.removeNewRow = function(button) {
     if (row) {
         row.remove();
         updateAssetTotalsSummary();
+        
+        // Automatically fill accounting details when a row is removed
+        if (typeof window.FillAccountingDetails === 'function') {
+            window.FillAccountingDetails();
+        }
     }
 }
 
@@ -736,6 +751,11 @@ window.removeRow = function(button) {
         // Hide the row visually but keep it in DOM so delete flag is submitted
         row.style.display = 'none';
         updateAssetTotalsSummary();
+        
+        // Automatically fill accounting details when a row is deleted
+        if (typeof window.FillAccountingDetails === 'function') {
+            window.FillAccountingDetails();
+        }
     }
 }
 
@@ -799,8 +819,8 @@ function addDetailRow(data) {
         </td>
         <td class="px-2 py-1 text-left border-r border-gray-200">
             <select name="new_detail_is_debit_${rowId}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="true" ${data.isDebit ? 'selected' : ''}>Debit</option>
-                <option value="false" ${!data.isDebit ? 'selected' : ''}>Credit</option>
+                <option value="true" ${data.isDebit ? 'selected' : ''}>Дебит</option>
+                <option value="false" ${!data.isDebit ? 'selected' : ''}>Кредит</option>
             </select>
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
@@ -878,9 +898,9 @@ function addNewDetailRow() {
             <div class="relative">
                 <input type="hidden" name="new_detail_account_id_${newRowCounter}" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
-                       placeholder="Click to select account" 
+                       placeholder="Данс сонгох" 
                        readonly 
-                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for asset transactions' })">
+                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Данс сонгох', modalSubtitle: 'Хөрөнгийн гүйлгээний данс сонгох' })">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -892,7 +912,7 @@ function addNewDetailRow() {
             <div class="relative">
                 <input type="hidden" name="new_detail_client_id_${newRowCounter}">
                 <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
-                       placeholder="Click to select client" 
+                       placeholder="Харилцагч сонгох" 
                        readonly 
                        onclick="openClientPopup(this, 'new_detail_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -904,7 +924,7 @@ function addNewDetailRow() {
         </td>
         <td class="px-2 py-1 text-left border-r border-gray-200">
             <select name="new_detail_currency_id_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют сонгох</option>
                 {% for currency in currencies %}
                 <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
                 {% endfor %}
@@ -922,9 +942,9 @@ function addNewDetailRow() {
         </td>
         <td class="px-2 py-1 text-left border-r border-gray-200">
             <select name="new_detail_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
-                <option value="true">Debit</option>
-                <option value="false">Credit</option>
+                <option value="">Төрөл сонгох</option>
+                <option value="true">Дебит</option>
+                <option value="false">Кредит</option>
             </select>
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
@@ -1114,9 +1134,9 @@ function addVatCreditRecord(vatAmount) {
             <div class="relative">
                 <input type="hidden" name="new_detail_account_id_${newRowCounter}" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
-                       placeholder="Click to select account" 
+                       placeholder="Данс сонгох" 
                        readonly 
-                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for asset transactions' })">
+                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Данс сонгох', modalSubtitle: 'Хөрөнгийн гүйлгээний данс сонгох' })">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -1128,7 +1148,7 @@ function addVatCreditRecord(vatAmount) {
             <div class="relative">
                 <input type="hidden" name="new_detail_client_id_${newRowCounter}">
                 <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
-                       placeholder="Click to select client" 
+                       placeholder="Харилцагч сонгох" 
                        readonly 
                        onclick="openClientPopup(this, 'new_detail_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -1140,7 +1160,7 @@ function addVatCreditRecord(vatAmount) {
         </td>
         <td class="px-2 py-1">
             <select name="new_detail_currency_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют сонгох</option>
                 {% for currency in currencies %}
                 <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
                 {% endfor %}
@@ -1158,9 +1178,9 @@ function addVatCreditRecord(vatAmount) {
         </td>
         <td class="px-2 py-1">
             <select name="new_detail_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
-                <option value="true">Debit</option>
-                <option value="false">Credit</option>
+                <option value="">Төрөл сонгох</option>
+                <option value="true">Дебит</option>
+                <option value="false">Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
@@ -1262,9 +1282,9 @@ function addVatDebitRecord(vatAmount) {
             <div class="relative">
                 <input type="hidden" name="new_detail_account_id_${newRowCounter}" required>
                 <input type="text" class="account-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
-                       placeholder="Click to select account" 
+                       placeholder="Данс сонгох" 
                        readonly 
-                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Select Account', modalSubtitle: 'Choose an account for asset transactions' })">
+                       onclick="openAccountPopup(this, 'new_detail_${newRowCounter}', { modalTitle: 'Данс сонгох', modalSubtitle: 'Хөрөнгийн гүйлгээний данс сонгох' })">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -1276,7 +1296,7 @@ function addVatDebitRecord(vatAmount) {
             <div class="relative">
                 <input type="hidden" name="new_detail_client_id_${newRowCounter}">
                 <input type="text" class="client-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-gray-50" 
-                       placeholder="Click to select client" 
+                       placeholder="Харилцагч сонгох" 
                        readonly 
                        onclick="openClientPopup(this, 'new_detail_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -1288,7 +1308,7 @@ function addVatDebitRecord(vatAmount) {
         </td>
         <td class="px-2 py-1">
             <select name="new_detail_currency_id_${newRowCounter}" class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Currency</option>
+                <option value="">Валют сонгох</option>
                 {% for currency in currencies %}
                 <option value="{{ currency.CurrencyId }}">{{ currency.CurrencyId }} - {{ currency.Currency_name }}</option>
                 {% endfor %}
@@ -1306,9 +1326,9 @@ function addVatDebitRecord(vatAmount) {
         </td>
         <td class="px-2 py-1">
             <select name="new_detail_is_debit_${newRowCounter}" required class="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Type</option>
-                <option value="true">Debit</option>
-                <option value="false">Credit</option>
+                <option value="">Төрөл сонгох</option>
+                <option value="true">Дебит</option>
+                <option value="false">Кредит</option>
             </select>
         </td>
         <td class="px-2 py-1">
@@ -1568,11 +1588,17 @@ function calculateAssetTotals(row) {
     const totalCost = quantity * unitCost;
     const totalPrice = quantity * unitPrice;
     
-    totalCostDisplay.value = totalCost.toFixed(6);
-    totalPriceDisplay.value = totalPrice.toFixed(6);
+    // Format with thousands separators and 2 decimal places for display
+    totalCostDisplay.value = totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    totalPriceDisplay.value = totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     
     // Update summary totals
     updateAssetTotalsSummary();
+    
+    // Automatically fill accounting details when totals change
+    if (typeof window.FillAccountingDetails === 'function') {
+        window.FillAccountingDetails();
+    }
 }
 
 // Recalculate all asset totals
@@ -1589,8 +1615,11 @@ function recalculateAllAssetTotals() {
         const totalPriceDisplay = row.querySelector('.total-price-display');
         
         if (totalCostDisplay && totalPriceDisplay) {
-            sumTotalCost += parseFloat(totalCostDisplay.value) || 0;
-            sumTotalPrice += parseFloat(totalPriceDisplay.value) || 0;
+            // Remove thousands separators before parsing
+            const costValue = totalCostDisplay.value.replace(/,/g, '');
+            const priceValue = totalPriceDisplay.value.replace(/,/g, '');
+            sumTotalCost += parseFloat(costValue) || 0;
+            sumTotalPrice += parseFloat(priceValue) || 0;
         }
     });
     
@@ -1598,8 +1627,30 @@ function recalculateAllAssetTotals() {
     const sumTotalCostElement = document.getElementById('sum-total-cost');
     const sumTotalPriceElement = document.getElementById('sum-total-price');
     
-    if (sumTotalCostElement) sumTotalCostElement.textContent = sumTotalCost.toFixed(2);
-    if (sumTotalPriceElement) sumTotalPriceElement.textContent = sumTotalPrice.toFixed(2);
+    if (sumTotalCostElement) sumTotalCostElement.textContent = sumTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (sumTotalPriceElement) sumTotalPriceElement.textContent = sumTotalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Format all existing calculated fields on page load
+function formatAllCalculatedFields() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    visibleRows.forEach(row => {
+        const totalCostDisplay = row.querySelector('.total-cost-display');
+        const totalPriceDisplay = row.querySelector('.total-price-display');
+        
+        if (totalCostDisplay && totalCostDisplay.value) {
+            const value = parseFloat(totalCostDisplay.value.replace(/,/g, '')) || 0;
+            totalCostDisplay.value = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        if (totalPriceDisplay && totalPriceDisplay.value) {
+            const value = parseFloat(totalPriceDisplay.value.replace(/,/g, '')) || 0;
+            totalPriceDisplay.value = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    });
 }
 
 // Initialize asset calculations for existing rows
@@ -1710,8 +1761,8 @@ function updateBalanceDisplay() {
     const totalCreditElement = document.getElementById('total-credit');
     const balanceStatusElement = document.getElementById('balance-status');
     
-    if (totalDebitElement) totalDebitElement.textContent = totalDebit.toFixed(2);
-    if (totalCreditElement) totalCreditElement.textContent = totalCredit.toFixed(2);
+    if (totalDebitElement) totalDebitElement.textContent = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (totalCreditElement) totalCreditElement.textContent = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     
     if (balanceStatusElement) {
         const difference = Math.abs(totalDebit - totalCredit);
@@ -1721,7 +1772,7 @@ function updateBalanceDisplay() {
             balanceStatusElement.textContent = 'Balanced';
             balanceStatusElement.className = 'ml-2 lg:ml-3 px-2 py-1 lg:px-3 text-xs rounded-full bg-green-100 text-green-800';
         } else {
-            balanceStatusElement.textContent = `Off by ${difference.toFixed(2)}`;
+            balanceStatusElement.textContent = `Off by ${difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             balanceStatusElement.className = 'ml-2 lg:ml-3 px-2 py-1 lg:px-3 text-xs rounded-full bg-red-100 text-red-800';
         }
     }
@@ -1730,8 +1781,8 @@ function updateBalanceDisplay() {
     const sumDebitElement = document.getElementById('sum-debit-amount');
     const sumCreditElement = document.getElementById('sum-credit-amount');
     
-    if (sumDebitElement) sumDebitElement.textContent = totalDebit.toFixed(2);
-    if (sumCreditElement) sumCreditElement.textContent = totalCredit.toFixed(2);
+    if (sumDebitElement) sumDebitElement.textContent = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (sumCreditElement) sumCreditElement.textContent = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Update asset totals summary

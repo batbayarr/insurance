@@ -212,11 +212,12 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
                                row.querySelector('input[name*="asset_card_id_"]') || 
                                row.querySelector('input[name*="new_asset_card_id_"]');
             const displayInput = row.querySelector('.asset-card-display-input');
+            const quantityInput = row.querySelector('.quantity-input');
             const unitCostInput = row.querySelector('.unit-cost-input');
             const unitPriceInput = row.querySelector('.unit-price-input');
             const cumulatedDepreciationInput = row.querySelector('.cumulated-depreciation-input');
             
-            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput, rowId: window.currentAssetRowId});
+            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, quantityInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput, rowId: window.currentAssetRowId});
             
             if (hiddenInput && displayInput) {
                 hiddenInput.value = assetCardId;
@@ -225,6 +226,15 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
                 console.log('DEBUG: Set AssetCardId to:', assetCardId, 'and display to:', assetCardName);
             } else {
                 console.error('DEBUG: Missing hiddenInput or displayInput', {hiddenInput, displayInput});
+            }
+            
+            // Set quantity to 1 by default if empty or 0
+            if (quantityInput) {
+                const currentQuantity = parseFloat(quantityInput.value) || 0;
+                if (currentQuantity === 0 || quantityInput.value === '' || quantityInput.value === null) {
+                    quantityInput.value = '1';
+                    console.log('DEBUG: Set Quantity to 1 (default)');
+                }
             }
             
             // Populate unit cost, unit price, and cumulated depreciation if inputs exist

@@ -31,15 +31,9 @@
                 <label for="end-date" class="text-sm font-medium text-gray-700">Дуусах огноо:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <button id="apply-date-filter" class="border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap py-1 px-3 font-medium text-sm rounded-md">
-                Хайх
+            <button id="apply-date-filter" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                СЭРГЭЭХ
             </button>
-            <div class="flex items-center space-x-2">
-                <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
-                <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="10" selected>10</option>
-                </select>
-            </div>
         </div>
     </div>
 
@@ -211,7 +205,21 @@ function initializeDateInputs() {
         pageSizeSelect.addEventListener('change', () => { pageSize = parseInt(pageSizeSelect.value); currentPage = 1; applyFrontendFilter(); });
     }
     if (applyButton && startDateInput && endDateInput) {
-        applyButton.addEventListener('click', () => fetchDocuments(startDateInput.value, endDateInput.value));
+        applyButton.addEventListener('click', () => {
+            const startValue = startDateInput.value;
+            const endValue = endDateInput.value;
+            if (!startValue || !endValue) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            // Always clear frontend filters when user clicks refresh
+            clearAllClientSideFilters();
+            currentPage = 1;
+            
+            // Fetch data within the date range
+            fetchDocuments(startValue, endValue);
+        });
     }
     // Always fetch at load with defaults if inputs are missing
     const start = (startDateInput && startDateInput.value) ? startDateInput.value : defaultStart;
@@ -367,8 +375,8 @@ function renderDocumentsTable(documents) {
                         </td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 80px;"><span class="account-format" title="${escapeHtml(doc.AccountCode || '')} - ${escapeHtml(doc.AccountName || '')}">${escapeHtml(doc.AccountCode || '-')}</span></td>
             <td class="px-2 py-1 text-center text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">${doc.IsVat ? 'Y' : 'N'}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.CostAmount ? parseFloat(doc.CostAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.PriceAmount ? parseFloat(doc.PriceAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.CostAmount != null && doc.CostAmount !== '' && !isNaN(parseFloat(doc.CostAmount)) ? parseFloat(doc.CostAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${doc.PriceAmount != null && doc.PriceAmount !== '' && !isNaN(parseFloat(doc.PriceAmount)) ? parseFloat(doc.PriceAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${escapeHtml(doc.CreatedByUsername || '-')}</td>
             <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium"><div class="flex items-center justify-center space-x-2">${actionButtons}</div></td>`;
         fragment.appendChild(tr);
@@ -439,12 +447,28 @@ function initializePaginationListeners() {
     if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
 }
 
+// Helper function to clear all client-side filters
+function clearAllClientSideFilters() {
+    const filterInputs = ['filter-document-no','filter-document-type','filter-client','filter-date','filter-description','filter-account','filter-isvat','filter-cost-amount','filter-price-amount','filter-created-by'];
+    filterInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    // Remove selected_document from URL if present
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.has('selected_document')) {
+        currentUrl.searchParams.delete('selected_document');
+        window.history.pushState({}, '', currentUrl.toString());
+    }
+}
+
 function initializeFilterListeners() {
     const debouncedFilter = (fn => { let t; return function(...args){ clearTimeout(t); t = setTimeout(() => fn.apply(this,args), 300); }; })(applyFrontendFilter);
     const filterInputs = ['filter-document-no','filter-document-type','filter-client','filter-date','filter-description','filter-account','filter-isvat','filter-cost-amount','filter-price-amount','filter-created-by'];
     filterInputs.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', debouncedFilter); });
     const clearButton = document.getElementById('clear-filters');
-    if (clearButton) clearButton.addEventListener('click', function(){ filterInputs.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); applyFrontendFilter(); });
+    if (clearButton) clearButton.addEventListener('click', function(){ clearAllClientSideFilters(); applyFrontendFilter(); });
 }
 
 function initializeEventHandlers() {
@@ -789,6 +813,93 @@ function initializeAll() {
 }
 
 document.addEventListener('DOMContentLoaded', function(){ initializeAll(); });
+
+// Asset Document Calculation Functions (moved here to ensure they're always available)
+function calculateAssetItemTotals() {
+    const itemsTbody = document.getElementById('items-tbody');
+    if (!itemsTbody) {
+        console.warn('Asset: No items tbody found');
+        return;
+    }
+    
+    const totalCostCells = itemsTbody.querySelectorAll('td.total-cost');
+    const totalPriceCells = itemsTbody.querySelectorAll('td.total-price');
+    
+    let totalCost = 0;
+    let totalPrice = 0;
+    
+    // Calculate total cost
+    totalCostCells.forEach((cell) => {
+        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
+        totalCost += value;
+    });
+    
+    // Calculate total price
+    totalPriceCells.forEach((cell) => {
+        const value = parseFloat(cell.textContent.replace(/,/g, '')) || 0;
+        totalPrice += value;
+    });
+    
+    // Update display elements
+    const totalCostElement = document.getElementById('asset-total-cost');
+    const totalPriceElement = document.getElementById('asset-total-price');
+    
+    if (totalCostElement) {
+        const formattedCost = totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        totalCostElement.textContent = formattedCost;
+    }
+    
+    if (totalPriceElement) {
+        const formattedPrice = totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        totalPriceElement.textContent = formattedPrice;
+    }
+}
+
+function calculateAssetAccountingTotals() {
+    const tbody = document.getElementById('detail-tbody');
+    if (!tbody) {
+        console.warn('Asset: No detail tbody found');
+        return;
+    }
+    
+    const rows = tbody.querySelectorAll('tr');
+    let totalDebit = 0;
+    let totalCredit = 0;
+    
+    // Calculate totals
+    rows.forEach((row) => {
+        const debitCell = row.querySelector('td.debit-amount');
+        const creditCell = row.querySelector('td.credit-amount');
+        
+        if (debitCell) {
+            const value = parseFloat(debitCell.textContent.replace(/,/g, '')) || 0;
+            totalDebit += value;
+        }
+        if (creditCell) {
+            const value = parseFloat(creditCell.textContent.replace(/,/g, '')) || 0;
+            totalCredit += value;
+        }
+    });
+    
+    // Update display elements
+    const totalDebitElement = document.getElementById('display-total-debit');
+    const totalCreditElement = document.getElementById('display-total-credit');
+    
+    if (totalDebitElement) {
+        const formattedDebit = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        totalDebitElement.textContent = formattedDebit;
+    }
+    
+    if (totalCreditElement) {
+        const formattedCredit = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        totalCreditElement.textContent = formattedCredit;
+    }
+}
+
+// Make functions globally available
+window.calculateAssetItemTotals = calculateAssetItemTotals;
+window.calculateAssetAccountingTotals = calculateAssetAccountingTotals;
+console.log('✅ Asset calculation functions defined in master-detail template');
 
 } // End of execution guard
 </script>
