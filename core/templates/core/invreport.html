@@ -342,6 +342,7 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бараа материал</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгж</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дундаж өртөг</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эх.үлдэгдэл</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эх.өртөг</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Орлого</th>
@@ -368,6 +369,10 @@
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
                             <input type="text" id="filter-balance-measurement" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-balance-average-cost" placeholder="Filter..." 
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
@@ -407,7 +412,7 @@
                 <tbody id="balance-tbody" class="bg-white">
                     <!-- Balance data will be loaded here via AJAX -->
                     <tr>
-                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="13" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1804,6 +1809,7 @@
         const inventoryCodeFilter = document.getElementById('filter-balance-inventory-code')?.value.toLowerCase().trim() || '';
         const inventoryNameFilter = document.getElementById('filter-balance-inventory-name')?.value.toLowerCase().trim() || '';
         const measurementFilter = document.getElementById('filter-balance-measurement')?.value.toLowerCase().trim() || '';
+        const averageCostFilter = document.getElementById('filter-balance-average-cost')?.value.toLowerCase().trim() || '';
         const beginningQuantityFilter = document.getElementById('filter-balance-beginning-quantity')?.value.toLowerCase().trim() || '';
         const beginningCostFilter = document.getElementById('filter-balance-beginning-cost')?.value.toLowerCase().trim() || '';
         const inQuantityFilter = document.getElementById('filter-balance-in-quantity')?.value.toLowerCase().trim() || '';
@@ -1814,14 +1820,21 @@
         const endingCostFilter = document.getElementById('filter-balance-ending-cost')?.value.toLowerCase().trim() || '';
         
         // Apply filters
-        if (accountFilter || inventoryCodeFilter || inventoryNameFilter || measurementFilter || 
+        if (accountFilter || inventoryCodeFilter || inventoryNameFilter || measurementFilter || averageCostFilter ||
             beginningQuantityFilter || beginningCostFilter || inQuantityFilter || inCostFilter ||
             outQuantityFilter || outCostFilter || endingQuantityFilter || endingCostFilter) {
             filteredData = filteredData.filter(balance => {
+                // Calculate average cost for filtering
+                const endingQty = parseFloat(balance.endingquantity || 0);
+                const endingCost = parseFloat(balance.endingcost || 0);
+                const avgCost = endingQty > 0 ? (endingCost / endingQty) : 0;
+                const avgCostStr = formatNumber(avgCost, 2).toLowerCase();
+                
                 const accountMatch = !accountFilter || String(balance.accountcode || '').toLowerCase().includes(accountFilter);
                 const inventoryCodeMatch = !inventoryCodeFilter || String(balance.inventorycode || '').toLowerCase().includes(inventoryCodeFilter);
                 const inventoryNameMatch = !inventoryNameFilter || String(balance.inventoryname || '').toLowerCase().includes(inventoryNameFilter);
                 const measurementMatch = !measurementFilter || String(balance.measurementname || '').toLowerCase().includes(measurementFilter);
+                const averageCostMatch = !averageCostFilter || avgCostStr.includes(averageCostFilter);
                 const beginningQuantityMatch = !beginningQuantityFilter || String(balance.beginningquantity || '').toLowerCase().includes(beginningQuantityFilter);
                 const beginningCostMatch = !beginningCostFilter || String(balance.beginningcost || '').toLowerCase().includes(beginningCostFilter);
                 const inQuantityMatch = !inQuantityFilter || String(balance.inquantity || '').toLowerCase().includes(inQuantityFilter);
@@ -1831,7 +1844,7 @@
                 const endingQuantityMatch = !endingQuantityFilter || String(balance.endingquantity || '').toLowerCase().includes(endingQuantityFilter);
                 const endingCostMatch = !endingCostFilter || String(balance.endingcost || '').toLowerCase().includes(endingCostFilter);
                 
-                return accountMatch && inventoryCodeMatch && inventoryNameMatch && measurementMatch &&
+                return accountMatch && inventoryCodeMatch && inventoryNameMatch && measurementMatch && averageCostMatch &&
                        beginningQuantityMatch && beginningCostMatch && inQuantityMatch && inCostMatch &&
                        outQuantityMatch && outCostMatch && endingQuantityMatch && endingCostMatch;
             });
@@ -1897,7 +1910,7 @@
         if (!balances || balances.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="13" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1932,11 +1945,16 @@
             const endingQuantity = formatNumber(balance.endingquantity || 0, 3);
             const endingCost = formatNumber(balance.endingcost || 0, 2);
             
+            // Use average cost from SQL function
+            const averageCost = balance.averagecost || 0;
+            const averageCostFormatted = formatNumber(averageCost, 2);
+            
             row.innerHTML = `
                 <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${accountCode}</td>
                 <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${inventoryCode}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${inventoryName}</td>
                 <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${measurementName}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${averageCostFormatted}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${beginningQuantity}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${beginningCost}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${inQuantity}</td>
@@ -1964,6 +1982,7 @@
             
             summaryRow.innerHTML = `
                 <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="5">НИЙТЛЭГ:</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalBeginningCost}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalInCost}</td>

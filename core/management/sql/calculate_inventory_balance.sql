@@ -5,7 +5,7 @@
 CREATE OR REPLACE FUNCTION public.calculate_inventory_balance(
 	begindate date,
 	enddate date)
-    RETURNS TABLE(accountid integer, accountcode character varying, accountname character varying, inventoryid integer, inventorycode character varying, inventoryname character varying, measurementid smallint, measurementname character varying, beginningquantity numeric, beginningcost numeric, inquantity numeric, incost numeric, outquantity numeric, outcost numeric, endingquantity numeric, endingcost numeric) 
+    RETURNS TABLE(accountid integer, accountcode character varying, accountname character varying, inventoryid integer, inventorycode character varying, inventoryname character varying, measurementid smallint, measurementname character varying, beginningquantity numeric, beginningcost numeric, inquantity numeric, incost numeric, outquantity numeric, outcost numeric, endingquantity numeric, endingcost numeric, averagecost numeric) 
     LANGUAGE 'plpgsql'
     COST 100
     VOLATILE PARALLEL UNSAFE
@@ -148,7 +148,15 @@ BEGIN
         COALESCE(ibb.in_cost_before, 0) -
         COALESCE(ebb.out_cost_before, 0) +
         COALESCE(ip.in_cost, 0) -
-        COALESCE(ep.out_cost, 0) AS EndingCost
+        COALESCE(ep.out_cost, 0) AS EndingCost,
+
+        -- Average cost calculation: (BeginningCost + InCost) / (BeginningQuantity + InQuantity)
+        CASE 
+            WHEN (COALESCE(sb.starting_quantity, 0) + COALESCE(ibb.in_quantity_before, 0) - COALESCE(ebb.out_quantity_before, 0) + COALESCE(ip.in_quantity, 0)) > 0
+            THEN (COALESCE(sb.starting_cost, 0) + COALESCE(ibb.in_cost_before, 0) - COALESCE(ebb.out_cost_before, 0) + COALESCE(ip.in_cost, 0)) / 
+                 (COALESCE(sb.starting_quantity, 0) + COALESCE(ibb.in_quantity_before, 0) - COALESCE(ebb.out_quantity_before, 0) + COALESCE(ip.in_quantity, 0))
+            ELSE NULL
+        END AS AverageCost
 
     FROM account_inventory_combinations aic
     INNER JOIN ref_account ra ON aic."AccountId" = ra."AccountId"
