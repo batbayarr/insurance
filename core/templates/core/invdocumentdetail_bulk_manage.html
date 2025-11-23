@@ -374,12 +374,74 @@ input[type="number"] {
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
+<!-- Include Message Modal -->
+{% include 'core/components/message_modal.html' %}
+
 <!-- Include generic FillAccountingDetails function -->
 <script src="{% static 'js/fill-accounting-details.js' %}"></script>
 
 <script>
 // VAT Rate from context processor (no hardcoded values)
 const VAT_RATE = parseFloat('{{ VAT_RATE_PERCENT }}');
+
+// Function to show message modal
+function showMessageModal(message, type = 'error') {
+    const modal = document.getElementById('message-modal');
+    const title = document.getElementById('message-modal-title');
+    const text = document.getElementById('message-modal-text');
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const errorIcon = document.getElementById('message-modal-icon-error');
+    const successIcon = document.getElementById('message-modal-icon-success');
+    const warningIcon = document.getElementById('message-modal-icon-warning');
+    const infoIcon = document.getElementById('message-modal-icon-info');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    if (!modal || !title || !text) {
+        // Fallback to alert if modal not found
+        alert(message);
+        return;
+    }
+    
+    // Set message text
+    text.textContent = message;
+    
+    // Set title based on type
+    const titles = {
+        'error': 'Алдаа',
+        'success': 'Амжилттай',
+        'warning': 'Анхааруулга',
+        'info': 'Мэдээлэл'
+    };
+    title.textContent = titles[type] || 'Алдаа';
+    
+    // Reset all icons
+    if (errorIcon) errorIcon.classList.add('hidden');
+    if (successIcon) successIcon.classList.add('hidden');
+    if (warningIcon) warningIcon.classList.add('hidden');
+    if (infoIcon) infoIcon.classList.add('hidden');
+    
+    // Show appropriate icon and set container color
+    if (type === 'error') {
+        if (errorIcon) errorIcon.classList.remove('hidden');
+        if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+        if (okButton) okButton.className = 'px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300';
+    } else if (type === 'success') {
+        if (successIcon) successIcon.classList.remove('hidden');
+        if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+        if (okButton) okButton.className = 'px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-24 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300';
+    } else if (type === 'warning') {
+        if (warningIcon) warningIcon.classList.remove('hidden');
+        if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+        if (okButton) okButton.className = 'px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-24 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300';
+    } else if (type === 'info') {
+        if (infoIcon) infoIcon.classList.remove('hidden');
+        if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
+        if (okButton) okButton.className = 'px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-24 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300';
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // Get document's default exchange rate from data attribute
@@ -433,6 +495,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (visibleInventoryRows.length === 0) {
                     alert('Падааны мэдээлэл оруулна уу?');
                     return;
+                }
+            }
+            
+            // Validate that each row has quantity > 0 and unit cost > 0
+            if (inventoryTbody) {
+                // Get all visible rows (not deleted)
+                const visibleRows = inventoryTbody.querySelectorAll('tr:not([style*="display: none"])');
+                
+                for (const row of visibleRows) {
+                    // Find quantity input (check both existing and new row patterns)
+                    const quantityInput = row.querySelector('.quantity-input') || 
+                                         row.querySelector('input[name*="quantity_"]') || 
+                                         row.querySelector('input[name*="new_quantity_"]');
+                    
+                    // Find unit cost input (check both existing and new row patterns)
+                    const unitCostInput = row.querySelector('.unit-cost-input') || 
+                                         row.querySelector('input[name*="unit_cost_"]') || 
+                                         row.querySelector('input[name*="new_unit_cost_"]');
+                    
+                    if (quantityInput && unitCostInput) {
+                        // Remove commas if formatted, then parse
+                        const quantityValue = (quantityInput.value || '0').toString().replace(/,/g, '');
+                        const unitCostValue = (unitCostInput.value || '0').toString().replace(/,/g, '');
+                        
+                        const quantity = parseFloat(quantityValue) || 0;
+                        const unitCost = parseFloat(unitCostValue) || 0;
+                        
+                        // Check if quantity <= 0 or unit cost <= 0
+                        if (quantity <= 0 || unitCost <= 0) {
+                            showMessageModal('Падааны мэдээлэл бүрэн оруулна уу', 'error');
+                            return;
+                        }
+                    }
                 }
             }
             

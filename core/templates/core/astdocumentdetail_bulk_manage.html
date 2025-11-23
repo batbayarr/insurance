@@ -108,7 +108,7 @@ input[type="number"] {
                                            class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500-display" 
                                            placeholder="Хөрөнгийн карт сонгох" 
                                            readonly 
-                                           onclick="openAssetPopup(this, '{{ item.DocumentItemId }}')">
+                                           onclick="openAssetPopupWithContext(this, '{{ item.DocumentItemId }}')">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                         <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -117,15 +117,15 @@ input[type="number"] {
                                 </div>
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
-                                <input type="number" name="quantity_{{ item.DocumentItemId }}" min="0" required
+                                <input type="number" name="quantity_{{ item.DocumentItemId }}" min="0" required readonly
                                        value="{{ item.Quantity }}"
-                                       class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50 cursor-not-allowed" 
                                        placeholder="0.000000">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
-                                <input type="number" name="unit_cost_{{ item.DocumentItemId }}" min="0" required
+                                <input type="number" name="unit_cost_{{ item.DocumentItemId }}" min="0" required readonly
                                        value="{{ item.UnitCost }}"
-                                       class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                       class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50 cursor-not-allowed" 
                                        placeholder="0.000000">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
@@ -185,7 +185,7 @@ input[type="number"] {
                 <div class="px-4 py-2 lg:px-6 border-b border-gray-200"  style="padding-right: 0px !important;">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журанлын бичилт</h3>
+                            <h3 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">Журналын бичилт</h3>
                         </div>
                         <button type="button" id="add-new-detail-row-btn" 
                                 class="inline-flex items-center justify-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -384,10 +384,63 @@ input[type="number"] {
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
 
+<!-- Include Message Modal -->
+{% include 'core/components/message_modal.html' %}
+
 <!-- Include asset-specific FillAccountingDetails function -->
 <script src="{% static 'js/fill-accounting-details-asset.js' %}"></script>
 
 <script>
+// Function to show message modal
+function showMessageModal(message, type = 'error') {
+    const modal = document.getElementById('message-modal');
+    const title = document.getElementById('message-modal-title');
+    const text = document.getElementById('message-modal-text');
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const errorIcon = document.getElementById('message-modal-icon-error');
+    const successIcon = document.getElementById('message-modal-icon-success');
+    const warningIcon = document.getElementById('message-modal-icon-warning');
+    const infoIcon = document.getElementById('message-modal-icon-info');
+    
+    if (!modal || !title || !text) return;
+    
+    // Set message text
+    text.textContent = message;
+    
+    // Set title based on type
+    const titles = {
+        'error': 'Алдаа',
+        'success': 'Амжилттай',
+        'warning': 'Анхааруулга',
+        'info': 'Мэдээлэл'
+    };
+    title.textContent = titles[type] || 'Алдаа';
+    
+    // Reset all icons
+    errorIcon.classList.add('hidden');
+    successIcon.classList.add('hidden');
+    warningIcon.classList.add('hidden');
+    infoIcon.classList.add('hidden');
+    
+    // Show appropriate icon and set container color
+    if (type === 'error') {
+        errorIcon.classList.remove('hidden');
+        iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+    } else if (type === 'success') {
+        successIcon.classList.remove('hidden');
+        iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+    } else if (type === 'warning') {
+        warningIcon.classList.remove('hidden');
+        iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+    } else if (type === 'info') {
+        infoIcon.classList.remove('hidden');
+        iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
 // VAT Rate from global constants (available via context processor)
 const VAT_RATE = {{ VAT_RATE }};
 
@@ -480,6 +533,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Падааны мэдээлэл оруулна уу?');
                     return;
                 }
+            }
+            
+            // Check for duplicate AssetCardId
+            const assetCardIds = [];
+            const visibleRows = assetTbody.querySelectorAll('tr:not([style*="display: none"])');
+            
+            visibleRows.forEach(row => {
+                // Check for existing rows
+                const existingAssetCardId = row.querySelector('input[name*="asset_card_id_"]')?.value;
+                // Check for new rows
+                const newAssetCardId = row.querySelector('input[name*="new_asset_card_id_"]')?.value;
+                
+                const assetCardId = existingAssetCardId || newAssetCardId;
+                
+                if (assetCardId && assetCardId.trim() !== '') {
+                    assetCardIds.push(assetCardId);
+                }
+            });
+            
+            // Check for duplicates
+            const duplicates = assetCardIds.filter((id, index) => assetCardIds.indexOf(id) !== index);
+            if (duplicates.length > 0) {
+                // Show modal with error message
+                showMessageModal('Баримтад хөрөнгийн нэр нэгээс дээш удаа орсон байна. Засна уу?', 'error');
+                return;
             }
             
             // Collect asset items data (first table)
@@ -672,7 +750,7 @@ window.addNewRow = function() {
                 <input type="text" class="asset-card-display-input w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer" 
                                        placeholder="Хөрөнгийн карт сонгох"
                        readonly 
-                       onclick="openAssetPopup(this, 'new_${newRowCounter}')">
+                       onclick="openAssetPopupWithContext(this, 'new_${newRowCounter}')">
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -681,13 +759,13 @@ window.addNewRow = function() {
             </div>
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_quantity_${newRowCounter}" min="0" required
-                   class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+            <input type="number" name="new_quantity_${newRowCounter}" min="0" required readonly
+                   class="quantity-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50 cursor-not-allowed" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
-            <input type="number" name="new_unit_cost_${newRowCounter}" min="0" required
-                   class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+            <input type="number" name="new_unit_cost_${newRowCounter}" min="0" required readonly
+                   class="unit-cost-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50 cursor-not-allowed" 
                    placeholder="0.000000">
         </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
@@ -1548,21 +1626,9 @@ function removeDetailRow(button) {
 
 // Add calculation event listeners to asset row
 function addAssetCalculationListeners(row) {
-    const quantityInput = row.querySelector('.quantity-input');
-    const unitCostInput = row.querySelector('.unit-cost-input');
+    // Quantity and unit_cost are read-only, so no input listeners needed
+    // Only unit_price can be edited and should trigger recalculation
     const unitPriceInput = row.querySelector('.unit-price-input');
-    
-    if (quantityInput) {
-        quantityInput.addEventListener('input', function() {
-            calculateAssetTotals(row);
-        });
-    }
-    
-    if (unitCostInput) {
-        unitCostInput.addEventListener('input', function() {
-            calculateAssetTotals(row);
-        });
-    }
     
     if (unitPriceInput) {
         unitPriceInput.addEventListener('input', function() {
@@ -1797,6 +1863,37 @@ function openAssetCardPopup(inputElement, rowId) {
         window.openAssetPopup(inputElement, rowId);
     } else {
         console.log('Asset popup function not available for row:', rowId);
+    }
+}
+
+// Helper function to open asset popup with document context
+function openAssetPopupWithContext(inputElement, rowId) {
+    // Get document data from the JSON script tag
+    const documentDataScript = document.getElementById('document-data');
+    if (documentDataScript) {
+        try {
+            const documentData = JSON.parse(documentDataScript.textContent);
+            const context = {
+                documentDate: documentData.DocumentDate || null,
+                accountId: documentData.AccountId || null,
+                documentTypeId: documentData.DocumentTypeId || null
+            };
+            // Call the modal's openAssetPopup function with context
+            if (typeof window.openAssetPopup === 'function') {
+                window.openAssetPopup(inputElement, rowId, context);
+            }
+        } catch (e) {
+            console.error('Error parsing document data:', e);
+            // Fallback to regular call without context
+            if (typeof window.openAssetPopup === 'function') {
+                window.openAssetPopup(inputElement, rowId);
+            }
+        }
+    } else {
+        // Fallback to regular call without context
+        if (typeof window.openAssetPopup === 'function') {
+            window.openAssetPopup(inputElement, rowId);
+        }
     }
 }
 

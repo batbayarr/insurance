@@ -130,6 +130,7 @@ urlpatterns = [
 
     # JSON API Endpoints
     path('api/assets/', views.assets_json, name='assets_json'),
+    path('api/asset-cards/', views.asset_cards_json, name='asset_cards_json'),
     path('api/clients/', views.clients_json, name='clients_json'),
     path('api/accounts/', views.api_accounts_json, name='api_accounts_json'),
     path('api/client-lookup-by-name/', views.api_client_lookup_by_name, name='api_client_lookup_by_name'),

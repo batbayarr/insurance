@@ -1,11 +1,10 @@
 <!-- Asset Selection Modal Component -->
 <div id="asset-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-10 mx-auto p-6 border w-11/12 max-w-6xl shadow-xl rounded-lg bg-white">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-7xl min-w-[1400px] shadow-xl rounded-lg bg-white">
         <!-- Modal Header -->
-        <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
             <div>
-                <h3 class="text-xl font-semibold text-gray-900">Select Asset Card</h3>
-                <p class="text-sm text-gray-500 mt-1">Choose an asset card from the list below</p>
+                <h3 class="text-lg font-medium text-gray-900">Хөрөнгийн карт сонгох</h3>
             </div>
             <button onclick="closeAssetPopup()" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -14,119 +13,91 @@
             </button>
         </div>
 
-        <!-- Column Filters and Actions -->
-        <div class="mb-4">
-            <div class="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                <div class="col-span-1">
-                    <input type="text" 
-                           id="filter-asset-code" 
-                           placeholder="Code..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-asset-name" 
-                           placeholder="Filter by name..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-asset-type" 
-                           placeholder="Filter by asset..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" 
-                           id="filter-employee" 
-                           placeholder="Filter by employee..." 
-                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="col-span-3 flex items-center justify-center space-x-2">
-                    <button onclick="showAddAssetForm()" 
-                            class="inline-flex items-center px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
-                            title="Add New Asset Card">
-                        <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Add
-                    </button>
-                    <button onclick="clearAllAssetFilters()" 
-                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors">
-                        Clear
-                    </button>
-                </div>
-            </div>
+        <!-- Actions Row -->
+        <div class="mb-2 flex items-center justify-end space-x-2">
+            <button onclick="showAddAssetForm()" 
+                    class="inline-flex items-center px-2 py-1 text-xs font-bold text-white bg-green-600 hover:bg-green-700 hover:text-white rounded shadow-sm transition-all duration-200 border border-green-600 hover:border-green-700"
+                    title="Шинэ хөрөнгийн карт нэмэх">
+                <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                НЭМЭХ
+            </button>
+            <button onclick="clearAllAssetFilters()" 
+                    class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                Цэвэрлэх
+            </button>
         </div>
 
         <!-- Add/Edit Asset Form (Hidden by default) -->
-        <div id="asset-form-container" class="mb-4 hidden">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h4 id="asset-form-title" class="text-lg font-medium text-gray-900">Add New Asset Card</h4>
+        <div id="asset-form-container" class="mb-2 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 id="asset-form-title" class="text-sm font-medium text-gray-900">Шинэ хөрөнгийн карт нэмэх</h4>
                     <button onclick="hideAssetForm()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
                 
                 <form id="asset-form" onsubmit="submitAssetForm(event)">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
-                            <label for="asset-id" class="block text-sm font-medium text-gray-700 mb-1">Asset *</label>
+                            <label for="asset-id" class="block text-xs font-medium text-gray-700 mb-1">Хөрөнгө *</label>
                             <select id="asset-id" name="AssetId" required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Asset</option>
+                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Хөрөнгө сонгох</option>
                                 <!-- Options will be populated dynamically -->
                             </select>
                         </div>
                         <div>
-                            <label for="asset-card-code" class="block text-sm font-medium text-gray-700 mb-1">Asset Card Code *</label>
+                            <label for="asset-card-code" class="block text-xs font-medium text-gray-700 mb-1">Хөрөнгийн картын код *</label>
                             <input type="text" id="asset-card-code" name="AssetCardCode" maxlength="5" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="asset-card-name" class="block text-sm font-medium text-gray-700 mb-1">Asset Card Name</label>
+                            <label for="asset-card-name" class="block text-xs font-medium text-gray-700 mb-1">Хөрөнгийн картын нэр</label>
                             <input type="text" id="asset-card-name" name="AssetCardName" maxlength="50"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="manufactured-date" class="block text-sm font-medium text-gray-700 mb-1">Manufactured Date</label>
+                            <label for="manufactured-date" class="block text-xs font-medium text-gray-700 mb-1">Үйлдвэрлэсэн огноо</label>
                             <input type="date" id="manufactured-date" name="ManufacturedDate"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="received-date" class="block text-sm font-medium text-gray-700 mb-1">Received Date</label>
+                            <label for="received-date" class="block text-xs font-medium text-gray-700 mb-1">Хүлээн авсан огноо</label>
                             <input type="date" id="received-date" name="ReceivedDate"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="months-to-use" class="block text-sm font-medium text-gray-700 mb-1">Months to Use</label>
+                            <label for="months-to-use" class="block text-xs font-medium text-gray-700 mb-1">Ашиглах сар</label>
                             <input type="number" id="months-to-use" name="MonthsToUse" min="1" max="999"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="unit-cost" class="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
+                            <label for="unit-cost" class="block text-xs font-medium text-gray-700 mb-1">Нэгжийн өртөг *</label>
                             <input type="number" id="unit-cost" name="UnitCost" step="0.000001" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="unit-price" class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                            <label for="unit-price" class="block text-xs font-medium text-gray-700 mb-1">Нэгжийн үнэ *</label>
                             <input type="number" id="unit-price" name="UnitPrice" step="0.000001" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label for="daily-expense" class="block text-sm font-medium text-gray-700 mb-1">Daily Expense</label>
+                            <label for="daily-expense" class="block text-xs font-medium text-gray-700 mb-1">Өдрийн зардал</label>
                             <input type="number" id="daily-expense" name="DailyExpense" step="0.000001" readonly
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Auto-calculated">
-                            <p class="mt-1 text-xs text-gray-500">Calculated from Unit Cost and Months to Use</p>
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Автоматаар тооцоолно">
+                            <p class="mt-1 text-xs text-gray-500">Нэгжийн өртөг болон ашиглах сараас тооцоолно</p>
                         </div>
                         <div>
-                            <label for="employee-id" class="block text-sm font-medium text-gray-700 mb-1">Employee (Optional)</label>
+                            <label for="employee-id" class="block text-xs font-medium text-gray-700 mb-1">Ажилтан (Сонголттой)</label>
                             <select id="employee-id" name="EmployeeId"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Employee</option>
+                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Ажилтан сонгох</option>
                                 <!-- Options will be populated dynamically -->
                             </select>
                         </div>
@@ -134,25 +105,25 @@
                             <label class="flex items-center">
                                 <input type="checkbox" id="asset-active" name="IsDelete" 
                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <span class="ml-2 text-sm text-gray-700">Mark as Deleted</span>
+                                <span class="ml-2 text-xs text-gray-700">Устгасан гэж тэмдэглэх</span>
                             </label>
                         </div>
                     </div>
                     
-                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-blue-200">
+                    <div class="flex justify-end space-x-2 mt-2 pt-2 border-t border-blue-200">
                         <button type="button" onclick="hideAssetForm()" 
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Cancel
+                                class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            Цуцлах
                         </button>
                         <button type="submit" id="asset-submit-btn"
-                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <span id="asset-submit-text">Add Asset Card</span>
+                                class="px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-500">
+                            <span id="asset-submit-text">Хөрөнгийн карт нэмэх</span>
                             <span id="asset-submit-loading" class="hidden">
-                                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Saving...
+                                Хадгалж байна...
                             </span>
                         </button>
                     </div>
@@ -163,26 +134,75 @@
         </div>
 
         <!-- Asset List Container -->
-        <div id="asset-list-container" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+        <div id="asset-list-container" class="max-h-96 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg min-w-[1100px]">
             <!-- Asset list will be loaded here -->
         </div>
 
+        <!-- Pagination Container -->
+        <div id="asset-pagination-container" class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 hidden">
+            <div class="flex items-center space-x-2">
+                <span id="asset-pagination-info" class="text-xs text-gray-700"></span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="asset-pagination-prev" onclick="changeAssetPage(currentAssetPage - 1)" 
+                        class="px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Өмнөх
+                </button>
+                <div id="asset-pagination-buttons" class="flex items-center space-x-1">
+                    <!-- Page number buttons will be generated here -->
+                </div>
+                <button id="asset-pagination-next" onclick="changeAssetPage(currentAssetPage + 1)" 
+                        class="px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Дараах
+                </button>
+            </div>
+        </div>
+
         <!-- Modal Footer -->
-        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
             <button onclick="closeAssetPopup()" 
-                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-                Cancel
+                    class="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                Цуцлах
             </button>
         </div>
     </div>
 </div>
 
 <script>
+// Global variables for document context
+window.assetModalContext = {
+    documentDate: null,
+    accountId: null,
+    documentTypeId: null
+};
+
+// Pagination variables
+let currentAssetPage = 1;
+let assetPageSize = 15;
+let totalAssetPages = 1;
+let allAssetData = []; // Store all asset cards for filtering and pagination
+
 // Asset Selection Modal Functions
-window.openAssetPopup = function(inputElement = null, rowId = null) {
+window.openAssetPopup = function(inputElement = null, rowId = null, context = null) {
     // Store the current input element and row ID for later use
     window.currentAssetInput = inputElement;
     window.currentAssetRowId = rowId;
+    
+    // Store document context if provided
+    if (context) {
+        window.assetModalContext.documentDate = context.documentDate || null;
+        window.assetModalContext.accountId = context.accountId || null;
+        window.assetModalContext.documentTypeId = context.documentTypeId || null;
+    } else {
+        // Clear context if not provided
+        window.assetModalContext.documentDate = null;
+        window.assetModalContext.accountId = null;
+        window.assetModalContext.documentTypeId = null;
+    }
+    
+    // Reset pagination
+    currentAssetPage = 1;
+    allAssetData = [];
     
     // Open asset selection modal
     const modal = document.getElementById('asset-selection-modal');
@@ -311,11 +331,11 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
             }
         } else {
             // Use normalized values
-            if (unitCostInput) {
+        if (unitCostInput) {
                 unitCostInput.value = normalizedUnitCost;
                 console.log('DEBUG: Set UnitCost to:', normalizedUnitCost);
-            }
-            if (unitPriceInput) {
+        }
+        if (unitPriceInput) {
                 unitPriceInput.value = normalizedUnitPrice;
                 console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
             }
@@ -346,8 +366,8 @@ function showAddAssetForm() {
     document.getElementById('asset-active').checked = false; // Set default to not deleted
     
     // Update form title and button text
-    formTitle.textContent = 'Add New Asset Card';
-    submitText.textContent = 'Add Asset Card';
+    formTitle.textContent = 'Шинэ хөрөнгийн карт нэмэх';
+    submitText.textContent = 'Хөрөнгийн карт нэмэх';
     
     // Show form
     formContainer.classList.remove('hidden');
@@ -371,8 +391,8 @@ function updateAsset(assetCardId, assetCardName) {
     document.getElementById('asset-card-name').value = assetCardName;
     
     // Update form title and button text
-    formTitle.textContent = 'Edit Asset Card';
-    submitText.textContent = 'Update Asset Card';
+    formTitle.textContent = 'Хөрөнгийн карт засах';
+    submitText.textContent = 'Хөрөнгийн карт шинэчлэх';
     
     // Show form
     formContainer.classList.remove('hidden');
@@ -654,23 +674,32 @@ function loadAssetList() {
     // Show loading
     assetListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading asset cards...</p></div>';
     
-    // Use shared component for loading message if available
-    if (typeof Silicon4Message !== 'undefined' && Silicon4Message.info) {
-        Silicon4Message.info('Loading asset cards...');
-    }
+    // Check if context has documentDate (required for balance calculation)
+    const context = window.assetModalContext;
+    const hasContext = context.documentDate;
     
-    // Fetch assets data and render custom modal
-    const url = `/core/asset-cards/?modal=true&select_mode=true`;
-    
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            // Parse the HTML to extract asset data
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const assetRows = doc.querySelectorAll('tbody tr');
+    if (hasContext) {
+        // Calculate dates: beginDate = documentDate - 1 day, endDate = documentDate
+        const documentDate = new Date(context.documentDate);
+        const beginDate = new Date(documentDate);
+        beginDate.setDate(beginDate.getDate() - 1);
+        
+        const startDateStr = beginDate.toISOString().split('T')[0];
+        const endDateStr = documentDate.toISOString().split('T')[0];
+        
+        // Load all asset cards first, then merge balance data
+        Promise.all([
+            // Load all asset cards from API
+            fetch('/core/api/asset-cards/').then(r => r.json()),
+            // Load balance data
+            fetch(`/core/api/ast-balance-data/?start_date=${startDateStr}&end_date=${endDateStr}`).then(r => r.json())
+        ])
+        .then(([assetCardsData, balanceData]) => {
+            if (!assetCardsData.success || !assetCardsData.asset_cards) {
+                throw new Error(assetCardsData.error || 'Failed to load asset cards');
+            }
             
-            if (assetRows.length === 0) {
+            if (assetCardsData.asset_cards.length === 0) {
                 assetListContainer.innerHTML = `
                     <div class="text-center py-8">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -683,114 +712,144 @@ function loadAssetList() {
                 return;
             }
             
-            // Create custom asset list HTML
-            let assetsHtml = `
-                <div class="space-y-0">
-                    <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        <div class="col-span-1 px-4 border-r border-gray-200">Code</div>
-                        <div class="col-span-2 px-4 border-r border-gray-200">Asset Card Name</div>
-                        <div class="col-span-2 px-4 border-r border-gray-200">Asset</div>
-                        <div class="col-span-2 px-4 border-r border-gray-200">Unit Cost</div>
-                        <div class="col-span-2 px-4 border-r border-gray-200">Unit Price</div>
-                        <div class="col-span-2 px-4 border-r border-gray-200">Employee</div>
-                        <div class="col-span-1 px-4 text-center">Select</div>
-                    </div>
-            `;
+            // Convert API data to format expected by renderAssetTable
+            const assetData = assetCardsData.asset_cards.map(card => ({
+                id: card.AssetCardId,
+                assetcardid: card.AssetCardId,
+                code: card.AssetCardCode || '-',
+                assetcardcode: card.AssetCardCode || '-',
+                name: card.AssetCardName || '',
+                assetcardname: card.AssetCardName || '',
+                assetname: card.AssetName || '-',
+                assettypename: card.AssetTypeName || '-', // Get from API
+                employee: card.ClientName || '-',
+                unitCost: card.UnitCost ? card.UnitCost.toString() : '0',
+                unitcost: card.UnitCost || 0,
+                unitPrice: card.UnitPrice ? card.UnitPrice.toString() : '0',
+                unitprice: card.UnitPrice || 0,
+                // Initialize balance fields
+                endingquantity: null,
+                endingcost: null,
+                cumulateddepreciation: null
+            }));
             
-            assetRows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    const assetCardCode = cells[0]?.textContent?.trim() || '-';
-                    const assetCardName = cells[1]?.textContent?.trim() || '';
-                    const assetName = cells[2]?.textContent?.trim() || '-';
-                    const employee = cells[5]?.textContent?.trim() || '-';
-                    
-                    // Extract asset card ID, unitCost, unitPrice, and cumulatedDepreciation from the select button onclick
-                    const selectButton = row.querySelector('button[onclick*="selectAsset"]');
-                    let assetCardId = '';
-                    let unitCost = '0';
-                    let unitPrice = '0';
-                    let cumulatedDepreciation = '0';
-                    
-                    console.log('DEBUG: Processing row, selectButton:', selectButton);
-                    
-                    if (selectButton) {
-                        const onclickAttr = selectButton.getAttribute('onclick');
-                        console.log('DEBUG: onclick attribute:', onclickAttr);
-                        // Extract all parameters from selectAsset call: selectAsset('id', 'name', 'assetName', 'unitCost', 'unitPrice', 'cumulatedDepreciation')
-                        const matches = onclickAttr.match(/selectAsset\('([^']+)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'\)/);
-                        if (matches) {
-                            assetCardId = matches[1];
-                            // matches[2] is assetCardName, matches[3] is assetName
-                            unitCost = matches[4] || '0';
-                            unitPrice = matches[5] || '0';
-                            cumulatedDepreciation = matches[6] || '0';
-                            console.log('DEBUG: Extracted from onclick - assetCardId:', assetCardId, 'unitCost:', unitCost, 'unitPrice:', unitPrice, 'cumulatedDepreciation:', cumulatedDepreciation);
-                        } else {
-                            // Fallback: try older format without cumulatedDepreciation
-                            const oldMatches = onclickAttr.match(/selectAsset\('([^']+)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'\)/);
-                            if (oldMatches) {
-                                assetCardId = oldMatches[1];
-                                unitCost = oldMatches[4] || '0';
-                                unitPrice = oldMatches[5] || '0';
-                                cumulatedDepreciation = '0';
-                                console.log('DEBUG: Extracted from old format - assetCardId:', assetCardId, 'unitCost:', unitCost, 'unitPrice:', unitPrice);
-                            } else {
-                                // Fallback: try to extract just the ID
-                                const idMatch = onclickAttr.match(/selectAsset\('([^']+)'/);
-                                if (idMatch) {
-                                    assetCardId = idMatch[1];
-                                    console.log('DEBUG: Extracted assetCardId only:', assetCardId);
-                                } else {
-                                    console.log('DEBUG: No match found for assetCardId');
-                                }
-                            }
-                        }
-                    } else {
-                        console.log('DEBUG: No select button found');
+            // Merge balance data if available
+            if (balanceData.success && balanceData.balance_data) {
+                const balanceLookup = {};
+                balanceData.balance_data.forEach(b => {
+                    // Filter by accountId if provided in context
+                    if (context.accountId && b.accountid != context.accountId) {
+                        return; // Skip this balance item if accountId doesn't match
                     }
+                    // Create lookup key by assetcardid
+                    const key = b.assetcardid;
+                    if (!balanceLookup[key]) {
+                        balanceLookup[key] = b;
+                    }
+                });
+                
+                assetData.forEach(item => {
+                    // Find matching balance by assetcardid
+                    const balanceItem = balanceLookup[item.assetcardid];
                     
-                    assetsHtml += `
-                        <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
-                             data-asset-code="${assetCardCode.toLowerCase()}" 
-                             data-asset-name="${assetCardName.toLowerCase()}" 
-                             data-asset-type="${assetName.toLowerCase()}"
-                             data-employee="${employee.toLowerCase()}"
-                             onclick="selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}', '${cumulatedDepreciation}')">
-                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm font-medium text-gray-900">${assetCardCode}</span>
-                            </div>
-                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm font-medium text-gray-900">${assetCardName}</span>
-                            </div>
-                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm text-gray-900">${assetName}</span>
-                            </div>
-                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm text-gray-900 font-mono">${unitCost}</span>
-                            </div>
-                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm text-gray-900 font-mono">${unitPrice}</span>
-                            </div>
-                            <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                                <span class="text-sm text-gray-900">${employee}</span>
-                            </div>
-                            <div class="col-span-1 px-4 flex items-center justify-center">
-                                <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${assetCardCode} - ${assetCardName}', '${assetName}', '${unitCost}', '${unitPrice}', '${cumulatedDepreciation}')" 
-                                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                    Select
-                                </button>
-                            </div>
-                        </div>
-                    `;
+                    if (balanceItem) {
+                        item.endingquantity = balanceItem.endingquantity;
+                        item.endingcost = balanceItem.endingcost;
+                        item.cumulateddepreciation = balanceItem.cumulateddepreciation;
+                        // Update asset type name from balance if available (prefer balance data)
+                        if (balanceItem.assettypename && balanceItem.assettypename !== '-') {
+                            item.assettypename = balanceItem.assettypename;
+                        }
+                        // Update unit cost/price from balance if available
+                        // Note: balance data doesn't have unit cost/price, keep from asset card
+                    }
+                });
+                
+                // If filtering by accountId, only show asset cards that have balance data for that account
+                if (context.accountId) {
+                    assetData = assetData.filter(item => balanceLookup[item.assetcardid]);
                 }
-            });
+            }
             
-            assetsHtml += '</div>';
-            assetListContainer.innerHTML = assetsHtml;
+            // Filter assets based on document type
+            // For document type 11: only show items with endingquantity > 0
+            // For all other cases: show all asset cards
+            const documentTypeId = window.assetModalContext.documentTypeId;
+            let filteredAssetData = assetData;
             
-            // Add search filter functionality
-            initializeAssetSearchFilter();
+            if (documentTypeId && parseInt(documentTypeId) === 11) {
+                filteredAssetData = assetData.filter(item => {
+                    const endingQty = parseFloat(item.endingquantity) || 0;
+                    return endingQty > 0;
+                });
+                console.log(`Filtered assets for document type ${documentTypeId}: showing ${filteredAssetData.length} items with endingquantity > 0 out of ${assetData.length} total`);
+            }
+            
+            // Store all data and render with pagination
+            allAssetData = filteredAssetData;
+            currentAssetPage = 1;
+            renderAssetTable(filteredAssetData, true); // true = balance view (shows balance columns)
+        })
+        .catch(error => {
+            console.error('Error loading asset cards or balance data:', error);
+            // Fallback to regular asset list
+            loadRegularAssetList();
+        });
+    } else {
+        // Fallback to regular asset list
+        loadRegularAssetList();
+    }
+}
+
+function loadRegularAssetList() {
+    const assetListContainer = document.getElementById('asset-list-container');
+    if (!assetListContainer) return;
+    
+    // Show loading
+    assetListContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading asset cards...</p></div>';
+    
+    // Fetch asset cards from API endpoint
+    fetch('/core/api/asset-cards/')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success || !data.asset_cards) {
+                throw new Error(data.error || 'Failed to load asset cards');
+            }
+            
+            if (data.asset_cards.length === 0) {
+                assetListContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No asset cards found</h3>
+                        <p class="mt-1 text-sm text-gray-500">No asset cards match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Convert API data to format expected by renderAssetTable
+            const assetData = data.asset_cards.map(card => ({
+                id: card.AssetCardId,
+                assetcardid: card.AssetCardId,
+                code: card.AssetCardCode || '-',
+                assetcardcode: card.AssetCardCode || '-',
+                name: card.AssetCardName || '',
+                assetcardname: card.AssetCardName || '',
+                assetname: card.AssetName || '-',
+                assettypename: card.AssetTypeName || '-',
+                employee: card.ClientName || '-',
+                unitCost: card.UnitCost ? card.UnitCost.toString() : '0',
+                unitcost: card.UnitCost || 0,
+                unitPrice: card.UnitPrice ? card.UnitPrice.toString() : '0',
+                unitprice: card.UnitPrice || 0
+            }));
+            
+            // Store all data and render with pagination
+            allAssetData = assetData;
+            currentAssetPage = 1;
+            renderAssetTable(assetData, false); // false = regular view
         })
         .catch(error => {
             console.error('Error loading asset cards:', error);
@@ -812,79 +871,409 @@ function loadAssetList() {
         });
 }
 
+// Pagination helper functions
+function changeAssetPage(page) {
+    if (page < 1 || page > totalAssetPages) return;
+    currentAssetPage = page;
+    applyAssetFiltersAndPagination();
+}
+
+function updateAssetPaginationInfo(filteredCount, displayedCount, startIndex) {
+    const paginationInfo = document.getElementById('asset-pagination-info');
+    if (paginationInfo) {
+        if (filteredCount === 0) {
+            paginationInfo.textContent = 'No items found';
+        } else {
+            const endIndex = Math.min(startIndex + displayedCount, filteredCount);
+            paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredCount} items`;
+        }
+    }
+    
+    // Update prev/next buttons
+    const prevBtn = document.getElementById('asset-pagination-prev');
+    const nextBtn = document.getElementById('asset-pagination-next');
+    if (prevBtn) {
+        prevBtn.disabled = currentAssetPage === 1;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentAssetPage === totalAssetPages || totalAssetPages === 0;
+    }
+}
+
+function generateAssetPaginationButtons() {
+    const paginationButtons = document.getElementById('asset-pagination-buttons');
+    if (!paginationButtons) return;
+    
+    paginationButtons.innerHTML = '';
+    
+    if (totalAssetPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentAssetPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalAssetPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-xs rounded-md ${
+            i === currentAssetPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changeAssetPage(i));
+        paginationButtons.appendChild(button);
+    }
+}
+
+function renderAssetTable(data, isBalanceView = false) {
+    const assetListContainer = document.getElementById('asset-list-container');
+    if (!assetListContainer) return;
+    
+    if (data.length === 0) {
+        assetListContainer.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No asset cards found</h3>
+                <p class="mt-1 text-sm text-gray-500">No asset cards match the current filter criteria.</p>
+            </div>
+        `;
+        // Hide pagination
+        const paginationContainer = document.getElementById('asset-pagination-container');
+        if (paginationContainer) {
+            paginationContainer.classList.add('hidden');
+        }
+        return;
+    }
+    
+    // Apply filters first
+    const codeFilter = document.getElementById('filter-asset-code');
+    const nameFilter = document.getElementById('filter-asset-name');
+    const assetFilter = document.getElementById('filter-asset-asset');
+    const typeFilter = document.getElementById('filter-asset-type');
+    const codeTerm = codeFilter ? codeFilter.value.toLowerCase().trim() : '';
+    const nameTerm = nameFilter ? nameFilter.value.toLowerCase().trim() : '';
+    const assetTerm = assetFilter ? assetFilter.value.toLowerCase().trim() : '';
+    const typeTerm = typeFilter ? typeFilter.value.toLowerCase().trim() : '';
+    
+    let filteredData = data.filter(item => {
+        const code = (item.assetcardcode || item.code || '').toLowerCase();
+        const name = (item.assetcardname || item.name || '').toLowerCase();
+        const asset = (item.assetname || '').toLowerCase();
+        const type = (item.assettypename || '').toLowerCase();
+        const codeMatch = !codeTerm || code.includes(codeTerm);
+        const nameMatch = !nameTerm || name.includes(nameTerm);
+        const assetMatch = !assetTerm || asset.includes(assetTerm);
+        const typeMatch = !typeTerm || type.includes(typeTerm);
+        return codeMatch && nameMatch && assetMatch && typeMatch;
+    });
+    
+    // Calculate pagination
+    totalAssetPages = Math.ceil(filteredData.length / assetPageSize);
+    if (totalAssetPages === 0) totalAssetPages = 1; // Ensure at least 1 page
+    if (currentAssetPage > totalAssetPages) currentAssetPage = 1;
+    
+    // Get paginated data
+    const startIndex = (currentAssetPage - 1) * assetPageSize;
+    const endIndex = startIndex + assetPageSize;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
+    
+    // Update pagination info
+    updateAssetPaginationInfo(filteredData.length, paginatedData.length, startIndex);
+    
+    // Render table
+    if (isBalanceView) {
+        renderBalanceViewTable(paginatedData);
+    } else {
+        renderRegularViewTable(paginatedData);
+    }
+    
+    // Show pagination if needed
+    const paginationContainer = document.getElementById('asset-pagination-container');
+    if (paginationContainer) {
+        if (totalAssetPages > 1) {
+            paginationContainer.classList.remove('hidden');
+            paginationContainer.classList.add('flex');
+            generateAssetPaginationButtons();
+        } else {
+            paginationContainer.classList.add('hidden');
+            paginationContainer.classList.remove('flex');
+        }
+    }
+    
+    // Initialize filter functionality
+    initializeAssetSearchFilter();
+}
+
+function renderBalanceViewTable(data) {
+    const assetListContainer = document.getElementById('asset-list-container');
+    if (!assetListContainer) return;
+    
+    let assetsHtml = `
+        <div class="space-y-0">
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="border-r border-gray-300 px-1">
+                    <div class="mb-1">Код</div>
+                    <input type="text" 
+                           id="filter-asset-code" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-300 px-1">
+                    <div class="mb-1">Хөрөнгийн картын нэр</div>
+                    <input type="text" 
+                           id="filter-asset-name" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-300 px-1">
+                    <div class="mb-1">Хөрөнгө</div>
+                    <input type="text" 
+                           id="filter-asset-asset" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-300 px-1">
+                    <div class="mb-1">Төрөл</div>
+                    <input type="text" 
+                           id="filter-asset-type" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="border-r border-gray-300 px-1 text-right">Нэгж.өртөг</div>
+                <div class="border-r border-gray-300 px-1 text-right">Нэгж.үнэ</div>
+                <div class="border-r border-gray-300 px-1 text-right">Эцсийн тоо</div>
+                <div class="border-r border-gray-300 px-1 text-right">Эцсийн өртөг</div>
+                <div class="border-r border-gray-300 px-1 text-right">Элэгдэл</div>
+                <div class="border-r border-gray-300 px-1 text-center">Сонгох</div>
+                <div class="px-1 text-center">Үйлдэл</div>
+            </div>
+    `;
+    
+    data.forEach(item => {
+        const assetCardId = item.assetcardid || item.id || '';
+        const assetCardCode = item.assetcardcode || item.code || '-';
+        const assetCardName = item.assetcardname || item.name || '';
+        const assetName = item.assetname || '-';
+        const assetTypeName = item.assettypename || '-';
+        const unitCost = item.unitcost !== undefined && item.unitcost !== null ? parseFloat(item.unitcost).toFixed(6) : (item.unitCost || '-');
+        const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : (item.unitPrice || '-');
+        const endingQuantity = item.endingquantity !== undefined && item.endingquantity !== null ? parseFloat(item.endingquantity).toFixed(6) : '-';
+        const endingCost = item.endingcost !== undefined && item.endingcost !== null ? parseFloat(item.endingcost).toFixed(2) : '-';
+        const cumulatedDepreciation = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation).toFixed(2) : '-';
+        
+        const formattedAssetCardName = assetCardCode && assetCardCode !== '-' ? 
+            `${assetCardCode} - ${assetCardName}` : assetCardName;
+        
+        const unitCostForSelect = item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : (item.unitCost || '');
+        const unitPriceForSelect = item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : (item.unitPrice || '');
+        const cumulatedDepreciationForSelect = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? item.cumulateddepreciation.toString() : '0';
+        
+        assetsHtml += `
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-white border-b border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer asset-row" 
+                 data-asset-code="${assetCardCode.toLowerCase()}" 
+                 data-asset-name="${assetCardName.toLowerCase()}" 
+                 data-asset-type="${assetName.toLowerCase()}"
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')">
+                <div class="flex items-center border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${assetCardCode}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${assetCardName}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${assetName}</span>
+                </div>
+                <div class="flex items-center border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${assetTypeName}</span>
+                </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${unitCost}</span>
+                </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${unitPrice}</span>
+                </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${endingQuantity}</span>
+                </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${endingCost}</span>
+                </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${cumulatedDepreciation}</span>
+                </div>
+                <div class="flex items-center justify-center border-r border-gray-300 px-1">
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')" 
+                            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                        Сонгох
+                    </button>
+                </div>
+                <div class="flex items-center justify-center space-x-1 px-1">
+                    <button onclick="event.stopPropagation(); updateAsset('${assetCardId}', '${assetCardName}')" 
+                            class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                            title="Update Asset Card">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    assetsHtml += '</div>';
+    assetListContainer.innerHTML = assetsHtml;
+}
+
+function renderRegularViewTable(data) {
+    const assetListContainer = document.getElementById('asset-list-container');
+    if (!assetListContainer) return;
+    
+    let assetsHtml = `
+        <div class="space-y-0">
+            <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <div class="col-span-1 px-4 border-r border-gray-200">
+                    <div class="mb-1">Код</div>
+                    <input type="text" 
+                           id="filter-asset-code" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200">
+                    <div class="mb-1">Хөрөнгийн картын нэр</div>
+                    <input type="text" 
+                           id="filter-asset-name" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200">
+                    <div class="mb-1">Хөрөнгө</div>
+                    <input type="text" 
+                           id="filter-asset-asset" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200">
+                    <div class="mb-1">Төрөл</div>
+                    <input type="text" 
+                           id="filter-asset-type" 
+                           placeholder="Filter..." 
+                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн өртөг</div>
+                <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн үнэ</div>
+                <div class="col-span-2 px-4 border-r border-gray-200">Ажилтан</div>
+                <div class="col-span-1 px-4 text-center">Сонгох</div>
+            </div>
+    `;
+    
+    data.forEach(item => {
+        const assetCardId = item.assetcardid || item.id || '';
+        const assetCardCode = item.assetcardcode || item.code || '-';
+        const assetCardName = item.assetcardname || item.name || '';
+        const assetName = item.assetname || '-';
+        const assetTypeName = item.assettypename || '-';
+        const employee = item.employee || '-';
+        const unitCost = item.unitcost !== undefined && item.unitcost !== null ? parseFloat(item.unitcost).toFixed(6) : (item.unitCost || '-');
+        const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : (item.unitPrice || '-');
+        
+        const formattedAssetCardName = assetCardCode && assetCardCode !== '-' ? 
+            `${assetCardCode} - ${assetCardName}` : assetCardName;
+        
+        const unitCostForSelect = (item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : '') || item.unitCost || '';
+        const unitPriceForSelect = (item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '') || item.unitPrice || '';
+        const cumulatedDepreciationForSelect = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? item.cumulateddepreciation.toString() : '0';
+        
+        assetsHtml += `
+            <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
+                 data-asset-code="${assetCardCode.toLowerCase()}" 
+                 data-asset-name="${assetCardName.toLowerCase()}" 
+                 data-asset-type="${assetName.toLowerCase()}"
+                 data-employee="${employee.toLowerCase()}"
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')">
+                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                    <span class="text-sm text-gray-900">${assetCardCode}</span>
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                    <span class="text-sm text-gray-900">${assetCardName}</span>
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                    <span class="text-sm text-gray-900">${assetName}</span>
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                    <span class="text-sm text-gray-900">${assetTypeName}</span>
+                </div>
+                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
+                    <span class="text-sm text-gray-900">${unitCost}</span>
+                </div>
+                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
+                    <span class="text-sm text-gray-900">${unitPrice}</span>
+                </div>
+                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                    <span class="text-sm text-gray-900">${employee}</span>
+                </div>
+                <div class="col-span-1 px-4 flex items-center justify-center">
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')" 
+                            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
+                        Сонгох
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    assetsHtml += '</div>';
+    assetListContainer.innerHTML = assetsHtml;
+}
+
+function applyAssetFiltersAndPagination() {
+    if (allAssetData.length === 0) return;
+    
+    // Determine if we're in balance view or regular view
+    const isBalanceView = allAssetData.length > 0 && allAssetData[0].hasOwnProperty('endingquantity');
+    renderAssetTable(allAssetData, isBalanceView);
+}
+
 // Initialize asset search filter functionality
 function initializeAssetSearchFilter() {
     const codeFilter = document.getElementById('filter-asset-code');
     const nameFilter = document.getElementById('filter-asset-name');
+    const assetFilter = document.getElementById('filter-asset-asset');
     const typeFilter = document.getElementById('filter-asset-type');
-    const employeeFilter = document.getElementById('filter-employee');
     
-    if (!codeFilter || !nameFilter || !typeFilter || !employeeFilter) return;
+    if (!codeFilter || !nameFilter) return;
     
-    // Function to apply all filters
+    // Debounce function for filter input
+    let filterTimeout;
     function applyAssetFilters() {
-        const codeTerm = codeFilter.value.toLowerCase().trim();
-        const nameTerm = nameFilter.value.toLowerCase().trim();
-        const typeTerm = typeFilter.value.toLowerCase().trim();
-        const employeeTerm = employeeFilter.value.toLowerCase().trim();
-        
-        const assetRows = document.querySelectorAll('.asset-row');
-        let visibleCount = 0;
-        
-        assetRows.forEach(row => {
-            const assetCode = row.getAttribute('data-asset-code') || '';
-            const assetName = row.getAttribute('data-asset-name') || '';
-            const assetType = row.getAttribute('data-asset-type') || '';
-            const employee = row.getAttribute('data-employee') || '';
-            
-            const codeMatch = !codeTerm || assetCode.includes(codeTerm);
-            const nameMatch = !nameTerm || assetName.includes(nameTerm);
-            const typeMatch = !typeTerm || assetType.includes(typeTerm);
-            const employeeMatch = !employeeTerm || employee.includes(employeeTerm);
-            
-            if (codeMatch && nameMatch && typeMatch && employeeMatch) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Show/hide "no results" message
-        const noResultsMsg = document.getElementById('no-results-message');
-        const hasActiveFilters = codeTerm || nameTerm || typeTerm || employeeTerm;
-        
-        if (hasActiveFilters && visibleCount === 0) {
-            if (!noResultsMsg) {
-                const container = document.getElementById('asset-list-container');
-                const noResultsDiv = document.createElement('div');
-                noResultsDiv.id = 'no-results-message';
-                noResultsDiv.className = 'text-center py-8 text-gray-500';
-                noResultsDiv.innerHTML = `
-                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p class="text-sm">No asset cards found matching the current filters</p>
-                `;
-                container.appendChild(noResultsDiv);
-            }
-        } else if (noResultsMsg) {
-            noResultsMsg.remove();
-        }
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => {
+            // Reset to page 1 when filtering
+            currentAssetPage = 1;
+            // Re-render with filters and pagination
+            applyAssetFiltersAndPagination();
+        }, 300);
     }
     
-    // Add event listeners to all filter inputs
-    [codeFilter, nameFilter, typeFilter, employeeFilter].forEach(input => {
-        input.addEventListener('input', applyAssetFilters);
-    });
+    // Add event listeners to filter inputs
+    codeFilter.addEventListener('input', applyAssetFilters);
+    nameFilter.addEventListener('input', applyAssetFilters);
+    if (assetFilter) assetFilter.addEventListener('input', applyAssetFilters);
+    if (typeFilter) typeFilter.addEventListener('input', applyAssetFilters);
     
     // Clear all filters function
     window.clearAllAssetFilters = function() {
         codeFilter.value = '';
         nameFilter.value = '';
-        typeFilter.value = '';
-        employeeFilter.value = '';
-        applyAssetFilters();
+        if (assetFilter) assetFilter.value = '';
+        if (typeFilter) typeFilter.value = '';
+        currentAssetPage = 1;
+        applyAssetFiltersAndPagination();
     };
     
     // Clear filters when modal is closed
@@ -897,18 +1286,10 @@ function initializeAssetSearchFilter() {
                         // Clear all filters
                         codeFilter.value = '';
                         nameFilter.value = '';
-                        typeFilter.value = '';
-                        employeeFilter.value = '';
-                        // Show all rows again
-                        const assetRows = document.querySelectorAll('.asset-row');
-                        assetRows.forEach(row => {
-                            row.style.display = '';
-                        });
-                        // Remove no results message
-                        const noResultsMsg = document.getElementById('no-results-message');
-                        if (noResultsMsg) {
-                            noResultsMsg.remove();
-                        }
+                        if (assetFilter) assetFilter.value = '';
+                        if (typeFilter) typeFilter.value = '';
+                        currentAssetPage = 1;
+                        allAssetData = [];
                     }
                 }
             });

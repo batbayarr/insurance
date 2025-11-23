@@ -5193,7 +5193,7 @@ def get_ast_balance_data(request):
                 # Execute the asset balance function (uses only end_date as asofdate)
                 with connections[db_alias].cursor() as cursor:
                     cursor.execute(
-                        "SELECT * FROM calculate_ast_balance(%s)",
+                        "SELECT * FROM report_assetcard_balance(%s)",
                         [end_date]
                     )
                     
@@ -6022,6 +6022,43 @@ def assets_json(request):
         return JsonResponse({
             'success': True,
             'assets': assets_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def asset_cards_json(request):
+    """API endpoint to return asset cards as JSON with asset type information"""
+    try:
+        asset_cards = Ref_Asset_Card.objects.select_related(
+            'AssetId__AssetTypeId', 'ClientId'
+        ).order_by('AssetCardCode')
+        
+        asset_cards_data = []
+        for card in asset_cards:
+            asset_cards_data.append({
+                'AssetCardId': card.AssetCardId,
+                'AssetCardCode': card.AssetCardCode,
+                'AssetCardName': card.AssetCardName or '',
+                'AssetId': card.AssetId.AssetId if card.AssetId else None,
+                'AssetName': card.AssetId.AssetName if card.AssetId else '',
+                'AssetTypeId': card.AssetId.AssetTypeId.AssetTypeId if card.AssetId and card.AssetId.AssetTypeId else None,
+                'AssetTypeName': card.AssetId.AssetTypeId.AssetTypeName if card.AssetId and card.AssetId.AssetTypeId else '',
+                'UnitCost': float(card.UnitCost) if card.UnitCost else 0,
+                'UnitPrice': float(card.UnitPrice) if card.UnitPrice else 0,
+                'CumulatedDepreciation': float(card.CumulatedDepreciation) if card.CumulatedDepreciation else 0,
+                'ClientId': card.ClientId.ClientId if card.ClientId else None,
+                'ClientName': card.ClientId.ClientName if card.ClientId else ''
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'asset_cards': asset_cards_data
         })
         
     except Exception as e:
