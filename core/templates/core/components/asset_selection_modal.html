@@ -227,6 +227,38 @@ window.closeAssetPopup = async function() {
 
 window.selectAsset = async function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '', cumulatedDepreciation = '', dailyExpense = '') {
     console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice, cumulatedDepreciation, dailyExpense});
+
+    const contextDocType = window.assetModalContext?.documentTypeId;
+    if (contextDocType && parseInt(contextDocType, 10) === 10) {
+        try {
+            const usageUrl = `/core/api/asset-card-usage-check/?asset_card_id=${encodeURIComponent(assetCardId)}&document_type=${encodeURIComponent(contextDocType)}`;
+            const usageResponse = await fetch(usageUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const usageData = await usageResponse.json();
+
+            if (!usageData.success) {
+                console.warn('Asset usage check failed:', usageData.error);
+                return;
+            }
+
+            if (!usageData.is_available) {
+                const warningMessage = usageData.message || 'Тухайн хөрөнгийг орлогод авсан байна. эсвэл элэгдэл байгуулсан байна. эсвэл эхний үлдэгдэлтэй байна.';
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(warningMessage, 'warning');
+                } else {
+                    showAssetMessage(warningMessage, 'warning');
+                }
+                return;
+            }
+        } catch (error) {
+            console.warn('Failed to check asset card usage:', error);
+            return;
+        }
+    }
+
     // Check if we're in bulk manage mode (has currentAssetInput and currentAssetRowId)
     if (window.currentAssetInput && window.currentAssetRowId) {
         // Bulk manage mode - populate the specific row
@@ -892,6 +924,9 @@ function loadAssetList() {
                 depreciationexpense: null
             }));
             
+            const documentTypeId = window.assetModalContext.documentTypeId;
+            const isDocumentType10 = documentTypeId && parseInt(documentTypeId, 10) === 10;
+
             // Merge balance data if available
             const balanceLookup = {};
             let hasBalanceData = false;
@@ -899,7 +934,7 @@ function loadAssetList() {
             if (balanceData.success && balanceData.balance_data && balanceData.balance_data.length > 0) {
                 balanceData.balance_data.forEach(b => {
                     // Filter by accountId if provided in context
-                    if (context.accountId && b.accountid != context.accountId) {
+                    if (!isDocumentType10 && context.accountId && b.accountid != context.accountId) {
                         return; // Skip this balance item if accountId doesn't match
                     }
                     // Create lookup key by assetcardid
@@ -932,9 +967,9 @@ function loadAssetList() {
                 });
                 
                 // If filtering by accountId, only show asset cards that have balance data for that account
-                if (context.accountId && hasBalanceData) {
+                if (!isDocumentType10 && context.accountId && hasBalanceData) {
                     assetData = assetData.filter(item => balanceLookup[item.assetcardid]);
-                } else if (context.accountId && !hasBalanceData) {
+                } else if (!isDocumentType10 && context.accountId && !hasBalanceData) {
                     console.warn('No balance data returned for account filter:', context.accountId);
                 }
             }
@@ -942,7 +977,6 @@ function loadAssetList() {
             // Filter assets based on document type
             // For document type 11: only show items with endingquantity > 0
             // For all other cases: show all asset cards
-            const documentTypeId = window.assetModalContext.documentTypeId;
             let filteredAssetData = assetData;
             
             if (documentTypeId && parseInt(documentTypeId) === 11 && hasBalanceData) {

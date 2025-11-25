@@ -5261,6 +5261,69 @@ def get_ast_balance_data(request):
         }, status=500)
 
 
+@login_required
+@permission_required('core.view_ast_document', raise_exception=True)
+@require_http_methods(["GET"])
+def api_asset_card_usage_check(request):
+    """Check if an asset card is already used when creating asset receipts (DocumentTypeId=10)."""
+    asset_card_id = request.GET.get('asset_card_id')
+    document_type = request.GET.get('document_type')
+
+    if not asset_card_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'asset_card_id is required'
+        }, status=400)
+
+    try:
+        asset_card_id = int(asset_card_id)
+    except (TypeError, ValueError):
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid asset_card_id'
+        }, status=400)
+
+    # Only enforce for document type 10 (asset receipt)
+    if str(document_type) != '10':
+        return JsonResponse({
+            'success': True,
+            'is_available': True
+        })
+
+    warning_message = (
+        "Тухайн хөрөнгийг орлогод авсан байна. эсвэл элэгдэл байгуулсан байна. эсвэл эхний үлдэгдэлтэй байна."
+    )
+
+    try:
+        has_beginning = Ast_Beginning_Balance.objects.filter(
+            AssetCardId_id=asset_card_id,
+            IsDelete=False
+        ).exists()
+
+        has_depreciation = AstDepreciationExpense.objects.filter(
+            AssetCardId_id=asset_card_id
+        ).exists()
+
+        has_documents = Ast_Document_Item.objects.filter(
+            AssetCardId_id=asset_card_id,
+            DocumentId__IsDelete=False
+        ).exists()
+
+        is_available = not (has_beginning or has_depreciation or has_documents)
+
+        return JsonResponse({
+            'success': True,
+            'is_available': is_available,
+            'message': None if is_available else warning_message
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error checking asset card usage: {str(e)}'
+        }, status=500)
+
+
 # ==================== TRIAL CLOSING ENTRY VIEWS ====================
 
 @login_required

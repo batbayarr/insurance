@@ -239,7 +239,11 @@ function fetchDocuments(startDate, endDate) {
         .then(data => {
             currentApiRequest = null;
             if (data.success) {
-                allDocumentsData = data.documents;
+                allDocumentsData = (data.documents || []).slice().sort((a, b) => {
+                    const idA = parseInt(a.DocumentId, 10) || 0;
+                    const idB = parseInt(b.DocumentId, 10) || 0;
+                    return idB - idA;
+                });
                 currentPage = 1;
                 
                 // If selected_document is in URL, optionally set document number filter for visual feedback

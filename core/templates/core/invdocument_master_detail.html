@@ -293,6 +293,10 @@ function clearAllClientSideFilters(preserveSelectedDocument = false) {
     } catch (e) {
         console.warn('Failed to clear filters from localStorage:', e);
     }
+
+    if (!preserveSelectedDocument) {
+        resetDetailView();
+    }
 }
 
 // Initialize date inputs with local system date
@@ -415,6 +419,7 @@ function initializeDateInputs() {
                 
                 // Always clear frontend filters when user clicks refresh
                 clearAllClientSideFilters(); // This removes selected_document from URL
+                resetDetailView();
                 currentPage = 1;
                 
                 // Reset flags to ensure clean state
@@ -872,6 +877,19 @@ function updateRowSelection(selectedDocumentId) {
     const selectedRow = document.querySelector(`tr[data-document-id="${selectedDocumentId}"]`);
     if (selectedRow) {
         selectedRow.classList.add('bg-blue-50');
+    }
+}
+
+function resetDetailView() {
+    detailCache.clear();
+    updateRowSelection(null);
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="text-center py-12 text-sm text-gray-500">
+                Баримт сонгоно уу.
+            </div>
+        `;
     }
 }
 
