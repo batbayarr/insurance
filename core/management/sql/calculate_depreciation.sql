@@ -70,7 +70,10 @@ BEGIN
         bal.assetcardid,
         p_period_id,
         v_expense_days,
-        v_end_date,
+        LEAST(
+            COALESCE(bal.first_disposal_date, v_end_date),
+            v_end_date
+        ),
         COALESCE(bal.depreciationexpense, (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6)) AS expense_amount,
         rada."ExpenseAccountId", -- Debit: Expense Account
         rada."DepreciationAccountId", -- Credit: Accumulated Depreciation

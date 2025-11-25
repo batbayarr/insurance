@@ -5436,13 +5436,15 @@ def api_asset_depreciation_expenses(request):
                 'daily_expense': float(exp.AssetCardId.DailyExpense) if exp.AssetCardId and exp.AssetCardId.DailyExpense else 0.0,
                 'expense_day': exp.ExpenseDay,
                 'expense_amount': float(exp.ExpenseAmount) if exp.ExpenseAmount else 0.0,
+                    'depreciation_date': exp.DepreciationDate.strftime('%Y-%m-%d') if exp.DepreciationDate else '',
                 'created_date': exp.CreatedDate.strftime('%Y-%m-%d') if exp.CreatedDate else '',
                 'created_by': exp.CreatedBy.username if exp.CreatedBy else '',
                 'debit_account_code': exp.DebitAccountId.AccountCode if exp.DebitAccountId else '',
                 'credit_account_id': exp.CreditAccountId.AccountId if exp.CreditAccountId else None,
                 'credit_account_code': exp.CreditAccountId.AccountCode if exp.CreditAccountId else '',
                 'document_id': exp.DocumentId.DocumentId if exp.DocumentId else None,
-                'document_no': exp.DocumentId.DocumentNo if exp.DocumentId else ''
+                'document_no': exp.DocumentId.DocumentNo if exp.DocumentId else '',
+                'document_date': exp.DocumentId.DocumentDate.strftime('%Y-%m-%d') if exp.DocumentId and exp.DocumentId.DocumentDate else ''
             })
         
         return JsonResponse({

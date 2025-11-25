@@ -139,48 +139,14 @@ BEGIN
     ),
 
     -- 7) Determine activity windows and compute depreciation based on daily expense
-    depreciation_base AS (
-        SELECT
-            aac."AccountId",
-            aac."AssetCardId",
-            rac."DailyExpense",
-            CASE 
-                WHEN sb."AssetCardId" IS NOT NULL THEN pd.period_begin
-                WHEN ar.first_receipt_date IS NOT NULL THEN GREATEST(pd.period_begin, ar.first_receipt_date)
-                ELSE NULL
-            END AS activity_start,
-            CASE 
-                WHEN ads.first_disposal_date IS NOT NULL THEN LEAST(ads.first_disposal_date, pd.period_end)
-                ELSE pd.period_end
-            END AS activity_end
-        FROM account_asset_combinations aac
-        CROSS JOIN period_dates pd
-        LEFT JOIN ref_asset_card rac ON aac."AssetCardId" = rac."AssetCardId"
-        LEFT JOIN starting_balances sb ON aac."AccountId" = sb."AccountId" 
-            AND aac."AssetCardId" = sb."AssetCardId"
-        LEFT JOIN asset_receipts ar ON aac."AccountId" = ar."AccountId"
-            AND aac."AssetCardId" = ar."AssetCardId"
-        LEFT JOIN asset_disposals ads ON aac."AccountId" = ads."AccountId"
-            AND aac."AssetCardId" = ads."AssetCardId"
-    ),
-
     depreciation_expenses AS (
         SELECT
-            db."AccountId",
-            db."AssetCardId",
-            CASE 
-                WHEN db.activity_start IS NULL 
-                    OR db.activity_end IS NULL 
-                    OR db."DailyExpense" IS NULL 
-                    OR db."DailyExpense" <= 0 
-                    OR db.activity_end < db.activity_start
-                THEN 0::NUMERIC(24,6)
-                ELSE (
-                    GREATEST(0, (db.activity_end - db.activity_start + 1))::NUMERIC(24,6) 
-                    * db."DailyExpense"
-                )::NUMERIC(24,6)
-            END AS depreciation_expense
-        FROM depreciation_base db
+            ade."AccountId",
+            ade."AssetCardId",
+            COALESCE(SUM(ade."ExpenseAmount"), 0)::NUMERIC(24,6) AS depreciation_expense
+        FROM ast_depreciation_expense ade
+        INNER JOIN period_dates pd ON ade."DepreciationDate" BETWEEN pd.period_begin AND pd.period_end
+        GROUP BY ade."AccountId", ade."AssetCardId"
     )
 
     SELECT 
