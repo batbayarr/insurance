@@ -71,7 +71,7 @@ BEGIN
         p_period_id,
         v_expense_days,
         v_end_date,
-        (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6) AS expense_amount,
+        COALESCE(bal.depreciationexpense, (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6)) AS expense_amount,
         rada."ExpenseAccountId", -- Debit: Expense Account
         rada."DepreciationAccountId", -- Credit: Accumulated Depreciation
         rada."AssetAccountId", -- Asset Account
@@ -85,7 +85,8 @@ BEGIN
         ON bal.accountid = rada."AssetAccountId"
         AND rada."IsDelete" = false
     WHERE bal.endingquantity > 0
-        AND rac."DailyExpense" > 0;
+        AND rac."DailyExpense" > 0
+        AND COALESCE(bal.depreciationexpense, 0) > 0;
     
     -- Check for existing depreciation cash documents and delete them if they exist
     -- Delete from cash_document_detail first (due to foreign key constraint)
