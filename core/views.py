@@ -5032,7 +5032,7 @@ def ast_documents(request):
         'ast_documents': ast_documents,
     }
     
-    return render(request, 'core/ast_journal_new.html', context)
+    return render(request, 'core/astreport.html', context)
 
 
 @login_required
@@ -6619,6 +6619,7 @@ def y_balance(request):
         st_balance_data = []
         st_income_data = []
         st_cashflow_data = []
+        st_equity_data = []
         error_message = None
         
         # Check if this is a form submission (calculate parameter) or just tab switching
@@ -6779,6 +6780,7 @@ def y_balance(request):
             'st_balance_data': st_balance_data,
             'st_income_data': st_income_data,
             'st_cashflow_data': st_cashflow_data,
+            'st_equity_data': st_equity_data,
             'begin_date': begin_date,
             'end_date': end_date,
             'active_tab': active_tab,
@@ -6802,6 +6804,7 @@ def y_balance(request):
             'st_balance_data': [],
             'st_income_data': [],
             'st_cashflow_data': [],
+            'st_equity_data': [],
             'begin_date': begin_date if 'begin_date' in locals() else '',
             'end_date': end_date if 'end_date' in locals() else '',
             'active_tab': active_tab if 'active_tab' in locals() else 'balance',
@@ -8130,54 +8133,6 @@ def ref_asset_depreciation_account_delete(request, ast_dep_id):
     # For GET requests, redirect to list with error message
     messages.error(request, "Invalid request method for deletion.")
     return redirect('core:ref_asset_depreciation_account_list')
-
-
-@login_required
-def calculate_depreciation_view(request):
-    """Calculate depreciation expenses for a selected period"""
-    if request.method == 'POST':
-        period_id = request.POST.get('period_id')
-        
-        if not period_id:
-            messages.error(request, "Please select a period.")
-            return redirect('core:calculate_depreciation')
-        
-        try:
-            db_alias = get_current_db()
-            try:
-                with connections[db_alias].cursor() as cursor:
-                    cursor.execute("SELECT * FROM calculate_depreciation(%s)", [period_id])
-                    columns = [col[0] for col in cursor.description]
-                    results = [
-                        dict(zip(columns, row))
-                        for row in cursor.fetchall()
-                    ]
-            
-            finally:
-                connections[db_alias].close()
-            
-            if results:
-                messages.success(request, f"Successfully calculated {len(results)} depreciation expense records.")
-            else:
-                messages.warning(request, "No depreciation expenses calculated. Please check if assets have DailyExpense values and positive quantities.")
-            
-            context = {
-                'results': results,
-                'period': Ref_Period.objects.get(PeriodId=period_id),
-                'periods': Ref_Period.objects.all().order_by('-PeriodId')
-            }
-            return render(request, 'core/calculate_depreciation_results.html', context)
-            
-        except Exception as e:
-            messages.error(request, f"Error calculating depreciation: {str(e)}")
-            return redirect('core:calculate_depreciation')
-    
-    # GET request - show form
-    periods = Ref_Period.objects.all().order_by('-PeriodId')
-    context = {
-        'periods': periods
-    }
-    return render(request, 'core/calculate_depreciation_form.html', context)
 
 
 def test_api(request):

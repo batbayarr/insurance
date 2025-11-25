@@ -84,7 +84,7 @@
             <table id="trial-balance-table" class="min-w-full border border-gray-300">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны код</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300 w-24">Дансны код</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Дансны нэр</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Дт)</th>
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эхний үлдэгдэл (Кт)</th>
@@ -94,7 +94,7 @@
                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">Эцсийн үлдэгдэл (Кт)</th>
                     </tr>
                     <tr class="bg-gray-100">
-                        <th class="px-2 py-1 border border-gray-300">
+                        <th class="px-2 py-1 border border-gray-300 w-24">
                             <input type="text" id="filter-account-code" placeholder="Код..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                         </th>
@@ -141,7 +141,7 @@
                         data-credit-amount="{{ row.creditamount }}"
                         data-ending-balance-debit="{{ row.endingbalancedebit }}"
                         data-ending-balance-credit="{{ row.endingbalancecredit }}">
-                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border border-gray-300">
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 border border-gray-300 w-24">
                             {{ row.accountcode }}
                         </td>
                         <td class="px-3 py-2 text-sm text-gray-900 border border-gray-300">
@@ -754,8 +754,13 @@ function applyAllFilters() {
             if (filterInput && filterInput.value.trim()) {
                 const filterValue = filterInput.value.toLowerCase().trim();
                 
-                if (filterId.includes('account')) {
-                    // Text filters
+                if (filterId === 'filter-account-code') {
+                    // Account code filter: exact match (starts with) - matches first 1, 2, 3, 4, 6 characters etc.
+                    if (!value.startsWith(filterValue)) {
+                        return false;
+                    }
+                } else if (filterId.includes('account')) {
+                    // Other account filters (account name) - use contains
                     if (!value.includes(filterValue)) {
                         return false;
                     }

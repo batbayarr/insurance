@@ -194,8 +194,6 @@ urlpatterns = [
     path('api/inventory-balance-warehouse/', views.api_get_inventory_balance_warehouse, name='api_get_inventory_balance_warehouse'),
     path('api/inventory-list/', views.api_get_inventory_list, name='api_get_inventory_list'),
     
-    # Depreciation
-    path('depreciation/calculate/', views.calculate_depreciation_view, name='calculate_depreciation'),
     
     # Template Management
     path('templates/', views.template_master_detail, name='template_master_detail'),

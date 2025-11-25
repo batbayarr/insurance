@@ -265,10 +265,10 @@ function FillAccountingDetailsGeneric(config) {
                 currencyAmount = doc11DepAmount;
                 handledDoc11SpecialCase = true;
                 console.log('DocType 11 rule: expense account debit matched, using depreciation amount:', currencyAmount);
-            } else if (templateDetail.AccountTypeId === 92) {
+            } else if (templateDetail.AccountTypeId === 83) {
                 currencyAmount = netBookValue;
                 handledDoc11SpecialCase = true;
-                console.log('DocType 11 rule: accountType 92 matched, using net book value:', currencyAmount);
+                console.log('DocType 11 rule: accountType 83 matched, using net book value:', currencyAmount);
             } else {
                 currencyAmount = 0;
                 handledDoc11SpecialCase = true;
@@ -293,7 +293,10 @@ function FillAccountingDetailsGeneric(config) {
                     (accountTypeId >= 69 && accountTypeId <= 77)) {
                     currencyAmount = totalPrice;
                     console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalPrice (${currencyAmount})`);
-                } else if (accountTypeId === 92 || [8, 9, 11].includes(accountTypeId)) {
+                } else if (accountTypeId === 83) {
+                    currencyAmount = documentTypeId === 11 ? netBookValue : totalCost;
+                    console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 11 ? 'NetBookValue' : 'TotalCost'} (${currencyAmount})`);
+                } else if ([8, 9, 11].includes(accountTypeId)) {
                     currencyAmount = totalCost;
                     console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalCost (${currencyAmount})`);
                 }
@@ -308,7 +311,10 @@ function FillAccountingDetailsGeneric(config) {
                 } else if ([6, 47].includes(accountTypeId)) {
                     currencyAmount = vatAmount;
                     console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=VatAmount (${currencyAmount})`);
-                } else if (accountTypeId === 92 || [8, 9, 11].includes(accountTypeId)) {
+                } else if (accountTypeId === 83) {
+                    currencyAmount = documentTypeId === 11 ? netBookValue : totalCost;
+                    console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 11 ? 'NetBookValue' : 'TotalCost'} (${currencyAmount})`);
+                } else if ([8, 9, 11].includes(accountTypeId)) {
                     currencyAmount = totalCost;
                     console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalCost (${currencyAmount})`);
                 }
