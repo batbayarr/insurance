@@ -1,6 +1,6 @@
 /**
  * Generic FillAccountingDetails Function
- * Can be used across inventory, asset, and cash documents
+ * Tailored for asset documents (types 10 & 11)
  * 
  * @param {Object} config - Configuration object
  * @param {string} config.documentDataId - ID of the script tag containing document data
@@ -19,7 +19,7 @@ function FillAccountingDetailsGeneric(config) {
         documentDataId = 'document-data',
         firstTableId = 'details-tbody',
         secondTableId = 'details-accounting-tbody',
-        documentTypes = [5, 6, 10, 11],
+        documentTypes = [10, 11],
         debugPrefix = 'FillAccountingDetails',
         addDetailRowFunction = null,
         updateBalanceDisplayFunction = null
@@ -44,15 +44,50 @@ function FillAccountingDetailsGeneric(config) {
     }
 
     const docData = JSON.parse(documentDataElement.textContent);
+    const documentTypeId = Number(docData.DocumentTypeId);
+
+    if (documentTypeId === 11) {
+        try {
+            if (typeof window.calculateAllDepreciationAmounts === 'function') {
+                window.calculateAllDepreciationAmounts();
+            }
+            if (typeof window.calculateAllEndingDepreciation === 'function') {
+                window.calculateAllEndingDepreciation();
+            }
+            if (typeof window.updateSummaryRowTotals === 'function') {
+                window.updateSummaryRowTotals();
+            }
+        } catch (err) {
+            console.warn('Failed to refresh depreciation/summary totals before fill:', err);
+        }
+    }
+
+    const getSummaryValue = (elementId) => {
+        const el = document.getElementById(elementId);
+        if (!el) {
+            return null;
+        }
+        const rawText = (el.textContent ?? el.value ?? '').toString().replace(/,/g, '').trim();
+        if (rawText === '') {
+            return null;
+        }
+        const parsed = parseFloat(rawText);
+        return Number.isNaN(parsed) ? null : parsed;
+    };
     
-    // Step 1: Calculate TotalCost and TotalPrice from first table
+    // Step 1: Calculate TotalCost, TotalPrice, and accumulated ending depreciation from first table
     let totalCost = 0;
     let totalPrice = 0;
+    let totalEndingDep = 0;
+    let totalDepAmount = 0;
     
     const firstTable = document.getElementById(firstTableId);
     if (firstTable) {
         console.log(`${debugPrefix}: Calculating totals from first table...`);
         firstTable.querySelectorAll('tr').forEach((row, index) => {
+            if (window.getComputedStyle(row).display === 'none') {
+                return;
+            }
             // Prefer already-computed displays to avoid drift with formatting/rounding
             const totalCostDisplayEl = row.querySelector('.total-cost-display');
             const totalPriceDisplayEl = row.querySelector('.total-price-display');
@@ -89,6 +124,20 @@ function FillAccountingDetailsGeneric(config) {
                     console.log(`Row ${index + 1} fallback compute price: Qty=${quantity}, UnitPrice=${unitPrice}, RowPrice=${rowPrice}`);
                 }
             }
+
+            const endingDepEl = row.querySelector('.ending-depreciation-display');
+            if (endingDepEl) {
+                const endingDepValue = (endingDepEl.value ?? endingDepEl.textContent ?? '0').toString().replace(/,/g, '');
+                const numericEndingDep = parseFloat(endingDepValue) || 0;
+                totalEndingDep += numericEndingDep;
+            }
+
+            const depAmountEl = row.querySelector('.depreciation-amount-display');
+            if (depAmountEl) {
+                const depAmountValue = (depAmountEl.value ?? depAmountEl.textContent ?? '0').toString().replace(/,/g, '');
+                const numericDepAmount = parseFloat(depAmountValue) || 0;
+                totalDepAmount += numericDepAmount;
+            }
             
             totalCost += rowCost;
             totalPrice += rowPrice;
@@ -97,15 +146,37 @@ function FillAccountingDetailsGeneric(config) {
         });
     }
     
-    console.log(`${debugPrefix}: Calculated totals - TotalCost: ${totalCost}, TotalPrice: ${totalPrice}`);
+    totalEndingDep = parseFloat(totalEndingDep.toFixed(6));
+
+    let doc11TotalCost = totalCost;
+    let doc11EndingDep = totalEndingDep;
+    let doc11DepAmount = totalDepAmount;
+
+    if (documentTypeId === 11) {
+        const summaryCost = getSummaryValue('sum-unit-cost');
+        const summaryEndingDep = getSummaryValue('sum-ending-depreciation');
+        const summaryDepAmount = getSummaryValue('sum-depreciation-amount');
+
+        if (summaryCost !== null) {
+            doc11TotalCost = summaryCost;
+        }
+        if (summaryEndingDep !== null) {
+            doc11EndingDep = summaryEndingDep;
+        }
+        if (summaryDepAmount !== null) {
+            doc11DepAmount = summaryDepAmount;
+        }
+    }
+    
+    console.log(`${debugPrefix}: Calculated totals - TotalCost: ${totalCost}, TotalPrice: ${totalPrice}, TotalEndingDep: ${totalEndingDep}`);
     
     // Step 2: Calculate VAT amount using context processor rate
     const vatRate = parseFloat(docData.VatPercent) || 0;
     console.log(`${debugPrefix}: VAT Rate from docData.VatPercent:`, docData.VatPercent, 'Parsed:', vatRate);
     
     // Only apply VAT when IsVat is true; choose basis by document type
-    // Asset documents (6, 11) use totalPrice, Inventory documents (5, 10) use totalCost
-    const vatBasis = [6, 11].includes(docData.DocumentTypeId) ? totalPrice : totalCost;
+    // Asset issue (11) uses selling price, asset receipt (10) uses cost
+    const vatBasis = documentTypeId === 11 ? totalPrice : totalCost;
     const vatAmount = docData.IsVat ? (vatBasis * vatRate) / 100 : 0;
     
     console.log(`${debugPrefix}: VAT Amount calculated:`, vatAmount, 'for document type:', docData.DocumentTypeId);
@@ -145,6 +216,8 @@ function FillAccountingDetailsGeneric(config) {
     
     console.log(`${debugPrefix}: Processing ${docData.template_details.length} template details...`);
     
+    const netBookValue = Math.max(doc11TotalCost - doc11EndingDep, 0);
+
     docData.template_details.forEach((templateDetail, index) => {
         // Determine CurrencyAmount based on rules
         let currencyAmount = 0;
@@ -162,9 +235,49 @@ function FillAccountingDetailsGeneric(config) {
             console.warn(`Template detail ${index + 1} missing AccountTypeId, using fallback logic`);
         }
         
-        // Apply logic based on document type
-        // Asset documents (6, 11) use asset logic, Inventory documents (5, 10) use inventory logic
-        if ([6, 11].includes(docData.DocumentTypeId)) {
+        const assetAccountId = docData.AccountId ? Number(docData.AccountId) : null;
+        const depreciationAccountId = docData.DepreciationAccountId ? Number(docData.DepreciationAccountId) : null;
+        const expenseAccountId = docData.ExpenseAccountId ? Number(docData.ExpenseAccountId) : null;
+        let handledDoc11SpecialCase = false;
+
+        if (documentTypeId === 11) {
+            if (assetAccountId && templateDetail.AccountId === assetAccountId) {
+                currencyAmount = doc11TotalCost;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: asset account matched, using totalCost:', currencyAmount);
+            } else if (
+                depreciationAccountId &&
+                templateDetail.AccountId === depreciationAccountId &&
+                templateDetail.IsDebit === false
+            ) {
+                currencyAmount = doc11DepAmount;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: depreciation account credit matched, using depreciation amount:', currencyAmount);
+            } else if (depreciationAccountId && templateDetail.AccountId === depreciationAccountId) {
+                currencyAmount = doc11EndingDep;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: depreciation account matched, using totalEndingDep:', currencyAmount);
+            } else if (
+                expenseAccountId &&
+                templateDetail.AccountId === expenseAccountId &&
+                templateDetail.IsDebit === true
+            ) {
+                currencyAmount = doc11DepAmount;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: expense account debit matched, using depreciation amount:', currencyAmount);
+            } else if (templateDetail.AccountTypeId === 92) {
+                currencyAmount = netBookValue;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: accountType 92 matched, using net book value:', currencyAmount);
+            } else {
+                currencyAmount = 0;
+                handledDoc11SpecialCase = true;
+                console.log('DocType 11 rule: non-mapped account, currencyAmount forced to 0');
+            }
+        }
+
+        // Apply logic based on document type (asset only) when special rule not triggered
+        if (!handledDoc11SpecialCase && [10, 11].includes(documentTypeId)) {
             // Asset document logic
             const accountTypeId = templateDetail.AccountTypeId;
             
@@ -200,35 +313,7 @@ function FillAccountingDetailsGeneric(config) {
                     console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalCost (${currencyAmount})`);
                 }
             }
-        } else if ([5, 10].includes(docData.DocumentTypeId)) {
-            // Inventory document logic (existing, unchanged)
-            if (!docData.IsVat) {
-                // Rule: IsVat=false -> CurrencyAmount=TotalCost for all rows
-                currencyAmount = totalCost;
-                console.log('Rule: IsVat=false, CurrencyAmount =', currencyAmount);
-            } else {
-                // Rule: IsVat=true
-                if (templateDetail.IsDebit) {
-                    if (templateDetail.AccountId === docData.VatAccountId) {
-                        // IsDebit=true and accountid=VatAccountId -> CurrencyAmount=VatAmount
-                        currencyAmount = vatAmount;
-                        console.log('Rule: VAT Account match, CurrencyAmount =', currencyAmount);
-                    } else if (templateDetail.AccountId === docData.AccountId) {
-                        // IsDebit=true and accountid=AccountId -> CurrencyAmount=TotalCost
-                        currencyAmount = totalCost;
-                        console.log('Rule: Main Account match, CurrencyAmount =', currencyAmount);
-                    }
-                } else {
-                    // IsDebit=false
-                    if (templateDetail.AccountId !== docData.AccountId && 
-                        templateDetail.AccountId !== docData.VatAccountId) {
-                        // accountid <> AccountId and accountid <> VatAccountId -> CurrencyAmount=TotalCost+VatAmount
-                        currencyAmount = totalCost + vatAmount;
-                        console.log('Rule: Other Account, CurrencyAmount =', currencyAmount);
-                    }
-                }
-            }
-        } else {
+        } else if (!handledDoc11SpecialCase) {
             // For non-specified document types, use total cost
             currencyAmount = totalCost;
             console.log('Rule: Non-specified document type, CurrencyAmount =', currencyAmount);

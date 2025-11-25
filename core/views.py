@@ -14,6 +14,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import ProtectedError
 import json
 import logging
+from decimal import Decimal
+from django.utils import timezone
 from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
 
 logger = logging.getLogger(__name__)
@@ -3377,6 +3379,29 @@ def ref_asset_card_create(request):
         form = Ref_Asset_CardForm(request.POST)
         if form.is_valid():
             asset_card = form.save(commit=False)
+            
+            # Check if AssetCardCode already exists (since it's unique)
+            existing_asset_card = Ref_Asset_Card.objects.filter(AssetCardCode=asset_card.AssetCardCode).first()
+            if existing_asset_card:
+                # AssetCardCode already exists, prevent creation
+                error_message = "Энэ хөрөнгийн эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн байна."
+                
+                # Check if this is an AJAX request (from modal)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': error_message,
+                        'errors': {'AssetCardCode': [error_message]}
+                    }, status=400)
+                else:
+                    form.add_error('AssetCardCode', error_message)
+                    return render(request, 'core/refassetcard_form.html', {
+                        'form': form,
+                        'title': 'Үндсэн хөрөнгийн карт нэмэх',
+                        'selected_asset': selected_asset,
+                        'selected_asset_id': selected_asset_id
+                    })
+            
             asset_card.CreatedBy = request.user
             asset_card.ModifiedBy = request.user
             asset_card.save()
@@ -4555,13 +4580,11 @@ def get_inv_balance_data(request):
         # Get date parameters
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
+        as_of_date = request.GET.get('as_of_date')
+        effective_as_of = as_of_date or end_date or start_date
         
-        if not start_date or not end_date:
-            return JsonResponse({
-                'success': True,
-                'balance_data': [],
-                'message': 'Date range required'
-            })
+        if not effective_as_of:
+            effective_as_of = timezone.now().date().isoformat()
         
         balance_data = []
         try:
@@ -5178,13 +5201,11 @@ def get_ast_balance_data(request):
         # Get date parameters
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
+        as_of_date = request.GET.get('as_of_date')
+        effective_as_of = as_of_date or end_date or start_date
         
-        if not start_date or not end_date:
-            return JsonResponse({
-                'success': True,
-                'balance_data': [],
-                'message': 'Date range required'
-            })
+        if not effective_as_of:
+            effective_as_of = timezone.now().date().isoformat()
         
         balance_data = []
         try:
@@ -5194,7 +5215,7 @@ def get_ast_balance_data(request):
                 with connections[db_alias].cursor() as cursor:
                     cursor.execute(
                         "SELECT * FROM report_assetcard_balance(%s)",
-                        [end_date]
+                        [effective_as_of]
                     )
                     
                     # Get column names
@@ -5229,7 +5250,8 @@ def get_ast_balance_data(request):
             'date_range': {
                 'start_date': start_date,
                 'end_date': end_date
-            }
+            },
+            'as_of_date': effective_as_of
         })
         
     except Exception as e:
@@ -5246,6 +5268,13 @@ def get_ast_balance_data(request):
 def trial_closing_entry(request):
     """Display trial closing entry page with 3 tabs"""
     return render(request, 'core/trial_closing_entry.html')
+
+
+@login_required
+@permission_required('core.view_astdepreciationexpense', raise_exception=True)
+def trial_depreciation(request):
+    """Display trial depreciation entry page"""
+    return render(request, 'core/trial_depreciation.html')
 
 
 @login_required
@@ -5504,6 +5533,212 @@ def api_calculate_closing_record(request):
         return JsonResponse({
             'success': False,
             'error': f'Error calculating closing record: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_get_period_begin_date(request):
+    """API endpoint to get period BeginDate for a given document date"""
+    from datetime import datetime
+    
+    document_date_str = request.GET.get('document_date')
+    
+    if not document_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'document_date parameter is required'
+        }, status=400)
+    
+    try:
+        document_date = datetime.strptime(document_date_str, '%Y-%m-%d').date()
+        
+        # Find period that contains the document date
+        period = Ref_Period.objects.filter(
+            BeginDate__lte=document_date,
+            EndDate__gte=document_date
+        ).first()
+        
+        if not period:
+            return JsonResponse({
+                'success': False,
+                'error': 'No period found for the document date'
+            }, status=400)
+        
+        return JsonResponse({
+            'success': True,
+            'begin_date': period.BeginDate.strftime('%Y-%m-%d')
+        })
+        
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid date format. Please use YYYY-MM-DD format.'
+        }, status=400)
+    except Exception as e:
+        logger.error(f'Error getting period begin date: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error getting period begin date: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_get_periods_list(request):
+    """API endpoint to get all periods from ref_period table"""
+    try:
+        periods = Ref_Period.objects.all().order_by('PeriodId')
+        
+        periods_data = []
+        for period in periods:
+            periods_data.append({
+                'period_id': period.PeriodId,
+                'period_name': period.PeriodName,
+                'begin_date': period.BeginDate.strftime('%Y-%m-%d'),
+                'end_date': period.EndDate.strftime('%Y-%m-%d'),
+                'is_locked': period.IsLock
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'periods': periods_data
+        })
+        
+    except Exception as e:
+        logger.error(f'Error getting periods list: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error getting periods list: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+@permission_required('core.delete_cash_document', raise_exception=True)
+def api_delete_closing_entries(request):
+    """API endpoint to delete closing entries (DocumentTypeId=14) for a period"""
+    from datetime import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Find closing documents (DocumentTypeId=14) within the date range
+        closing_documents = Cash_Document.objects.filter(
+            DocumentTypeId=14,
+            DocumentDate__gte=start_date,
+            DocumentDate__lte=end_date
+        )
+        
+        # Get document IDs before deletion
+        document_ids = list(closing_documents.values_list('DocumentId', flat=True))
+        
+        if not document_ids:
+            return JsonResponse({
+                'success': True,
+                'message': 'No closing entries found for the selected period',
+                'deleted_count': 0
+            })
+        
+        # Delete cash_document_detail records first (foreign key constraint)
+        deleted_details_count = Cash_DocumentDetail.objects.filter(
+            DocumentId__in=document_ids
+        ).delete()[0]
+        
+        # Delete cash_document records
+        deleted_documents_count = closing_documents.delete()[0]
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully deleted {deleted_documents_count} closing document(s) and {deleted_details_count} detail record(s)',
+            'deleted_count': deleted_documents_count,
+            'deleted_details_count': deleted_details_count
+        })
+        
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid date format. Please use YYYY-MM-DD format.'
+        }, status=400)
+    except Exception as e:
+        logger.error(f'Error deleting closing entries: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error deleting closing entries: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_delete_depreciation_entries(request):
+    """API endpoint to delete depreciation entries (DocumentTypeId=13) for a period"""
+    from datetime import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return JsonResponse({
+            'success': False,
+            'error': 'Both start_date and end_date are required'
+        }, status=400)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Find depreciation documents (DocumentTypeId=13) within the date range
+        depreciation_documents = Cash_Document.objects.filter(
+            DocumentTypeId=13,
+            DocumentDate__gte=start_date,
+            DocumentDate__lte=end_date
+        )
+        
+        # Get document IDs before deletion
+        document_ids = list(depreciation_documents.values_list('DocumentId', flat=True))
+        
+        if not document_ids:
+            return JsonResponse({
+                'success': True,
+                'message': 'No depreciation entries found for the selected period',
+                'deleted_count': 0
+            })
+        
+        # Delete cash_document_detail records first (foreign key constraint)
+        deleted_details_count = Cash_DocumentDetail.objects.filter(
+            DocumentId__in=document_ids
+        ).delete()[0]
+        
+        # Delete cash_document records
+        deleted_documents_count = depreciation_documents.delete()[0]
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully deleted {deleted_documents_count} depreciation document(s) and {deleted_details_count} detail record(s)',
+            'deleted_count': deleted_documents_count,
+            'deleted_details_count': deleted_details_count
+        })
+        
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid date format. Use YYYY-MM-DD'
+        }, status=400)
+    except Exception as e:
+        logger.error(f'Error deleting depreciation entries: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error deleting depreciation entries: {str(e)}'
         }, status=500)
 
 
@@ -5897,10 +6132,86 @@ def bulk_manage_ast_details(request, document_id):
     """Bulk manage asset document details"""
     document = get_object_or_404(Ast_Document, pk=document_id, IsDelete=False)
     
+    depreciation_account_id = None
+    expense_account_id = None
+    if document.AccountId_id:
+        dep_mapping = Ref_Asset_Depreciation_Account.objects.filter(
+            AssetAccountId=document.AccountId,
+            IsDelete=False
+        ).select_related('DepreciationAccountId', 'ExpenseAccountId').first()
+        if dep_mapping and dep_mapping.DepreciationAccountId_id:
+            depreciation_account_id = dep_mapping.DepreciationAccountId_id
+        if dep_mapping and dep_mapping.ExpenseAccountId_id:
+            expense_account_id = dep_mapping.ExpenseAccountId_id
+    
     # Get document items and details
-    document_items = Ast_Document_Item.objects.select_related('AssetCardId').filter(
+    document_items_queryset = Ast_Document_Item.objects.select_related('AssetCardId').filter(
         DocumentId=document
     ).order_by('DocumentItemId')
+    document_items = list(document_items_queryset)
+
+    # Prefetch cumulative depreciation + depreciation expense per asset card as of document date
+    asset_depreciation_lookup = {}
+    if document.DocumentDate and document.AccountId_id:
+        db_alias = get_current_db()
+        try:
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT accountid,
+                           assetcardid,
+                           COALESCE(cumulateddepreciation, 0) AS cumulated_depreciation,
+                           COALESCE(depreciationexpense, 0) AS depreciation_expense,
+                           totalexpense
+                    FROM report_assetcard_balance(%s)
+                    """,
+                    [document.DocumentDate]
+                )
+                records = cursor.fetchall()
+                for account_id, asset_card_id, cumulated_depreciation, depreciation_expense, total_expense in records:
+                    if asset_card_id is None:
+                        continue
+                    cumulated_value = Decimal(cumulated_depreciation or 0)
+                    expense_value = Decimal(depreciation_expense or 0)
+                    total_value = Decimal(total_expense) if total_expense is not None else None
+
+                    asset_info = {
+                        'cumulated': cumulated_value,
+                        'expense': expense_value,
+                        'total': total_value,
+                        'initial': (total_value if total_value is not None else cumulated_value + expense_value)
+                    }
+
+                    asset_card_id_int = int(asset_card_id)
+                    current = asset_depreciation_lookup.get(asset_card_id_int)
+
+                    # Prefer record matching the document's account; otherwise keep first seen
+                    if document.AccountId_id and account_id == document.AccountId_id:
+                        asset_depreciation_lookup[asset_card_id_int] = asset_info
+                    elif current is None:
+                        asset_depreciation_lookup[asset_card_id_int] = asset_info
+        except Exception as exc:
+            logger.warning('Unable to load asset depreciation balances for document %s: %s', document.DocumentId, exc)
+        finally:
+            connections[db_alias].close()
+
+    zero_decimal = Decimal('0.00')
+    for item in document_items:
+        balance_info = asset_depreciation_lookup.get(item.AssetCardId_id)
+        if balance_info:
+            item.balance_cumulated_depreciation = balance_info['cumulated']
+            item.balance_depreciation_expense = balance_info['expense']
+            if balance_info.get('total') is not None:
+                item.total_expense = balance_info['total']
+                item.initial_depreciation = balance_info['total']
+            else:
+                item.total_expense = balance_info['initial']
+                item.initial_depreciation = balance_info['initial']
+        else:
+            item.balance_cumulated_depreciation = zero_decimal
+            item.balance_depreciation_expense = zero_decimal
+            item.total_expense = zero_decimal
+            item.initial_depreciation = zero_decimal
     
     document_details = Ast_Document_Detail.objects.select_related(
         'AccountId', 'ClientId', 'CurrencyId'
@@ -5925,6 +6236,8 @@ def bulk_manage_ast_details(request, document_id):
         'document_details': document_details,
         'currencies': currencies,
         'template_details': template_details,
+        'depreciation_account_id': depreciation_account_id,
+        'expense_account_id': expense_account_id,
     }
     
     return render(request, 'core/astdocumentdetail_bulk_manage.html', context)
@@ -6052,6 +6365,7 @@ def asset_cards_json(request):
                 'UnitCost': float(card.UnitCost) if card.UnitCost else 0,
                 'UnitPrice': float(card.UnitPrice) if card.UnitPrice else 0,
                 'CumulatedDepreciation': float(card.CumulatedDepreciation) if card.CumulatedDepreciation else 0,
+                'DailyExpense': float(card.DailyExpense) if card.DailyExpense else 0,
                 'ClientId': card.ClientId.ClientId if card.ClientId else None,
                 'ClientName': card.ClientId.ClientName if card.ClientId else ''
             })

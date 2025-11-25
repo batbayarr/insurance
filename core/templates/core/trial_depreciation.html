@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
-<!-- Trial Closing Entry - Closing Journal -->
+<!-- Trial Depreciation Entry - Depreciation Journal -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <parameter name="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 {% load humanize %}
 
-{% block title %}Хаалтын Бичилт{% endblock %}
+{% block title %}Элэгдлийн Бичилт{% endblock %}
 
 {% block content %}
 <div class="">
@@ -20,16 +20,16 @@
                 </select>
             </div>
             <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                ХААЛТ ХИЙХ
+                ЭЛЭГДЭЛ БАЙГУУЛАХ
             </button>
             <button id="restore-button" onclick="restoreView()" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                ХААЛТ НЭЭХ
+                ЭЛЭГДЭЛ УСТГАХ
             </button>
         </div>
     </div>
 
-    <!-- ХААЛТЫН БИЧИЛТ (Closing Journal) -->
-    <div id="closing-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: block;">
+    <!-- ЭЛЭГДЛИЙН БИЧИЛТ (Depreciation Journal) -->
+    <div id="depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: block;">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -48,7 +48,7 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
                     </tr>
                 </thead>
-                <tbody id="closing-tbody" class="bg-white divide-y divide-gray-200">
+                <tbody id="depreciation-tbody" class="bg-white divide-y divide-gray-200">
                     <tr>
                         <td colspan="12" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center justify-center">
@@ -56,7 +56,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <h3 class="text-sm font-medium text-gray-900 mb-1">Огноогоо сонгоно уу</h3>
-                                <p class="text-sm text-gray-500">Эхлэх ба дуусах огноо сонгоод товч дарна уу.</p>
+                                <p class="text-sm text-gray-500">Хугацаа сонгоод товч дарна уу.</p>
                             </div>
                         </td>
                     </tr>
@@ -64,34 +64,34 @@
             </table>
         </div>
         
-        <!-- Pagination for Closing Tab -->
+        <!-- Pagination for Depreciation Tab -->
         <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-between sm:hidden">
-                <button id="prev-page-clo" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button id="prev-page-dep" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Өмнөх
                 </button>
-                <button id="next-page-clo" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button id="next-page-dep" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Дараа
                 </button>
             </div>
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
-                    <p id="pagination-info-clo" class="text-sm text-gray-700">
-                        Нийт <span id="total-count-clo">0</span> бичлэгээс <span id="showing-start-clo">0</span> - <span id="showing-end-clo">0</span> бичлэг харагдаж байна
+                    <p id="pagination-info-dep" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-dep">0</span> бичлэгээс <span id="showing-start-dep">0</span> - <span id="showing-end-dep">0</span> бичлэг харагдаж байна
                     </p>
                 </div>
                 <div>
                     <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        <button id="prev-page-desktop-clo" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <button id="prev-page-desktop-dep" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <span class="sr-only">Previous</span>
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                         </button>
-                        <span id="page-info-clo" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                        <span id="page-info-dep" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
                             <!-- Dynamic page buttons will be generated here -->
                         </span>
-                        <button id="next-page-desktop-clo" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <button id="next-page-desktop-dep" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <span class="sr-only">Next</span>
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
@@ -106,8 +106,8 @@
 
 <script>
     // Global variables
-    let closingData = [];
-    let currentTab = 'closing';
+    let depreciationData = [];
+    let currentTab = 'depreciation';
     let currentPage = 1;
     let pageSize = 20;
     let totalPages = 1;
@@ -178,16 +178,16 @@
     
     
     function initializePagination() {
-        // Closing pagination
-        const prevPageClo = document.getElementById('prev-page-clo');
-        const nextPageClo = document.getElementById('next-page-clo');
-        const prevPageDesktopClo = document.getElementById('prev-page-desktop-clo');
-        const nextPageDesktopClo = document.getElementById('next-page-desktop-clo');
+        // Depreciation pagination
+        const prevPageDep = document.getElementById('prev-page-dep');
+        const nextPageDep = document.getElementById('next-page-dep');
+        const prevPageDesktopDep = document.getElementById('prev-page-desktop-dep');
+        const nextPageDesktopDep = document.getElementById('next-page-desktop-dep');
         
-        if (prevPageClo) prevPageClo.addEventListener('click', () => changePage(currentPage - 1));
-        if (nextPageClo) nextPageClo.addEventListener('click', () => changePage(currentPage + 1));
-        if (prevPageDesktopClo) prevPageDesktopClo.addEventListener('click', () => changePage(currentPage - 1));
-        if (nextPageDesktopClo) nextPageDesktopClo.addEventListener('click', () => changePage(currentPage + 1));
+        if (prevPageDep) prevPageDep.addEventListener('click', () => changePage(currentPage - 1));
+        if (nextPageDep) nextPageDep.addEventListener('click', () => changePage(currentPage + 1));
+        if (prevPageDesktopDep) prevPageDesktopDep.addEventListener('click', () => changePage(currentPage - 1));
+        if (nextPageDesktopDep) nextPageDesktopDep.addEventListener('click', () => changePage(currentPage + 1));
     }
     
     function initializePageSizeSelector() {
@@ -225,18 +225,18 @@
         let adjustedEndDate = endDate;
         
         try {
-            // Call closing record calculation function
-            const closingResult = await callCalculateClosingRecord(startDate, endDate);
+            // Call depreciation calculation function
+            const depreciationResult = await callCalculateDepreciation(startDate, endDate);
             
             // Update dates if they were adjusted
-            if (closingResult && closingResult.adjusted_dates) {
-                adjustedStartDate = closingResult.adjusted_dates.start_date;
-                adjustedEndDate = closingResult.adjusted_dates.end_date;
+            if (depreciationResult && depreciationResult.adjusted_dates) {
+                adjustedStartDate = depreciationResult.adjusted_dates.start_date;
+                adjustedEndDate = depreciationResult.adjusted_dates.end_date;
             }
             
             // Show warnings if there were errors (but don't block)
-            if (!closingResult || !closingResult.success) {
-                console.warn('Closing record calculation warning:', closingResult?.error || 'Unknown error');
+            if (!depreciationResult || !depreciationResult.success) {
+                console.warn('Depreciation calculation warning:', depreciationResult?.error || 'Unknown error');
             }
         } catch (error) {
             console.error('Error during calculations:', error);
@@ -248,25 +248,25 @@
             filterButton.textContent = 'Ачаалж байна...';
         }
         
-        // Fetch closing data using adjusted dates
+        // Fetch depreciation data using adjusted dates
         try {
-            await fetchClosingJournalData(adjustedStartDate, adjustedEndDate);
+            await fetchDepreciationJournalData(adjustedStartDate, adjustedEndDate);
         } finally {
             if (filterButton) {
-                filterButton.textContent = 'ХААЛТ ХИЙХ';
+                filterButton.textContent = 'ЭЛЭГДЭЛ ХИЙХ';
                 filterButton.disabled = false;
             }
         }
     }
     
-    async function callCalculateClosingRecord(startDate, endDate) {
+    async function callCalculateDepreciation(startDate, endDate) {
         try {
-            const url = `/core/api/calculate-closing-record/?start_date=${startDate}&end_date=${endDate}`;
+            const url = `/core/api/calculate-depreciation/?start_date=${startDate}&end_date=${endDate}`;
             const response = await fetch(url);
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('Error calling calculate closing record:', error);
+            console.error('Error calling calculate depreciation:', error);
             return {
                 success: false,
                 error: error.message || 'Network error occurred'
@@ -274,34 +274,34 @@
         }
     }
     
-    function fetchClosingJournalData(startDate, endDate) {
-        const cacheKey = `closing_${startDate}_${endDate}`;
+    function fetchDepreciationJournalData(startDate, endDate) {
+        const cacheKey = `depreciation_${startDate}_${endDate}`;
         if (apiCache.has(cacheKey)) {
-            closingData = apiCache.get(cacheKey);
-            renderJournalTable(closingData);
+            depreciationData = apiCache.get(cacheKey);
+            renderJournalTable(depreciationData);
             return Promise.resolve();
         }
         
-        const url = `/core/api/cash-documents-filtered/?start_date=${startDate}&end_date=${endDate}&document_type_id=14`;
+        const url = `/core/api/cash-documents-filtered/?start_date=${startDate}&end_date=${endDate}&document_type_id=13`;
         return fetch(url)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    closingData = data.details || [];
-                    apiCache.set(cacheKey, closingData);
-                    renderJournalTable(closingData);
+                    depreciationData = data.details || [];
+                    apiCache.set(cacheKey, depreciationData);
+                    renderJournalTable(depreciationData);
                 } else {
-                    showError('closing-tbody', data.error || 'Failed to load closing journal data');
+                    showError('depreciation-tbody', data.error || 'Failed to load depreciation journal data');
                 }
             })
             .catch(error => {
-                console.error('Error fetching closing journal:', error);
-                showError('closing-tbody', 'Network error occurred');
+                console.error('Error fetching depreciation journal:', error);
+                showError('depreciation-tbody', 'Network error occurred');
             });
     }
     
     function renderJournalTable(data) {
-        const tbody = document.getElementById('closing-tbody');
+        const tbody = document.getElementById('depreciation-tbody');
         
         if (!tbody) {
             return;
@@ -330,7 +330,7 @@
         // Update pagination info
         updatePaginationInfo(data.length, paginatedData.length, startIndex);
         
-        // Render journal entry data for closing tab
+        // Render journal entry data for depreciation tab
         let htmlContent = '';
         let totalDebit = 0;
         let totalCredit = 0;
@@ -371,9 +371,9 @@
     }
     
     function updatePaginationInfo(totalRecords, currentRecords, startIndex) {
-        const showingStart = document.getElementById('showing-start-clo');
-        const showingEnd = document.getElementById('showing-end-clo');
-        const totalCount = document.getElementById('total-count-clo');
+        const showingStart = document.getElementById('showing-start-dep');
+        const showingEnd = document.getElementById('showing-end-dep');
+        const totalCount = document.getElementById('total-count-dep');
         
         if (showingStart) showingStart.textContent = startIndex + 1;
         if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
@@ -383,7 +383,7 @@
     }
     
     function generatePaginationButtons() {
-        const pageInfo = document.getElementById('page-info-clo');
+        const pageInfo = document.getElementById('page-info-dep');
         if (!pageInfo) return;
         
         pageInfo.innerHTML = '';
@@ -417,7 +417,7 @@
     }
     
     function renderCurrentTab() {
-        renderJournalTable(closingData);
+        renderJournalTable(depreciationData);
     }
     
     function showError(tbodyId, message) {
@@ -447,45 +447,41 @@
         });
     }
     
-    // Delete closing entries for selected period
-    async function deleteClosingEntries(startDate, endDate) {
-        const url = `/core/api/delete-closing-entries/?start_date=${startDate}&end_date=${endDate}`;
+    // Delete depreciation entries for selected period
+    async function deleteDepreciationEntries(startDate, endDate) {
+        const url = `/core/api/delete-depreciation-entries/?start_date=${startDate}&end_date=${endDate}`;
         return fetch(url)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     return {
                         success: true,
-                        message: data.message || 'Closing entries deleted successfully',
+                        message: data.message || 'Depreciation entries deleted successfully',
                         deletedCount: data.deleted_count || 0
                     };
                 } else {
                     return {
                         success: false,
-                        error: data.error || 'Failed to delete closing entries'
+                        error: data.error || 'Failed to delete depreciation entries'
                     };
                 }
             })
             .catch(error => {
-                console.error('Error deleting closing entries:', error);
+                console.error('Error deleting depreciation entries:', error);
                 return {
                     success: false,
-                    error: 'Network error occurred while deleting closing entries'
+                    error: 'Network error occurred while deleting depreciation entries'
                 };
             });
     }
     
     async function restoreView() {
         // Get dates from selected period
-        let periodDates = getSelectedPeriodDates();
+        const periodDates = getSelectedPeriodDates();
         
-        // If no period selected, reset to default
         if (!periodDates) {
-            setDefaultPeriod();
-            periodDates = getSelectedPeriodDates();
-            if (!periodDates) {
-                return;
-            }
+            alert('Хугацаа сонгоно уу');
+            return;
         }
         
         const startDate = periodDates.startDate;
@@ -497,7 +493,7 @@
         const periodName = selectedOption ? selectedOption.textContent.split(' (')[0] : 'selected period';
         
         // Show confirmation dialog
-        const confirmed = confirm(`Та "${periodName}" хугацааны хаалтын бичлэгүүдийг устгахдаа итгэлтэй байна уу?`);
+        const confirmed = confirm(`Та "${periodName}" хугацааны элэгдлийн бичлэгүүдийг устгахдаа итгэлтэй байна уу?`);
         if (!confirmed) {
             return;
         }
@@ -506,7 +502,7 @@
         apiCache.clear();
         
         // Reset to first page
-        currentTab = 'closing';
+        currentTab = 'depreciation';
         currentPage = 1;
         
         // Show loading state
@@ -517,15 +513,15 @@
         }
         
         try {
-            // Delete closing entries first
-            const deleteResult = await deleteClosingEntries(startDate, endDate);
+            // Delete depreciation entries first
+            const deleteResult = await deleteDepreciationEntries(startDate, endDate);
             
             if (deleteResult.success) {
                 // Show success message
                 if (deleteResult.deletedCount > 0) {
                     alert(`Амжилттай: ${deleteResult.message}`);
                 } else {
-                    alert('Хаалтын бичлэг олдсонгүй');
+                    alert('Элэгдлийн бичлэг олдсонгүй');
                 }
                 
                 // Update button text for fetching
@@ -533,14 +529,14 @@
                     restoreButton.textContent = 'Ачаалж байна...';
                 }
                 
-                // Fetch closing data after deletion
-                await fetchClosingJournalData(startDate, endDate);
+                // Fetch depreciation data after deletion
+                await fetchDepreciationJournalData(startDate, endDate);
             } else {
                 alert(`Алдаа: ${deleteResult.error}`);
             }
         } finally {
             if (restoreButton) {
-                restoreButton.textContent = 'ХААЛТ НЭЭХ';
+                restoreButton.textContent = 'ЭЛЭГДЭЛ НЭЭХ';
                 restoreButton.disabled = false;
             }
         }

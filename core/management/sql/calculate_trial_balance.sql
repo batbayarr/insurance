@@ -26,19 +26,58 @@ BEGIN
     RETURN QUERY
     WITH 
     -- 1. Starting Balance (from beginning balance tables)
-    starting_balances AS (
+    -- Cash and Inventory beginning balances
+    cash_inv_starting_balances AS (
         SELECT 
             ra."AccountId",
             COALESCE(SUM(
                 COALESCE(cash_bb."CurrencyAmount" * cash_bb."CurrencyExchange", 0) +
-                COALESCE(inv_bb."Quantity" * inv_bb."UnitCost", 0) +
-                COALESCE(ast_bb."Quantity" * ast_bb."UnitCost", 0)
+                COALESCE(inv_bb."Quantity" * inv_bb."UnitCost", 0)
             ), 0) AS starting_balance
         FROM ref_account ra
         LEFT JOIN cash_beginning_balance cash_bb ON ra."AccountId" = cash_bb."AccountId" AND cash_bb."IsDelete" = false
         LEFT JOIN inv_beginning_balance inv_bb ON ra."AccountId" = inv_bb."AccountId" AND inv_bb."IsDelete" = false
-        LEFT JOIN ast_beginning_balance ast_bb ON ra."AccountId" = ast_bb."AccountId" AND ast_bb."IsDelete" = false
         GROUP BY ra."AccountId"
+    ),
+    
+    -- Asset beginning balances - Asset Account (positive)
+    asset_account_balances AS (
+        SELECT 
+            ast_bb."AccountId",
+            COALESCE(SUM(ast_bb."Quantity" * ast_bb."UnitCost"), 0) AS starting_balance
+        FROM ast_beginning_balance ast_bb
+        WHERE ast_bb."IsDelete" = false
+        GROUP BY ast_bb."AccountId"
+    ),
+    
+    -- Asset beginning balances - Depreciation Account (negative)
+    depreciation_account_balances AS (
+        SELECT 
+            rada."DepreciationAccountId" AS "AccountId",
+            COALESCE(SUM(-ast_bb."CumulatedDepreciation"), 0) AS starting_balance
+        FROM ast_beginning_balance ast_bb
+        INNER JOIN ref_asset_depreciation_account rada 
+            ON ast_bb."AccountId" = rada."AssetAccountId"
+            AND rada."IsDelete" = false
+        WHERE ast_bb."IsDelete" = false
+            AND ast_bb."CumulatedDepreciation" IS NOT NULL
+            AND ast_bb."CumulatedDepreciation" > 0
+        GROUP BY rada."DepreciationAccountId"
+    ),
+    
+    -- Combine all starting balances
+    starting_balances AS (
+        SELECT 
+            "AccountId",
+            SUM(starting_balance) AS starting_balance
+        FROM (
+            SELECT "AccountId", starting_balance FROM cash_inv_starting_balances
+            UNION ALL
+            SELECT "AccountId", starting_balance FROM asset_account_balances
+            UNION ALL
+            SELECT "AccountId", starting_balance FROM depreciation_account_balances
+        ) combined
+        GROUP BY "AccountId"
     ),
     
     -- 2. Transactions Before Begin Date

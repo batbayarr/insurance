@@ -52,10 +52,15 @@ urlpatterns = [
     
     # Trial Closing Entry (Depreciation & Closing)
     path('trial-closing-entry/', views.trial_closing_entry, name='trial_closing_entry'),
+    path('trial-depreciation/', views.trial_depreciation, name='trial_depreciation'),
     path('api/depreciation-summary/', views.api_depreciation_summary, name='api_depreciation_summary'),
     path('api/asset-depreciation-expenses/', views.api_asset_depreciation_expenses, name='api_asset_depreciation_expenses'),
     path('api/calculate-depreciation/', views.api_calculate_depreciation, name='api_calculate_depreciation'),
     path('api/calculate-closing-record/', views.api_calculate_closing_record, name='api_calculate_closing_record'),
+    path('api/delete-closing-entries/', views.api_delete_closing_entries, name='api_delete_closing_entries'),
+    path('api/delete-depreciation-entries/', views.api_delete_depreciation_entries, name='api_delete_depreciation_entries'),
+    path('api/period-begin-date/', views.api_get_period_begin_date, name='api_get_period_begin_date'),
+    path('api/periods-list/', views.api_get_periods_list, name='api_get_periods_list'),
     path('api/calculate-cost-adjustment/', views.api_calculate_cost_adjustment, name='api_calculate_cost_adjustment'),
     
     

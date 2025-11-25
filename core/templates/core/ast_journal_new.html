@@ -45,6 +45,12 @@
                 <button id="tab-deleted" onclick="showDeletedDocuments()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
                     УСТГАСАН БАРИМТ
                 </button>
+                <button id="tab-trial-balance" onclick="switchToTrialBalanceView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    БАЙГУУЛСАН ЭЛЭГДЭЛ
+                </button>
+                <button id="tab-depreciation" onclick="switchToDepreciationView()" class="border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 whitespace-nowrap py-2 px-3 font-medium text-sm rounded-md">
+                    ЭЛЭГДЛИЙН БИЧИЛТ
+                </button>
             </nav>
         </div>
     </div>
@@ -459,6 +465,165 @@
             </div>
         </div>
     </div>
+
+    <!-- БАЙГУУЛСАН ЭЛЭГДЭЛ View (Hidden by default) -->
+    <div id="ast-trial-balance-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хөрөнгө</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хон.элэг</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хоног</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Байгуулсан</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зардал</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдэл</th>
+                    </tr>
+                </thead>
+                <tbody id="trial-balance-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination for БАЙГУУЛСАН ЭЛЭГДЭЛ tab -->
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-tb" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </button>
+                <button id="next-page-tb" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p id="pagination-info-tb" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-tb">0</span> бичлэгээс <span id="showing-start-tb">0</span> - <span id="showing-end-tb">0</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="page-size-select-tb" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="page-size-select-tb" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="40">40</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prev-page-desktop-tb" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span id="page-info-tb" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                <!-- Dynamic page buttons will be generated here -->
+                            </span>
+                            <button id="next-page-desktop-tb" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭЛЭГДЛИЙН БИЧИЛТ View (Hidden by default) -->
+    <div id="ast-depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны нэр</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валютын дүн</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит дүн</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                    </tr>
+                </thead>
+                <tbody id="depreciation-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Select date range and filter</h3>
+                                <p class="text-sm text-gray-500">Please select start and end dates, then click Filter to load data.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination for ЭЛЭГДЛИЙН БИЧИЛТ tab -->
+        <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button id="prev-page-dep" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Өмнөх
+                </button>
+                <button id="next-page-dep" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Дараа
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p id="pagination-info-dep" class="text-sm text-gray-700">
+                        Нийт <span id="total-count-dep">0</span> бичлэгээс <span id="showing-start-dep">0</span> - <span id="showing-end-dep">0</span> бичлэг харагдаж байна
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button id="prev-page-desktop-dep" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <span id="page-info-dep" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            <!-- Dynamic page buttons will be generated here -->
+                        </span>
+                        <button id="next-page-desktop-dep" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -483,6 +648,17 @@
     let currentPageBalance = 1;
     let pageSizeBalance = 20;
     let totalPagesBalance = 1;
+    
+    // Trial balance and depreciation data for new tabs
+    let trialBalanceData = [];
+    let currentPageTrialBalance = 1;
+    let pageSizeTrialBalance = 20;
+    let totalPagesTrialBalance = 1;
+    
+    let depreciationData = [];
+    let currentPageDepreciation = 1;
+    let pageSizeDepreciation = 20;
+    let totalPagesDepreciation = 1;
     
     // API cache
     let apiCache = new Map();
@@ -599,6 +775,40 @@
                 }
             });
         }
+        
+        // БАЙГУУЛСАН ЭЛЭГДЭЛ tab pagination
+        const prevPageTb = document.getElementById('prev-page-tb');
+        const nextPageTb = document.getElementById('next-page-tb');
+        const prevPageDesktopTb = document.getElementById('prev-page-desktop-tb');
+        const nextPageDesktopTb = document.getElementById('next-page-desktop-tb');
+        const pageSizeSelectTb = document.getElementById('page-size-select-tb');
+        
+        if (prevPageTb) prevPageTb.addEventListener('click', () => changePageTrialBalance(currentPageTrialBalance - 1));
+        if (nextPageTb) nextPageTb.addEventListener('click', () => changePageTrialBalance(currentPageTrialBalance + 1));
+        if (prevPageDesktopTb) prevPageDesktopTb.addEventListener('click', () => changePageTrialBalance(currentPageTrialBalance - 1));
+        if (nextPageDesktopTb) nextPageDesktopTb.addEventListener('click', () => changePageTrialBalance(currentPageTrialBalance + 1));
+        
+        if (pageSizeSelectTb) {
+            pageSizeSelectTb.addEventListener('change', function() {
+                const newPageSize = parseInt(this.value);
+                pageSizeTrialBalance = newPageSize;
+                currentPageTrialBalance = 1;
+                if (trialBalanceData && trialBalanceData.length > 0) {
+                    renderTrialBalanceTable();
+                }
+            });
+        }
+        
+        // ЭЛЭГДЛИЙН БИЧИЛТ tab pagination
+        const prevPageDep = document.getElementById('prev-page-dep');
+        const nextPageDep = document.getElementById('next-page-dep');
+        const prevPageDesktopDep = document.getElementById('prev-page-desktop-dep');
+        const nextPageDesktopDep = document.getElementById('next-page-desktop-dep');
+        
+        if (prevPageDep) prevPageDep.addEventListener('click', () => changePageDepreciation(currentPageDepreciation - 1));
+        if (nextPageDep) nextPageDep.addEventListener('click', () => changePageDepreciation(currentPageDepreciation + 1));
+        if (prevPageDesktopDep) prevPageDesktopDep.addEventListener('click', () => changePageDepreciation(currentPageDepreciation - 1));
+        if (nextPageDesktopDep) nextPageDesktopDep.addEventListener('click', () => changePageDepreciation(currentPageDepreciation + 1));
     }
     
     function loadInitialDocuments() {
@@ -607,10 +817,18 @@
         // Set default active tab to ЖУРНАЛ (detail view)
         updateTabStyling('detail');
         
-        // Ensure balance view is hidden on initial load
+        // Ensure balance view and new views are hidden on initial load
         const balanceView = document.getElementById('ast-balance-view');
         if (balanceView) {
             balanceView.style.display = 'none';
+        }
+        const trialBalanceView = document.getElementById('ast-trial-balance-view');
+        if (trialBalanceView) {
+            trialBalanceView.style.display = 'none';
+        }
+        const depreciationView = document.getElementById('ast-depreciation-view');
+        if (depreciationView) {
+            depreciationView.style.display = 'none';
         }
         
         const startDate = document.getElementById('start-date').value;
@@ -694,11 +912,19 @@
                     const detailView = document.getElementById('ast-journal-detail-view');
                     const documentsView = document.getElementById('ast-documents-view');
                     const balanceView = document.getElementById('ast-balance-view');
+                    const trialBalanceView = document.getElementById('ast-trial-balance-view');
+                    const depreciationView = document.getElementById('ast-depreciation-view');
                     if (documentsView && detailView) {
                         documentsView.style.display = 'block';
                         detailView.style.display = 'none';
                         if (balanceView) {
                             balanceView.style.display = 'none';
+                        }
+                        if (trialBalanceView) {
+                            trialBalanceView.style.display = 'none';
+                        }
+                        if (depreciationView) {
+                            depreciationView.style.display = 'none';
                         }
                         updateTabStyling('documents');
                     } else {
@@ -728,11 +954,19 @@
                     const detailView = document.getElementById('ast-journal-detail-view');
                     const documentsView = document.getElementById('ast-documents-view');
                     const balanceView = document.getElementById('ast-balance-view');
+                    const trialBalanceView = document.getElementById('ast-trial-balance-view');
+                    const depreciationView = document.getElementById('ast-depreciation-view');
                     if (documentsView && detailView) {
                         documentsView.style.display = 'block';
                         detailView.style.display = 'none';
                         if (balanceView) {
                             balanceView.style.display = 'none';
+                        }
+                        if (trialBalanceView) {
+                            trialBalanceView.style.display = 'none';
+                        }
+                        if (depreciationView) {
+                            depreciationView.style.display = 'none';
                         }
                         updateTabStyling('documents');
                     } else {
@@ -741,6 +975,14 @@
                     }
                     
                     applyFrontendFilter();
+                    
+                    // Also fetch trial balance and depreciation data
+                    Promise.all([
+                        fetchTrialBalanceData(startDate, endDate),
+                        fetchDepreciationJournalData(startDate, endDate)
+                    ]).catch(error => {
+                        console.error('Error fetching additional data:', error);
+                    });
                 } else {
                     showDocumentsError(data.error || 'Failed to load comprehensive data');
                 }
@@ -1040,6 +1282,10 @@
         // Hide the balance view
         document.getElementById('ast-balance-view').style.display = 'none';
         
+        // Hide the new views
+        document.getElementById('ast-trial-balance-view').style.display = 'none';
+        document.getElementById('ast-depreciation-view').style.display = 'none';
+        
         // Update tab styling
         updateTabStyling('detail');
         
@@ -1297,6 +1543,10 @@
         // Hide the balance view
         document.getElementById('ast-balance-view').style.display = 'none';
         
+        // Hide the new views
+        document.getElementById('ast-trial-balance-view').style.display = 'none';
+        document.getElementById('ast-depreciation-view').style.display = 'none';
+        
         // Update tab styling
         updateTabStyling('documents');
         
@@ -1337,6 +1587,10 @@
         // Hide the balance view
         document.getElementById('ast-balance-view').style.display = 'none';
         
+        // Hide the new views
+        document.getElementById('ast-trial-balance-view').style.display = 'none';
+        document.getElementById('ast-depreciation-view').style.display = 'none';
+        
         // Update tab styling
         updateTabStyling('deleted');
         
@@ -1373,9 +1627,11 @@
         const tabDetail = document.getElementById('tab-detail');
         const tabBalance = document.getElementById('tab-balance');
         const tabDeleted = document.getElementById('tab-deleted');
+        const tabTrialBalance = document.getElementById('tab-trial-balance');
+        const tabDepreciation = document.getElementById('tab-depreciation');
         
         // Reset all tabs
-        [tabDocuments, tabDetail, tabBalance, tabDeleted].forEach(tab => {
+        [tabDocuments, tabDetail, tabBalance, tabDeleted, tabTrialBalance, tabDepreciation].forEach(tab => {
             if (tab) {
                 tab.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
                 tab.classList.add('border-gray-300', 'text-gray-500');
@@ -1395,6 +1651,12 @@
         } else if (activeTab === 'deleted' && tabDeleted) {
             tabDeleted.classList.remove('border-gray-300', 'text-gray-500');
             tabDeleted.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'trial-balance' && tabTrialBalance) {
+            tabTrialBalance.classList.remove('border-gray-300', 'text-gray-500');
+            tabTrialBalance.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else if (activeTab === 'depreciation' && tabDepreciation) {
+            tabDepreciation.classList.remove('border-gray-300', 'text-gray-500');
+            tabDepreciation.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
         }
     }
     
@@ -1464,6 +1726,8 @@
         // Hide other views
         document.getElementById('ast-documents-view').style.display = 'none';
         document.getElementById('ast-journal-detail-view').style.display = 'none';
+        document.getElementById('ast-trial-balance-view').style.display = 'none';
+        document.getElementById('ast-depreciation-view').style.display = 'none';
         
         // Update tab styling
         updateTabStyling('balance');
@@ -1782,6 +2046,318 @@
                     </td>
                 </tr>
             `;
+        }
+    }
+    
+    // Fetch trial balance data
+    function fetchTrialBalanceData(startDate, endDate) {
+        const cacheKey = `trial_balance_${startDate}_${endDate}`;
+        if (apiCache.has(cacheKey)) {
+            trialBalanceData = apiCache.get(cacheKey);
+            return Promise.resolve();
+        }
+        
+        const url = `/core/api/asset-depreciation-expenses/?start_date=${startDate}&end_date=${endDate}`;
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    trialBalanceData = data.details || [];
+                    apiCache.set(cacheKey, trialBalanceData);
+                } else {
+                    console.error('Failed to load trial balance data:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching trial balance:', error);
+            });
+    }
+    
+    // Fetch depreciation journal data
+    function fetchDepreciationJournalData(startDate, endDate) {
+        const cacheKey = `depreciation_${startDate}_${endDate}`;
+        if (apiCache.has(cacheKey)) {
+            depreciationData = apiCache.get(cacheKey);
+            return Promise.resolve();
+        }
+        
+        const url = `/core/api/cash-documents-filtered/?start_date=${startDate}&end_date=${endDate}&document_type_id=13`;
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    depreciationData = data.details || [];
+                    apiCache.set(cacheKey, depreciationData);
+                } else {
+                    console.error('Failed to load depreciation journal data:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching depreciation journal:', error);
+            });
+    }
+    
+    // Render trial balance table
+    function renderTrialBalanceTable() {
+        const tbody = document.getElementById('trial-balance-tbody');
+        if (!tbody) return;
+        
+        if (!trialBalanceData || trialBalanceData.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 class="text-sm font-medium text-gray-900 mb-1">No data found</h3>
+                            <p class="text-sm text-gray-500">No data found in the selected date range.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Calculate pagination
+        totalPagesTrialBalance = Math.ceil(trialBalanceData.length / pageSizeTrialBalance);
+        if (currentPageTrialBalance > totalPagesTrialBalance) currentPageTrialBalance = 1;
+        
+        const startIndex = (currentPageTrialBalance - 1) * pageSizeTrialBalance;
+        const endIndex = startIndex + pageSizeTrialBalance;
+        const paginatedData = trialBalanceData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updateTrialBalancePaginationInfo(trialBalanceData.length, paginatedData.length, startIndex);
+        
+        // Render rows
+        let htmlContent = '';
+        paginatedData.forEach((item) => {
+            htmlContent += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.asset_card_name || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.daily_expense, 6)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.expense_day || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.expense_amount, 2)}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.created_date || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.created_by || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.debit_account_code || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.credit_account_code || ''}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlContent;
+    }
+    
+    // Render depreciation table
+    function renderDepreciationTable() {
+        const tbody = document.getElementById('depreciation-tbody');
+        if (!tbody) return;
+        
+        if (!depreciationData || depreciationData.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 class="text-sm font-medium text-gray-900 mb-1">No data found</h3>
+                            <p class="text-sm text-gray-500">No data found in the selected date range.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Calculate pagination
+        totalPagesDepreciation = Math.ceil(depreciationData.length / pageSizeDepreciation);
+        if (currentPageDepreciation > totalPagesDepreciation) currentPageDepreciation = 1;
+        
+        const startIndex = (currentPageDepreciation - 1) * pageSizeDepreciation;
+        const endIndex = startIndex + pageSizeDepreciation;
+        const paginatedData = depreciationData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updateDepreciationPaginationInfo(depreciationData.length, paginatedData.length, startIndex);
+        
+        // Render rows with totals
+        let htmlContent = '';
+        let totalDebit = 0;
+        let totalCredit = 0;
+        
+        paginatedData.forEach((item) => {
+            totalDebit += parseFloat(item.debit_amount) || 0;
+            totalCredit += parseFloat(item.credit_amount) || 0;
+            
+            htmlContent += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_name || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.client_name || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.description || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currency_name || ''}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_amount, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_exchange, 4)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debit_amount, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.credit_amount, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.user_name || ''}</td>
+                </tr>
+            `;
+        });
+        
+        // Add totals row
+        htmlContent += `
+            <tr class="bg-gray-100 font-semibold">
+                <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="9">НИЙТ:</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalDebit, 2)}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalCredit, 2)}</td>
+                <td class="px-1 py-1 text-xs text-gray-900"></td>
+            </tr>
+        `;
+        
+        tbody.innerHTML = htmlContent;
+    }
+    
+    // Update trial balance pagination info
+    function updateTrialBalancePaginationInfo(totalRecords, currentRecords, startIndex) {
+        const showingStart = document.getElementById('showing-start-tb');
+        const showingEnd = document.getElementById('showing-end-tb');
+        const totalCount = document.getElementById('total-count-tb');
+        
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
+        if (totalCount) totalCount.textContent = totalRecords;
+        
+        generateTrialBalancePaginationButtons();
+    }
+    
+    // Generate trial balance pagination buttons
+    function generateTrialBalancePaginationButtons() {
+        const pageInfo = document.getElementById('page-info-tb');
+        if (!pageInfo) return;
+        
+        pageInfo.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPageTrialBalance - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPagesTrialBalance, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = `px-2 py-1 text-sm rounded-md ${
+                i === currentPageTrialBalance
+                    ? 'bg-blue-400 text-white hover:bg-blue-500'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`;
+            button.addEventListener('click', () => changePageTrialBalance(i));
+            pageInfo.appendChild(button);
+        }
+    }
+    
+    // Change trial balance page
+    function changePageTrialBalance(newPage) {
+        if (newPage < 1 || newPage > totalPagesTrialBalance) return;
+        currentPageTrialBalance = newPage;
+        renderTrialBalanceTable();
+    }
+    
+    // Update depreciation pagination info
+    function updateDepreciationPaginationInfo(totalRecords, currentRecords, startIndex) {
+        const showingStart = document.getElementById('showing-start-dep');
+        const showingEnd = document.getElementById('showing-end-dep');
+        const totalCount = document.getElementById('total-count-dep');
+        
+        if (showingStart) showingStart.textContent = startIndex + 1;
+        if (showingEnd) showingEnd.textContent = startIndex + currentRecords;
+        if (totalCount) totalCount.textContent = totalRecords;
+        
+        generateDepreciationPaginationButtons();
+    }
+    
+    // Generate depreciation pagination buttons
+    function generateDepreciationPaginationButtons() {
+        const pageInfo = document.getElementById('page-info-dep');
+        if (!pageInfo) return;
+        
+        pageInfo.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPageDepreciation - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPagesDepreciation, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = `px-2 py-1 text-sm rounded-md ${
+                i === currentPageDepreciation
+                    ? 'bg-blue-400 text-white hover:bg-blue-500'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`;
+            button.addEventListener('click', () => changePageDepreciation(i));
+            pageInfo.appendChild(button);
+        }
+    }
+    
+    // Change depreciation page
+    function changePageDepreciation(newPage) {
+        if (newPage < 1 || newPage > totalPagesDepreciation) return;
+        currentPageDepreciation = newPage;
+        renderDepreciationTable();
+    }
+    
+    // Switch to trial balance view
+    function switchToTrialBalanceView() {
+        // Hide all views
+        document.getElementById('ast-documents-view').style.display = 'none';
+        document.getElementById('ast-journal-detail-view').style.display = 'none';
+        document.getElementById('ast-balance-view').style.display = 'none';
+        document.getElementById('ast-depreciation-view').style.display = 'none';
+        
+        // Show trial balance view
+        document.getElementById('ast-trial-balance-view').style.display = 'block';
+        
+        // Update tab styling
+        updateTabStyling('trial-balance');
+        
+        // Render if data exists
+        if (trialBalanceData && trialBalanceData.length > 0) {
+            renderTrialBalanceTable();
+        }
+    }
+    
+    // Switch to depreciation view
+    function switchToDepreciationView() {
+        // Hide all views
+        document.getElementById('ast-documents-view').style.display = 'none';
+        document.getElementById('ast-journal-detail-view').style.display = 'none';
+        document.getElementById('ast-balance-view').style.display = 'none';
+        document.getElementById('ast-trial-balance-view').style.display = 'none';
+        
+        // Show depreciation view
+        document.getElementById('ast-depreciation-view').style.display = 'block';
+        
+        // Update tab styling
+        updateTabStyling('depreciation');
+        
+        // Render if data exists
+        if (depreciationData && depreciationData.length > 0) {
+            renderDepreciationTable();
         }
     }
     

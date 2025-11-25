@@ -15,18 +15,18 @@
 
         <!-- Actions Row -->
         <div class="mb-2 flex items-center justify-end space-x-2">
-            <button onclick="showAddAssetForm()" 
+                    <button onclick="showAddAssetForm()" 
                     class="inline-flex items-center px-2 py-1 text-xs font-bold text-white bg-green-600 hover:bg-green-700 hover:text-white rounded shadow-sm transition-all duration-200 border border-green-600 hover:border-green-700"
                     title="Шинэ хөрөнгийн карт нэмэх">
                 <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                        </svg>
                 НЭМЭХ
-            </button>
-            <button onclick="clearAllAssetFilters()" 
+                    </button>
+                    <button onclick="clearAllAssetFilters()" 
                     class="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                 Цэвэрлэх
-            </button>
+                    </button>
         </div>
 
         <!-- Add/Edit Asset Form (Hidden by default) -->
@@ -168,6 +168,9 @@
     </div>
 </div>
 
+<!-- Include Message Modal -->
+{% include 'core/components/message_modal.html' %}
+
 <script>
 // Global variables for document context
 window.assetModalContext = {
@@ -213,15 +216,17 @@ window.openAssetPopup = function(inputElement = null, rowId = null, context = nu
     }
 }
 
-window.closeAssetPopup = function() {
+window.closeAssetPopup = async function() {
     const modal = document.getElementById('asset-selection-modal');
     if (modal) {
         modal.classList.add('hidden');
     }
+
+    await refreshAccountingAfterAssetChange();
 }
 
-window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '', cumulatedDepreciation = '') {
-    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice, cumulatedDepreciation});
+window.selectAsset = async function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '', cumulatedDepreciation = '', dailyExpense = '') {
+    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice, cumulatedDepreciation, dailyExpense});
     // Check if we're in bulk manage mode (has currentAssetInput and currentAssetRowId)
     if (window.currentAssetInput && window.currentAssetRowId) {
         // Bulk manage mode - populate the specific row
@@ -235,9 +240,10 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
             const quantityInput = row.querySelector('.quantity-input');
             const unitCostInput = row.querySelector('.unit-cost-input');
             const unitPriceInput = row.querySelector('.unit-price-input');
-            const cumulatedDepreciationInput = row.querySelector('.cumulated-depreciation-input');
+            const cumulatedDepreciationInput = row.querySelector('.cumulated-depreciation-display');
+            const dailyExpenseInput = row.querySelector('.daily-expense-display');
             
-            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, quantityInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput, rowId: window.currentAssetRowId});
+            console.log('DEBUG: Bulk manage mode - Found elements:', {hiddenInput, displayInput, quantityInput, unitCostInput, unitPriceInput, cumulatedDepreciationInput, dailyExpenseInput, rowId: window.currentAssetRowId});
             
             if (hiddenInput && displayInput) {
                 hiddenInput.value = assetCardId;
@@ -257,11 +263,12 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
                 }
             }
             
-            // Populate unit cost, unit price, and cumulated depreciation if inputs exist
+            // Populate unit cost, unit price, cumulated depreciation, and daily expense if inputs exist
             // Normalize values to "0" if empty or "-"
             const normalizedUnitCost = (unitCost && unitCost !== '-' && unitCost.trim() !== '') ? unitCost : '0';
             const normalizedUnitPrice = (unitPrice && unitPrice !== '-' && unitPrice.trim() !== '') ? unitPrice : '0';
             const normalizedCumulatedDepreciation = (cumulatedDepreciation && cumulatedDepreciation !== '-' && cumulatedDepreciation.trim() !== '') ? cumulatedDepreciation : '0';
+            const normalizedDailyExpense = (dailyExpense && dailyExpense !== '-' && dailyExpense.trim() !== '') ? dailyExpense : '0';
             
             if (unitCostInput) {
                 unitCostInput.value = normalizedUnitCost;
@@ -272,14 +279,42 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
                 console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
             }
             if (cumulatedDepreciationInput) {
-                cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
-                console.log('DEBUG: Set CumulatedDepreciation to:', normalizedCumulatedDepreciation);
+                // Format cumulatedDepreciation with 2 decimal places and thousands separator
+                const cumulatedDepreciationValue = parseFloat(normalizedCumulatedDepreciation) || 0;
+                cumulatedDepreciationInput.value = cumulatedDepreciationValue.toLocaleString('en-US', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                });
+                console.log('DEBUG: Set CumulatedDepreciation to:', cumulatedDepreciationValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            }
+            if (dailyExpenseInput) {
+                // Format dailyExpense to 6 decimal places
+                const dailyExpenseValue = parseFloat(normalizedDailyExpense) || 0;
+                dailyExpenseInput.value = dailyExpenseValue.toFixed(6);
+                console.log('DEBUG: Set DailyExpense to:', dailyExpenseValue.toFixed(6));
             }
             
             // Trigger calculation if we're in bulk manage mode
             if (typeof calculateAssetTotals === 'function') {
                 calculateAssetTotals(row);
             }
+            
+            // Trigger depreciation amount calculation
+            if (typeof calculateDepreciationAmount === 'function') {
+                await calculateDepreciationAmount(row);
+            }
+            
+            // Trigger ending depreciation calculation
+            if (typeof calculateEndingDepreciation === 'function') {
+                calculateEndingDepreciation(row);
+            }
+            
+            // Update summary row totals
+            if (typeof updateSummaryRowTotals === 'function') {
+                updateSummaryRowTotals();
+            }
+
+            await refreshAccountingAfterAssetChange();
         } else {
             console.error('DEBUG: Row not found for input element:', window.currentAssetInput);
         }
@@ -350,7 +385,26 @@ window.selectAsset = function(assetCardId, assetCardName, assetName, unitCost = 
     window.currentAssetInput = null;
     window.currentAssetRowId = null;
     
-    closeAssetPopup();
+    await closeAssetPopup();
+}
+
+async function refreshAccountingAfterAssetChange() {
+    try {
+        if (typeof calculateAllDepreciationAmounts === 'function') {
+            await calculateAllDepreciationAmounts();
+        }
+        if (typeof calculateAllEndingDepreciation === 'function') {
+            calculateAllEndingDepreciation();
+        }
+        if (typeof updateSummaryRowTotals === 'function') {
+            updateSummaryRowTotals();
+        }
+        if (typeof window.FillAccountingDetails === 'function') {
+            window.FillAccountingDetails();
+        }
+    } catch (error) {
+        console.warn('Failed to refresh accounting after asset change:', error);
+    }
 }
 
 // Show add asset form
@@ -573,7 +627,12 @@ function submitAssetForm(event) {
                         errorMessage += ' ' + errorList.join('; ');
                     }
                 }
+                // Use showMessageModal if available, otherwise fall back to showAssetMessage
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(errorMessage, 'error');
+                } else {
                 showAssetMessage(errorMessage, 'error');
+                }
             }
         } else {
             // Handle HTML response (regular form submission)
@@ -594,7 +653,12 @@ function submitAssetForm(event) {
     })
     .catch(error => {
         console.error('Error saving asset card:', error);
+        // Use showMessageModal if available, otherwise fall back to showAssetMessage
+        if (typeof showMessageModal === 'function') {
+            showMessageModal(error.message || 'Error saving asset card. Please try again.', 'error');
+        } else {
         showAssetMessage(error.message || 'Error saving asset card. Please try again.', 'error');
+        }
     })
     .finally(() => {
         // Reset loading state
@@ -630,6 +694,90 @@ function showAssetMessage(message, type) {
             messageDiv.remove();
         }, 3000);
     }
+}
+
+// Show message modal function
+function showMessageModal(message, type = 'error', title = null) {
+    const modal = document.getElementById('message-modal');
+    
+    // Fallback to showAssetMessage if modal not found
+    if (!modal) {
+        console.warn('Message modal not found, falling back to showAssetMessage');
+        showAssetMessage(message, type);
+        return;
+    }
+    
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Set styles based on type
+    const typeConfig = {
+        error: {
+            bgClass: 'bg-red-100',
+            btnClass: 'bg-red-500 hover:bg-red-600 focus:ring-red-300',
+            defaultTitle: 'Алдаа'
+        },
+        success: {
+            bgClass: 'bg-green-100',
+            btnClass: 'bg-green-500 hover:bg-green-600 focus:ring-green-300',
+            defaultTitle: 'Амжилттай'
+        },
+        warning: {
+            bgClass: 'bg-yellow-100',
+            btnClass: 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300',
+            defaultTitle: 'Анхааруулга'
+        },
+        info: {
+            bgClass: 'bg-blue-100',
+            btnClass: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300',
+            defaultTitle: 'Мэдээлэл'
+        }
+    };
+    
+    const config = typeConfig[type] || typeConfig.error;
+    
+    // Set icon container background
+    if (iconContainer) {
+        iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${config.bgClass}`;
+    }
+    
+    // Show appropriate icon
+    if (icons[type]) {
+        icons[type].classList.remove('hidden');
+    }
+    
+    // Set title
+    if (titleElement) {
+        titleElement.textContent = title || config.defaultTitle;
+    }
+    
+    // Set message text
+    if (textElement) {
+        textElement.textContent = message;
+    }
+    
+    // Set button style
+    if (okButton) {
+        okButton.className = `px-4 py-2 ${config.btnClass} text-white text-base font-medium rounded-md w-24 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2`;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
 }
 
 // Delete asset function
@@ -688,11 +836,19 @@ function loadAssetList() {
         const endDateStr = documentDate.toISOString().split('T')[0];
         
         // Load all asset cards first, then merge balance data
+        const balanceQuery = new URLSearchParams({
+            start_date: startDateStr,
+            end_date: endDateStr
+        });
+        if (context.documentTypeId && parseInt(context.documentTypeId) === 11 && context.documentDate) {
+            balanceQuery.append('as_of_date', context.documentDate);
+        }
+        
         Promise.all([
             // Load all asset cards from API
             fetch('/core/api/asset-cards/').then(r => r.json()),
             // Load balance data
-            fetch(`/core/api/ast-balance-data/?start_date=${startDateStr}&end_date=${endDateStr}`).then(r => r.json())
+            fetch(`/core/api/ast-balance-data/?${balanceQuery.toString()}`).then(r => r.json())
         ])
         .then(([assetCardsData, balanceData]) => {
             if (!assetCardsData.success || !assetCardsData.asset_cards) {
@@ -713,7 +869,7 @@ function loadAssetList() {
             }
             
             // Convert API data to format expected by renderAssetTable
-            const assetData = assetCardsData.asset_cards.map(card => ({
+            let assetData = assetCardsData.asset_cards.map(card => ({
                 id: card.AssetCardId,
                 assetcardid: card.AssetCardId,
                 code: card.AssetCardCode || '-',
@@ -727,15 +883,20 @@ function loadAssetList() {
                 unitcost: card.UnitCost || 0,
                 unitPrice: card.UnitPrice ? card.UnitPrice.toString() : '0',
                 unitprice: card.UnitPrice || 0,
+                dailyexpense: card.DailyExpense !== undefined && card.DailyExpense !== null ? card.DailyExpense : 0,
+                DailyExpense: card.DailyExpense !== undefined && card.DailyExpense !== null ? card.DailyExpense : 0,
                 // Initialize balance fields
                 endingquantity: null,
                 endingcost: null,
-                cumulateddepreciation: null
+                cumulateddepreciation: null,
+                depreciationexpense: null
             }));
             
             // Merge balance data if available
-            if (balanceData.success && balanceData.balance_data) {
-                const balanceLookup = {};
+            const balanceLookup = {};
+            let hasBalanceData = false;
+            
+            if (balanceData.success && balanceData.balance_data && balanceData.balance_data.length > 0) {
                 balanceData.balance_data.forEach(b => {
                     // Filter by accountId if provided in context
                     if (context.accountId && b.accountid != context.accountId) {
@@ -746,6 +907,7 @@ function loadAssetList() {
                     if (!balanceLookup[key]) {
                         balanceLookup[key] = b;
                     }
+                    hasBalanceData = true;
                 });
                 
                 assetData.forEach(item => {
@@ -756,9 +918,13 @@ function loadAssetList() {
                         item.endingquantity = balanceItem.endingquantity;
                         item.endingcost = balanceItem.endingcost;
                         item.cumulateddepreciation = balanceItem.cumulateddepreciation;
+                        item.dailyexpense = balanceItem.dailyexpense;
                         // Update asset type name from balance if available (prefer balance data)
                         if (balanceItem.assettypename && balanceItem.assettypename !== '-') {
                             item.assettypename = balanceItem.assettypename;
+                        }
+                        if (balanceItem.depreciationexpense !== undefined && balanceItem.depreciationexpense !== null) {
+                            item.depreciationexpense = balanceItem.depreciationexpense;
                         }
                         // Update unit cost/price from balance if available
                         // Note: balance data doesn't have unit cost/price, keep from asset card
@@ -766,8 +932,10 @@ function loadAssetList() {
                 });
                 
                 // If filtering by accountId, only show asset cards that have balance data for that account
-                if (context.accountId) {
+                if (context.accountId && hasBalanceData) {
                     assetData = assetData.filter(item => balanceLookup[item.assetcardid]);
+                } else if (context.accountId && !hasBalanceData) {
+                    console.warn('No balance data returned for account filter:', context.accountId);
                 }
             }
             
@@ -777,7 +945,7 @@ function loadAssetList() {
             const documentTypeId = window.assetModalContext.documentTypeId;
             let filteredAssetData = assetData;
             
-            if (documentTypeId && parseInt(documentTypeId) === 11) {
+            if (documentTypeId && parseInt(documentTypeId) === 11 && hasBalanceData) {
                 filteredAssetData = assetData.filter(item => {
                     const endingQty = parseFloat(item.endingquantity) || 0;
                     return endingQty > 0;
@@ -795,7 +963,7 @@ function loadAssetList() {
             // Fallback to regular asset list
             loadRegularAssetList();
         });
-    } else {
+                    } else {
         // Fallback to regular asset list
         loadRegularAssetList();
     }
@@ -824,13 +992,13 @@ function loadRegularAssetList() {
                         </svg>
                         <h3 class="mt-2 text-sm font-medium text-gray-900">No asset cards found</h3>
                         <p class="mt-1 text-sm text-gray-500">No asset cards match the current filter criteria.</p>
-                    </div>
-                `;
+                        </div>
+                    `;
                 return;
             }
             
             // Convert API data to format expected by renderAssetTable
-            const assetData = data.asset_cards.map(card => ({
+            let assetData = data.asset_cards.map(card => ({
                 id: card.AssetCardId,
                 assetcardid: card.AssetCardId,
                 code: card.AssetCardCode || '-',
@@ -843,7 +1011,10 @@ function loadRegularAssetList() {
                 unitCost: card.UnitCost ? card.UnitCost.toString() : '0',
                 unitcost: card.UnitCost || 0,
                 unitPrice: card.UnitPrice ? card.UnitPrice.toString() : '0',
-                unitprice: card.UnitPrice || 0
+                unitprice: card.UnitPrice || 0,
+                cumulateddepreciation: card.CumulatedDepreciation !== undefined && card.CumulatedDepreciation !== null ? card.CumulatedDepreciation : 0,
+                dailyexpense: card.DailyExpense !== undefined && card.DailyExpense !== null ? card.DailyExpense : 0,
+                DailyExpense: card.DailyExpense !== undefined && card.DailyExpense !== null ? card.DailyExpense : 0
             }));
             
             // Store all data and render with pagination
@@ -989,7 +1160,7 @@ function renderAssetTable(data, isBalanceView = false) {
     // Render table
     if (isBalanceView) {
         renderBalanceViewTable(paginatedData);
-    } else {
+                        } else {
         renderRegularViewTable(paginatedData);
     }
     
@@ -1000,7 +1171,7 @@ function renderAssetTable(data, isBalanceView = false) {
             paginationContainer.classList.remove('hidden');
             paginationContainer.classList.add('flex');
             generateAssetPaginationButtons();
-        } else {
+            } else {
             paginationContainer.classList.add('hidden');
             paginationContainer.classList.remove('flex');
         }
@@ -1016,7 +1187,7 @@ function renderBalanceViewTable(data) {
     
     let assetsHtml = `
         <div class="space-y-0">
-            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 0.625fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="border-r border-gray-300 px-1">
                     <div class="mb-1">Код</div>
                     <input type="text" 
@@ -1050,6 +1221,7 @@ function renderBalanceViewTable(data) {
                 <div class="border-r border-gray-300 px-1 text-right">Эцсийн тоо</div>
                 <div class="border-r border-gray-300 px-1 text-right">Эцсийн өртөг</div>
                 <div class="border-r border-gray-300 px-1 text-right">Элэгдэл</div>
+                <div class="border-r border-gray-300 px-1 text-right">Өдрийн зардал</div>
                 <div class="border-r border-gray-300 px-1 text-center">Сонгох</div>
                 <div class="px-1 text-center">Үйлдэл</div>
             </div>
@@ -1065,21 +1237,27 @@ function renderBalanceViewTable(data) {
         const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : (item.unitPrice || '-');
         const endingQuantity = item.endingquantity !== undefined && item.endingquantity !== null ? parseFloat(item.endingquantity).toFixed(6) : '-';
         const endingCost = item.endingcost !== undefined && item.endingcost !== null ? parseFloat(item.endingcost).toFixed(2) : '-';
-        const cumulatedDepreciation = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation).toFixed(2) : '-';
+        const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
+        const expenseDep = item.depreciationexpense !== undefined && item.depreciationexpense !== null ? parseFloat(item.depreciationexpense) : null;
+        const hasCombinedDepreciation = baseCumDep !== null || expenseDep !== null;
+        const combinedDepreciationValue = (baseCumDep || 0) + (expenseDep || 0);
+        const cumulatedDepreciation = hasCombinedDepreciation ? combinedDepreciationValue.toFixed(2) : '-';
+        const dailyExpense = item.dailyexpense !== undefined && item.dailyexpense !== null ? parseFloat(item.dailyexpense).toFixed(6) : '-';
         
         const formattedAssetCardName = assetCardCode && assetCardCode !== '-' ? 
             `${assetCardCode} - ${assetCardName}` : assetCardName;
         
         const unitCostForSelect = item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : (item.unitCost || '');
         const unitPriceForSelect = item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : (item.unitPrice || '');
-        const cumulatedDepreciationForSelect = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? item.cumulateddepreciation.toString() : '0';
+        const cumulatedDepreciationForSelect = hasCombinedDepreciation ? combinedDepreciationValue.toString() : '0';
+        const dailyExpenseForSelect = item.dailyexpense !== undefined && item.dailyexpense !== null ? item.dailyexpense.toString() : '0';
         
         assetsHtml += `
-            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-white border-b border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer asset-row" 
+            <div style="display: grid; grid-template-columns: 60px 1fr 1fr 0.625fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-white border-b border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer asset-row" 
                  data-asset-code="${assetCardCode.toLowerCase()}" 
                  data-asset-name="${assetCardName.toLowerCase()}" 
                  data-asset-type="${assetName.toLowerCase()}"
-                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')">
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')">
                 <div class="flex items-center border-r border-gray-300 px-1">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
                 </div>
@@ -1107,8 +1285,11 @@ function renderBalanceViewTable(data) {
                 <div class="flex items-center justify-end border-r border-gray-300 px-1">
                     <span class="text-sm text-gray-900">${cumulatedDepreciation}</span>
                 </div>
+                <div class="flex items-center justify-end border-r border-gray-300 px-1">
+                    <span class="text-sm text-gray-900">${dailyExpense}</span>
+                </div>
                 <div class="flex items-center justify-center border-r border-gray-300 px-1">
-                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')" 
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')" 
                             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                         Сонгох
                     </button>
@@ -1144,21 +1325,21 @@ function renderRegularViewTable(data) {
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-2 px-4 border-r border-gray-200">
+                <div class="col-span-3 px-4 border-r border-gray-200">
                     <div class="mb-1">Хөрөнгийн картын нэр</div>
                     <input type="text" 
                            id="filter-asset-name" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-2 px-4 border-r border-gray-200">
+                <div class="col-span-3 px-4 border-r border-gray-200">
                     <div class="mb-1">Хөрөнгө</div>
                     <input type="text" 
                            id="filter-asset-asset" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-2 px-4 border-r border-gray-200">
+                <div class="col-span-1 px-4 border-r border-gray-200">
                     <div class="mb-1">Төрөл</div>
                     <input type="text" 
                            id="filter-asset-type" 
@@ -1167,7 +1348,7 @@ function renderRegularViewTable(data) {
                 </div>
                 <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн өртөг</div>
                 <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн үнэ</div>
-                <div class="col-span-2 px-4 border-r border-gray-200">Ажилтан</div>
+                <div class="col-span-1 px-4 border-r border-gray-200">Ажилтан</div>
                 <div class="col-span-1 px-4 text-center">Сонгох</div>
             </div>
     `;
@@ -1187,48 +1368,53 @@ function renderRegularViewTable(data) {
         
         const unitCostForSelect = (item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : '') || item.unitCost || '';
         const unitPriceForSelect = (item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '') || item.unitPrice || '';
-        const cumulatedDepreciationForSelect = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? item.cumulateddepreciation.toString() : '0';
-        
-        assetsHtml += `
-            <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
-                 data-asset-code="${assetCardCode.toLowerCase()}" 
-                 data-asset-name="${assetCardName.toLowerCase()}" 
-                 data-asset-type="${assetName.toLowerCase()}"
-                 data-employee="${employee.toLowerCase()}"
-                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')">
-                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+        const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
+        const expenseDep = item.depreciationexpense !== undefined && item.depreciationexpense !== null ? parseFloat(item.depreciationexpense) : null;
+        const hasCombinedDepreciation = baseCumDep !== null || expenseDep !== null;
+        const combinedDepreciationValue = (baseCumDep || 0) + (expenseDep || 0);
+        const cumulatedDepreciationForSelect = hasCombinedDepreciation ? combinedDepreciationValue.toString() : '0';
+        const dailyExpenseForSelect = (item.dailyexpense !== undefined && item.dailyexpense !== null ? item.dailyexpense.toString() : '') || (item.DailyExpense !== undefined && item.DailyExpense !== null ? item.DailyExpense.toString() : '0');
+                    
+                    assetsHtml += `
+                        <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
+                             data-asset-code="${assetCardCode.toLowerCase()}" 
+                             data-asset-name="${assetCardName.toLowerCase()}" 
+                             data-asset-type="${assetName.toLowerCase()}"
+                             data-employee="${employee.toLowerCase()}"
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')">
+                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
-                </div>
-                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                            </div>
+                            <div class="col-span-3 px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetCardName}</span>
-                </div>
-                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                    <span class="text-sm text-gray-900">${assetName}</span>
-                </div>
-                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
+                            </div>
+                            <div class="col-span-3 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900">${assetName}</span>
+                            </div>
+                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetTypeName}</span>
-                </div>
+                            </div>
                 <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
                     <span class="text-sm text-gray-900">${unitCost}</span>
                 </div>
                 <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
                     <span class="text-sm text-gray-900">${unitPrice}</span>
-                </div>
-                <div class="col-span-2 px-4 border-r border-gray-200 flex items-center">
-                    <span class="text-sm text-gray-900">${employee}</span>
-                </div>
-                <div class="col-span-1 px-4 flex items-center justify-center">
-                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}')" 
+                            </div>
+                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                                <span class="text-sm text-gray-900">${employee}</span>
+                            </div>
+                            <div class="col-span-1 px-4 flex items-center justify-center">
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')" 
                             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                         Сонгох
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    assetsHtml += '</div>';
-    assetListContainer.innerHTML = assetsHtml;
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            });
+            
+            assetsHtml += '</div>';
+            assetListContainer.innerHTML = assetsHtml;
 }
 
 function applyAssetFiltersAndPagination() {

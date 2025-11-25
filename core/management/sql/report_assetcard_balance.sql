@@ -28,7 +28,9 @@ RETURNS TABLE (
     outquantity NUMERIC(24,6),
     outcost NUMERIC(24,6),
     endingquantity NUMERIC(24,6),
-    endingcost NUMERIC(24,6)
+    endingcost NUMERIC(24,6),
+    dailyexpense NUMERIC(24,6),
+    totalexpense NUMERIC(24,6)
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -138,7 +140,13 @@ BEGIN
 
         (COALESCE(sb.starting_cost, 0) + 
         COALESCE(it.in_cost, 0) - 
-        COALESCE(et.out_cost, 0))::NUMERIC(24,6) AS EndingCost
+        COALESCE(et.out_cost, 0))::NUMERIC(24,6) AS EndingCost,
+
+        -- Daily Expense from asset card
+        COALESCE(rac."DailyExpense", 0)::NUMERIC(24,6) AS DailyExpense,
+
+        -- Combined depreciation balance
+        (COALESCE(sb.cumulated_depreciation, 0) + COALESCE(de.depreciation_expense, 0))::NUMERIC(24,6) AS TotalExpense
 
     FROM account_asset_combinations aac
     INNER JOIN ref_account ra ON aac."AccountId" = ra."AccountId"
