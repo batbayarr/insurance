@@ -98,7 +98,7 @@ input[type="number"] {
                     </thead>
                     <tbody id="details-tbody" class="bg-white divide-y divide-gray-200">
                         {% for item in document_items %}
-                        <tr class="hover:bg-gray-50 existing-row" data-item-id="{{ item.DocumentItemId }}">
+                        <tr class="hover:bg-gray-50 existing-row" data-item-id="{{ item.DocumentItemId }}" data-dep-source="backend">
                             <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 {{ item.DocumentItemId }}
                             </td>
@@ -147,17 +147,19 @@ input[type="number"] {
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
                                 <input type="text" name="cumulated_depreciation_{{ item.DocumentItemId }}" readonly
-                                       value="{% if item.total_expense is not None %}{{ item.total_expense|floatformat:2 }}{% elif item.initial_depreciation is not None %}{{ item.initial_depreciation|floatformat:2 }}{% else %}0.00{% endif %}"
+                                       value="{% if item.balance_cumulated_depreciation is not None %}{{ item.balance_cumulated_depreciation|floatformat:2 }}{% elif item.initial_depreciation is not None %}{{ item.initial_depreciation|floatformat:2 }}{% else %}0.00{% endif %}"
                                        class="cumulated-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                                        placeholder="0.00">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
                                 <input type="text" name="depreciation_amount_{{ item.DocumentItemId }}" readonly
+                                       value="{% if item.balance_depreciation_expense is not None %}{{ item.balance_depreciation_expense|floatformat:2 }}{% else %}0.00{% endif %}"
                                        class="depreciation-amount-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                                        placeholder="0.00">
                             </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
                                 <input type="text" name="ending_depreciation_{{ item.DocumentItemId }}" readonly
+                                       value="{% if item.total_expense is not None %}{{ item.total_expense|floatformat:2 }}{% else %}0.00{% endif %}"
                                        class="ending-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                                        placeholder="0.00">
                             </td>
@@ -794,14 +796,17 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSummaryRowTotals();
 });
 
-// Cache for period begin date to avoid repeated API calls
-let periodBeginDateCache = null;
+// Cache period begin dates per document date to avoid stale lookups
+const periodBeginDateCache = new Map();
 
 // Function to get period begin date for a document date
 async function getPeriodBeginDate(documentDate) {
-    // Return cached value if available
-    if (periodBeginDateCache) {
-        return periodBeginDateCache;
+    if (!documentDate) {
+        return null;
+    }
+
+    if (periodBeginDateCache.has(documentDate)) {
+        return periodBeginDateCache.get(documentDate);
     }
     
     try {
@@ -809,7 +814,7 @@ async function getPeriodBeginDate(documentDate) {
         const data = await response.json();
         
         if (data.success) {
-            periodBeginDateCache = data.begin_date;
+            periodBeginDateCache.set(documentDate, data.begin_date);
             return data.begin_date;
         } else {
             console.error('Error getting period begin date:', data.error);
@@ -818,7 +823,7 @@ async function getPeriodBeginDate(documentDate) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const beginDate = `${year}-${month}-01`;
-            periodBeginDateCache = beginDate;
+            periodBeginDateCache.set(documentDate, beginDate);
             return beginDate;
         }
     } catch (error) {
@@ -828,7 +833,7 @@ async function getPeriodBeginDate(documentDate) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const beginDate = `${year}-${month}-01`;
-        periodBeginDateCache = beginDate;
+        periodBeginDateCache.set(documentDate, beginDate);
         return beginDate;
     }
 }
@@ -839,6 +844,10 @@ async function calculateDepreciationAmount(row) {
     const depreciationAmountInput = row.querySelector('.depreciation-amount-display');
     
     if (!dailyExpenseInput || !depreciationAmountInput) {
+        return;
+    }
+
+    if (row && row.dataset && row.dataset.depSource === 'backend') {
         return;
     }
     
@@ -918,6 +927,10 @@ function calculateEndingDepreciation(row) {
     const endingDepreciationInput = row.querySelector('.ending-depreciation-display');
     
     if (!endingDepreciationInput) {
+        return;
+    }
+
+    if (row && row.dataset && row.dataset.depSource === 'backend') {
         return;
     }
     

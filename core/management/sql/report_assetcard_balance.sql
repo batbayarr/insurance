@@ -35,6 +35,21 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH 
+    period_bounds AS (
+        SELECT 
+            rp."BeginDate",
+            rp."EndDate"
+        FROM ref_period rp
+        WHERE asofdate BETWEEN rp."BeginDate" AND rp."EndDate"
+        ORDER BY rp."BeginDate" DESC
+        LIMIT 1
+    ),
+    period_dates AS (
+        SELECT 
+            COALESCE((SELECT "BeginDate" FROM period_bounds), date_trunc('month', asofdate)::DATE) AS period_begin,
+            asofdate AS period_end
+    ),
+
     -- 1) Starting Balance from ast_beginning_balance (per AccountId + AssetCardId)
     starting_balances AS (
         SELECT 
@@ -80,18 +95,7 @@ BEGIN
         GROUP BY ad."AccountId", adi."AssetCardId"
     ),
 
-    -- 4) Depreciation expense up to and including asofdate
-    depreciation_expenses AS (
-        SELECT 
-            ade."AssetCardId",
-            SUM(ade."ExpenseAmount") AS depreciation_expense
-        FROM ast_depreciation_expense ade
-        WHERE (ade."DepreciationDate" <= asofdate)
-            OR (ade."DepreciationDate" IS NULL AND ade."CreatedDate" <= asofdate)
-        GROUP BY ade."AssetCardId"
-    ),
-
-    -- 5) Collect all AccountId + AssetCardId combos from all sources
+    -- 4) Collect all AccountId + AssetCardId combos from all sources
     account_asset_combinations AS (
         SELECT DISTINCT "AccountId", "AssetCardId", "AssetId" FROM starting_balances
         UNION
@@ -102,6 +106,81 @@ BEGIN
         SELECT DISTINCT et."AccountId", et."AssetCardId", rac."AssetId"
         FROM expense_transactions et
         INNER JOIN ref_asset_card rac ON et."AssetCardId" = rac."AssetCardId"
+    ),
+
+    -- 5) First receipt (DocumentTypeId=10) dates per asset up to asofdate
+    asset_receipts AS (
+        SELECT 
+            ad."AccountId",
+            adi."AssetCardId",
+            MIN(ad."DocumentDate") AS first_receipt_date
+        FROM ast_document ad
+        INNER JOIN ast_document_item adi ON ad."DocumentId" = adi."DocumentId"
+        CROSS JOIN period_dates pd
+        WHERE ad."DocumentTypeId" = 10
+            AND ad."IsDelete" = false
+            AND ad."DocumentDate" <= pd.period_end
+        GROUP BY ad."AccountId", adi."AssetCardId"
+    ),
+
+    -- 6) First disposal (DocumentTypeId=11) during the current period (up to asofdate)
+    asset_disposals AS (
+        SELECT 
+            ad."AccountId",
+            adi."AssetCardId",
+            MIN(ad."DocumentDate") AS first_disposal_date
+        FROM ast_document ad
+        INNER JOIN ast_document_item adi ON ad."DocumentId" = adi."DocumentId"
+        CROSS JOIN period_dates pd
+        WHERE ad."DocumentTypeId" = 11
+            AND ad."IsDelete" = false
+            AND ad."DocumentDate" BETWEEN pd.period_begin AND pd.period_end
+        GROUP BY ad."AccountId", adi."AssetCardId"
+    ),
+
+    -- 7) Determine activity windows and compute depreciation based on daily expense
+    depreciation_base AS (
+        SELECT
+            aac."AccountId",
+            aac."AssetCardId",
+            rac."DailyExpense",
+            CASE 
+                WHEN sb."AssetCardId" IS NOT NULL THEN pd.period_begin
+                WHEN ar.first_receipt_date IS NOT NULL THEN GREATEST(pd.period_begin, ar.first_receipt_date)
+                ELSE NULL
+            END AS activity_start,
+            CASE 
+                WHEN ads.first_disposal_date IS NOT NULL THEN LEAST(ads.first_disposal_date, pd.period_end)
+                ELSE pd.period_end
+            END AS activity_end
+        FROM account_asset_combinations aac
+        CROSS JOIN period_dates pd
+        LEFT JOIN ref_asset_card rac ON aac."AssetCardId" = rac."AssetCardId"
+        LEFT JOIN starting_balances sb ON aac."AccountId" = sb."AccountId" 
+            AND aac."AssetCardId" = sb."AssetCardId"
+        LEFT JOIN asset_receipts ar ON aac."AccountId" = ar."AccountId"
+            AND aac."AssetCardId" = ar."AssetCardId"
+        LEFT JOIN asset_disposals ads ON aac."AccountId" = ads."AccountId"
+            AND aac."AssetCardId" = ads."AssetCardId"
+    ),
+
+    depreciation_expenses AS (
+        SELECT
+            db."AccountId",
+            db."AssetCardId",
+            CASE 
+                WHEN db.activity_start IS NULL 
+                    OR db.activity_end IS NULL 
+                    OR db."DailyExpense" IS NULL 
+                    OR db."DailyExpense" <= 0 
+                    OR db.activity_end < db.activity_start
+                THEN 0::NUMERIC(24,6)
+                ELSE (
+                    GREATEST(0, (db.activity_end - db.activity_start + 1))::NUMERIC(24,6) 
+                    * db."DailyExpense"
+                )::NUMERIC(24,6)
+            END AS depreciation_expense
+        FROM depreciation_base db
     )
 
     SELECT 
@@ -120,7 +199,7 @@ BEGIN
         -- Cumulated Depreciation from starting balances
         COALESCE(sb.cumulated_depreciation, 0)::NUMERIC(24,6) AS CumulatedDepreciation,
 
-        -- Depreciation Expense up to asofdate
+        -- Depreciation Expense for the current period (based on activity window)
         COALESCE(de.depreciation_expense, 0)::NUMERIC(24,6) AS DepreciationExpense,
 
         -- Beginning balances from starting table

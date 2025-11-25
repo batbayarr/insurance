@@ -225,8 +225,52 @@ window.closeAssetPopup = async function() {
     await refreshAccountingAfterAssetChange();
 }
 
-window.selectAsset = async function(assetCardId, assetCardName, assetName, unitCost = '', unitPrice = '', cumulatedDepreciation = '', dailyExpense = '') {
-    console.log('DEBUG: selectAsset called with:', {assetCardId, assetCardName, assetName, unitCost, unitPrice, cumulatedDepreciation, dailyExpense});
+window.selectAsset = async function(
+    assetCardId,
+    assetCardName,
+    assetName,
+    unitCost = '',
+    unitPrice = '',
+    cumulatedDepreciation = '',
+    dailyExpense = '',
+    depreciationExpense = '',
+    totalDepreciation = ''
+) {
+    console.log('DEBUG: selectAsset called with:', {
+        assetCardId,
+        assetCardName,
+        assetName,
+        unitCost,
+        unitPrice,
+        cumulatedDepreciation,
+        dailyExpense,
+        depreciationExpense,
+        totalDepreciation
+    });
+
+    const parseNumericValue = (value) => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'number') {
+            return isNaN(value) ? null : value;
+        }
+        const cleaned = value.replace(/,/g, '').trim();
+        if (cleaned === '' || cleaned === '-') {
+            return null;
+        }
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+    };
+
+    const formatNumericValue = (value, decimals = 2) => {
+        const num = parseNumericValue(value);
+        if (num === null) {
+            return (0).toFixed(decimals);
+        }
+        return num.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    };
 
     const contextDocType = window.assetModalContext?.documentTypeId;
     if (contextDocType && parseInt(contextDocType, 10) === 10) {
@@ -296,49 +340,72 @@ window.selectAsset = async function(assetCardId, assetCardName, assetName, unitC
             }
             
             // Populate unit cost, unit price, cumulated depreciation, and daily expense if inputs exist
-            // Normalize values to "0" if empty or "-"
-            const normalizedUnitCost = (unitCost && unitCost !== '-' && unitCost.trim() !== '') ? unitCost : '0';
-            const normalizedUnitPrice = (unitPrice && unitPrice !== '-' && unitPrice.trim() !== '') ? unitPrice : '0';
-            const normalizedCumulatedDepreciation = (cumulatedDepreciation && cumulatedDepreciation !== '-' && cumulatedDepreciation.trim() !== '') ? cumulatedDepreciation : '0';
-            const normalizedDailyExpense = (dailyExpense && dailyExpense !== '-' && dailyExpense.trim() !== '') ? dailyExpense : '0';
+            const normalizedUnitCost = parseNumericValue(unitCost);
+            const normalizedUnitPrice = parseNumericValue(unitPrice);
+            const normalizedCumulatedDepreciation = parseNumericValue(cumulatedDepreciation);
+            const normalizedDailyExpense = parseNumericValue(dailyExpense);
+            const normalizedDepreciationExpense = parseNumericValue(depreciationExpense);
+            const normalizedTotalDepreciation = parseNumericValue(totalDepreciation);
             
             if (unitCostInput) {
-                unitCostInput.value = normalizedUnitCost;
-                console.log('DEBUG: Set UnitCost to:', normalizedUnitCost);
+                unitCostInput.value = (normalizedUnitCost !== null ? normalizedUnitCost : 0).toFixed(6);
+                console.log('DEBUG: Set UnitCost to:', unitCostInput.value);
             }
             if (unitPriceInput) {
-                unitPriceInput.value = normalizedUnitPrice;
-                console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
+                unitPriceInput.value = (normalizedUnitPrice !== null ? normalizedUnitPrice : 0).toFixed(6);
+                console.log('DEBUG: Set UnitPrice to:', unitPriceInput.value);
             }
             if (cumulatedDepreciationInput) {
-                // Format cumulatedDepreciation with 2 decimal places and thousands separator
-                const cumulatedDepreciationValue = parseFloat(normalizedCumulatedDepreciation) || 0;
-                cumulatedDepreciationInput.value = cumulatedDepreciationValue.toLocaleString('en-US', { 
-                    minimumFractionDigits: 2, 
-                    maximumFractionDigits: 2 
-                });
-                console.log('DEBUG: Set CumulatedDepreciation to:', cumulatedDepreciationValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                const formattedCumulated = formatNumericValue(
+                    normalizedCumulatedDepreciation !== null ? normalizedCumulatedDepreciation : 0,
+                    2
+                );
+                cumulatedDepreciationInput.value = formattedCumulated;
+                console.log('DEBUG: Set CumulatedDepreciation to:', formattedCumulated);
             }
             if (dailyExpenseInput) {
-                // Format dailyExpense to 6 decimal places
-                const dailyExpenseValue = parseFloat(normalizedDailyExpense) || 0;
-                dailyExpenseInput.value = dailyExpenseValue.toFixed(6);
-                console.log('DEBUG: Set DailyExpense to:', dailyExpenseValue.toFixed(6));
+                const formattedDailyExpense = formatNumericValue(
+                    normalizedDailyExpense !== null ? normalizedDailyExpense : 0,
+                    6
+                );
+                dailyExpenseInput.value = formattedDailyExpense;
+                console.log('DEBUG: Set DailyExpense to:', formattedDailyExpense);
+            }
+            const depreciationAmountInput = row.querySelector('.depreciation-amount-display');
+            const endingDepreciationInput = row.querySelector('.ending-depreciation-display');
+            const isDocType11 = contextDocType && parseInt(contextDocType, 10) === 11;
+            const hasBackendDepreciation =
+                isDocType11 &&
+                (normalizedCumulatedDepreciation !== null ||
+                    normalizedDepreciationExpense !== null ||
+                    normalizedTotalDepreciation !== null);
+
+            if (depreciationAmountInput) {
+                const formattedDepAmount = normalizedDepreciationExpense !== null
+                    ? formatNumericValue(normalizedDepreciationExpense, 2)
+                    : '0.00';
+                depreciationAmountInput.value = formattedDepAmount;
+            }
+
+            if (endingDepreciationInput) {
+                const totalValue = normalizedTotalDepreciation !== null
+                    ? normalizedTotalDepreciation
+                    : (
+                        (normalizedCumulatedDepreciation !== null ? normalizedCumulatedDepreciation : 0) +
+                        (normalizedDepreciationExpense !== null ? normalizedDepreciationExpense : 0)
+                    );
+                endingDepreciationInput.value = formatNumericValue(totalValue, 2);
+            }
+
+            if (hasBackendDepreciation) {
+                row.dataset.depSource = 'backend';
+            } else {
+                delete row.dataset.depSource;
             }
             
             // Trigger calculation if we're in bulk manage mode
             if (typeof calculateAssetTotals === 'function') {
                 calculateAssetTotals(row);
-            }
-            
-            // Trigger depreciation amount calculation
-            if (typeof calculateDepreciationAmount === 'function') {
-                await calculateDepreciationAmount(row);
-            }
-            
-            // Trigger ending depreciation calculation
-            if (typeof calculateEndingDepreciation === 'function') {
-                calculateEndingDepreciation(row);
             }
             
             // Update summary row totals
@@ -921,7 +988,8 @@ function loadAssetList() {
                 endingquantity: null,
                 endingcost: null,
                 cumulateddepreciation: null,
-                depreciationexpense: null
+                depreciationexpense: null,
+                totalexpense: null
             }));
             
             const documentTypeId = window.assetModalContext.documentTypeId;
@@ -960,6 +1028,9 @@ function loadAssetList() {
                         }
                         if (balanceItem.depreciationexpense !== undefined && balanceItem.depreciationexpense !== null) {
                             item.depreciationexpense = balanceItem.depreciationexpense;
+                        }
+                        if (balanceItem.totalexpense !== undefined && balanceItem.totalexpense !== null) {
+                            item.totalexpense = balanceItem.totalexpense;
                         }
                         // Update unit cost/price from balance if available
                         // Note: balance data doesn't have unit cost/price, keep from asset card
@@ -1273,6 +1344,7 @@ function renderBalanceViewTable(data) {
         const endingCost = item.endingcost !== undefined && item.endingcost !== null ? parseFloat(item.endingcost).toFixed(2) : '-';
         const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
         const expenseDep = item.depreciationexpense !== undefined && item.depreciationexpense !== null ? parseFloat(item.depreciationexpense) : null;
+        const totalExpenseValue = item.totalexpense !== undefined && item.totalexpense !== null ? parseFloat(item.totalexpense) : null;
         const hasCombinedDepreciation = baseCumDep !== null || expenseDep !== null;
         const combinedDepreciationValue = (baseCumDep || 0) + (expenseDep || 0);
         const cumulatedDepreciation = hasCombinedDepreciation ? combinedDepreciationValue.toFixed(2) : '-';
@@ -1283,15 +1355,17 @@ function renderBalanceViewTable(data) {
         
         const unitCostForSelect = item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : (item.unitCost || '');
         const unitPriceForSelect = item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : (item.unitPrice || '');
-        const cumulatedDepreciationForSelect = hasCombinedDepreciation ? combinedDepreciationValue.toString() : '0';
+        const cumulatedDepreciationForSelect = baseCumDep !== null ? baseCumDep.toString() : '0';
         const dailyExpenseForSelect = item.dailyexpense !== undefined && item.dailyexpense !== null ? item.dailyexpense.toString() : '0';
+        const depreciationExpenseForSelect = expenseDep !== null ? expenseDep.toString() : '0';
+        const totalExpenseForSelect = totalExpenseValue !== null ? totalExpenseValue.toString() : combinedDepreciationValue.toString();
         
         assetsHtml += `
             <div style="display: grid; grid-template-columns: 60px 1fr 1fr 0.625fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-white border-b border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer asset-row" 
                  data-asset-code="${assetCardCode.toLowerCase()}" 
                  data-asset-name="${assetCardName.toLowerCase()}" 
                  data-asset-type="${assetName.toLowerCase()}"
-                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')">
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')">
                 <div class="flex items-center border-r border-gray-300 px-1">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
                 </div>
@@ -1323,7 +1397,7 @@ function renderBalanceViewTable(data) {
                     <span class="text-sm text-gray-900">${dailyExpense}</span>
                 </div>
                 <div class="flex items-center justify-center border-r border-gray-300 px-1">
-                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')" 
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')" 
                             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                         Сонгох
                     </button>
@@ -1404,10 +1478,13 @@ function renderRegularViewTable(data) {
         const unitPriceForSelect = (item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '') || item.unitPrice || '';
         const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
         const expenseDep = item.depreciationexpense !== undefined && item.depreciationexpense !== null ? parseFloat(item.depreciationexpense) : null;
+        const totalExpenseValue = item.totalexpense !== undefined && item.totalexpense !== null ? parseFloat(item.totalexpense) : null;
         const hasCombinedDepreciation = baseCumDep !== null || expenseDep !== null;
         const combinedDepreciationValue = (baseCumDep || 0) + (expenseDep || 0);
-        const cumulatedDepreciationForSelect = hasCombinedDepreciation ? combinedDepreciationValue.toString() : '0';
+        const cumulatedDepreciationForSelect = baseCumDep !== null ? baseCumDep.toString() : '0';
         const dailyExpenseForSelect = (item.dailyexpense !== undefined && item.dailyexpense !== null ? item.dailyexpense.toString() : '') || (item.DailyExpense !== undefined && item.DailyExpense !== null ? item.DailyExpense.toString() : '0');
+        const depreciationExpenseForSelect = expenseDep !== null ? expenseDep.toString() : '0';
+        const totalExpenseForSelect = totalExpenseValue !== null ? totalExpenseValue.toString() : combinedDepreciationValue.toString();
                     
                     assetsHtml += `
                         <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
@@ -1415,7 +1492,7 @@ function renderRegularViewTable(data) {
                              data-asset-name="${assetCardName.toLowerCase()}" 
                              data-asset-type="${assetName.toLowerCase()}"
                              data-employee="${employee.toLowerCase()}"
-                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')">
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')">
                             <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
                             </div>
@@ -1438,7 +1515,7 @@ function renderRegularViewTable(data) {
                                 <span class="text-sm text-gray-900">${employee}</span>
                             </div>
                             <div class="col-span-1 px-4 flex items-center justify-center">
-                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}')" 
+                    <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')" 
                             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                         Сонгох
                                 </button>
