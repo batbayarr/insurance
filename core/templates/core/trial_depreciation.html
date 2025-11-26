@@ -202,7 +202,14 @@
     }
     
     async function applyDateFilter() {
-        // Get dates from selected period
+        // Get period info from selected period
+        const periodSelect = document.getElementById('period-select');
+        if (!periodSelect || !periodSelect.value) {
+            alert('Хугацаа сонгоно уу');
+            return;
+        }
+        
+        const periodId = periodSelect.value; // Use period_id directly
         const periodDates = getSelectedPeriodDates();
         
         if (!periodDates) {
@@ -225,8 +232,8 @@
         let adjustedEndDate = endDate;
         
         try {
-            // Call depreciation calculation function
-            const depreciationResult = await callCalculateDepreciation(startDate, endDate);
+            // Call depreciation calculation function with period_id
+            const depreciationResult = await callCalculateDepreciation(periodId, startDate, endDate);
             
             // Update dates if they were adjusted
             if (depreciationResult && depreciationResult.adjusted_dates) {
@@ -253,15 +260,16 @@
             await fetchDepreciationJournalData(adjustedStartDate, adjustedEndDate);
         } finally {
             if (filterButton) {
-                filterButton.textContent = 'ЭЛЭГДЭЛ ХИЙХ';
+                filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
                 filterButton.disabled = false;
             }
         }
     }
     
-    async function callCalculateDepreciation(startDate, endDate) {
+    async function callCalculateDepreciation(periodId, startDate, endDate) {
         try {
-            const url = `/core/api/calculate-depreciation/?start_date=${startDate}&end_date=${endDate}`;
+            // Pass period_id as primary parameter, dates as fallback
+            const url = `/core/api/calculate-depreciation/?period_id=${periodId}&start_date=${startDate}&end_date=${endDate}`;
             const response = await fetch(url);
             const data = await response.json();
             return data;

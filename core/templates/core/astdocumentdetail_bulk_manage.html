@@ -91,7 +91,8 @@ input[type="number"] {
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн үнэ *</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 daily-expense-header" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>Өдрийн зардал</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
-                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдлийн дүн</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Байгуулсан</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 predicted-depreciation-header" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>Байгуулах</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭЦСИЙН ЭЛЭГДЭЛ</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                         </tr>
@@ -157,6 +158,12 @@ input[type="number"] {
                                        class="depreciation-amount-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                                        placeholder="0.00">
                             </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200 predicted-depreciation-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
+                                <input type="text" name="predicted_depreciation_{{ item.DocumentItemId }}" readonly
+                                       value="{% if document.DocumentTypeId.DocumentTypeId == 11 %}{{ item.balance_predicted_depreciation|default:0|floatformat:2 }}{% else %}0.00{% endif %}"
+                                       class="predicted-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                                       placeholder="0.00">
+                            </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200">
                                 <input type="text" name="ending_depreciation_{{ item.DocumentItemId }}" readonly
                                        value="{% if item.total_expense is not None %}{{ item.total_expense|floatformat:2 }}{% else %}0.00{% endif %}"
@@ -198,6 +205,9 @@ input[type="number"] {
                             </td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
                                 <span id="sum-depreciation-amount" class="block text-right">0.00</span>
+                            </td>
+                            <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right predicted-depreciation-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
+                                <span id="sum-predicted-depreciation" class="block text-right">0.00</span>
                             </td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
                                 <span id="sum-ending-depreciation" class="block text-right">0.00</span>
@@ -640,13 +650,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const quantity = row.querySelector('input[name*="quantity_"]')?.value;
                     const unitCost = row.querySelector('input[name*="unit_cost_"]')?.value;
                     const unitPrice = row.querySelector('input[name*="unit_price_"]')?.value;
+                    const predictedDepreciation = row.querySelector('input[name*="predicted_depreciation_"]')?.value || '0';
                     
                     if (assetCardId && quantity && unitCost && unitPrice) {
                         items[itemId] = {
                             asset_card_id: assetCardId,
                             quantity: quantity,
                             unit_cost: unitCost,
-                            unit_price: unitPrice
+                            unit_price: unitPrice,
+                            predicted_depreciation: predictedDepreciation.replace(/,/g, '') // Remove commas
                         };
                     }
                 }
@@ -659,13 +671,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const quantity = row.querySelector('input[name*="new_quantity_"]')?.value;
                 const unitCost = row.querySelector('input[name*="new_unit_cost_"]')?.value;
                 const unitPrice = row.querySelector('input[name*="new_unit_price_"]')?.value;
+                const predictedDepreciation = row.querySelector('input[name*="new_predicted_depreciation_"]')?.value || '0';
                 
                 if (assetCardId && quantity && unitCost && unitPrice) {
                     newItems.push({
                         asset_card_id: assetCardId,
                         quantity: quantity,
                         unit_cost: unitCost,
-                        unit_price: unitPrice
+                        unit_price: unitPrice,
+                        predicted_depreciation: predictedDepreciation.replace(/,/g, '') // Remove commas
                     });
                 }
             });
@@ -794,7 +808,110 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update summary row totals on page load
     updateSummaryRowTotals();
+    
+    // Fetch predicted depreciation for all existing items if documentTypeId === 11
+    if (documentDataScript) {
+        try {
+            const documentData = JSON.parse(documentDataScript.textContent);
+            if (documentData.DocumentTypeId === 11 && documentData.DocumentDate && documentData.AccountId) {
+                fetchPredictedDepreciationForAllItems(documentData);
+            }
+        } catch (e) {
+            console.error('Error parsing document data for predicted depreciation fetch:', e);
+        }
+    }
 });
+
+// Function to fetch predicted depreciation for all existing items
+async function fetchPredictedDepreciationForAllItems(documentData) {
+    const documentTypeId = documentData.DocumentTypeId;
+    const documentDate = documentData.DocumentDate;
+    const accountId = documentData.AccountId;
+    
+    if (documentTypeId !== 11 || !documentDate || !accountId) {
+        return;
+    }
+    
+    // Get all existing item rows
+    const existingRows = document.querySelectorAll('#details-tbody tr.existing-row');
+    if (existingRows.length === 0) {
+        return;
+    }
+    
+    // Build API query parameters
+    const documentDateObj = new Date(documentDate);
+    const beginDate = new Date(documentDateObj);
+    beginDate.setDate(beginDate.getDate() - 1);
+    
+    const startDateStr = beginDate.toISOString().split('T')[0];
+    const endDateStr = documentDateObj.toISOString().split('T')[0];
+    
+    const balanceQuery = new URLSearchParams({
+        start_date: startDateStr,
+        end_date: endDateStr,
+        as_of_date: documentDate,
+        account_id: accountId,
+        document_type_id: documentTypeId
+    });
+    
+    try {
+        // Fetch balance data from API
+        const response = await fetch(`/core/api/ast-balance-data/?${balanceQuery.toString()}`);
+        const balanceData = await response.json();
+        
+        if (!balanceData.success || !balanceData.balance_data) {
+            console.error('Failed to fetch balance data:', balanceData.error);
+            return;
+        }
+        
+        // Create lookup map by assetcardid
+        const balanceLookup = {};
+        balanceData.balance_data.forEach(item => {
+            const assetCardId = item.assetcardid;
+            if (assetCardId) {
+                balanceLookup[assetCardId] = item;
+            }
+        });
+        
+        // Update each row with predicted depreciation
+        existingRows.forEach(row => {
+            const assetCardIdInput = row.querySelector('input[name*="asset_card_id_"]');
+            if (!assetCardIdInput || !assetCardIdInput.value) {
+                return;
+            }
+            
+            const assetCardId = parseInt(assetCardIdInput.value);
+            const balanceItem = balanceLookup[assetCardId];
+            
+            if (balanceItem) {
+                // Get predicted depreciation value
+                const predictedDepreciation = balanceItem.predicteddepreciation || 
+                                            balanceItem.Predicteddepreciation || 
+                                            balanceItem.PredictedDepreciation || 
+                                            0;
+                
+                // Find the predicted depreciation input field
+                const predictedDepInput = row.querySelector('input[name*="predicted_depreciation_"]');
+                if (predictedDepInput) {
+                    // Store the raw numeric value (no formatting) for reliable parsing
+                    const numericValue = parseFloat(predictedDepreciation) || 0;
+                    // Set the value as a clean number string (no commas) for calculations
+                    predictedDepInput.value = numericValue.toFixed(2);
+                }
+            }
+        });
+        
+        // Update summary totals after updating values
+        if (typeof updateSummaryRowTotals === 'function') {
+            updateSummaryRowTotals();
+        }
+        
+        // Note: FillAccountingDetails is NOT called here during initial load
+        // It will be triggered by user actions (input changes, row additions, etc.)
+    } catch (error) {
+        console.error('Error fetching predicted depreciation:', error);
+    }
+}
 
 // Cache period begin dates per document date to avoid stale lookups
 const periodBeginDateCache = new Map();
@@ -1032,6 +1149,11 @@ window.addNewRow = function() {
                    class="depreciation-amount-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                    placeholder="0.00">
         </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200 predicted-depreciation-cell" style="display: none;">
+            <input type="text" name="new_predicted_depreciation_${newRowCounter}" readonly
+                   class="predicted-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                   placeholder="0.00">
+        </td>
         <td class="px-1 py-1 text-right border-r border-gray-200">
             <input type="text" name="new_ending_depreciation_${newRowCounter}" readonly
                    class="ending-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
@@ -1052,13 +1174,14 @@ window.addNewRow = function() {
     addAssetCalculationListeners(row);
     formatAssetRowNumericFields(row);
     
-    // Show/hide dailyExpense cell based on documentType
+    // Show/hide dailyExpense and predicted depreciation cells based on documentType
     const documentDataScript = document.getElementById('document-data');
     if (documentDataScript) {
         try {
             const documentData = JSON.parse(documentDataScript.textContent);
             const documentTypeId = documentData.DocumentTypeId;
             const dailyExpenseCell = row.querySelector('.daily-expense-cell');
+            const predictedDepreciationCell = row.querySelector('.predicted-depreciation-cell');
             if (dailyExpenseCell) {
                 if (documentTypeId === 11) {
                     dailyExpenseCell.style.display = '';
@@ -1066,15 +1189,20 @@ window.addNewRow = function() {
                     dailyExpenseCell.style.display = 'none';
                 }
             }
+            if (predictedDepreciationCell) {
+                if (documentTypeId === 11) {
+                    predictedDepreciationCell.style.display = '';
+                } else {
+                    predictedDepreciationCell.style.display = 'none';
+                }
+            }
         } catch (e) {
             console.error('Error parsing document data:', e);
         }
     }
     
-    // Automatically fill accounting details when a new row is added
-    if (typeof window.FillAccountingDetails === 'function') {
-        window.FillAccountingDetails();
-    }
+    // Note: FillAccountingDetails will be called after asset is selected via refreshAccountingAfterAssetChange
+    // Don't call it here because predicted depreciation won't be populated yet for new rows
     
     // Calculate depreciation amount for the new row
     if (typeof calculateDepreciationAmount === 'function') {
@@ -2161,6 +2289,7 @@ function updateSummaryRowTotals() {
     let totalDailyExpense = 0;
     let totalCumulatedDep = 0;
     let totalDepAmount = 0;
+    let totalPredictedDep = 0;
     let totalEndingDep = 0;
 
     visibleRows.forEach(row => {
@@ -2170,6 +2299,7 @@ function updateSummaryRowTotals() {
         const dailyExpenseInput = row.querySelector('.daily-expense-display');
         const cumulatedInput = row.querySelector('.cumulated-depreciation-display');
         const depAmountInput = row.querySelector('.depreciation-amount-display');
+        const predictedInput = row.querySelector('.predicted-depreciation-display');
         const endingInput = row.querySelector('.ending-depreciation-display');
 
         if (quantityInput) {
@@ -2190,6 +2320,9 @@ function updateSummaryRowTotals() {
         if (depAmountInput) {
             totalDepAmount += parseFloat(depAmountInput.value.replace(/,/g, '')) || 0;
         }
+        if (predictedInput) {
+            totalPredictedDep += parseFloat(predictedInput.value.replace(/,/g, '')) || 0;
+        }
         if (endingInput) {
             totalEndingDep += parseFloat(endingInput.value.replace(/,/g, '')) || 0;
         }
@@ -2208,6 +2341,7 @@ function updateSummaryRowTotals() {
     updateText('sum-daily-expense', totalDailyExpense.toFixed(2));
     updateText('sum-cumulated-depreciation', totalCumulatedDep.toFixed(2));
     updateText('sum-depreciation-amount', totalDepAmount.toFixed(2));
+    updateText('sum-predicted-depreciation', totalPredictedDep.toFixed(2));
     updateText('sum-ending-depreciation', totalEndingDep.toFixed(2));
 }
 

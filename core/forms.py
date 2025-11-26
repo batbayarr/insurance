@@ -692,6 +692,9 @@ class RefAssetForm(forms.ModelForm):
         
         # Configure foreign key fields with proper querysets
         self.fields['AssetTypeId'].queryset = Ref_Asset_Type.objects.filter(IsActive=True).order_by('AssetTypeName')
+        
+        # Customize the display format to show AssetTypeCode + AssetTypeName
+        self.fields['AssetTypeId'].label_from_instance = lambda obj: f"{obj.AssetTypeCode} - {obj.AssetTypeName}"
     
     class Meta:
         model = RefAsset

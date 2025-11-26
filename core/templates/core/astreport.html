@@ -349,6 +349,9 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зар.өртөг</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эц.үлдэгдэл</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эц.өртөг</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхний элэгдэл</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Байгуулсан.эл</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үлдэх өртөг</th>
                     </tr>
                     <!-- Filter Row -->
                     <tr class="bg-gray-100">
@@ -395,6 +398,18 @@
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
                             <input type="text" id="filter-balance-ending-cost" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-balance-cumulated-depreciation" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-balance-depreciation-expense" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-balance-netbook-value" placeholder="Filter..." 
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                     </tr>
@@ -485,6 +500,58 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зардал</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдэл</th>
                     </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-document-no" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="9">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-asset-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-daily-expense" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-expense-day" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-expense-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-depreciation-date" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-created-date" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-document-date" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-created-by" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-debit-account" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-credit-account" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                    </tr>
                 </thead>
                 <tbody id="trial-balance-tbody" class="bg-white divide-y divide-gray-200">
                     <tr>
@@ -570,6 +637,59 @@
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дебит дүн</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Кредит дүн</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-document-no" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-document-date" placeholder="Filter..."
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-account-code" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="9">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-account-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-client-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-description" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   maxlength="70">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-currency" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-currency-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-currency-exchange" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-debit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-credit-amount" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-dep-user-name" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
                     </tr>
                 </thead>
                 <tbody id="depreciation-tbody" class="bg-white divide-y divide-gray-200">
@@ -749,6 +869,18 @@
         balanceFilterInputs.forEach((input, index) => {
             input.addEventListener('input', applyBalanceFilters);
         });
+        
+        // Initialize filters for БАЙГУУЛСАН ЭЛЭГДЭЛ tab
+        const trialBalanceFilterInputs = document.querySelectorAll('#ast-trial-balance-view input[placeholder="Filter..."]');
+        trialBalanceFilterInputs.forEach((input, index) => {
+            input.addEventListener('input', applyTrialBalanceFilters);
+        });
+        
+        // Initialize filters for ЭЛЭГДЛИЙН БИЧИЛТ tab
+        const depreciationFilterInputs = document.querySelectorAll('#ast-depreciation-view input[placeholder="Filter..."]');
+        depreciationFilterInputs.forEach((input, index) => {
+            input.addEventListener('input', applyDepreciationFilters);
+        });
     }
     
     function applyDetailFiltersAndRender() {
@@ -826,7 +958,7 @@
                 pageSizeTrialBalance = newPageSize;
                 currentPageTrialBalance = 1;
                 if (trialBalanceData && trialBalanceData.length > 0) {
-                    renderTrialBalanceTable();
+                    applyTrialBalanceFilter();
                 }
             });
         }
@@ -1791,7 +1923,7 @@
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                       <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                       <td colspan="14" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="animate-spin h-8 w-8 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1847,11 +1979,15 @@
         const outCostFilter = document.getElementById('filter-balance-out-cost')?.value.toLowerCase().trim() || '';
         const endingQuantityFilter = document.getElementById('filter-balance-ending-quantity')?.value.toLowerCase().trim() || '';
         const endingCostFilter = document.getElementById('filter-balance-ending-cost')?.value.toLowerCase().trim() || '';
+        const cumulatedDepreciationFilter = document.getElementById('filter-balance-cumulated-depreciation')?.value.toLowerCase().trim() || '';
+        const depreciationExpenseFilter = document.getElementById('filter-balance-depreciation-expense')?.value.toLowerCase().trim() || '';
+        const netbookValueFilter = document.getElementById('filter-balance-netbook-value')?.value.toLowerCase().trim() || '';
         
         // Apply filters
         if (accountFilter || assetCodeFilter || assetNameFilter || 
             beginningQuantityFilter || beginningCostFilter || inQuantityFilter || inCostFilter ||
-            outQuantityFilter || outCostFilter || endingQuantityFilter || endingCostFilter) {
+            outQuantityFilter || outCostFilter || endingQuantityFilter || endingCostFilter ||
+            cumulatedDepreciationFilter || depreciationExpenseFilter || netbookValueFilter) {
             filteredData = filteredData.filter(balance => {
                 const accountMatch = !accountFilter || String(balance.accountcode || '').toLowerCase().includes(accountFilter);
                 const assetCodeMatch = !assetCodeFilter || String(balance.assetcardcode || '').toLowerCase().includes(assetCodeFilter);
@@ -1864,10 +2000,14 @@
                 const outCostMatch = !outCostFilter || String(balance.outcost || '').toLowerCase().includes(outCostFilter);
                 const endingQuantityMatch = !endingQuantityFilter || String(balance.endingquantity || '').toLowerCase().includes(endingQuantityFilter);
                 const endingCostMatch = !endingCostFilter || String(balance.endingcost || '').toLowerCase().includes(endingCostFilter);
+                const cumulatedDepreciationMatch = !cumulatedDepreciationFilter || String(balance.cumulateddepreciation || '').toLowerCase().includes(cumulatedDepreciationFilter);
+                const depreciationExpenseMatch = !depreciationExpenseFilter || String(balance.depreciationexpense || '').toLowerCase().includes(depreciationExpenseFilter);
+                const netbookValueMatch = !netbookValueFilter || String(balance.netbookvalue || '').toLowerCase().includes(netbookValueFilter);
                 
                 return accountMatch && assetCodeMatch && assetNameMatch &&
                        beginningQuantityMatch && beginningCostMatch && inQuantityMatch && inCostMatch &&
-                       outQuantityMatch && outCostMatch && endingQuantityMatch && endingCostMatch;
+                       outQuantityMatch && outCostMatch && endingQuantityMatch && endingCostMatch &&
+                       cumulatedDepreciationMatch && depreciationExpenseMatch && netbookValueMatch;
             });
         }
         
@@ -1931,7 +2071,7 @@
         if (!balances || balances.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                       <td colspan="11" class="px-4 py-8 text-center text-gray-500">
+                       <td colspan="14" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1964,6 +2104,9 @@
             const outCost = formatNumber(balance.outcost || 0, 2);
             const endingQuantity = formatNumber(balance.endingquantity || 0, 3);
             const endingCost = formatNumber(balance.endingcost || 0, 2);
+            const cumulatedDepreciation = formatNumber(balance.cumulateddepreciation || 0, 2);
+            const depreciationExpense = formatNumber(balance.depreciationexpense || 0, 2);
+            const netbookValue = formatNumber(balance.netbookvalue || 0, 2);
             
             row.innerHTML = `
                 <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${accountCode}</td>
@@ -1977,6 +2120,9 @@
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${outCost}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${endingQuantity}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${endingCost}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${cumulatedDepreciation}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${depreciationExpense}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${netbookValue}</td>
             `;
             
             fragment.appendChild(row);
@@ -2003,6 +2149,9 @@
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalOutCost}</td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
                 <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${totalEndingCost}</td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
+                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200"></td>
             `;
             
             tbody.appendChild(summaryRow);
@@ -2069,7 +2218,7 @@
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="px-4 py-8 text-center text-red-500">
+                    <td colspan="14" class="px-4 py-8 text-center text-red-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -2131,15 +2280,121 @@
             });
     }
     
+    // Apply trial balance filters
+    function applyTrialBalanceFilter() {
+        if (!trialBalanceData || trialBalanceData.length === 0) {
+            renderTrialBalanceTable([], null);
+            return;
+        }
+        
+        let filteredData = trialBalanceData;
+        
+        // Get filter values
+        const filters = {
+            documentNo: document.getElementById('filter-tb-document-no')?.value.toLowerCase().trim() || '',
+            accountCode: document.getElementById('filter-tb-account-code')?.value.toLowerCase().trim() || '',
+            assetName: document.getElementById('filter-tb-asset-name')?.value.toLowerCase().trim() || '',
+            dailyExpense: document.getElementById('filter-tb-daily-expense')?.value.toLowerCase().trim() || '',
+            expenseDay: document.getElementById('filter-tb-expense-day')?.value.toLowerCase().trim() || '',
+            expenseAmount: document.getElementById('filter-tb-expense-amount')?.value.toLowerCase().trim() || '',
+            depreciationDate: document.getElementById('filter-tb-depreciation-date')?.value.toLowerCase().trim() || '',
+            createdDate: document.getElementById('filter-tb-created-date')?.value.toLowerCase().trim() || '',
+            documentDate: document.getElementById('filter-tb-document-date')?.value.toLowerCase().trim() || '',
+            createdBy: document.getElementById('filter-tb-created-by')?.value.toLowerCase().trim() || '',
+            debitAccount: document.getElementById('filter-tb-debit-account')?.value.toLowerCase().trim() || '',
+            creditAccount: document.getElementById('filter-tb-credit-account')?.value.toLowerCase().trim() || ''
+        };
+        
+        // Apply filters
+        if (Object.values(filters).some(f => f.length > 0)) {
+            filteredData = trialBalanceData.filter(item => {
+                const values = {
+                    documentNo: String(item.document_no || '').toLowerCase(),
+                    accountCode: String(item.account_code || '').toLowerCase(),
+                    assetName: String(item.asset_card_name || '').toLowerCase(),
+                    dailyExpense: String(item.daily_expense || '').toLowerCase(),
+                    expenseDay: String(item.expense_day || '').toLowerCase(),
+                    expenseAmount: String(item.expense_amount || '').toLowerCase(),
+                    depreciationDate: String(item.depreciation_date || '').toLowerCase(),
+                    createdDate: String(item.created_date || '').toLowerCase(),
+                    documentDate: String(item.document_date || '').toLowerCase(),
+                    createdBy: String(item.created_by || '').toLowerCase(),
+                    debitAccount: String(item.debit_account_code || '').toLowerCase(),
+                    creditAccount: String(item.credit_account_code || '').toLowerCase()
+                };
+                
+                return Object.keys(filters).every(key => {
+                    const filterValue = filters[key];
+                    if (!filterValue) return true;
+                    
+                    // Handle numeric filters
+                    if (key.includes('Expense') || key.includes('Amount') || key.includes('Day')) {
+                        if (filterValue.startsWith('>=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) >= num;
+                        } else if (filterValue.startsWith('<=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) <= num;
+                        } else if (filterValue.startsWith('>')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) > num;
+                        } else if (filterValue.startsWith('<')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) < num;
+                        } else if (filterValue.startsWith('=')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) === num;
+                        } else {
+                            const num = parseFloat(filterValue);
+                            if (!isNaN(num)) {
+                                return parseFloat(values[key]) === num;
+                            }
+                        }
+                    }
+                    
+                    // Text filters
+                    return values[key].includes(filterValue);
+                });
+            });
+        }
+        
+        // Calculate summary totals from all filtered data (not just paginated)
+        const totalExpenseAmount = filteredData.reduce((sum, item) => {
+            return sum + (parseFloat(item.expense_amount) || 0);
+        }, 0);
+        
+        // Calculate pagination
+        totalPagesTrialBalance = Math.ceil(filteredData.length / pageSizeTrialBalance);
+        if (currentPageTrialBalance > totalPagesTrialBalance) currentPageTrialBalance = 1;
+        
+        const startIndex = (currentPageTrialBalance - 1) * pageSizeTrialBalance;
+        const endIndex = startIndex + pageSizeTrialBalance;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updateTrialBalancePaginationInfo(filteredData.length, paginatedData.length, startIndex);
+        
+        // Render table with summary
+        renderTrialBalanceTable(paginatedData, totalExpenseAmount);
+    }
+    
+    // Apply trial balance filters with debounce
+    function applyTrialBalanceFilters() {
+        clearTimeout(window.trialBalanceFilterTimeout);
+        window.trialBalanceFilterTimeout = setTimeout(applyTrialBalanceFilter, 300);
+    }
+    
     // Render trial balance table
-    function renderTrialBalanceTable() {
+    function renderTrialBalanceTable(data, totalExpenseAmount) {
         const tbody = document.getElementById('trial-balance-tbody');
         if (!tbody) return;
         
-        if (!trialBalanceData || trialBalanceData.length === 0) {
+        const displayData = data !== undefined ? data : trialBalanceData;
+        
+        if (!displayData || displayData.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2153,20 +2408,9 @@
             return;
         }
         
-        // Calculate pagination
-        totalPagesTrialBalance = Math.ceil(trialBalanceData.length / pageSizeTrialBalance);
-        if (currentPageTrialBalance > totalPagesTrialBalance) currentPageTrialBalance = 1;
-        
-        const startIndex = (currentPageTrialBalance - 1) * pageSizeTrialBalance;
-        const endIndex = startIndex + pageSizeTrialBalance;
-        const paginatedData = trialBalanceData.slice(startIndex, endIndex);
-        
-        // Update pagination info
-        updateTrialBalancePaginationInfo(trialBalanceData.length, paginatedData.length, startIndex);
-        
         // Render rows
         let htmlContent = '';
-        paginatedData.forEach((item) => {
+        displayData.forEach((item) => {
             htmlContent += `
                 <tr class="hover:bg-gray-50">
                     <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
@@ -2185,15 +2429,127 @@
             `;
         });
         
+        // Add summary row if total is provided
+        if (totalExpenseAmount !== null && totalExpenseAmount !== undefined) {
+            htmlContent += `
+                <tr class="bg-gray-100 border-t-2 border-gray-300">
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="5">НИЙТЛЭГ:</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right font-semibold">${formatNumber(totalExpenseAmount, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="6"></td>
+                </tr>
+            `;
+        }
+        
         tbody.innerHTML = htmlContent;
     }
     
+    // Apply depreciation filters
+    function applyDepreciationFilter() {
+        if (!depreciationData || depreciationData.length === 0) {
+            renderDepreciationTable([]);
+            return;
+        }
+        
+        let filteredData = depreciationData;
+        
+        // Get filter values
+        const filters = {
+            documentNo: document.getElementById('filter-dep-document-no')?.value.toLowerCase().trim() || '',
+            documentDate: document.getElementById('filter-dep-document-date')?.value.toLowerCase().trim() || '',
+            accountCode: document.getElementById('filter-dep-account-code')?.value.toLowerCase().trim() || '',
+            accountName: document.getElementById('filter-dep-account-name')?.value.toLowerCase().trim() || '',
+            clientName: document.getElementById('filter-dep-client-name')?.value.toLowerCase().trim() || '',
+            description: document.getElementById('filter-dep-description')?.value.toLowerCase().trim() || '',
+            currency: document.getElementById('filter-dep-currency')?.value.toLowerCase().trim() || '',
+            currencyAmount: document.getElementById('filter-dep-currency-amount')?.value.toLowerCase().trim() || '',
+            currencyExchange: document.getElementById('filter-dep-currency-exchange')?.value.toLowerCase().trim() || '',
+            debitAmount: document.getElementById('filter-dep-debit-amount')?.value.toLowerCase().trim() || '',
+            creditAmount: document.getElementById('filter-dep-credit-amount')?.value.toLowerCase().trim() || '',
+            userName: document.getElementById('filter-dep-user-name')?.value.toLowerCase().trim() || ''
+        };
+        
+        // Apply filters
+        if (Object.values(filters).some(f => f.length > 0)) {
+            filteredData = depreciationData.filter(item => {
+                const values = {
+                    documentNo: String(item.document_no || '').toLowerCase(),
+                    documentDate: String(item.document_date || '').toLowerCase(),
+                    accountCode: String(item.account_code || '').toLowerCase(),
+                    accountName: String(item.account_name || '').toLowerCase(),
+                    clientName: String(item.client_name || '').toLowerCase(),
+                    description: String(item.description || '').toLowerCase(),
+                    currency: String(item.currency_name || '').toLowerCase(),
+                    currencyAmount: String(item.currency_amount || '').toLowerCase(),
+                    currencyExchange: String(item.currency_exchange || '').toLowerCase(),
+                    debitAmount: String(item.debit_amount || '').toLowerCase(),
+                    creditAmount: String(item.credit_amount || '').toLowerCase(),
+                    userName: String(item.user_name || '').toLowerCase()
+                };
+                
+                return Object.keys(filters).every(key => {
+                    const filterValue = filters[key];
+                    if (!filterValue) return true;
+                    
+                    // Handle numeric filters
+                    if (key.includes('Amount') || key.includes('Exchange')) {
+                        if (filterValue.startsWith('>=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) >= num;
+                        } else if (filterValue.startsWith('<=')) {
+                            const num = parseFloat(filterValue.substring(2));
+                            return !isNaN(num) && parseFloat(values[key]) <= num;
+                        } else if (filterValue.startsWith('>')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) > num;
+                        } else if (filterValue.startsWith('<')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) < num;
+                        } else if (filterValue.startsWith('=')) {
+                            const num = parseFloat(filterValue.substring(1));
+                            return !isNaN(num) && parseFloat(values[key]) === num;
+                        } else {
+                            const num = parseFloat(filterValue);
+                            if (!isNaN(num)) {
+                                return parseFloat(values[key]) === num;
+                            }
+                        }
+                    }
+                    
+                    // Text filters
+                    return values[key].includes(filterValue);
+                });
+            });
+        }
+        
+        // Calculate pagination
+        totalPagesDepreciation = Math.ceil(filteredData.length / pageSizeDepreciation);
+        if (currentPageDepreciation > totalPagesDepreciation) currentPageDepreciation = 1;
+        
+        const startIndex = (currentPageDepreciation - 1) * pageSizeDepreciation;
+        const endIndex = startIndex + pageSizeDepreciation;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        updateDepreciationPaginationInfo(filteredData.length, paginatedData.length, startIndex);
+        
+        // Render table
+        renderDepreciationTable(paginatedData);
+    }
+    
+    // Apply depreciation filters with debounce
+    function applyDepreciationFilters() {
+        clearTimeout(window.depreciationFilterTimeout);
+        window.depreciationFilterTimeout = setTimeout(applyDepreciationFilter, 300);
+    }
+    
     // Render depreciation table
-    function renderDepreciationTable() {
+    function renderDepreciationTable(data) {
         const tbody = document.getElementById('depreciation-tbody');
         if (!tbody) return;
         
-        if (!depreciationData || depreciationData.length === 0) {
+        const displayData = data !== undefined ? data : depreciationData;
+        
+        if (!displayData || displayData.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="12" class="px-4 py-8 text-center text-gray-500">
@@ -2210,23 +2566,12 @@
             return;
         }
         
-        // Calculate pagination
-        totalPagesDepreciation = Math.ceil(depreciationData.length / pageSizeDepreciation);
-        if (currentPageDepreciation > totalPagesDepreciation) currentPageDepreciation = 1;
-        
-        const startIndex = (currentPageDepreciation - 1) * pageSizeDepreciation;
-        const endIndex = startIndex + pageSizeDepreciation;
-        const paginatedData = depreciationData.slice(startIndex, endIndex);
-        
-        // Update pagination info
-        updateDepreciationPaginationInfo(depreciationData.length, paginatedData.length, startIndex);
-        
         // Render rows with totals
         let htmlContent = '';
         let totalDebit = 0;
         let totalCredit = 0;
         
-        paginatedData.forEach((item) => {
+        displayData.forEach((item) => {
             totalDebit += parseFloat(item.debit_amount) || 0;
             totalCredit += parseFloat(item.credit_amount) || 0;
             
@@ -2306,7 +2651,7 @@
     function changePageTrialBalance(newPage) {
         if (newPage < 1 || newPage > totalPagesTrialBalance) return;
         currentPageTrialBalance = newPage;
-        renderTrialBalanceTable();
+        applyTrialBalanceFilter();
     }
     
     // Update depreciation pagination info
@@ -2354,7 +2699,7 @@
     function changePageDepreciation(newPage) {
         if (newPage < 1 || newPage > totalPagesDepreciation) return;
         currentPageDepreciation = newPage;
-        renderDepreciationTable();
+        applyDepreciationFilter();
     }
     
     // Switch to trial balance view
@@ -2373,7 +2718,7 @@
         
         // Render if data exists
         if (trialBalanceData && trialBalanceData.length > 0) {
-            renderTrialBalanceTable();
+            applyTrialBalanceFilter();
         }
     }
     
@@ -2393,7 +2738,7 @@
         
         // Render if data exists
         if (depreciationData && depreciationData.length > 0) {
-            renderDepreciationTable();
+            applyDepreciationFilter();
         }
     }
     

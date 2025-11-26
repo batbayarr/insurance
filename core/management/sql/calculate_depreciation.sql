@@ -52,6 +52,18 @@ BEGIN
     
     -- Insert new depreciation records
     -- Only for assets with positive ending quantity and daily expense > 0
+    WITH asset_disposals AS (
+        SELECT 
+            ad."AccountId",
+            adi."AssetCardId",
+            MIN(ad."DocumentDate") AS first_disposal_date
+        FROM ast_document ad
+        INNER JOIN ast_document_item adi ON ad."DocumentId" = adi."DocumentId"
+        WHERE ad."DocumentTypeId" = 11
+            AND ad."IsDelete" = false
+            AND ad."DocumentDate" BETWEEN v_begin_date AND v_end_date
+        GROUP BY ad."AccountId", adi."AssetCardId"
+    )
     INSERT INTO ast_depreciation_expense (
         "AssetCardId", 
         "PeriodId", 
@@ -71,10 +83,10 @@ BEGIN
         p_period_id,
         v_expense_days,
         LEAST(
-            COALESCE(bal.first_disposal_date, v_end_date),
+            COALESCE(ad.first_disposal_date, v_end_date),
             v_end_date
         ),
-        COALESCE(bal.depreciationexpense, (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6)) AS expense_amount,
+        (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6) AS expense_amount,
         rada."ExpenseAccountId", -- Debit: Expense Account
         rada."DepreciationAccountId", -- Credit: Accumulated Depreciation
         rada."AssetAccountId", -- Asset Account
@@ -87,9 +99,10 @@ BEGIN
     INNER JOIN ref_asset_depreciation_account rada 
         ON bal.accountid = rada."AssetAccountId"
         AND rada."IsDelete" = false
+    LEFT JOIN asset_disposals ad ON bal.accountid = ad."AccountId"
+        AND bal.assetcardid = ad."AssetCardId"
     WHERE bal.endingquantity > 0
-        AND rac."DailyExpense" > 0
-        AND COALESCE(bal.depreciationexpense, 0) > 0;
+        AND rac."DailyExpense" > 0;
     
     -- Check for existing depreciation cash documents and delete them if they exist
     -- Delete from cash_document_detail first (due to foreign key constraint)

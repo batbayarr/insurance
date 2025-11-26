@@ -121,8 +121,8 @@
     
     function initializeAll() {
         fetchPeriodsList().then(() => {
-            initializePagination();
-            initializePageSizeSelector();
+        initializePagination();
+        initializePageSizeSelector();
         });
     }
     
@@ -332,40 +332,40 @@
         
         // Render journal entry data for closing tab
         let htmlContent = '';
-        let totalDebit = 0;
-        let totalCredit = 0;
-        
-        paginatedData.forEach((item) => {
-            totalDebit += parseFloat(item.debit_amount) || 0;
-            totalCredit += parseFloat(item.credit_amount) || 0;
+            let totalDebit = 0;
+            let totalCredit = 0;
             
+            paginatedData.forEach((item) => {
+                totalDebit += parseFloat(item.debit_amount) || 0;
+                totalCredit += parseFloat(item.credit_amount) || 0;
+                
+                htmlContent += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_name || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.client_name || ''}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.description || ''}</td>
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currency_name || ''}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_amount, 2)}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_exchange, 4)}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debit_amount, 2)}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.credit_amount, 2)}</td>
+                        <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.user_name || ''}</td>
+                    </tr>
+                `;
+            });
+            
+        // Add totals row
             htmlContent += `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_name || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.client_name || ''}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.description || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.currency_name || ''}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_amount, 2)}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.currency_exchange, 4)}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.debit_amount, 2)}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.credit_amount, 2)}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">${item.user_name || ''}</td>
+                <tr class="bg-gray-100 font-semibold">
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="9">НИЙТ:</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalDebit, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalCredit, 2)}</td>
+                    <td class="px-1 py-1 text-xs text-gray-900"></td>
                 </tr>
             `;
-        });
-        
-        // Add totals row
-        htmlContent += `
-            <tr class="bg-gray-100 font-semibold">
-                <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="9">НИЙТ:</td>
-                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalDebit, 2)}</td>
-                <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(totalCredit, 2)}</td>
-                <td class="px-1 py-1 text-xs text-gray-900"></td>
-            </tr>
-        `;
         
         tbody.innerHTML = htmlContent;
     }
@@ -484,8 +484,8 @@
             setDefaultPeriod();
             periodDates = getSelectedPeriodDates();
             if (!periodDates) {
-                return;
-            }
+            return;
+        }
         }
         
         const startDate = periodDates.startDate;

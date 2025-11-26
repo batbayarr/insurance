@@ -5207,34 +5207,142 @@ def get_ast_balance_data(request):
         if not effective_as_of:
             effective_as_of = timezone.now().date().isoformat()
         
+        # Get account_id and document_type_id for conditional SQL function selection
+        account_id = request.GET.get('account_id')
+        document_type_id = request.GET.get('document_type_id')
+        
+        # Determine which SQL function to use
+        use_temp_function = (
+            document_type_id and 
+            str(document_type_id) == '11' and 
+            account_id is not None
+        )
+        
         balance_data = []
         try:
             db_alias = get_current_db()
             try:
-                # Execute the asset balance function (uses only end_date as asofdate)
                 with connections[db_alias].cursor() as cursor:
-                    cursor.execute(
-                        "SELECT * FROM report_assetcard_balance(%s)",
-                        [effective_as_of]
-                    )
-                    
-                    # Get column names
-                    columns = [col[0] for col in cursor.description]
-                    
-                    # Fetch all results
-                    results = cursor.fetchall()
-                    
-                    # Convert to list of dictionaries
-                    balance_data = [
-                        dict(zip(columns, row)) for row in results
-                    ]
-                    
-                    # Convert Decimal values to float for JSON serialization
-                    from decimal import Decimal
-                    for item in balance_data:
-                        for key, value in item.items():
-                            if isinstance(value, Decimal):
-                                item[key] = float(value)
+                    if use_temp_function:
+                        # Use calculate_ast_balance_temp for documentTypeId=11
+                        try:
+                            account_id_int = int(account_id)
+                        except (ValueError, TypeError):
+                            return JsonResponse({
+                                'success': False,
+                                'error': 'Invalid account_id parameter'
+                            }, status=400)
+                        
+                        cursor.execute(
+                            "SELECT * FROM calculate_ast_balance_temp(%s, %s)",
+                            [account_id_int, effective_as_of]
+                        )
+                        
+                        # Get column names
+                        columns = [col[0] for col in cursor.description]
+                        
+                        # Fetch all results
+                        results = cursor.fetchall()
+                        
+                        # Convert to list of dictionaries
+                        balance_data = [
+                            dict(zip(columns, row)) for row in results
+                        ]
+                        
+                        # Map calculate_ast_balance_temp fields to match report_assetcard_balance structure
+                        # calculate_ast_balance_temp returns: accountid, accountcode, assetname, assetcardid, 
+                        # assetcardname, unitcost, endingquantity, cumulateddepreciation, depreciationexpense, 
+                        # predicteddepreciation, totalexpense, netbookvalue, dailyexpense, usage_days
+                        # report_assetcard_balance returns: accountid, accountcode, accountname, assetid, 
+                        # assetcode, assetname, assettypeid, assettypename, assetcardid, assetcardcode, 
+                        # assetcardname, cumulateddepreciation, depreciationexpense, beginningquantity, 
+                        # beginningcost, inquantity, incost, outquantity, outcost, endingquantity, 
+                        # endingcost, dailyexpense, totalexpense, netbookvalue
+                        from decimal import Decimal
+                        for item in balance_data:
+                            # Convert Decimal values to float for JSON serialization
+                            for key, value in list(item.items()):
+                                if isinstance(value, Decimal):
+                                    item[key] = float(value)
+                            
+                            # Add missing fields expected by the modal
+                            # calculate_ast_balance_temp now returns endingquantity, so use it if available
+                            # PostgreSQL returns column names in lowercase when not quoted, so check lowercase first
+                            # Try different case variations to find endingquantity
+                            ending_qty = None
+                            if 'endingquantity' in item:
+                                ending_qty = item['endingquantity']
+                            elif 'ending_quantity' in item:
+                                ending_qty = item['ending_quantity']
+                            elif 'EndingQuantity' in item:
+                                ending_qty = item['EndingQuantity']
+                            
+                            if ending_qty is not None:
+                                item['endingquantity'] = float(ending_qty)
+                                # Ensure it's > 0 (SQL already filters, but double-check)
+                                if item['endingquantity'] <= 0:
+                                    logger.warning(f'Asset {item.get("assetcardid")} has endingquantity <= 0: {item["endingquantity"]}')
+                            else:
+                                # This should not happen if SQL function is correct
+                                logger.error(f'endingquantity not found in balance data for asset {item.get("assetcardid")}. Available keys: {list(item.keys())}')
+                                # Fallback: since SQL already filtered for > 0, set to 1.0
+                                item['endingquantity'] = 1.0
+                            
+                            if 'endingcost' not in item:
+                                # Calculate endingcost from endingquantity * unitcost
+                                ending_qty = item.get('endingquantity', 1.0)
+                                unit_cost = item.get('unitcost', 0) or item.get('UnitCost', 0) or 0
+                                item['endingcost'] = float(ending_qty) * float(unit_cost)
+                            
+                            # Add missing fields with defaults
+                            if 'accountname' not in item:
+                                item['accountname'] = ''
+                            if 'assetid' not in item:
+                                item['assetid'] = None
+                            if 'assetcode' not in item:
+                                item['assetcode'] = ''
+                            if 'assettypeid' not in item:
+                                item['assettypeid'] = None
+                            if 'assettypename' not in item:
+                                item['assettypename'] = item.get('assetname', '')
+                            if 'assetcardcode' not in item:
+                                item['assetcardcode'] = ''
+                            if 'beginningquantity' not in item:
+                                item['beginningquantity'] = 0.0
+                            if 'beginningcost' not in item:
+                                item['beginningcost'] = 0.0
+                            if 'inquantity' not in item:
+                                item['inquantity'] = 0.0
+                            if 'incost' not in item:
+                                item['incost'] = 0.0
+                            if 'outquantity' not in item:
+                                item['outquantity'] = 0.0
+                            if 'outcost' not in item:
+                                item['outcost'] = 0.0
+                    else:
+                        # Use report_assetcard_balance for documentTypeId=10 or other cases
+                        cursor.execute(
+                            "SELECT * FROM report_assetcard_balance(%s)",
+                            [effective_as_of]
+                        )
+                        
+                        # Get column names
+                        columns = [col[0] for col in cursor.description]
+                        
+                        # Fetch all results
+                        results = cursor.fetchall()
+                        
+                        # Convert to list of dictionaries
+                        balance_data = [
+                            dict(zip(columns, row)) for row in results
+                        ]
+                        
+                        # Convert Decimal values to float for JSON serialization
+                        from decimal import Decimal
+                        for item in balance_data:
+                            for key, value in item.items():
+                                if isinstance(value, Decimal):
+                                    item[key] = float(value)
             finally:
                 connections[db_alias].close()
         except Exception as e:
@@ -5467,40 +5575,65 @@ def api_asset_depreciation_expenses(request):
 @login_required
 @require_http_methods(["GET"])
 def api_calculate_depreciation(request):
-    """API endpoint to calculate depreciation for a date range"""
+    """API endpoint to calculate depreciation for a period"""
     from datetime import datetime
     
+    period_id_str = request.GET.get('period_id')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
     
-    if not start_date_str or not end_date_str:
+    # If period_id is provided, use it directly (preferred method)
+    if period_id_str:
+        try:
+            period_id = int(period_id_str)
+            period = Ref_Period.objects.filter(PeriodId=period_id).first()
+            
+            if not period:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Period ID {period_id} not found'
+                }, status=400)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid period_id format'
+            }, status=400)
+    # Otherwise, try to find period by dates (fallback for backward compatibility)
+    elif start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            
+            # Find period - first try exact match
+            period = Ref_Period.objects.filter(
+                BeginDate=start_date,
+                EndDate=end_date
+            ).first()
+            
+            # If not found, find period that contains end_date (auto-adjust)
+            if not period:
+                period = Ref_Period.objects.filter(
+                    BeginDate__lte=end_date,
+                    EndDate__gte=end_date
+                ).first()
+            
+            if not period:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No period found for the selected date range'
+                }, status=400)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid date format. Please use YYYY-MM-DD format.'
+            }, status=400)
+    else:
         return JsonResponse({
             'success': False,
-            'error': 'Both start_date and end_date are required'
+            'error': 'Either period_id or both start_date and end_date are required'
         }, status=400)
     
     try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        
-        # Find period - first try exact match
-        period = Ref_Period.objects.filter(
-            BeginDate=start_date,
-            EndDate=end_date
-        ).first()
-        
-        # If not found, find period that contains end_date (auto-adjust)
-        if not period:
-            period = Ref_Period.objects.filter(
-                BeginDate__lte=end_date,
-                EndDate__gte=end_date
-            ).first()
-        
-        if not period:
-            return JsonResponse({
-                'success': False,
-                'error': 'No period found for the selected date range'
-            }, status=400)
         
         # Call SQL function (cast period_id to SMALLINT as function expects SMALLINT)
         db_alias = get_current_db()
@@ -6221,40 +6354,110 @@ def bulk_manage_ast_details(request, document_id):
         db_alias = get_current_db()
         try:
             with connections[db_alias].cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT accountid,
-                           assetcardid,
-                           COALESCE(cumulateddepreciation, 0) AS cumulated_depreciation,
-                           COALESCE(depreciationexpense, 0) AS depreciation_expense,
-                           totalexpense
-                    FROM report_assetcard_balance(%s)
-                    """,
-                    [document.DocumentDate]
-                )
-                records = cursor.fetchall()
-                for account_id, asset_card_id, cumulated_depreciation, depreciation_expense, total_expense in records:
-                    if asset_card_id is None:
-                        continue
-                    cumulated_value = Decimal(cumulated_depreciation or 0)
-                    expense_value = Decimal(depreciation_expense or 0)
-                    total_value = Decimal(total_expense) if total_expense is not None else None
+                # Use calculate_ast_balance_temp for documentTypeId=11, otherwise use report_assetcard_balance
+                if document.DocumentTypeId_id == 11:
+                    cursor.execute(
+                        """
+                        SELECT * FROM calculate_ast_balance_temp(%s, %s)
+                        """,
+                        [document.AccountId_id, document.DocumentDate]
+                    )
+                    # Get column names for calculate_ast_balance_temp
+                    columns = [col[0] for col in cursor.description]
+                    records = cursor.fetchall()
+                    for record in records:
+                        record_dict = dict(zip(columns, record))
+                        account_id = record_dict.get('accountid') or record_dict.get('AccountId')
+                        asset_card_id = record_dict.get('assetcardid') or record_dict.get('AssetCardId')
+                        cumulated_depreciation = record_dict.get('CumulatedDepreciation') or record_dict.get('cumulateddepreciation', 0)
+                        depreciation_expense = record_dict.get('DepreciationExpense') or record_dict.get('depreciationexpense', 0)
+                        # Try multiple case variations for predicted depreciation
+                        # PostgreSQL RETURNS TABLE uses lowercase 'predicteddepreciation', so try that first
+                        # Check for key existence (not just truthy value) to handle 0 correctly
+                        predicted_depreciation = None
+                        if 'predicteddepreciation' in record_dict:
+                            predicted_depreciation = record_dict['predicteddepreciation']
+                        elif 'Predicteddepreciation' in record_dict:
+                            predicted_depreciation = record_dict['Predicteddepreciation']
+                        elif 'PredictedDepreciation' in record_dict:
+                            predicted_depreciation = record_dict['PredictedDepreciation']
+                        elif 'PREDICTEDDEPRECIATION' in record_dict:
+                            predicted_depreciation = record_dict['PREDICTEDDEPRECIATION']
+                        else:
+                            # Fallback: search for any key containing 'predicted'
+                            for k in record_dict.keys():
+                                if 'predicted' in k.lower():
+                                    predicted_depreciation = record_dict[k]
+                                    break
+                        
+                        if predicted_depreciation is None:
+                            logger.warning(f'Predicted depreciation not found for asset_card_id={asset_card_id}. Available keys: {list(record_dict.keys())}')
+                        total_expense = record_dict.get('TotalExpense') or record_dict.get('totalexpense')
+                        
+                        if asset_card_id is None:
+                            continue
+                        cumulated_value = Decimal(cumulated_depreciation or 0)
+                        expense_value = Decimal(depreciation_expense or 0)
+                        predicted_value = Decimal(predicted_depreciation or 0)
+                        total_value = Decimal(total_expense) if total_expense is not None else None
 
-                    asset_info = {
-                        'cumulated': cumulated_value,
-                        'expense': expense_value,
-                        'total': total_value,
-                        'initial': (total_value if total_value is not None else cumulated_value + expense_value)
-                    }
+                        asset_info = {
+                            'cumulated': cumulated_value,
+                            'expense': expense_value,
+                            'predicted': predicted_value,
+                            'total': total_value,
+                            'initial': (total_value if total_value is not None else cumulated_value + expense_value)
+                        }
 
-                    asset_card_id_int = int(asset_card_id)
-                    current = asset_depreciation_lookup.get(asset_card_id_int)
+                        asset_card_id_int = int(asset_card_id)
+                        current = asset_depreciation_lookup.get(asset_card_id_int)
 
-                    # Prefer record matching the document's account; otherwise keep first seen
-                    if document.AccountId_id and account_id == document.AccountId_id:
-                        asset_depreciation_lookup[asset_card_id_int] = asset_info
-                    elif current is None:
-                        asset_depreciation_lookup[asset_card_id_int] = asset_info
+                        # Prefer record matching the document's account; otherwise keep first seen
+                        if document.AccountId_id and account_id == document.AccountId_id:
+                            asset_depreciation_lookup[asset_card_id_int] = asset_info
+                        elif current is None:
+                            asset_depreciation_lookup[asset_card_id_int] = asset_info
+                else:
+                    cursor.execute(
+                        """
+                        SELECT accountid,
+                               assetcardid,
+                               COALESCE(cumulateddepreciation, 0) AS cumulated_depreciation,
+                               COALESCE(depreciationexpense, 0) AS depreciation_expense,
+                                   0 AS predicted_depreciation,
+                               totalexpense
+                        FROM report_assetcard_balance(%s)
+                        """,
+                        [document.DocumentDate]
+                    )
+                    records = cursor.fetchall()
+                    for record in records:
+                        account_id, asset_card_id, cumulated_depreciation, depreciation_expense, predicted_depreciation, total_expense = record
+                        predicted_depreciation = 0  # Not available in report_assetcard_balance
+                        
+                        if asset_card_id is None:
+                            continue
+                        cumulated_value = Decimal(cumulated_depreciation or 0)
+                        expense_value = Decimal(depreciation_expense or 0)
+                        predicted_value = Decimal(predicted_depreciation or 0)
+                        total_value = Decimal(total_expense) if total_expense is not None else None
+
+                        asset_info = {
+                            'cumulated': cumulated_value,
+                            'expense': expense_value,
+                            'predicted': predicted_value,
+                            'total': total_value,
+                            'initial': (total_value if total_value is not None else cumulated_value + expense_value)
+                        }
+
+                        asset_card_id_int = int(asset_card_id)
+                        current = asset_depreciation_lookup.get(asset_card_id_int)
+
+                        # Prefer record matching the document's account; otherwise keep first seen
+                        if document.AccountId_id and account_id == document.AccountId_id:
+                            asset_depreciation_lookup[asset_card_id_int] = asset_info
+                        elif current is None:
+                            asset_depreciation_lookup[asset_card_id_int] = asset_info
         except Exception as exc:
             logger.warning('Unable to load asset depreciation balances for document %s: %s', document.DocumentId, exc)
         finally:
@@ -6266,6 +6469,7 @@ def bulk_manage_ast_details(request, document_id):
         if balance_info:
             item.balance_cumulated_depreciation = balance_info['cumulated']
             item.balance_depreciation_expense = balance_info['expense']
+            item.balance_predicted_depreciation = balance_info.get('predicted', zero_decimal)
             if balance_info.get('total') is not None:
                 item.total_expense = balance_info['total']
                 item.initial_depreciation = balance_info['total']
@@ -6275,6 +6479,7 @@ def bulk_manage_ast_details(request, document_id):
         else:
             item.balance_cumulated_depreciation = zero_decimal
             item.balance_depreciation_expense = zero_decimal
+            item.balance_predicted_depreciation = zero_decimal
             item.total_expense = zero_decimal
             item.initial_depreciation = zero_decimal
     
@@ -6371,6 +6576,68 @@ def api_bulk_manage_ast_details(request, document_id):
                 DebitAmount=detail_data.get('debit_amount', 0),
                 CreditAmount=detail_data.get('credit_amount', 0)
             )
+        
+        # Create ast_depreciation_expense records for documentTypeId == 11
+        if document.DocumentTypeId_id == 11:
+            # Delete existing depreciation expense records with matching DocumentId
+            AstDepreciationExpense.objects.filter(DocumentId=document).delete()
+            
+            # Get period for document date
+            period = Ref_Period.objects.filter(
+                BeginDate__lte=document.DocumentDate,
+                EndDate__gte=document.DocumentDate
+            ).first()
+            
+            if period:
+                # Get expense and depreciation accounts from Ref_Asset_Depreciation_Account
+                depreciation_account_mapping = None
+                if document.AccountId_id:
+                    depreciation_account_mapping = Ref_Asset_Depreciation_Account.objects.filter(
+                        AssetAccountId_id=document.AccountId_id,
+                        IsDelete=False
+                    ).first()
+                
+                if depreciation_account_mapping:
+                    # Calculate expense days (from period begin to document date)
+                    expense_days = (document.DocumentDate - period.BeginDate).days + 1
+                    
+                    # Get all saved asset items (both existing and new)
+                    all_saved_items = Ast_Document_Item.objects.filter(DocumentId=document)
+                    
+                    # Create depreciation expense records for each asset item
+                    for item in all_saved_items:
+                        # Get predicted depreciation from submission data
+                        predicted_dep = None
+                        
+                        # Check in existing items
+                        if str(item.DocumentItemId) in items:
+                            predicted_dep = items[str(item.DocumentItemId)].get('predicted_depreciation')
+                        
+                        # Check in new items (need to match by asset_card_id since new items don't have ID yet)
+                        if predicted_dep is None:
+                            for new_item_data in new_items:
+                                if new_item_data.get('asset_card_id') == str(item.AssetCardId_id):
+                                    predicted_dep = new_item_data.get('predicted_depreciation')
+                                    break
+                        
+                        # Convert to decimal, default to 0
+                        from decimal import Decimal
+                        predicted_dep_amount = Decimal(str(predicted_dep).replace(',', '')) if predicted_dep else Decimal('0')
+                        
+                        # Only create record if predicted depreciation > 0
+                        if predicted_dep_amount > 0:
+                            AstDepreciationExpense.objects.create(
+                                AssetCardId=item.AssetCardId,
+                                PeriodId=period,
+                                ExpenseDay=expense_days,
+                                DepreciationDate=document.DocumentDate,
+                                DocumentId=document,
+                                ExpenseAmount=predicted_dep_amount,
+                                DebitAccountId=depreciation_account_mapping.ExpenseAccountId,
+                                CreditAccountId=depreciation_account_mapping.DepreciationAccountId,
+                                AccountId=depreciation_account_mapping.AssetAccountId,
+                                CreatedBy=request.user
+                            )
         
         return JsonResponse({'success': True})
         

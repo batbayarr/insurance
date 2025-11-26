@@ -234,19 +234,9 @@ window.selectAsset = async function(
     cumulatedDepreciation = '',
     dailyExpense = '',
     depreciationExpense = '',
-    totalDepreciation = ''
+    totalDepreciation = '',
+    predictedDepreciation = ''
 ) {
-    console.log('DEBUG: selectAsset called with:', {
-        assetCardId,
-        assetCardName,
-        assetName,
-        unitCost,
-        unitPrice,
-        cumulatedDepreciation,
-        dailyExpense,
-        depreciationExpense,
-        totalDepreciation
-    });
 
     const parseNumericValue = (value) => {
         if (value === null || value === undefined) return null;
@@ -346,6 +336,7 @@ window.selectAsset = async function(
             const normalizedDailyExpense = parseNumericValue(dailyExpense);
             const normalizedDepreciationExpense = parseNumericValue(depreciationExpense);
             const normalizedTotalDepreciation = parseNumericValue(totalDepreciation);
+            const normalizedPredictedDepreciation = parseNumericValue(predictedDepreciation);
             
             if (unitCostInput) {
                 unitCostInput.value = (normalizedUnitCost !== null ? normalizedUnitCost : 0).toFixed(6);
@@ -395,6 +386,19 @@ window.selectAsset = async function(
                         (normalizedDepreciationExpense !== null ? normalizedDepreciationExpense : 0)
                     );
                 endingDepreciationInput.value = formatNumericValue(totalValue, 2);
+            }
+            
+            // Update predicted depreciation field if documentTypeId === 11
+            const predictedDepreciationInput = row.querySelector('input[name*="predicted_depreciation_"]');
+            if (predictedDepreciationInput && isDocType11) {
+                // If predictedDepreciation was passed and is not 0, use it
+                if (normalizedPredictedDepreciation !== null && normalizedPredictedDepreciation !== 0) {
+                    // Store raw numeric value (no formatting) for reliable parsing
+                    predictedDepreciationInput.value = normalizedPredictedDepreciation.toFixed(2);
+                } else if (normalizedPredictedDepreciation === null || normalizedPredictedDepreciation === 0) {
+                    // Fetch predicted depreciation from API if not provided or is 0
+                    fetchPredictedDepreciationForAsset(assetCardId, row);
+                }
             }
 
             if (hasBackendDepreciation) {
@@ -941,6 +945,11 @@ function loadAssetList() {
         });
         if (context.documentTypeId && parseInt(context.documentTypeId) === 11 && context.documentDate) {
             balanceQuery.append('as_of_date', context.documentDate);
+            // Add account_id and document_type_id for calculate_ast_balance_temp
+            if (context.accountId) {
+                balanceQuery.append('account_id', context.accountId);
+            }
+            balanceQuery.append('document_type_id', context.documentTypeId);
         }
         
         Promise.all([
@@ -1013,6 +1022,13 @@ function loadAssetList() {
                     hasBalanceData = true;
                 });
                 
+                // For document type 11, only include asset cards that have balance data
+                // (since calculate_ast_balance_temp only returns assets with endingquantity > 0)
+                if (documentTypeId && parseInt(documentTypeId, 10) === 11) {
+                    // Only keep asset cards that have balance data
+                    assetData = assetData.filter(item => balanceLookup[item.assetcardid]);
+                }
+                
                 assetData.forEach(item => {
                     // Find matching balance by assetcardid
                     const balanceItem = balanceLookup[item.assetcardid];
@@ -1034,6 +1050,10 @@ function loadAssetList() {
                         }
                         // Update unit cost/price from balance if available
                         // Note: balance data doesn't have unit cost/price, keep from asset card
+                    } else {
+                        // If no balance data, set endingquantity to null
+                        // (This should not happen for documentTypeId === 11 after filtering above)
+                        item.endingquantity = null;
                     }
                 });
                 
@@ -1047,15 +1067,33 @@ function loadAssetList() {
             
             // Filter assets based on document type
             // For document type 11: only show items with endingquantity > 0
+            // (calculate_ast_balance_temp already filters for endingquantity > 0, but double-check here)
             // For all other cases: show all asset cards
             let filteredAssetData = assetData;
             
-            if (documentTypeId && parseInt(documentTypeId) === 11 && hasBalanceData) {
-                filteredAssetData = assetData.filter(item => {
-                    const endingQty = parseFloat(item.endingquantity) || 0;
-                    return endingQty > 0;
-                });
-                console.log(`Filtered assets for document type ${documentTypeId}: showing ${filteredAssetData.length} items with endingquantity > 0 out of ${assetData.length} total`);
+            if (documentTypeId && parseInt(documentTypeId, 10) === 11) {
+                if (hasBalanceData) {
+                    // When balance data is available, filter by endingquantity > 0
+                    // Also ensure the asset has balance data (not null/undefined)
+                    filteredAssetData = assetData.filter(item => {
+                        // Must have balance data
+                        if (!balanceLookup[item.assetcardid]) {
+                            return false;
+                        }
+                        // Must have endingquantity > 0
+                        const endingQty = parseFloat(item.endingquantity);
+                        if (isNaN(endingQty) || endingQty <= 0) {
+                            return false;
+                        }
+                        return true;
+                    });
+                    console.log(`Filtered assets for document type ${documentTypeId}: showing ${filteredAssetData.length} items with endingquantity > 0 out of ${assetData.length} total`);
+                } else {
+                    // If no balance data available, don't show any assets for document type 11
+                    // (since calculate_ast_balance_temp should have returned balance data)
+                    filteredAssetData = [];
+                    console.warn(`No balance data available for document type ${documentTypeId}, hiding all assets`);
+                }
             }
             
             // Store all data and render with pagination
@@ -1359,13 +1397,21 @@ function renderBalanceViewTable(data) {
         const dailyExpenseForSelect = item.dailyexpense !== undefined && item.dailyexpense !== null ? item.dailyexpense.toString() : '0';
         const depreciationExpenseForSelect = expenseDep !== null ? expenseDep.toString() : '0';
         const totalExpenseForSelect = totalExpenseValue !== null ? totalExpenseValue.toString() : combinedDepreciationValue.toString();
+        // Extract predicted depreciation (try multiple case variations)
+        const predictedDepreciation = item.predicteddepreciation !== undefined && item.predicteddepreciation !== null ? 
+            parseFloat(item.predicteddepreciation) : 
+            (item.Predicteddepreciation !== undefined && item.Predicteddepreciation !== null ? 
+                parseFloat(item.Predicteddepreciation) : 
+                (item.PredictedDepreciation !== undefined && item.PredictedDepreciation !== null ? 
+                    parseFloat(item.PredictedDepreciation) : 0));
+        const predictedDepreciationForSelect = predictedDepreciation.toString();
         
         assetsHtml += `
             <div style="display: grid; grid-template-columns: 60px 1fr 1fr 0.625fr 1fr 1fr 1fr 1fr 1fr 1fr 80px 80px; gap: 0;" class="px-1 py-1 bg-white border-b border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer asset-row" 
                  data-asset-code="${assetCardCode.toLowerCase()}" 
                  data-asset-name="${assetCardName.toLowerCase()}" 
                  data-asset-type="${assetName.toLowerCase()}"
-                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')">
+                 onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}', '${predictedDepreciationForSelect}')">
                 <div class="flex items-center border-r border-gray-300 px-1">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
                 </div>
@@ -1592,6 +1638,72 @@ function initializeAssetSearchFilter() {
             });
         });
         observer.observe(modal, { attributes: true });
+    }
+}
+
+// Function to fetch predicted depreciation for a single asset
+async function fetchPredictedDepreciationForAsset(assetCardId, row) {
+    const context = window.assetModalContext;
+    if (!context || !context.documentDate || !context.accountId || parseInt(context.documentTypeId) !== 11) {
+        return;
+    }
+    
+    const predictedDepreciationInput = row.querySelector('input[name*="predicted_depreciation_"]');
+    if (!predictedDepreciationInput) {
+        return;
+    }
+    
+    try {
+        // Build API query parameters
+        const documentDateObj = new Date(context.documentDate);
+        const beginDate = new Date(documentDateObj);
+        beginDate.setDate(beginDate.getDate() - 1);
+        
+        const startDateStr = beginDate.toISOString().split('T')[0];
+        const endDateStr = documentDateObj.toISOString().split('T')[0];
+        
+        const balanceQuery = new URLSearchParams({
+            start_date: startDateStr,
+            end_date: endDateStr,
+            as_of_date: context.documentDate,
+            account_id: context.accountId,
+            document_type_id: context.documentTypeId
+        });
+        
+        const response = await fetch(`/core/api/ast-balance-data/?${balanceQuery.toString()}`);
+        const balanceData = await response.json();
+        
+        if (balanceData.success && balanceData.balance_data) {
+            const balanceItem = balanceData.balance_data.find(item => 
+                (item.assetcardid === parseInt(assetCardId)) || 
+                (item.assetcardid === assetCardId)
+            );
+            
+            if (balanceItem) {
+                const predictedDepreciation = balanceItem.predicteddepreciation || 
+                                            balanceItem.Predicteddepreciation || 
+                                            balanceItem.PredictedDepreciation || 
+                                            0;
+                
+                // Store raw numeric value (no formatting) for reliable parsing
+                const numericValue = parseFloat(predictedDepreciation) || 0;
+                predictedDepreciationInput.value = numericValue.toFixed(2);
+                
+                // Update summary totals if function exists
+                if (typeof updateSummaryRowTotals === 'function') {
+                    updateSummaryRowTotals();
+                }
+                
+                // Trigger FillAccountingDetails after predicted depreciation is populated
+                if (typeof window.FillAccountingDetails === 'function') {
+                    window.FillAccountingDetails();
+                }
+            } else {
+                console.log(`No balance data found for asset_card_id=${assetCardId}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching predicted depreciation for asset:', error);
     }
 }
 </script>

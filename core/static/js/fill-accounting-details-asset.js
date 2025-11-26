@@ -80,11 +80,24 @@ function FillAccountingDetailsGeneric(config) {
     let totalPrice = 0;
     let totalEndingDep = 0;
     let totalDepAmount = 0;
+    let totalPredictedDep = 0;
     
     const firstTable = document.getElementById(firstTableId);
     if (firstTable) {
-        console.log(`${debugPrefix}: Calculating totals from first table...`);
-        firstTable.querySelectorAll('tr').forEach((row, index) => {
+        console.log(`${debugPrefix}: Calculating totals from first table (ID: ${firstTableId})...`);
+        const allRows = firstTable.querySelectorAll('tr');
+        console.log(`${debugPrefix}: Found ${allRows.length} rows in table`);
+        
+        // Debug: Check for predicted depreciation elements in the entire table
+        const allPredictedDepElements = firstTable.querySelectorAll('.predicted-depreciation-display');
+        console.log(`${debugPrefix}: Found ${allPredictedDepElements.length} .predicted-depreciation-display elements in table`);
+        if (allPredictedDepElements.length > 0) {
+            allPredictedDepElements.forEach((el, idx) => {
+                console.log(`${debugPrefix}: PredictedDep element ${idx + 1}: value="${el.value}", textContent="${el.textContent}", visible=${window.getComputedStyle(el).display !== 'none'}`);
+            });
+        }
+        
+        allRows.forEach((row, index) => {
             if (window.getComputedStyle(row).display === 'none') {
                 return;
             }
@@ -138,6 +151,23 @@ function FillAccountingDetailsGeneric(config) {
                 const numericDepAmount = parseFloat(depAmountValue) || 0;
                 totalDepAmount += numericDepAmount;
             }
+
+            const predictedDepEl = row.querySelector('.predicted-depreciation-display');
+            if (predictedDepEl) {
+                // Get value and remove all formatting (commas, spaces, etc.)
+                let predictedDepValue = (predictedDepEl.value ?? predictedDepEl.textContent ?? '0').toString();
+                // Remove commas, spaces, and any other formatting characters
+                predictedDepValue = predictedDepValue.replace(/[,\s]/g, '').trim();
+                const numericPredictedDep = parseFloat(predictedDepValue) || 0;
+                totalPredictedDep += numericPredictedDep;
+                console.log(`Row ${index + 1}: PredictedDep=${numericPredictedDep}, RunningTotal=${totalPredictedDep}, RawValue="${predictedDepEl.value}", CleanedValue="${predictedDepValue}"`);
+            } else {
+                // Debug: Check if row has predicted-depreciation-cell but no input
+                const predictedDepCell = row.querySelector('.predicted-depreciation-cell');
+                if (predictedDepCell) {
+                    console.log(`Row ${index + 1}: Found .predicted-depreciation-cell but no .predicted-depreciation-display input. Cell HTML:`, predictedDepCell.innerHTML.substring(0, 100));
+                }
+            }
             
             totalCost += rowCost;
             totalPrice += rowPrice;
@@ -151,6 +181,7 @@ function FillAccountingDetailsGeneric(config) {
     let doc11TotalCost = totalCost;
     let doc11EndingDep = totalEndingDep;
     let doc11DepAmount = totalDepAmount;
+    let doc11PredictedDep = totalPredictedDep;
 
     if (documentTypeId === 11) {
         const summaryCost = getSummaryValue('sum-unit-cost');
@@ -166,9 +197,24 @@ function FillAccountingDetailsGeneric(config) {
         if (summaryDepAmount !== null) {
             doc11DepAmount = summaryDepAmount;
         }
+        // Always recalculate predicted depreciation from rows (don't trust summary which might be stale)
+        // The summary element might have old values, so we always calculate fresh from the input fields
+        doc11PredictedDep = totalPredictedDep;
     }
     
-    console.log(`${debugPrefix}: Calculated totals - TotalCost: ${totalCost}, TotalPrice: ${totalPrice}, TotalEndingDep: ${totalEndingDep}`);
+    console.log(`${debugPrefix}: Calculated totals - TotalCost: ${totalCost}, TotalPrice: ${totalPrice}, TotalEndingDep: ${totalEndingDep}, TotalPredictedDep: ${totalPredictedDep}`);
+    if (documentTypeId === 11) {
+        console.log(`${debugPrefix}: Doc11 values - TotalCost: ${doc11TotalCost}, EndingDep: ${doc11EndingDep}, DepAmount: ${doc11DepAmount}, PredictedDep: ${doc11PredictedDep}`);
+        if (doc11PredictedDep === 0 && totalPredictedDep === 0) {
+            console.warn(`${debugPrefix}: WARNING - PredictedDep is 0! This might mean predicted depreciation values are not populated in the table rows yet.`);
+            // Try to recalculate from summary as last resort
+            const summaryPredictedDep = getSummaryValue('sum-predicted-depreciation');
+            if (summaryPredictedDep !== null && summaryPredictedDep > 0) {
+                console.log(`${debugPrefix}: Using summary value as fallback: ${summaryPredictedDep}`);
+                doc11PredictedDep = summaryPredictedDep;
+            }
+        }
+    }
     
     // Step 2: Calculate VAT amount using context processor rate
     const vatRate = parseFloat(docData.VatPercent) || 0;
@@ -250,9 +296,13 @@ function FillAccountingDetailsGeneric(config) {
                 templateDetail.AccountId === depreciationAccountId &&
                 templateDetail.IsDebit === false
             ) {
-                currencyAmount = doc11DepAmount;
+                // Use predicted depreciation, but if it's 0, log a warning
+                currencyAmount = doc11PredictedDep;
                 handledDoc11SpecialCase = true;
-                console.log('DocType 11 rule: depreciation account credit matched, using depreciation amount:', currencyAmount);
+                if (doc11PredictedDep === 0) {
+                    console.warn('DocType 11 rule: depreciation account credit matched, but doc11PredictedDep is 0. Check if predicted depreciation values are populated in the table.');
+                }
+                console.log('DocType 11 rule: depreciation account credit matched, using predicted depreciation:', currencyAmount, '(doc11PredictedDep:', doc11PredictedDep, ')');
             } else if (depreciationAccountId && templateDetail.AccountId === depreciationAccountId) {
                 currencyAmount = doc11EndingDep;
                 handledDoc11SpecialCase = true;
@@ -262,11 +312,15 @@ function FillAccountingDetailsGeneric(config) {
                 templateDetail.AccountId === expenseAccountId &&
                 templateDetail.IsDebit === true
             ) {
-                currencyAmount = doc11DepAmount;
+                // Use predicted depreciation, but if it's 0, log a warning
+                currencyAmount = doc11PredictedDep;
                 handledDoc11SpecialCase = true;
-                console.log('DocType 11 rule: expense account debit matched, using depreciation amount:', currencyAmount);
+                if (doc11PredictedDep === 0) {
+                    console.warn('DocType 11 rule: expense account debit matched, but doc11PredictedDep is 0. Check if predicted depreciation values are populated in the table.');
+                }
+                console.log('DocType 11 rule: expense account debit matched, using predicted depreciation:', currencyAmount, '(doc11PredictedDep:', doc11PredictedDep, ')');
             } else if (templateDetail.AccountTypeId === 83) {
-                currencyAmount = netBookValue;
+                currencyAmount = templateDetail.IsDebit ? netBookValue : 0;
                 handledDoc11SpecialCase = true;
                 console.log('DocType 11 rule: accountType 83 matched, using net book value:', currencyAmount);
             } else {
@@ -326,7 +380,8 @@ function FillAccountingDetailsGeneric(config) {
         }
         
         // Fallback: If currencyAmount is still 0 and we have data, use a default calculation
-        if (currencyAmount === 0 && (totalCost > 0 || totalPrice > 0)) {
+        // BUT: Don't override if we've already handled a special case (e.g., predicted depreciation might legitimately be 0)
+        if (!handledDoc11SpecialCase && currencyAmount === 0 && (totalCost > 0 || totalPrice > 0)) {
             console.warn('CurrencyAmount is 0, applying fallback calculation');
             if (templateDetail.IsDebit) {
                 currencyAmount = totalCost; // Use total cost for debit entries

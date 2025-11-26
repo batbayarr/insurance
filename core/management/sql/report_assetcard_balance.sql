@@ -30,7 +30,8 @@ RETURNS TABLE (
     endingquantity NUMERIC(24,6),
     endingcost NUMERIC(24,6),
     dailyexpense NUMERIC(24,6),
-    totalexpense NUMERIC(24,6)
+    totalexpense NUMERIC(24,6),
+    netbookvalue NUMERIC(24,6)
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -56,9 +57,9 @@ BEGIN
             abb."AccountId",
             abb."AssetCardId",
             rac."AssetId",
-            SUM(abb."Quantity") AS starting_quantity,
-            SUM(abb."Quantity" * abb."UnitCost") AS starting_cost,
-            SUM(COALESCE(abb."CumulatedDepreciation", 0)) AS cumulated_depreciation
+            COALESCE(SUM(abb."Quantity"), 0) AS starting_quantity,
+            COALESCE(SUM(COALESCE(abb."Quantity", 0) * COALESCE(abb."UnitCost", 0)), 0) AS starting_cost,
+            COALESCE(SUM(COALESCE(abb."CumulatedDepreciation", 0)), 0) AS cumulated_depreciation
         FROM ast_beginning_balance abb
         INNER JOIN ref_asset_card rac ON abb."AssetCardId" = rac."AssetCardId"
         WHERE abb."IsDelete" = false
@@ -145,7 +146,8 @@ BEGIN
             ade."AssetCardId",
             COALESCE(SUM(ade."ExpenseAmount"), 0)::NUMERIC(24,6) AS depreciation_expense
         FROM ast_depreciation_expense ade
-        INNER JOIN period_dates pd ON ade."DepreciationDate" BETWEEN pd.period_begin AND pd.period_end
+        CROSS JOIN period_dates pd
+        WHERE ade."DepreciationDate" <= pd.period_end
         GROUP BY ade."AccountId", ade."AssetCardId"
     )
 
@@ -191,7 +193,12 @@ BEGIN
         COALESCE(rac."DailyExpense", 0)::NUMERIC(24,6) AS DailyExpense,
 
         -- Combined depreciation balance
-        (COALESCE(sb.cumulated_depreciation, 0) + COALESCE(de.depreciation_expense, 0))::NUMERIC(24,6) AS TotalExpense
+        (COALESCE(sb.cumulated_depreciation, 0) + COALESCE(de.depreciation_expense, 0))::NUMERIC(24,6) AS TotalExpense,
+
+        -- Net Book Value = BeginningCost - CumulatedDepreciation - DepreciationExpense
+        (COALESCE(sb.starting_cost, 0) - 
+         COALESCE(sb.cumulated_depreciation, 0) - 
+         COALESCE(de.depreciation_expense, 0))::NUMERIC(24,6) AS NetBookValue
 
     FROM account_asset_combinations aac
     INNER JOIN ref_account ra ON aac."AccountId" = ra."AccountId"
@@ -204,7 +211,8 @@ BEGIN
         AND aac."AssetCardId" = it."AssetCardId"
     LEFT JOIN expense_transactions et ON aac."AccountId" = et."AccountId" 
         AND aac."AssetCardId" = et."AssetCardId"
-    LEFT JOIN depreciation_expenses de ON aac."AssetCardId" = de."AssetCardId"
+    LEFT JOIN depreciation_expenses de ON aac."AccountId" = de."AccountId"
+        AND aac."AssetCardId" = de."AssetCardId"
     WHERE ra."IsDelete" = false
     ORDER BY ra."AccountCode", ras."AssetCode", rac."AssetCardCode";
 END;
