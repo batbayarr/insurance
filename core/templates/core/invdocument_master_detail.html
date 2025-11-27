@@ -1472,11 +1472,13 @@ function calculateInventoryItemTotals() {
     if (totalCostElement) {
         const formattedCost = totalCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalCostElement.textContent = formattedCost;
+        totalCostElement.className = 'font-medium text-green-600';
     }
     
     if (totalPriceElement) {
         const formattedPrice = totalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalPriceElement.textContent = formattedPrice;
+        totalPriceElement.className = 'font-medium text-green-600';
     }
 }
 
@@ -1544,11 +1546,13 @@ function calculateInventoryAccountingTotals() {
     if (totalDebitElement) {
         const formattedDebit = totalDebit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalDebitElement.textContent = formattedDebit;
+        totalDebitElement.className = 'font-medium text-green-600';
     }
     
     if (totalCreditElement) {
         const formattedCredit = totalCredit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalCreditElement.textContent = formattedCredit;
+        totalCreditElement.className = 'font-medium text-green-600';
     }
     
     if (balanceStatusElement) {

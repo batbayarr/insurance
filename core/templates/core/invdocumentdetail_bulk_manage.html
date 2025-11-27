@@ -301,10 +301,10 @@ input[type="number"] {
                             <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right"></td>
                             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-left"></td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
-                                <span id="sum-debit-amount" class="block text-right">0.00</span>
+                                <span id="sum-debit-amount" class="block text-right font-medium text-green-600">0.00</span>
                             </td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
-                                <span id="sum-credit-amount" class="block text-right">0.00</span>
+                                <span id="sum-credit-amount" class="block text-right font-medium text-green-600">0.00</span>
                             </td>
                             <td class="px-2 py-1 text-center"></td>
                         </tr>
@@ -323,7 +323,7 @@ input[type="number"] {
                         <div class="flex items-center space-x-2 lg:space-x-3">
                             <span class="text-gray-500 text-xs">Баланс:</span>
                             <span class="text-gray-500 text-xs">Дебит:</span>
-                            <span id="total-debit" class="font-medium text-red-600 text-xs">0.00</span>
+                            <span id="total-debit" class="font-medium text-green-600 text-xs">0.00</span>
                             <span class="text-gray-400">|</span>
                             <span class="text-gray-500 text-xs">Кредит:</span>
                             <span id="total-credit" class="font-medium text-green-600 text-xs">0.00</span>
@@ -1235,9 +1235,11 @@ function updateBalanceDisplay() {
     
     if (totalDebitElement) {
         totalDebitElement.textContent = totalDebit.toFixed(2);
+        totalDebitElement.className = 'font-medium text-green-600 text-xs';
     }
     if (totalCreditElement) {
         totalCreditElement.textContent = totalCredit.toFixed(2);
+        totalCreditElement.className = 'font-medium text-green-600 text-xs';
     }
     
     // Update balance status
@@ -1266,9 +1268,11 @@ function updateAccountingTotalsSummary(totalDebit, totalCredit) {
     
     if (sumDebitElement) {
         sumDebitElement.textContent = totalDebit.toFixed(2);
+        sumDebitElement.className = 'block text-right font-medium text-green-600';
     }
     if (sumCreditElement) {
         sumCreditElement.textContent = totalCredit.toFixed(2);
+        sumCreditElement.className = 'block text-right font-medium text-green-600';
     }
 }
 

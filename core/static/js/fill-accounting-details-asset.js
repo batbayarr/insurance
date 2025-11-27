@@ -345,8 +345,9 @@ function FillAccountingDetailsGeneric(config) {
                 // IsVat = false rules
                 if ([3, 5, 42, 43].includes(accountTypeId) || 
                     (accountTypeId >= 69 && accountTypeId <= 77)) {
-                    currencyAmount = totalPrice;
-                    console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalPrice (${currencyAmount})`);
+                    // For DocumentTypeId=10, use totalCost; for DocumentTypeId=11, use totalPrice
+                    currencyAmount = documentTypeId === 10 ? totalCost : totalPrice;
+                    console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 10 ? 'TotalCost' : 'TotalPrice'} (${currencyAmount})`);
                 } else if (accountTypeId === 83) {
                     currencyAmount = documentTypeId === 11 ? netBookValue : totalCost;
                     console.log(`Rule: IsVat=false, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 11 ? 'NetBookValue' : 'TotalCost'} (${currencyAmount})`);
@@ -357,11 +358,14 @@ function FillAccountingDetailsGeneric(config) {
             } else {
                 // IsVat = true rules
                 if ([3, 5, 42, 43].includes(accountTypeId)) {
-                    currencyAmount = totalPrice + vatAmount;
-                    console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalPrice+VatAmount (${currencyAmount})`);
+                    // For DocumentTypeId=10, use totalCost + vatAmount; for DocumentTypeId=11, use totalPrice + vatAmount
+                    const basis = documentTypeId === 10 ? totalCost : totalPrice;
+                    currencyAmount = basis + vatAmount;
+                    console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 10 ? 'TotalCost' : 'TotalPrice'}+VatAmount (${currencyAmount})`);
                 } else if (accountTypeId >= 69 && accountTypeId <= 77) {
-                    currencyAmount = totalPrice;
-                    console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=TotalPrice (${currencyAmount})`);
+                    // For DocumentTypeId=10, use totalCost; for DocumentTypeId=11, use totalPrice
+                    currencyAmount = documentTypeId === 10 ? totalCost : totalPrice;
+                    console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=${documentTypeId === 10 ? 'TotalCost' : 'TotalPrice'} (${currencyAmount})`);
                 } else if ([6, 47].includes(accountTypeId)) {
                     currencyAmount = vatAmount;
                     console.log(`Rule: IsVat=true, AccountTypeId=${accountTypeId}, CurrencyAmount=VatAmount (${currencyAmount})`);

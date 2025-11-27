@@ -317,14 +317,16 @@ function renderDocumentsTable(documents) {
         tr.setAttribute('data-client-register', doc.ClientRegister || '');
         tr.setAttribute('data-account-code', doc.AccountCode || '');
         tr.setAttribute('data-account-name', doc.AccountName || '');
+        tr.setAttribute('data-document-date', doc.DocumentDate || '');
         
         // Build action buttons based on permissions
         let actionButtons = '';
         // Manage Details button
         actionButtons += `
             <a href="/core/astdocuments/${doc.DocumentId}/bulk-manage-details/" 
-                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                   onclick="event.stopPropagation();"
+                                   class="manage-details-link text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                   data-document-id="${doc.DocumentId}"
+                                   data-document-date="${doc.DocumentDate || ''}"
                                    title="Manage Details">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -486,6 +488,20 @@ function initializeEventHandlers() {
             if (documentId) loadDocumentDetails(documentId);
             return;
         }
+        
+        // Handle manage details link
+        const manageDetailsLink = e.target.closest('.manage-details-link');
+        if (manageDetailsLink) {
+            e.preventDefault();
+            e.stopPropagation();
+            const documentId = manageDetailsLink.getAttribute('data-document-id');
+            const documentDate = manageDetailsLink.getAttribute('data-document-date');
+            if (documentId) {
+                checkPeriodLockForManageDetails(documentId, documentDate);
+            }
+            return;
+        }
+        
         const editBtn = e.target.closest('.edit-document-btn');
         if (editBtn) {
             e.stopPropagation();
@@ -774,38 +790,159 @@ async function printDocument(documentId) {
 function checkPeriodLockForEdit(documentId, documentDate) {
     console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
     
-    if (!documentDate) {
-        console.log('No date, proceeding to edit');
-        // No date, proceed to edit
-        window.location.href = `/core/astdocuments/${documentId}/update/`;
-        return;
-    }
-    
-    console.log('Checking period lock for date:', documentDate);
-    
-    // Check period lock via API
-    fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+    // First check if document has depreciation records
+    fetch(`/core/api/check-asset-document-depreciation/?document_id=${documentId}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response:', data);
-            if (data.is_locked) {
-                console.log('Period is locked, showing modal');
-                // Show modal for locked period
+            console.log('Depreciation check API response:', data);
+            if (data.success && data.has_depreciation) {
+                // Block with depreciation message
+                const depMessage = data.message || 'элэгдлийн зардал бодогдсон тул энэ баримтыг засах боломжгүй. Баримтыг устган шинээр оруулаад элэгдлээ дахин сар бүрээр тооцоолно уу?';
                 if (typeof showMessageModal === 'function') {
-                    showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                    showMessageModal(depMessage, 'error', 'Анхааруулга');
                 } else {
-                    alert(data.message);
+                    alert(depMessage);
                 }
-            } else {
-                console.log('Period not locked, proceeding to edit');
-                // Not locked, proceed to edit
-                window.location.href = `/core/astdocuments/${documentId}/update/`;
+                return;
             }
+            
+            // No depreciation, check period lock
+            if (!documentDate) {
+                // No date, proceed to edit
+                window.location.href = `/core/astdocuments/${documentId}/update/`;
+                return;
+            }
+            
+            console.log('Checking period lock for date:', documentDate);
+            
+            // Check period lock via API
+            fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+                .then(response => response.json())
+                .then(lockData => {
+                    console.log('Period lock API response:', lockData);
+                    if (lockData.is_locked) {
+                        // Show modal for locked period
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
+                    } else {
+                        // Not locked, proceed to edit
+                        window.location.href = `/core/astdocuments/${documentId}/update/`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Period lock check failed:', error);
+                    // On error, allow edit (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/update/`;
+                });
         })
         .catch(error => {
-            console.error('Period lock check failed:', error);
+            console.error('Depreciation check failed:', error);
             // On error, allow edit (fail open)
-            window.location.href = `/core/astdocuments/${documentId}/update/`;
+            if (!documentDate) {
+                window.location.href = `/core/astdocuments/${documentId}/update/`;
+                return;
+            }
+            // Still check period lock
+            fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+                .then(response => response.json())
+                .then(lockData => {
+                    if (!lockData.is_locked) {
+                        window.location.href = `/core/astdocuments/${documentId}/update/`;
+                    } else {
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
+                    }
+                })
+                .catch(() => {
+                    // On error, allow edit (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/update/`;
+                });
+        });
+}
+
+// Check period lock before allowing manage details
+function checkPeriodLockForManageDetails(documentId, documentDate) {
+    console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
+    
+    // First check if document has depreciation records
+    fetch(`/core/api/check-asset-document-depreciation/?document_id=${documentId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Depreciation check API response:', data);
+            if (data.success && data.has_depreciation) {
+                // Block with depreciation message
+                const depMessage = data.message || 'элэгдлийн зардал бодогдсон тул энэ баримтыг засах боломжгүй. Баримтыг устган шинээр оруулаад элэгдлээ дахин сар бүрээр тооцоолно уу?';
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(depMessage, 'error', 'Анхааруулга');
+                } else {
+                    alert(depMessage);
+                }
+                return;
+            }
+            
+            // No depreciation, check period lock
+            if (!documentDate) {
+                // No date, proceed to manage details
+                window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                return;
+            }
+            
+            console.log('Checking period lock for date:', documentDate);
+            
+            // Check period lock via API
+            fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+                .then(response => response.json())
+                .then(lockData => {
+                    console.log('Period lock API response:', lockData);
+                    if (lockData.is_locked) {
+                        // Show modal for locked period
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
+                    } else {
+                        // Not locked, proceed to manage details
+                        window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Period lock check failed:', error);
+                    // On error, allow manage details (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                });
+        })
+        .catch(error => {
+            console.error('Depreciation check failed:', error);
+            // On error, allow manage details (fail open)
+            if (!documentDate) {
+                window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                return;
+            }
+            // Still check period lock
+            fetch(`/core/api/check-period-lock/?date=${documentDate}`)
+                .then(response => response.json())
+                .then(lockData => {
+                    if (!lockData.is_locked) {
+                        window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                    } else {
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
+                    }
+                })
+                .catch(() => {
+                    // On error, allow manage details (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                });
         });
 }
 

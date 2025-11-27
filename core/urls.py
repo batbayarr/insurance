@@ -147,6 +147,7 @@ urlpatterns = [
     path('api/refinventorytypes/', views.refinventory_types_json, name='refinventory_types_json'),
     path('api/refmeasurements/', views.refmeasurements_json, name='refmeasurements_json'),
     path('api/asset-card-usage-check/', views.api_asset_card_usage_check, name='api_asset_card_usage_check'),
+    path('api/check-asset-document-depreciation/', views.api_check_asset_document_depreciation, name='api_check_asset_document_depreciation'),
     
 
     # Beginning Balance (Generic)

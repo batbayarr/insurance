@@ -19,10 +19,13 @@
                     <option value="">-- Хугацаа сонгох --</option>
                 </select>
             </div>
+            <button id="show-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                ХАРУУЛАХ
+            </button>
             <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 ЭЛЭГДЭЛ БАЙГУУЛАХ
             </button>
-            <button id="restore-button" onclick="restoreView()" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <button id="restore-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 ЭЛЭГДЭЛ УСТГАХ
             </button>
         </div>
@@ -201,6 +204,89 @@
         }
     }
     
+    // Function to show records without calculating
+    async function showRecords() {
+        const periodDates = getSelectedPeriodDates();
+        
+        if (!periodDates) {
+            alert('Хугацаа сонгоно уу');
+            return;
+        }
+        
+        const startDate = periodDates.startDate;
+        const endDate = periodDates.endDate;
+        
+        const showButton = document.getElementById('show-button');
+        if (showButton) {
+            showButton.textContent = 'Ачаалж байна...';
+            showButton.disabled = true;
+        }
+        
+        try {
+            await fetchDepreciationJournalData(startDate, endDate);
+        } finally {
+            if (showButton) {
+                showButton.textContent = 'ХАРУУЛАХ';
+                showButton.disabled = false;
+            }
+        }
+    }
+    
+    // Function to check period lock
+    async function checkPeriodLock(date) {
+        try {
+            const response = await fetch(`/core/api/check-period-lock/?date=${date}`);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error checking period lock:', error);
+            return { is_locked: false };
+        }
+    }
+    
+    // Function to show message modal
+    function showMessageModal(message, type = 'error', title = 'Анхааруулга') {
+        const modal = document.getElementById('message-modal');
+        const modalTitle = document.getElementById('message-modal-title');
+        const modalText = document.getElementById('message-modal-text');
+        const iconContainer = document.getElementById('message-modal-icon-container');
+        const errorIcon = document.getElementById('message-modal-icon-error');
+        const successIcon = document.getElementById('message-modal-icon-success');
+        const warningIcon = document.getElementById('message-modal-icon-warning');
+        const infoIcon = document.getElementById('message-modal-icon-info');
+        
+        if (!modal || !modalTitle || !modalText) {
+            alert(message);
+            return;
+        }
+        
+        modalText.textContent = message;
+        modalTitle.textContent = title;
+        
+        // Reset all icons
+        if (errorIcon) errorIcon.classList.add('hidden');
+        if (successIcon) successIcon.classList.add('hidden');
+        if (warningIcon) warningIcon.classList.add('hidden');
+        if (infoIcon) infoIcon.classList.add('hidden');
+        
+        // Show appropriate icon
+        if (type === 'error' && errorIcon) {
+            errorIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+        } else if (type === 'success' && successIcon) {
+            successIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+        } else if (type === 'warning' && warningIcon) {
+            warningIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+        } else if (type === 'info' && infoIcon) {
+            infoIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
+        }
+        
+        modal.classList.remove('hidden');
+    }
+    
     async function applyDateFilter() {
         // Get period info from selected period
         const periodSelect = document.getElementById('period-select');
@@ -219,6 +305,13 @@
         
         const startDate = periodDates.startDate;
         const endDate = periodDates.endDate;
+        
+        // Check period lock before proceeding
+        const lockCheck = await checkPeriodLock(endDate);
+        if (lockCheck.is_locked) {
+            showMessageModal(lockCheck.message || 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.', 'error', 'Тухайн сар цоожлогдсон байна.');
+            return;
+        }
         
         apiCache.clear();
         
@@ -495,6 +588,13 @@
         const startDate = periodDates.startDate;
         const endDate = periodDates.endDate;
         
+        // Check period lock before proceeding
+        const lockCheck = await checkPeriodLock(endDate);
+        if (lockCheck.is_locked) {
+            showMessageModal(lockCheck.message || 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.', 'error', 'Тухайн сар цоожлогдсон байна.');
+            return;
+        }
+        
         // Get period name for confirmation message
         const periodSelect = document.getElementById('period-select');
         const selectedOption = periodSelect.options[periodSelect.selectedIndex];
@@ -544,14 +644,20 @@
             }
         } finally {
             if (restoreButton) {
-                restoreButton.textContent = 'ЭЛЭГДЭЛ НЭЭХ';
+                restoreButton.textContent = 'ЭЛЭГДЭЛ УСТГАХ';
                 restoreButton.disabled = false;
             }
         }
     }
     
     // Event listeners
+    document.getElementById('show-button').addEventListener('click', showRecords);
     document.getElementById('filter-button').addEventListener('click', applyDateFilter);
+    document.getElementById('restore-button').addEventListener('click', restoreView);
 </script>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
 {% endblock %}
 

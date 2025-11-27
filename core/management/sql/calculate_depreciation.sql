@@ -40,9 +40,6 @@ BEGIN
         RAISE EXCEPTION 'Period ID % not found', p_period_id;
     END IF;
     
-    -- Calculate days in period
-    v_expense_days := (v_end_date - v_begin_date + 1)::SMALLINT;
-    
     -- Delete existing unposted records for this period
     -- Preserves records already linked to documents (posted transactions)
     DELETE FROM ast_depreciation_expense 
@@ -52,7 +49,22 @@ BEGIN
     
     -- Insert new depreciation records
     -- Only for assets with positive ending quantity and daily expense > 0
-    WITH asset_disposals AS (
+    -- Calculates actual usage days based on receipt date and disposal date
+    WITH asset_receipts AS (
+        -- First receipt date for each asset card (up to period end)
+        SELECT 
+            ad."AccountId",
+            adi."AssetCardId",
+            MIN(ad."DocumentDate") AS first_receipt_date
+        FROM ast_document ad
+        INNER JOIN ast_document_item adi ON ad."DocumentId" = adi."DocumentId"
+        WHERE ad."DocumentTypeId" = 10
+            AND ad."IsDelete" = false
+            AND ad."DocumentDate" <= v_end_date
+        GROUP BY ad."AccountId", adi."AssetCardId"
+    ),
+    asset_disposals AS (
+        -- First disposal date within the period (if any)
         SELECT 
             ad."AccountId",
             adi."AssetCardId",
@@ -63,6 +75,46 @@ BEGIN
             AND ad."IsDelete" = false
             AND ad."DocumentDate" BETWEEN v_begin_date AND v_end_date
         GROUP BY ad."AccountId", adi."AssetCardId"
+    ),
+    asset_usage_periods AS (
+        -- Calculate actual usage period for each asset
+        SELECT 
+            bal.accountid,
+            bal.assetcardid,
+            bal.endingquantity,
+            rac."DailyExpense",
+            rada."ExpenseAccountId",
+            rada."DepreciationAccountId",
+            rada."AssetAccountId",
+            -- Start date: MAX of receipt date or period begin
+            -- If asset was received before period, use period begin
+            -- If asset was received during period, use receipt date
+            GREATEST(
+                COALESCE(ar.first_receipt_date, v_begin_date),
+                v_begin_date
+            ) AS usage_start_date,
+            -- End date: MIN of disposal date (if exists within period) or period end
+            -- If disposed within period, use disposal date
+            -- Otherwise, use period end
+            LEAST(
+                COALESCE(ad.first_disposal_date, v_end_date),
+                v_end_date
+            ) AS usage_end_date
+        FROM report_assetcard_balance(v_end_date) bal
+        INNER JOIN ref_asset_card rac ON bal.assetcardid = rac."AssetCardId"
+        INNER JOIN ref_asset_depreciation_account rada 
+            ON bal.accountid = rada."AssetAccountId"
+            AND rada."IsDelete" = false
+        LEFT JOIN asset_receipts ar 
+            ON bal.accountid = ar."AccountId"
+            AND bal.assetcardid = ar."AssetCardId"
+        LEFT JOIN asset_disposals ad 
+            ON bal.accountid = ad."AccountId"
+            AND bal.assetcardid = ad."AssetCardId"
+        WHERE bal.endingquantity > 0
+            AND rac."DailyExpense" > 0
+            -- Only calculate if asset was received before or during the period
+            AND COALESCE(ar.first_receipt_date, v_begin_date) <= v_end_date
     )
     INSERT INTO ast_depreciation_expense (
         "AssetCardId", 
@@ -79,30 +131,20 @@ BEGIN
         "ModifiedDate"
     )
     SELECT 
-        bal.assetcardid,
+        aup.assetcardid,
         p_period_id,
-        v_expense_days,
-        LEAST(
-            COALESCE(ad.first_disposal_date, v_end_date),
-            v_end_date
-        ),
-        (v_expense_days::NUMERIC(24,6) * rac."DailyExpense")::NUMERIC(24,6) AS expense_amount,
-        rada."ExpenseAccountId", -- Debit: Expense Account
-        rada."DepreciationAccountId", -- Credit: Accumulated Depreciation
-        rada."AssetAccountId", -- Asset Account
+        (aup.usage_end_date - aup.usage_start_date + 1)::SMALLINT AS expense_days,
+        aup.usage_end_date AS depreciation_date,
+        ((aup.usage_end_date - aup.usage_start_date + 1)::NUMERIC(24,6) * aup."DailyExpense")::NUMERIC(24,6) AS expense_amount,
+        aup."ExpenseAccountId", -- Debit: Expense Account
+        aup."DepreciationAccountId", -- Credit: Accumulated Depreciation
+        aup."AssetAccountId", -- Asset Account
         p_user_id, -- CreatedBy (session user ID)
         CURRENT_DATE,
         p_user_id, -- ModifiedBy (session user ID)
         CURRENT_DATE
-    FROM report_assetcard_balance(v_end_date) bal
-    INNER JOIN ref_asset_card rac ON bal.assetcardid = rac."AssetCardId"
-    INNER JOIN ref_asset_depreciation_account rada 
-        ON bal.accountid = rada."AssetAccountId"
-        AND rada."IsDelete" = false
-    LEFT JOIN asset_disposals ad ON bal.accountid = ad."AccountId"
-        AND bal.assetcardid = ad."AssetCardId"
-    WHERE bal.endingquantity > 0
-        AND rac."DailyExpense" > 0;
+    FROM asset_usage_periods aup
+    WHERE aup.usage_start_date <= aup.usage_end_date; -- Ensure valid date range
     
     -- Check for existing depreciation cash documents and delete them if they exist
     -- Delete from cash_document_detail first (due to foreign key constraint)
@@ -280,8 +322,11 @@ $$ LANGUAGE plpgsql;
 
 -- Comment on function
 COMMENT ON FUNCTION calculate_depreciation(SMALLINT, INTEGER) IS 
-'Calculates and updates depreciation expenses for a given accounting period. 
+'Calculates and updates depreciation expenses for a given accounting period based on actual usage days.
 Only processes assets with positive ending quantity and daily expense > 0.
+Calculates depreciation from receipt date (or period begin if received earlier) to period end (or disposal date if disposed within period).
+If asset is disposed within period resulting in ending quantity = 0, no depreciation is calculated.
+If asset is received mid-period, depreciation is calculated from receipt date to period end.
 Deletes unposted records (DocumentId IS NULL) for the period before inserting new calculations.
 Automatically creates cash_document and cash_document_detail entries for the depreciation expenses.
 Parameters: p_period_id (accounting period), p_user_id (session user for audit fields, required).

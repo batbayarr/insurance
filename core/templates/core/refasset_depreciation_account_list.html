@@ -1,100 +1,104 @@
 {% extends 'base.html' %}
 
-{% block title %}Asset Depreciation Accounts - Silicon-AI Accounting{% endblock %}
+{% block title %}Элэгдлийн Дансны Жагсаалт - Silicon-AI Accounting{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-0">
     <!-- Real-time update indicator -->
     <div id="update-indicator" class="hidden bg-green-50 border border-green-200 rounded-md p-3 mb-4">
         <div class="flex items-center">
             <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
-            <span class="text-green-800 font-medium">Asset depreciation account list updated</span>
+            <span class="text-green-800 font-medium text-xs">Элэгдлийн дансны жагсаалт шинэчлэгдлээ</span>
         </div>
     </div>
 
-    <div class="flex justify-between items-center">
+    <div class="flex justify-between items-center py-1 lg:px-6 bg-white border-b border-gray-200">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Asset Depreciation Accounts</h1>
-            <p class="text-gray-600">Manage asset depreciation account mappings</p>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ЭЛЭГДЛИЙН ДАНСНЫ МОДУЛЬ</h1>
         </div>
-        <a href="{% url 'core:ref_asset_depreciation_account_create' %}" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <a href="{% url 'core:ref_asset_depreciation_account_create' %}" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Add Depreciation Account
+            <span class="text-xs">Нэмэх</span>
         </a>
     </div>
 
 
     <!-- Results -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
         {% if depreciation_accounts %}
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Account</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depreciation Account</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expense Account</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хөрөнгийн данс</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдлийн данс</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зардлын данс</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for account in depreciation_accounts %}
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900 border-r border-gray-200">
                                 {{ account.AstDepId }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 <div class="flex flex-col">
                                     <span class="font-medium">{{ account.AssetAccountId.AccountCode }}</span>
                                     <span class="text-gray-500 text-xs">{{ account.AssetAccountId.AccountName }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 <div class="flex flex-col">
                                     <span class="font-medium">{{ account.DepreciationAccountId.AccountCode }}</span>
                                     <span class="text-gray-500 text-xs">{{ account.DepreciationAccountId.AccountName }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                 <div class="flex flex-col">
                                     <span class="font-medium">{{ account.ExpenseAccountId.AccountCode }}</span>
                                     <span class="text-gray-500 text-xs">{{ account.ExpenseAccountId.AccountName }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-2 py-1 whitespace-nowrap border-r border-gray-200">
                                 {% if account.IsDelete %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        Deleted
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        Устгасан
                                     </span>
                                 {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Active
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Идэвхтэй
                                     </span>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ account.CreatedDate|date:"M d, Y" }}
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200">
+                                {{ account.CreatedDate|date:"Y-m-d" }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex space-x-2">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs font-medium">
+                                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
                                     <a href="{% url 'core:ref_asset_depreciation_account_edit' account.AstDepId %}" 
-                                       class="text-accounting-blue hover:text-accounting-blue-dark">
-                                        Edit
+                                       class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                       title="Засах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
                                     </a>
                                     {% if not account.IsDelete %}
                                     <form method="post" action="{% url 'core:ref_asset_depreciation_account_delete' account.AstDepId %}" 
                                           style="display: inline;" 
-                                          onsubmit="return confirm('Are you sure you want to delete this depreciation account? This action cannot be undone.');">
+                                          onsubmit="return confirm('Та энэ элэгдлийн дансыг устгахдаа итгэлтэй байна уу? Энэ үйлдлийг буцаах боломжгүй.');">
                                         {% csrf_token %}
-                                        <button type="submit" class="text-red-600 hover:text-red-900 bg-transparent border-none cursor-pointer">
-                                            Delete
+                                        <button type="submit" class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
                                         </button>
                                     </form>
                                     {% endif %}
@@ -108,30 +112,30 @@
 
             <!-- Pagination -->
             {% if depreciation_accounts.has_other_pages %}
-            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
                 <div class="flex-1 flex justify-between sm:hidden">
                     {% if depreciation_accounts.has_previous %}
                         <a href="?page={{ depreciation_accounts.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Previous
+                            Өмнөх
                         </a>
                     {% endif %}
                     {% if depreciation_accounts.has_next %}
                         <a href="?page={{ depreciation_accounts.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Next
+                            Дараа
                         </a>
                     {% endif %}
                 </div>
                 <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                         <p class="text-sm text-gray-700">
-                            Showing {{ depreciation_accounts.start_index }} to {{ depreciation_accounts.end_index }} of {{ depreciation_accounts.paginator.count }} results
+                            Нийт <span>{{ depreciation_accounts.paginator.count }}</span> бичлэгээс <span>{{ depreciation_accounts.start_index }}</span> - <span>{{ depreciation_accounts.end_index }}</span> бичлэг харагдаж байна
                         </p>
                     </div>
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                             {% if depreciation_accounts.has_previous %}
                                 <a href="?page={{ depreciation_accounts.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Previous</span>
+                                    <span class="sr-only">Өмнөх</span>
                                     <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                                     </svg>
@@ -140,7 +144,7 @@
                             
                             {% for num in depreciation_accounts.paginator.page_range %}
                                 {% if depreciation_accounts.number == num %}
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-accounting-blue bg-accounting-blue text-sm font-medium text-white">
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-500 text-sm font-medium text-white">
                                         {{ num }}
                                     </span>
                                 {% elif num > depreciation_accounts.number|add:'-3' and num < depreciation_accounts.number|add:'3' %}
@@ -152,7 +156,7 @@
                             
                             {% if depreciation_accounts.has_next %}
                                 <a href="?page={{ depreciation_accounts.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Next</span>
+                                    <span class="sr-only">Дараа</span>
                                     <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                                     </svg>
@@ -168,14 +172,14 @@
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No depreciation accounts found</h3>
-                <p class="mt-1 text-sm text-gray-500">Get started by creating a new asset depreciation account.</p>
+                <h3 class="mt-2 text-xs font-medium text-gray-900">Элэгдлийн данс олдсонгүй</h3>
+                <p class="mt-1 text-xs text-gray-500">Шинэ элэгдлийн данс үүсгэж эхлэх.</p>
                 <div class="mt-6">
-                    <a href="{% url 'core:ref_asset_depreciation_account_create' %}" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <a href="{% url 'core:ref_asset_depreciation_account_create' %}" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Add Depreciation Account
+                        <span class="text-xs">Нэмэх</span>
                     </a>
                 </div>
             </div>

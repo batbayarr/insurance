@@ -977,7 +977,25 @@ async function calculateDepreciationAmount(row) {
     try {
         const documentData = JSON.parse(documentDataScript.textContent);
         const documentDate = documentData.DocumentDate;
+        const documentTypeId = documentData.DocumentTypeId;
         
+        // For DocumentTypeId=10 (receipt), it's a new asset card
+        // No record in ast_beginning_balance → cumulated depreciation = 0
+        // No depreciation calculation needed → depreciation amount = 0
+        if (documentTypeId === 10) {
+            depreciationAmountInput.value = '0.00';
+            // Trigger ending depreciation calculation (will be 0 since cumulated depreciation is also 0)
+            if (typeof calculateEndingDepreciation === 'function') {
+                calculateEndingDepreciation(row);
+            }
+            // Update summary row totals
+            if (typeof updateSummaryRowTotals === 'function') {
+                updateSummaryRowTotals();
+            }
+            return;
+        }
+        
+        // For DocumentTypeId=11 (disposal) - KEEP ALL EXISTING LOGIC UNCHANGED
         if (!documentDate) {
             depreciationAmountInput.value = '0.00';
             return;
@@ -1000,7 +1018,7 @@ async function calculateDepreciationAmount(row) {
         const timeDiff = docDate.getTime() - begDate.getTime();
         const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1; // +1 to include both dates
         
-        // Calculate depreciation amount
+        // Calculate depreciation amount (EXISTING LOGIC FOR DocumentTypeId=11 - UNCHANGED)
         const depreciationAmount = daysDiff * dailyExpense;
         
         // Format with 2 decimal places and thousands separator
@@ -1051,16 +1069,38 @@ function calculateEndingDepreciation(row) {
         return;
     }
     
+    // Get document type from document-data JSON
+    const documentDataScript = document.getElementById('document-data');
+    let documentTypeId = null;
+    if (documentDataScript) {
+        try {
+            const documentData = JSON.parse(documentDataScript.textContent);
+            documentTypeId = documentData.DocumentTypeId;
+        } catch (e) {
+            console.error('Error parsing document data:', e);
+        }
+    }
+    
     try {
         // Get cumulated depreciation value (remove thousands separators)
+        // For DocumentTypeId=10: No record in ast_beginning_balance → will be 0
+        // For DocumentTypeId=11: May have record in ast_beginning_balance → value from there
         const cumulatedDepreciation = cumulatedDepreciationInput ? 
             parseFloat(cumulatedDepreciationInput.value.replace(/,/g, '')) || 0 : 0;
         
-        // Get depreciation amount value (remove thousands separators)
-        const depreciationAmount = depreciationAmountInput ? 
-            parseFloat(depreciationAmountInput.value.replace(/,/g, '')) || 0 : 0;
+        // For DocumentTypeId=10 (receipt), use only cumulated depreciation (which is 0 for new assets)
+        // No depreciation amount should be added
+        let depreciationAmount = 0;
+        if (documentTypeId === 10) {
+            // For new assets (DocumentTypeId=10), depreciation amount is always 0
+            depreciationAmount = 0;
+        } else {
+            // For DocumentTypeId=11 (disposal) and others - KEEP EXISTING LOGIC UNCHANGED
+            depreciationAmount = depreciationAmountInput ? 
+                parseFloat(depreciationAmountInput.value.replace(/,/g, '')) || 0 : 0;
+        }
         
-        // Calculate ending depreciation
+        // Calculate ending depreciation (EXISTING LOGIC - UNCHANGED)
         const endingDepreciation = cumulatedDepreciation + depreciationAmount;
         
         // Format with 2 decimal places and thousands separator

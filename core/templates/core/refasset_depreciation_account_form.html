@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ title }} - Silicon-AI Accounting{% endblock %}
+{% block title %}{% if is_edit %}Элэгдлийн данс шинэчлэх{% else %}Элэгдлийн данс үүсгэх{% endif %} - Silicon-AI Accounting{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
@@ -8,12 +8,12 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
-                    <p class="text-gray-600">
+                    <h1 class="text-2xl font-bold text-gray-900">{% if is_edit %}Элэгдлийн данс шинэчлэх{% else %}Элэгдлийн данс үүсгэх{% endif %}</h1>
+                    <p class="text-gray-600 text-xs">
                         {% if is_edit %}
-                            Update the asset depreciation account mapping
+                            Элэгдлийн дансны тохируулгыг шинэчлэх
                         {% else %}
-                            Create a new asset depreciation account mapping
+                            Шинэ элэгдлийн дансны тохируулга үүсгэх
                         {% endif %}
                     </p>
                 </div>
@@ -21,7 +21,7 @@
                     <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    Back to List
+                    Жагсаалт руу буцах
                 </a>
             </div>
         </div>
@@ -39,7 +39,7 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                            <h3 class="text-sm font-medium text-red-800">Дараах алдаануудыг засах:</h3>
                             <div class="mt-2 text-sm text-red-700">
                                 <ul class="list-disc list-inside space-y-1">
                                     {% for field, errors in form.errors.items %}
@@ -58,7 +58,7 @@
                 <!-- Asset Account -->
                 <div>
                     <label for="{{ form.AssetAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.AssetAccountId.label }}
+                        Хөрөнгийн данс
                         <span class="text-red-500">*</span>
                     </label>
                     {{ form.AssetAccountId }}
@@ -73,7 +73,7 @@
                 <!-- Depreciation Account -->
                 <div>
                     <label for="{{ form.DepreciationAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.DepreciationAccountId.label }}
+                        Элэгдлийн данс
                         <span class="text-red-500">*</span>
                     </label>
                     {{ form.DepreciationAccountId }}
@@ -88,7 +88,7 @@
                 <!-- Expense Account -->
                 <div>
                     <label for="{{ form.ExpenseAccountId.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.ExpenseAccountId.label }}
+                        Зардлын данс
                         <span class="text-red-500">*</span>
                     </label>
                     {{ form.ExpenseAccountId }}
@@ -105,7 +105,7 @@
                     <div class="flex items-center">
                         {{ form.IsDelete }}
                         <label for="{{ form.IsDelete.id_for_label }}" class="ml-2 block text-sm text-gray-900">
-                            {{ form.IsDelete.label }}
+                            Устгасан
                         </label>
                     </div>
                     {% if form.IsDelete.help_text %}
@@ -120,29 +120,29 @@
             <!-- Account Information Display -->
             {% if depreciation_account %}
             <div class="mt-8 bg-gray-50 rounded-lg p-4">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Дансны мэдээлэл</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <h4 class="text-sm font-medium text-gray-700">Asset Account</h4>
+                        <h4 class="text-sm font-medium text-gray-700">Хөрөнгийн данс</h4>
                         <p class="text-sm text-gray-900">{{ depreciation_account.AssetAccountId.AccountCode }} - {{ depreciation_account.AssetAccountId.AccountName }}</p>
                     </div>
                     <div>
-                        <h4 class="text-sm font-medium text-gray-700">Depreciation Account</h4>
+                        <h4 class="text-sm font-medium text-gray-700">Элэгдлийн данс</h4>
                         <p class="text-sm text-gray-900">{{ depreciation_account.DepreciationAccountId.AccountCode }} - {{ depreciation_account.DepreciationAccountId.AccountName }}</p>
                     </div>
                     <div>
-                        <h4 class="text-sm font-medium text-gray-700">Expense Account</h4>
+                        <h4 class="text-sm font-medium text-gray-700">Зардлын данс</h4>
                         <p class="text-sm text-gray-900">{{ depreciation_account.ExpenseAccountId.AccountCode }} - {{ depreciation_account.ExpenseAccountId.AccountName }}</p>
                     </div>
                 </div>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <h4 class="text-sm font-medium text-gray-700">Created</h4>
-                        <p class="text-sm text-gray-900">{{ depreciation_account.CreatedDate|date:"M d, Y" }} by {{ depreciation_account.CreatedBy.username }}</p>
+                        <h4 class="text-sm font-medium text-gray-700">Үүсгэсэн</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.CreatedDate|date:"Y-m-d" }} - {{ depreciation_account.CreatedBy.username }}</p>
                     </div>
                     <div>
-                        <h4 class="text-sm font-medium text-gray-700">Last Modified</h4>
-                        <p class="text-sm text-gray-900">{{ depreciation_account.ModifiedDate|date:"M d, Y" }} by {{ depreciation_account.ModifiedBy.username }}</p>
+                        <h4 class="text-sm font-medium text-gray-700">Сүүлд зассан</h4>
+                        <p class="text-sm text-gray-900">{{ depreciation_account.ModifiedDate|date:"Y-m-d" }} - {{ depreciation_account.ModifiedBy.username }}</p>
                     </div>
                 </div>
             </div>
@@ -151,19 +151,19 @@
             <!-- Form Actions -->
             <div class="mt-8 flex justify-end space-x-3">
                 <a href="{% url 'core:ref_asset_depreciation_account_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
-                    Cancel
+                    Цуцлах
                 </a>
                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
                     {% if is_edit %}
                         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        Update Depreciation Account
+                        Шинэчлэх
                     {% else %}
                         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Create Depreciation Account
+                        Нэмэх
                     {% endif %}
                 </button>
             </div>

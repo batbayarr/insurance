@@ -19,10 +19,13 @@
                     <option value="">-- Хугацаа сонгох --</option>
                 </select>
             </div>
+            <button id="show-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                ХАРУУЛАХ
+            </button>
             <button id="filter-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 ХААЛТ ХИЙХ
             </button>
-            <button id="restore-button" onclick="restoreView()" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <button id="restore-button" class="bg-blue-600 text-white whitespace-nowrap py-1 px-3 font-normal text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 ХААЛТ НЭЭХ
             </button>
         </div>
@@ -201,6 +204,153 @@
         }
     }
     
+    // Function to show records without calculating
+    async function showRecords() {
+        const periodDates = getSelectedPeriodDates();
+        
+        if (!periodDates) {
+            alert('Хугацаа сонгоно уу');
+            return;
+        }
+        
+        const startDate = periodDates.startDate;
+        const endDate = periodDates.endDate;
+        
+        const showButton = document.getElementById('show-button');
+        if (showButton) {
+            showButton.textContent = 'Ачаалж байна...';
+            showButton.disabled = true;
+        }
+        
+        try {
+            await fetchClosingJournalData(startDate, endDate);
+        } finally {
+            if (showButton) {
+                showButton.textContent = 'ХАРУУЛАХ';
+                showButton.disabled = false;
+            }
+        }
+    }
+    
+    // Function to check period lock
+    async function checkPeriodLock(date) {
+        try {
+            const response = await fetch(`/core/api/check-period-lock/?date=${date}`);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error checking period lock:', error);
+            return { is_locked: false };
+        }
+    }
+    
+    // Function to get CSRF token
+    function getCsrfToken() {
+        const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (token) return token;
+        
+        // Fallback: get from cookies
+        const name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue || '';
+    }
+    
+    // Function to set period lock status
+    async function setPeriodLockStatus(periodId, shouldBeLocked) {
+        try {
+            // First check current lock status
+            const period = periodsData.find(p => p.period_id === periodId);
+            if (!period) {
+                console.error('Period not found:', periodId);
+                return { success: false };
+            }
+            
+            // Only toggle if current status doesn't match desired status
+            if (period.is_locked !== shouldBeLocked) {
+                const csrfToken = getCsrfToken();
+                const periodIdInt = parseInt(periodId, 10);
+                const response = await fetch(`/core/period-lock/${periodIdInt}/toggle/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update local period data
+                    period.is_locked = data.isLock;
+                    // Refresh period dropdown to reflect new status
+                    populatePeriodDropdown();
+                    return { success: true, isLock: data.isLock };
+                } else {
+                    console.error('Failed to set period lock:', data.message);
+                    return { success: false, error: data.message };
+                }
+            } else {
+                // Already in desired state
+                return { success: true, isLock: period.is_locked };
+            }
+        } catch (error) {
+            console.error('Error setting period lock:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    // Function to show message modal
+    function showMessageModal(message, type = 'error', title = 'Анхааруулга') {
+        const modal = document.getElementById('message-modal');
+        const modalTitle = document.getElementById('message-modal-title');
+        const modalText = document.getElementById('message-modal-text');
+        const iconContainer = document.getElementById('message-modal-icon-container');
+        const errorIcon = document.getElementById('message-modal-icon-error');
+        const successIcon = document.getElementById('message-modal-icon-success');
+        const warningIcon = document.getElementById('message-modal-icon-warning');
+        const infoIcon = document.getElementById('message-modal-icon-info');
+        
+        if (!modal || !modalTitle || !modalText) {
+            alert(message);
+            return;
+        }
+        
+        modalText.textContent = message;
+        modalTitle.textContent = title;
+        
+        // Reset all icons
+        if (errorIcon) errorIcon.classList.add('hidden');
+        if (successIcon) successIcon.classList.add('hidden');
+        if (warningIcon) warningIcon.classList.add('hidden');
+        if (infoIcon) infoIcon.classList.add('hidden');
+        
+        // Show appropriate icon
+        if (type === 'error' && errorIcon) {
+            errorIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+        } else if (type === 'success' && successIcon) {
+            successIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+        } else if (type === 'warning' && warningIcon) {
+            warningIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+        } else if (type === 'info' && infoIcon) {
+            infoIcon.classList.remove('hidden');
+            if (iconContainer) iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
+        }
+        
+        modal.classList.remove('hidden');
+    }
+    
     async function applyDateFilter() {
         // Get dates from selected period
         const periodDates = getSelectedPeriodDates();
@@ -212,6 +362,13 @@
         
         const startDate = periodDates.startDate;
         const endDate = periodDates.endDate;
+        
+        // Check period lock before proceeding
+        const lockCheck = await checkPeriodLock(endDate);
+        if (lockCheck.is_locked) {
+            showMessageModal(lockCheck.message || 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.', 'error', 'Тухайн сар цоожлогдсон байна.');
+            return;
+        }
         
         apiCache.clear();
         
@@ -251,6 +408,16 @@
         // Fetch closing data using adjusted dates
         try {
             await fetchClosingJournalData(adjustedStartDate, adjustedEndDate);
+            
+            // After successful closing, set period lock to true
+            if (periodDates.periodId) {
+                const lockResult = await setPeriodLockStatus(periodDates.periodId, true);
+                if (lockResult.success) {
+                    console.log('Period locked successfully after closing');
+                } else {
+                    console.warn('Failed to lock period after closing:', lockResult.error);
+                }
+            }
         } finally {
             if (filterButton) {
                 filterButton.textContent = 'ХААЛТ ХИЙХ';
@@ -477,19 +644,22 @@
     
     async function restoreView() {
         // Get dates from selected period
-        let periodDates = getSelectedPeriodDates();
+        const periodDates = getSelectedPeriodDates();
         
-        // If no period selected, reset to default
         if (!periodDates) {
-            setDefaultPeriod();
-            periodDates = getSelectedPeriodDates();
-            if (!periodDates) {
+            alert('Хугацаа сонгоно уу');
             return;
-        }
         }
         
         const startDate = periodDates.startDate;
         const endDate = periodDates.endDate;
+        
+        // Check period lock before proceeding
+        const lockCheck = await checkPeriodLock(endDate);
+        if (lockCheck.is_locked) {
+            showMessageModal(lockCheck.message || 'Тухайн сар түгжигдсэн байна. Админы зөвшөөрлөөр эрх нээгдэнэ.', 'error', 'Тухайн сар цоожлогдсон байна.');
+            return;
+        }
         
         // Get period name for confirmation message
         const periodSelect = document.getElementById('period-select');
@@ -528,6 +698,16 @@
                     alert('Хаалтын бичлэг олдсонгүй');
                 }
                 
+                // After successful deletion, set period lock to false
+                if (periodDates.periodId) {
+                    const lockResult = await setPeriodLockStatus(periodDates.periodId, false);
+                    if (lockResult.success) {
+                        console.log('Period unlocked successfully after deletion');
+                    } else {
+                        console.warn('Failed to unlock period after deletion:', lockResult.error);
+                    }
+                }
+                
                 // Update button text for fetching
                 if (restoreButton) {
                     restoreButton.textContent = 'Ачаалж байна...';
@@ -547,7 +727,13 @@
     }
     
     // Event listeners
+    document.getElementById('show-button').addEventListener('click', showRecords);
     document.getElementById('filter-button').addEventListener('click', applyDateFilter);
+    document.getElementById('restore-button').addEventListener('click', restoreView);
 </script>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
 {% endblock %}
 

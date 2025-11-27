@@ -5432,6 +5432,52 @@ def api_asset_card_usage_check(request):
         }, status=500)
 
 
+@login_required
+@require_http_methods(["GET"])
+def api_check_asset_document_depreciation(request):
+    """Check if any assets in a document have depreciation records"""
+    document_id = request.GET.get('document_id')
+    
+    if not document_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'document_id parameter is required'
+        }, status=400)
+    
+    try:
+        document_id = int(document_id)
+    except (TypeError, ValueError):
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid document_id'
+        }, status=400)
+    
+    try:
+        # Get all asset cards in the document
+        asset_cards = Ast_Document_Item.objects.filter(
+            DocumentId_id=document_id
+        ).values_list('AssetCardId', flat=True).distinct()
+        
+        # Check if any have depreciation records
+        has_depreciation = AstDepreciationExpense.objects.filter(
+            AssetCardId__in=asset_cards
+        ).exists()
+        
+        message = 'элэгдлийн зардал бодогдсон тул энэ баримтыг засах боломжгүй. Баримтыг устган шинээр оруулаад элэгдлээ дахин сар бүрээр тооцоолно уу?' if has_depreciation else ''
+        
+        return JsonResponse({
+            'success': True,
+            'has_depreciation': has_depreciation,
+            'message': message
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error checking depreciation: {str(e)}'
+        }, status=500)
+
+
 # ==================== TRIAL CLOSING ENTRY VIEWS ====================
 
 @login_required

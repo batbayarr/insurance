@@ -144,8 +144,8 @@
                    <div class="flex items-center space-x-2">
                        <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
                        <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                           <option value="10">10</option>
-                           <option value="15" selected>15</option>
+                           <option value="10" selected>10</option>
+                           <option value="15">15</option>
                        </select>
                    </div>
                    <div>
@@ -194,7 +194,7 @@ if (!window.cashDocumentScriptLoaded) {
 let allDocumentsData = [];
 let filteredData = [];
 let currentPage = 1;
-let pageSize = 15;
+let pageSize = 10;
 let totalPages = 1;
 let currentApiRequest = null; // For AbortController to cancel previous API requests
 const currentUserId = {{ request.user.id }};
@@ -1283,6 +1283,7 @@ function calculateCashDocumentTotals() {
     });
     
     const difference = totalDebit - totalCredit;
+    const isBalanced = Math.abs(difference) < 0.01;
     
     // Update display elements
     const totalDebitElement = document.getElementById('display-total-debit');
@@ -1292,19 +1293,27 @@ function calculateCashDocumentTotals() {
     if (totalDebitElement) {
         const formattedDebit = totalDebit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalDebitElement.textContent = formattedDebit;
+        // Set color: green if balanced, red if not balanced
+        if (isBalanced) {
+            totalDebitElement.className = 'font-medium text-green-600';
+        } else {
+            totalDebitElement.className = 'font-medium text-red-600';
+        }
     }
     
     if (totalCreditElement) {
         const formattedCredit = totalCredit.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         totalCreditElement.textContent = formattedCredit;
+        // Set color: green if balanced, green if not balanced (always green for credit)
+        totalCreditElement.className = 'font-medium text-green-600';
     }
     
     if (balanceStatusElement) {
-        if (Math.abs(difference) < 0.01) {
-            balanceStatusElement.textContent = 'balanced ✓';
+        if (isBalanced) {
+            balanceStatusElement.textContent = 'гүйлгээ тэнцсэн ✓';
             balanceStatusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
         } else {
-            balanceStatusElement.textContent = `not balanced (${difference.toFixed(2)})`;
+            balanceStatusElement.textContent = `гүйлгээ тэнцээгүй (${difference.toFixed(2)})`;
             balanceStatusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
         }
     }
