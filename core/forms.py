@@ -416,7 +416,7 @@ class CashDocumentForm(forms.ModelForm):
         )
         
         # Configure foreign key fields with proper querysets
-        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 15, 16, 17, 18]).order_by('DocumentTypeId')
+        self.fields['DocumentTypeId'].queryset = Ref_Document_Type.objects.filter(IsDelete=False, DocumentTypeId__in=[1, 2, 3, 4, 14, 15, 16, 17, 18]).order_by('DocumentTypeId')
         self.fields['ClientId'].queryset = RefClient.objects.filter(IsDelete=False).order_by('ClientCode')
         self.fields['AccountId'].queryset = Ref_Account.objects.filter(IsDelete=False).order_by('AccountCode')
         self.fields['AccountId'].required = True

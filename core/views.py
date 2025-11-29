@@ -173,6 +173,7 @@ def refaccount_list(request):
     # If no explicit account_type filter but we have document_type_id, derive it
     # Mapping rules:
     # - Inventory documents (5,6,7) → account types 8,9,11
+    # - Document type 14 → account type 102
     # - ParentId == 1 → account type 1
     # - ParentId == 2 → account type 2
     # - Otherwise → account types 1,2,3,5,42,43,44,51,55,67,68,45,46,47,48
@@ -180,6 +181,9 @@ def refaccount_list(request):
         # Inventory documents: 5, 6, 7 → account types 8, 9, 11
         if str(document_type_id) in {'5', '6', '7'}:
             account_type_filter = '8,9,11'
+        # Document type 14 → account type 102
+        elif str(document_type_id) == '14':
+            account_type_filter = '102'
         else:
             # Fallback to ParentId mapping
             try:
@@ -4840,6 +4844,8 @@ def api_accounts_json(request):
         if not account_type_filter and document_type_id:
             if str(document_type_id) in {'5', '6', '7'}:
                 account_type_filter = '8,9,11'
+            elif str(document_type_id) == '14':
+                account_type_filter = '102'
             else:
                 try:
                     doc_type = Ref_Document_Type.objects.get(DocumentTypeId=document_type_id)
