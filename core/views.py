@@ -8676,6 +8676,143 @@ def api_template_details(request, template_id):
         }, status=500)
 
 
+def generate_cash_document_details(document, template_details, total_amount, vat_amount, net_amount):
+    """
+    Generate cash document detail records based on template logic.
+    Implements the same logic as fill-accounting-details-cash.js
+    
+    Args:
+        document: Cash_Document instance
+        template_details: QuerySet of Ref_Template_Detail objects
+        total_amount: Total amount in MNT (Decimal)
+        vat_amount: VAT amount in MNT (Decimal)
+        net_amount: Net amount in MNT (Decimal)
+    
+    Returns:
+        List of Cash_DocumentDetail instances (not saved)
+    """
+    detail_records = []
+    document_type_id = document.DocumentTypeId.DocumentTypeId
+    is_vat = document.IsVat
+    account_id = document.AccountId.AccountId
+    vat_account_id = document.VatAccountId.AccountId if document.VatAccountId else None
+    client_id = document.ClientId
+    currency_id = Ref_Currency.objects.get(CurrencyId=1)  # MNT
+    currency_exchange = Decimal('1.0')
+    
+    # If no template details, create a single detail row
+    if template_details is None or (template_details and template_details.count() == 0):
+        # Determine if debit or credit based on document type
+        # Income documents (1,3,15,18): Debit main account
+        # Expense documents (2,4,16,17): Credit main account
+        is_debit = document_type_id in [1, 3, 15, 18]
+        
+        detail = Cash_DocumentDetail(
+            DocumentId=document,
+            AccountId=document.AccountId,
+            ClientId=client_id,
+            CurrencyId=currency_id,
+            CurrencyExchange=currency_exchange,
+            CurrencyAmount=total_amount,
+            IsDebit=is_debit,
+            DebitAmount=total_amount if is_debit else Decimal('0'),
+            CreditAmount=total_amount if not is_debit else Decimal('0'),
+            CashFlowId=None
+        )
+        detail_records.append(detail)
+        return detail_records
+    
+    # Process each template detail
+    for template_detail in template_details:
+        account_id_detail = template_detail.AccountId.AccountId
+        is_debit = template_detail.IsDebit
+        cash_flow_id = template_detail.CashFlowId
+        
+        # Determine currency amount based on document type and VAT logic
+        currency_amount = Decimal('0')
+        
+        # Document types 1, 3, 15, 18 (Income Documents - Payable VAT)
+        if document_type_id in [1, 3, 15, 18]:
+            if not is_vat:
+                # Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows
+                currency_amount = total_amount
+            else:
+                # IsVat=true
+                is_vat_account = (vat_account_id is not None and 
+                                int(account_id_detail) == int(vat_account_id))
+                
+                if is_debit:
+                    # IsDebit=true
+                    if is_vat_account:
+                        # Case 3: IsDebit=true and accountid=VatAccountId -> CurrencyAmount=VatAmount
+                        currency_amount = vat_amount
+                    elif int(account_id_detail) == int(account_id):
+                        # Case 2: IsDebit=true and accountid=AccountId -> CurrencyAmount=TotalAmount
+                        currency_amount = total_amount
+                    else:
+                        # Case 4: IsDebit=true and accountid<>VatAccountId and accountid<>AccountId -> CurrencyAmount=NetAmount
+                        currency_amount = net_amount
+                else:
+                    # IsDebit=false (Credit)
+                    if is_vat_account:
+                        # VAT account (Credit) -> CurrencyAmount=VatAmount
+                        currency_amount = vat_amount
+                    elif int(account_id_detail) == int(account_id):
+                        # Main account (Credit) -> CurrencyAmount=TotalAmount
+                        currency_amount = total_amount
+                    else:
+                        # Other account (Credit) -> CurrencyAmount=NetAmount
+                        currency_amount = net_amount
+        
+        # Document types 2, 4, 16, 17 (Expense Documents - Receivable VAT)
+        elif document_type_id in [2, 4, 16, 17]:
+            if not is_vat:
+                # Case 1: IsVat=false -> CurrencyAmount=TotalAmount for all rows
+                currency_amount = total_amount
+            else:
+                # IsVat=true
+                is_vat_account = (vat_account_id is not None and 
+                                int(account_id_detail) == int(vat_account_id))
+                
+                if is_debit:
+                    # IsDebit=true
+                    if is_vat_account:
+                        # Case 3: accountid=VatAccountId -> CurrencyAmount=VatAmount
+                        currency_amount = vat_amount
+                    else:
+                        # Case 4: accountid<>VatAccountId -> CurrencyAmount=NetAmount
+                        currency_amount = net_amount
+                else:
+                    # IsDebit=false
+                    if int(account_id_detail) == int(account_id):
+                        # Case 2: accountid=AccountId -> CurrencyAmount=TotalAmount
+                        currency_amount = total_amount
+                    else:
+                        # Other account -> CurrencyAmount=NetAmount
+                        currency_amount = net_amount
+        
+        # For other document types, use total amount
+        else:
+            currency_amount = total_amount
+        
+        # Create detail record
+        detail = Cash_DocumentDetail(
+            DocumentId=document,
+            AccountId=template_detail.AccountId,
+            ClientId=client_id,
+            CurrencyId=currency_id,
+            CurrencyExchange=currency_exchange,
+            CurrencyAmount=currency_amount,
+            IsDebit=is_debit,
+            DebitAmount=currency_amount if is_debit else Decimal('0'),
+            CreditAmount=currency_amount if not is_debit else Decimal('0'),
+            CashFlowId=cash_flow_id
+        )
+        detail_records.append(detail)
+    
+    return detail_records
+
+
 @login_required
 @permission_required('core.add_cash_document', raise_exception=True)
 @require_http_methods(["POST"])
@@ -8746,11 +8883,13 @@ def api_cash_import_bulk(request):
             
             # Get TemplateId (can be null)
             template_id = row.get('TemplateId') if row.get('TemplateId') else None
+            template = None
             if template_id:
                 try:
                     template = Ref_Template.objects.get(TemplateId=template_id, IsDelete=False)
                 except Ref_Template.DoesNotExist:
                     template_id = None  # Ignore invalid TemplateId
+                    template = None
             
             validated_rows.append({
                 'row_index': i,
@@ -8760,6 +8899,7 @@ def api_cash_import_bulk(request):
                 'ClientId': row['ClientId'],
                 'AccountId': account.AccountId,
                 'TemplateId': template_id,
+                'Template': template,  # Store template object for later use
                 'IsVat': bool(row.get('IsVat', False)),
                 'CurrencyAmount': currency_amount,
                 'CurrencyMNT': currency_mnt
@@ -8802,6 +8942,40 @@ def api_cash_import_bulk(request):
                     
                     document_numbers.append(next_document_no)
                     
+                    # Determine VatAccountId based on document type if IsVat is True
+                    vat_account_id = None
+                    if validated_row['IsVat']:
+                        try:
+                            from .models import Ref_Constant
+                            # Document types 1, 3, 15, 18 (Income) -> Payable VAT (ConstantID=10)
+                            # Document types 2, 4, 16, 17 (Expense) -> Receivable VAT (ConstantID=9)
+                            if validated_row['DocumentTypeId'] in [1, 3, 15, 18]:
+                                vat_constant = Ref_Constant.objects.get(ConstantID=10)  # Payable VAT
+                            else:
+                                vat_constant = Ref_Constant.objects.get(ConstantID=9)  # Receivable VAT
+                            vat_account_id = int(vat_constant.ConstantName)
+                        except (Ref_Constant.DoesNotExist, ValueError, TypeError):
+                            # If VAT account cannot be determined, continue without VAT
+                            pass
+                    
+                    # Calculate VAT amount if IsVat is True
+                    total_amount = Decimal(str(validated_row['CurrencyMNT']))
+                    vat_amount = Decimal('0')
+                    net_amount = total_amount
+                    
+                    if validated_row['IsVat'] and vat_account_id:
+                        try:
+                            from .models import Ref_Constant
+                            vat_constant = Ref_Constant.objects.get(ConstantID=2)
+                            vat_percentage = Decimal(str(vat_constant.ConstantName))
+                            # Calculate VAT: VAT = MNT - (MNT / (1 + VAT% / 100))
+                            vat_amount = total_amount - (total_amount / (Decimal('1') + vat_percentage / Decimal('100')))
+                            net_amount = total_amount - vat_amount
+                        except (Ref_Constant.DoesNotExist, ValueError, TypeError):
+                            # If VAT calculation fails, treat as non-VAT
+                            vat_amount = Decimal('0')
+                            net_amount = total_amount
+                    
                     # Create Cash_Document
                     cash_document = Cash_Document(
                         DocumentNo=next_document_no,
@@ -8819,12 +8993,33 @@ def api_cash_import_bulk(request):
                         CurrencyId_id=1,  # MNT currency
                         ClientId_id=validated_row['ClientId'],
                         PaidClientId=None,
-                        CurrencyExchange=1,
+                        CurrencyExchange=Decimal('1.0'),
                         CurrencyMNT=validated_row['CurrencyMNT'],
                         AccountId_id=validated_row['AccountId'],
-                        TemplateId_id=validated_row['TemplateId']
+                        TemplateId_id=validated_row['TemplateId'],
+                        VatAccountId_id=vat_account_id if validated_row['IsVat'] else None
                     )
                     cash_document.save()
+                    
+                    # Fetch template details if template exists
+                    template_details = None
+                    if validated_row['Template']:
+                        template_details = Ref_Template_Detail.objects.filter(
+                            TemplateId=validated_row['Template']
+                        ).select_related('AccountId', 'CashFlowId').order_by('TemplateDetailId')
+                    
+                    # Generate and save detail records
+                    detail_records = generate_cash_document_details(
+                        document=cash_document,
+                        template_details=template_details,
+                        total_amount=total_amount,
+                        vat_amount=vat_amount,
+                        net_amount=net_amount
+                    )
+                    
+                    # Save all detail records
+                    for detail in detail_records:
+                        detail.save()
                     
                     # Create Ref_Document_Counter
                     Ref_Document_Counter.objects.create(
