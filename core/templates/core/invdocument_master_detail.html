@@ -55,6 +55,7 @@
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">НӨТ</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Агуулах</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">Загвар</th>
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                     </tr>
                     <!-- Filter Row -->
@@ -93,6 +94,10 @@
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
                             <input type="text" id="filter-created-by" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-template-id" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1">
@@ -241,6 +246,7 @@ function saveAllFiltersToLocalStorage() {
             isVat: getInputValue('filter-isvat'),
             warehouse: getInputValue('filter-warehouse'),
             createdBy: getInputValue('filter-created-by'),
+            templateId: getInputValue('filter-template-id'),
             pageSize: pageSize,
             currentPage: currentPage
         };
@@ -268,7 +274,8 @@ function clearAllClientSideFilters(preserveSelectedDocument = false) {
     const filterIds = [
         'filter-document-no', 'filter-document-type', 'filter-client',
         'filter-date', 'filter-description', 'filter-account',
-        'filter-isvat', 'filter-warehouse', 'filter-created-by'
+        'filter-isvat', 'filter-warehouse', 'filter-created-by',
+        'filter-template-id'
     ];
 
     filterIds.forEach(id => {
@@ -376,7 +383,8 @@ function initializeDateInputs() {
                 const filterIds = [
                     'filter-document-no', 'filter-document-type', 'filter-client',
                     'filter-date', 'filter-description', 'filter-account',
-                    'filter-isvat', 'filter-warehouse', 'filter-created-by'
+                    'filter-isvat', 'filter-warehouse', 'filter-created-by',
+                    'filter-template-id'
                 ];
 
                 filterIds.forEach(id => {
@@ -469,7 +477,8 @@ function initializeDateInputs() {
                 const filterIds = [
                     'filter-document-no', 'filter-document-type', 'filter-client',
                     'filter-date', 'filter-description', 'filter-account',
-                    'filter-isvat', 'filter-warehouse', 'filter-created-by'
+                    'filter-isvat', 'filter-warehouse', 'filter-created-by',
+                    'filter-template-id'
                 ];
 
                 const filterMap = {
@@ -481,7 +490,8 @@ function initializeDateInputs() {
                     'filter-account': 'account',
                     'filter-isvat': 'isVat',
                     'filter-warehouse': 'warehouse',
-                    'filter-created-by': 'createdBy'
+                    'filter-created-by': 'createdBy',
+                    'filter-template-id': 'templateId'
                 };
 
                 filterIds.forEach(filterId => {
@@ -497,7 +507,8 @@ function initializeDateInputs() {
                 const filterIds = [
                     'filter-document-no', 'filter-document-type', 'filter-client',
                     'filter-date', 'filter-description', 'filter-account',
-                    'filter-isvat', 'filter-warehouse', 'filter-created-by'
+                    'filter-isvat', 'filter-warehouse', 'filter-created-by',
+                    'filter-template-id'
                 ];
 
                 filterIds.forEach(id => {
@@ -560,7 +571,7 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
     }
     
     // Show loading state
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
     
     const urlParams = new URLSearchParams(window.location.search);
     let selectedDocumentId = selectedDocumentIdParam || urlParams.get('selected_document');
@@ -620,7 +631,7 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
                 }, 50);
             }
         } else {
-            tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
         }
     })
     .catch(error => {
@@ -630,7 +641,7 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
         // Only show error if it's not an abort error (abort is intentional)
         if (error.name !== 'AbortError') {
             console.error('Error fetching documents:', error);
-            tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>';
         }
         window.isInitialDocumentFilterLoad = false;
         // If AbortError, silently ignore (user triggered it by changing filters)
@@ -649,7 +660,8 @@ function applyFrontendFilter() {
         account: getFilterValue('filter-account'),
         isvat: getFilterValue('filter-isvat'),
         warehouse: getFilterValue('filter-warehouse'),
-        createdBy: getFilterValue('filter-created-by')
+        createdBy: getFilterValue('filter-created-by'),
+        templateId: getFilterValue('filter-template-id')
     };
     
     // Check for selected_document in URL parameter
@@ -733,6 +745,7 @@ function applyFrontendFilter() {
         }
         if (filters.warehouse && !(doc.WarehouseCode || '').toLowerCase().includes(filters.warehouse)) return false;
         if (filters.createdBy && !(doc.CreatedByUsername || '').toLowerCase().includes(filters.createdBy)) return false;
+        if (filters.templateId && !(doc.TemplateId || '').toString().includes(filters.templateId)) return false;
         return true;
     });
     
@@ -771,6 +784,7 @@ function renderDocumentsTable(documents) {
         tr.setAttribute('data-account-code', doc.AccountCode || '');
         tr.setAttribute('data-account-name', doc.AccountName || '');
         tr.setAttribute('data-warehouse-name', doc.WarehouseName || '');
+        tr.setAttribute('data-template-id', doc.TemplateId || '');
         
         // Build action buttons based on permissions
         let actionButtons = '';
@@ -845,6 +859,7 @@ function renderDocumentsTable(documents) {
                 <span class="warehouse-format" title="${doc.WarehouseCode || ''} - ${doc.WarehouseName || ''}">${doc.WarehouseCode || '-'}</span>
             </td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.CreatedByUsername || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.TemplateId || '-'}</td>
             <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
                 <div class="flex items-center justify-center space-x-2">
                     ${actionButtons}
@@ -1074,7 +1089,7 @@ function initializeFilterListeners() {
     const filterInputs = [
         'filter-document-no', 'filter-document-type', 'filter-client', 'filter-date',
         'filter-description', 'filter-account', 'filter-isvat', 'filter-warehouse',
-        'filter-created-by'
+        'filter-created-by', 'filter-template-id'
     ];
     
     filterInputs.forEach(filterId => {
@@ -1117,32 +1132,30 @@ function initializeEventHandlers() {
         // Handle manage details buttons
         const manageDetailsBtn = e.target.closest('.manage-details-btn');
         if (manageDetailsBtn) {
-            console.log('Manage Details button clicked!', manageDetailsBtn);
             e.stopPropagation();
             
             const documentId = manageDetailsBtn.getAttribute('data-document-id');
             const documentDate = manageDetailsBtn.getAttribute('data-document-date');
-            
-            console.log('Document ID:', documentId, 'Date:', documentDate);
+            const row = manageDetailsBtn.closest('tr[data-document-id]');
+            const templateId = row ? row.getAttribute('data-template-id') : null;
             
             // Check period lock before allowing manage details
-            checkPeriodLockForManageDetails(documentId, documentDate);
+            checkPeriodLockForManageDetails(documentId, documentDate, templateId);
             return;
         }
         
         // Handle edit document buttons
         const editBtn = e.target.closest('.edit-document-btn');
         if (editBtn) {
-            console.log('Edit button clicked!', editBtn);
             e.stopPropagation();
             
             const documentId = editBtn.getAttribute('data-document-id');
             const documentDate = editBtn.getAttribute('data-document-date');
-            
-            console.log('Document ID:', documentId, 'Date:', documentDate);
+            const row = editBtn.closest('tr[data-document-id]');
+            const templateId = row ? row.getAttribute('data-template-id') : null;
             
             // Check period lock before allowing edit
-            checkPeriodLockForEdit(documentId, documentDate);
+            checkPeriodLockForEdit(documentId, documentDate, templateId);
             return;
         }
         
@@ -1571,26 +1584,101 @@ window.calculateInventoryItemTotals = calculateInventoryItemTotals;
 window.calculateInventoryAccountingTotals = calculateInventoryAccountingTotals;
 console.log('✅ Inventory calculation functions defined in master-detail template');
 
-// Check period lock before allowing edit
-function checkPeriodLockForEdit(documentId, documentDate) {
-    console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
-    
-    if (!documentDate) {
-        console.log('No date, proceeding to edit');
-        // No date, proceed to edit
-        window.location.href = `/core/invdocuments/${documentId}/update/`;
+// Show confirmation modal with YES/NO buttons
+function showConfirmationModal(message, title, onYesCallback, templateId = null) {
+    const modal = document.getElementById('message-modal');
+    if (!modal) {
+        console.warn('Message modal not found, falling back to confirm');
+        if (confirm(message)) {
+            onYesCallback();
+        }
         return;
     }
     
-    console.log('Checking period lock for date:', documentDate);
+    // Get elements
+    const iconContainer = document.getElementById('message-modal-icon-container');
+    const titleElement = document.getElementById('message-modal-title');
+    const textElement = document.getElementById('message-modal-text');
+    const okButton = document.getElementById('message-modal-ok-btn');
+    const yesNoButtons = document.getElementById('message-modal-yesno-buttons');
+    const yesButton = document.getElementById('message-modal-yes-btn');
+    const noButton = document.getElementById('message-modal-no-btn');
+    
+    // Hide all icons
+    const icons = {
+        error: document.getElementById('message-modal-icon-error'),
+        success: document.getElementById('message-modal-icon-success'),
+        warning: document.getElementById('message-modal-icon-warning'),
+        info: document.getElementById('message-modal-icon-info')
+    };
+    
+    Object.values(icons).forEach(icon => {
+        if (icon) icon.classList.add('hidden');
+    });
+    
+    // Use warning icon for confirmation
+    if (iconContainer) {
+        iconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+    }
+    if (icons.warning) {
+        icons.warning.classList.remove('hidden');
+    }
+    
+    // Update title
+    if (titleElement) {
+        titleElement.textContent = title || 'Баталгаажуулах';
+    }
+    
+    // Update message - add TemplateId if provided
+    if (textElement) {
+        let messageText = message.replace(/\n/g, '<br>');
+        if (templateId && templateId !== '' && templateId !== 'null' && templateId !== 'undefined') {
+            messageText += `<br><br><strong>Таны гүйлгээ хийсэн загварын код: ${templateId}</strong>`;
+        }
+        textElement.innerHTML = messageText;
+    }
+    
+    // Hide OK button, show YES/NO buttons
+    if (okButton) {
+        okButton.classList.add('hidden');
+    }
+    if (yesNoButtons) {
+        yesNoButtons.classList.remove('hidden');
+        yesNoButtons.classList.add('flex');
+        yesNoButtons.style.display = 'flex';
+    }
+    
+    // Remove existing event listeners and add new one for YES button
+    const newYesButton = yesButton.cloneNode(true);
+    yesButton.parentNode.replaceChild(newYesButton, yesButton);
+    
+    newYesButton.addEventListener('click', function() {
+        modal.classList.add('hidden');
+        if (onYesCallback) {
+            onYesCallback();
+        }
+    });
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on YES button for accessibility
+    setTimeout(() => newYesButton.focus(), 100);
+}
+
+// Check period lock before allowing edit
+function checkPeriodLockForEdit(documentId, documentDate, templateId = null) {
+    if (!documentDate) {
+        // No date, proceed directly
+        window.location.href = `/core/invdocuments/${documentId}/update/`;
+        return;
+    }
     
     // Check period lock via API
     fetch(`/core/api/check-period-lock/?date=${documentDate}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response:', data);
             if (data.is_locked) {
-                console.log('Period is locked, showing modal');
                 // Show modal for locked period
                 if (typeof showMessageModal === 'function') {
                     showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
@@ -1598,8 +1686,7 @@ function checkPeriodLockForEdit(documentId, documentDate) {
                     alert(data.message);
                 }
             } else {
-                console.log('Period not locked, proceeding to edit');
-                // Not locked, proceed to edit
+                // Not locked, proceed directly
                 window.location.href = `/core/invdocuments/${documentId}/update/`;
             }
         })
@@ -1611,25 +1698,18 @@ function checkPeriodLockForEdit(documentId, documentDate) {
 }
 
 // Check period lock before allowing manage details
-function checkPeriodLockForManageDetails(documentId, documentDate) {
-    console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
-    
+function checkPeriodLockForManageDetails(documentId, documentDate, templateId = null) {
     if (!documentDate) {
-        console.log('No date, proceeding to manage details');
-        // No date, proceed to manage details
+        // No date, proceed directly
         window.location.href = `/core/invdocuments/${documentId}/bulk-manage-details/`;
         return;
     }
-    
-    console.log('Checking period lock for date:', documentDate);
     
     // Check period lock via API
     fetch(`/core/api/check-period-lock/?date=${documentDate}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Period lock API response:', data);
             if (data.is_locked) {
-                console.log('Period is locked, showing modal');
                 // Show modal for locked period
                 if (typeof showMessageModal === 'function') {
                     showMessageModal(data.message, 'error', 'Тухайн сар цоожлогдсон байна.');
@@ -1637,8 +1717,7 @@ function checkPeriodLockForManageDetails(documentId, documentDate) {
                     alert(data.message);
                 }
             } else {
-                console.log('Period not locked, proceeding to manage details');
-                // Not locked, proceed to manage details
+                // Not locked, proceed directly
                 window.location.href = `/core/invdocuments/${documentId}/bulk-manage-details/`;
             }
         })

@@ -4,17 +4,48 @@
 {% block title %}Template Management{% endblock %}
 
 {% block content %}
+{% if request.GET.popup == '1' %}
+<style>
+    /* Hide navigation and sidebar when in popup mode */
+    nav.bg-white.shadow-sm.border-b,
+    div.flex.h-screen.bg-gray-50 > div.w-64,
+    div.flex.h-screen.bg-gray-50 > div.w-72,
+    div.flex.h-screen.bg-gray-50 > div.w-80,
+    footer.bg-white.border-t {
+        display: none !important;
+    }
+    
+    /* Adjust main content to take full width */
+    div.flex.h-screen.bg-gray-50 {
+        display: block !important;
+        height: auto !important;
+    }
+    
+    main.flex-1.overflow-y-auto {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Remove body padding/margin for popup */
+    body.bg-gray-50 {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+</style>
+{% endif %}
 <div class="space-y-0">
     <div class="flex justify-between items-center py-1 lg:px-6 bg-white border-b border-gray-200">
         <div>
             <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ЗАГВАРЫН МОДУЛЬ</h1>                        
         </div>
+        {% if request.GET.popup != '1' %}
         <a href="{% url 'core:template_create' %}" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
             <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             <span class="text-xs">Нэмэх</span>
         </a>
+        {% endif %}
     </div>
     
     <div class="grid grid-cols-1 gap-3 py-2">
@@ -24,10 +55,10 @@
                             <table class="min-w-full divide-y divide-gray-200 table-auto">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">#</th>
-                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-60">Данс</th>
+                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">Код</th>
+                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-50">Данс</th>
                                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-28">Баримтын төрөл</th>
-                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-40">Загварынг нэр</th>
+                                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-50">Загварынг нэр</th>
                                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-16">НӨАТ</th>
                                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-24">Үйлдэл</th>
                                     </tr>
@@ -64,7 +95,7 @@
                                 <tbody id="templates-tbody" class="bg-white divide-y divide-gray-200">
                                     {% for template in templates %}
                                     <tr class="template-row hover:bg-gray-50 cursor-pointer" data-template-id="{{ template.TemplateId }}" onclick="selectTemplateFromRow(this)">
-                                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ forloop.counter }}</td>
+                                        <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ template.TemplateId }}</td>
                                         <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
                                             {% if template.AccountId %}
                                                 {{ template.AccountId.AccountCode }} - {{ template.AccountId.AccountName }}
@@ -83,6 +114,15 @@
                                         </td>
                                         <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                                             <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+                                                {% if request.GET.popup == '1' %}
+                                                <!-- In popup mode, only show select button -->
+                                                <button class="select-template text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 text-xs font-medium" 
+                                                        data-template-id="{{ template.TemplateId }}"
+                                                        title="Select Template">
+                                                    Сонгох
+                                                </button>
+                                                {% else %}
+                                                <!-- Normal mode: show all buttons -->
                                                 <button class="select-template text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
                                                         data-template-id="{{ template.TemplateId }}"
                                                         title="Select Template">
@@ -91,14 +131,15 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </button>
-                                                <a href="{% url 'core:template_update' template.TemplateId %}" 
-                                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
-                                                   title="Edit Template"
-                                                   onclick="event.stopPropagation()">
+                                                <button type="button"
+                                                        class="edit-template-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                                                        data-template-id="{{ template.TemplateId }}"
+                                                        title="Edit Template"
+                                                        onclick="event.stopPropagation()">
                                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                     </svg>
-                                                </a>
+                                                </button>
                                                 <button class="delete-template-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                                                         data-template-id="{{ template.TemplateId }}"
                                                         data-template-name="{{ template.TemplateName }}"
@@ -108,6 +149,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                     </svg>
                                                 </button>
+                                                {% endif %}
                                             </div>
                                         </td>
                                     </tr>
@@ -171,9 +213,11 @@
                     <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
                         <div class="flex justify-between items-center mb-4 px-4 pt-4">
                             <h3 class="text-lg font-medium text-gray-900">Загварын дэлгэрэнгүй</h3>
+                            {% if request.GET.popup != '1' %}
                             <button id="add-detail-btn" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 leading-none" disabled>
                                 <i class="fas fa-plus mr-1"></i>
                             </button>
+                            {% endif %}
                         </div>
                         <div id="detail-grid-container">
                             <div class="text-center text-gray-500 py-8">
@@ -198,7 +242,6 @@ function showMessageModal(message, type = 'error', title = null) {
     
     // Fallback to alert if modal not found
     if (!modal) {
-        console.warn('Message modal not found, falling back to alert');
         alert(message);
         return;
     }
@@ -208,6 +251,15 @@ function showMessageModal(message, type = 'error', title = null) {
     const titleElement = document.getElementById('message-modal-title');
     const textElement = document.getElementById('message-modal-text');
     const okButton = document.getElementById('message-modal-ok-btn');
+    const yesNoButtons = document.getElementById('message-modal-yesno-buttons');
+    
+    // Hide YES/NO buttons, show OK button (for backward compatibility)
+    if (yesNoButtons) {
+        yesNoButtons.classList.add('hidden');
+    }
+    if (okButton) {
+        okButton.classList.remove('hidden');
+    }
     
     // Hide all icons
     const icons = {
@@ -394,9 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = startIndex; i < endIndex; i++) {
             const row = templateFilteredRows[i];
             row.style.display = '';
-            // Update index column (first cell) with page-relative index
-            const indexCell = row.querySelector('td:nth-child(1)');
-            if (indexCell) indexCell.textContent = String((i - startIndex) + 1);
+            // TemplateId column is already set, no need to update
         }
         updateTemplatePaginationInfo(startIndex + 1, endIndex, total);
     }
@@ -433,7 +483,22 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function(e) {
             e.stopPropagation(); // Prevent row click
             const templateId = this.getAttribute('data-template-id');
-            selectTemplate(templateId);
+            
+            // Check if in popup mode
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPopup = urlParams.get('popup') === '1';
+            
+            if (isPopup) {
+                // In popup mode: load details first, then send to parent
+                selectTemplate(templateId);
+                // Small delay to ensure details are visible before sending
+                setTimeout(() => {
+                    sendTemplateToParent(templateId);
+                }, 100);
+            } else {
+                // Normal mode: just select template
+                selectTemplate(templateId);
+            }
         });
     });
     
@@ -445,20 +510,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle add detail button
     document.getElementById('add-detail-btn').addEventListener('click', function() {
-        console.log('Add detail button clicked, selectedTemplateId:', selectedTemplateId);
         if (selectedTemplateId) {
             const url = `/core/templates/${selectedTemplateId}/details/create/`;
-            console.log('Redirecting to:', url);
             window.location.href = url;
         } else {
-            console.log('No template selected');
             alert('Please select a template first');
         }
     });
     
+    // Handle edit template buttons
+    document.querySelectorAll('.edit-template-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const templateId = this.getAttribute('data-template-id');
+            if (templateId) {
+                checkTemplateEdit(templateId);
+            }
+        });
+    });
+    
     // Handle delete template buttons
     document.querySelectorAll('.delete-template-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const templateId = this.getAttribute('data-template-id');
             const templateName = this.getAttribute('data-template-name');
             const deleteUrl = `/core/templates/${templateId}/delete/`;
@@ -469,7 +545,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const confirmButton = document.getElementById('delete-confirm-btn');
             
             if (!modal || !modalText || !confirmButton) {
-                console.error('Delete modal elements not found');
                 return;
             }
             
@@ -503,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (!csrfValue) {
-                    console.error('CSRF token not found');
                     showMessageModal('CSRF token not found', 'error', 'Алдаа');
                     newConfirmButton.disabled = false;
                     newConfirmButton.textContent = 'Устгах';
@@ -547,7 +621,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    console.error('Delete error:', error);
                     modal.classList.add('hidden');
                     showMessageModal('Устгах үед алдаа гарлаа', 'error', 'Алдаа');
                     newConfirmButton.disabled = false;
@@ -560,8 +633,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Navigate directly to edit page
+    function checkTemplateEdit(templateId) {
+        window.location.href = `/core/templates/${templateId}/update/`;
+    }
+    
     function selectTemplate(templateId) {
-        console.log('selectTemplate called with templateId:', templateId);
+        // Check if opened in popup mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPopup = urlParams.get('popup') === '1';
+        
+        // Normal behavior - always load details and update UI
         selectedTemplateId = templateId;
         
         // Update UI
@@ -573,22 +655,54 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedRow) {
             selectedRow.classList.add('bg-blue-50', 'border-blue-200');
             selectedRow.classList.remove('hover:bg-gray-50');
+            // Scroll the selected row into view
+            selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         
-        // Enable add detail button
-        const addDetailBtn = document.getElementById('add-detail-btn');
-        if (addDetailBtn) {
-            addDetailBtn.disabled = false;
-            addDetailBtn.classList.remove('disabled:bg-gray-400');
-            addDetailBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            addDetailBtn.innerHTML = ' <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /> </svg>НЭМЭХ'; // Ensure text is correct
-            console.log('Add detail button enabled, disabled:', addDetailBtn.disabled);
-        } else {
-            console.error('Add detail button not found');
+        // Enable add detail button (only if not in popup mode)
+        if (!isPopup) {
+            const addDetailBtn = document.getElementById('add-detail-btn');
+            if (addDetailBtn) {
+                addDetailBtn.disabled = false;
+                addDetailBtn.classList.remove('disabled:bg-gray-400');
+                addDetailBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                addDetailBtn.innerHTML = ' <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /> </svg>НЭМЭХ';
+            }
         }
         
-        // Load template details via AJAX
+        // Load template details via AJAX (always, even in popup mode)
         loadTemplateDetails(templateId);
+    }
+    
+    // Function to send selected template back to parent window (called by select button in popup mode)
+    function sendTemplateToParent(templateId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPopup = urlParams.get('popup') === '1';
+        
+        if (!isPopup) {
+            return; // Not in popup mode, do nothing
+        }
+        
+        // Get template data from the row
+        const templateRow = document.querySelector(`tr[data-template-id="${templateId}"]`);
+        if (templateRow) {
+            const cells = templateRow.querySelectorAll('td');
+            const templateName = cells[3]?.textContent?.trim() || '';
+            const isVatText = cells[4]?.textContent?.toLowerCase() || '';
+            const isVat = isVatText.includes('тийм');
+            
+            // Send template data back to parent window
+            if (window.opener) {
+                window.opener.postMessage({
+                    type: 'templateSelected',
+                    template: {
+                        TemplateId: templateId,
+                        TemplateName: templateName,
+                        IsVat: isVat
+                    }
+                }, window.location.origin);
+            }
+        }
     }
     
     function loadTemplateDetails(templateId) {
@@ -612,15 +726,18 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                });
             }
             return response.text();
         })
         .then(html => {
             detailContainer.innerHTML = html;
+            // Re-initialize event handlers for template detail buttons after loading
+            initializeTemplateDetailHandlers();
         })
         .catch(error => {
-            console.error('Error loading template details:', error);
             detailContainer.innerHTML = `
                 <div class="text-center py-8 text-red-500">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
@@ -628,6 +745,181 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         });
+    }
+    
+    // Initialize event handlers for template detail edit/delete buttons
+    function initializeTemplateDetailHandlers() {
+        // Handle edit template detail buttons
+        document.querySelectorAll('.edit-template-detail-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const templateDetailId = this.getAttribute('data-template-detail-id');
+                if (templateDetailId) {
+                    // Navigate to edit page
+                    checkTemplateDetailEdit(templateDetailId);
+                }
+            });
+        });
+        
+        // Handle delete template detail buttons
+        document.querySelectorAll('.delete-template-detail-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const templateDetailId = this.getAttribute('data-template-detail-id');
+                if (templateDetailId) {
+                    // Check if template is used before allowing delete
+                    checkTemplateDetailDelete(templateDetailId);
+                }
+            });
+        });
+    }
+    
+    // Navigate directly to edit page
+    function checkTemplateDetailEdit(templateDetailId) {
+        window.location.href = `/core/templates/details/${templateDetailId}/update/`;
+    }
+    
+    // Check if template is used before allowing delete
+    function checkTemplateDetailDelete(templateDetailId) {
+        // Get CSRF token
+        let csrfToken = document.querySelector('meta[name="csrf-token"]');
+        let csrfValue = '';
+        
+        if (csrfToken) {
+            csrfValue = csrfToken.getAttribute('content');
+        } else {
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfInput) {
+                csrfValue = csrfInput.value;
+            }
+        }
+        
+        // Make AJAX call to check if delete is allowed
+        fetch(`/core/templates/details/${templateDetailId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfValue,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'csrfmiddlewaretoken=' + encodeURIComponent(csrfValue)
+        })
+        .then(response => {
+            // Check if response is JSON (error or success response)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json().then(data => {
+                    if (!data.success) {
+                        // Show error in message modal
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(data.message || 'Энэ загвараар гүйлгээ хийсэн байна. Эхлээд гүйлгээгээ устгана уу', 'error', 'Алдаа');
+                        } else {
+                            alert(data.message || 'Энэ загвараар гүйлгээ хийсэн байна. Эхлээд гүйлгээгээ устгана уу');
+                        }
+                    } else {
+                        // Success - reload the template details
+                        if (selectedTemplateId) {
+                            loadTemplateDetails(selectedTemplateId);
+                        } else {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+            // Regular HTML response - reload page
+            if (response.ok) {
+                if (selectedTemplateId) {
+                    loadTemplateDetails(selectedTemplateId);
+                } else {
+                    window.location.reload();
+                }
+            }
+        })
+        .catch(error => {
+            if (typeof showMessageModal === 'function') {
+                showMessageModal('Устгах үед алдаа гарлаа', 'error', 'Алдаа');
+            } else {
+                alert('Устгах үед алдаа гарлаа');
+            }
+        });
+    }
+    
+    // Initialize handlers on page load (for initial template details if any)
+    initializeTemplateDetailHandlers();
+    
+    // Pre-fill filters from URL parameters (for popup mode)
+    const urlParams = new URLSearchParams(window.location.search);
+    const accountId = urlParams.get('account_id');
+    const documentTypeId = urlParams.get('document_type_id');
+    const selectedTemplateParam = urlParams.get('selected_template');
+    
+    if (accountId || documentTypeId) {
+        // Wait for filters to be initialized and templates to be loaded
+        setTimeout(() => {
+            // Get account code and document type code from the template rows
+            const templateRows = document.querySelectorAll('tr.template-row');
+            if (templateRows.length > 0) {
+                // Use the first row to extract filter values
+                const firstRow = templateRows[0];
+                const cells = firstRow.querySelectorAll('td');
+                
+                // Account filter (column index 1)
+                if (accountId && cells.length > 1) {
+                    const accountCode = cells[1]?.textContent?.trim() || '';
+                    const accountFilter = document.getElementById('filter-account');
+                    if (accountFilter && accountCode) {
+                        accountFilter.value = accountCode;
+                    }
+                }
+                
+                // Document type filter (column index 2)
+                if (documentTypeId && cells.length > 2) {
+                    const docTypeCode = cells[2]?.textContent?.trim() || '';
+                    const docTypeFilter = document.getElementById('filter-document-type');
+                    if (docTypeFilter && docTypeCode) {
+                        docTypeFilter.value = docTypeCode;
+                    }
+                }
+                
+                // Apply filters after setting values
+                if ((accountId && document.getElementById('filter-account')?.value) || 
+                    (documentTypeId && document.getElementById('filter-document-type')?.value)) {
+                    applyTemplateFilters();
+                }
+            }
+        }, 500);
+    }
+    
+    // Auto-select template from URL parameter (after returning from detail creation)
+    if (selectedTemplateParam) {
+        // Wait for pagination and filters to be initialized
+        setTimeout(() => {
+            // Find the template in filtered rows to determine which page it's on
+            let foundPage = 1;
+            let templateFound = false;
+            
+            for (let i = 0; i < templateFilteredRows.length; i++) {
+                if (templateFilteredRows[i].getAttribute('data-template-id') === selectedTemplateParam) {
+                    foundPage = Math.floor(i / templatePageSize) + 1;
+                    templateFound = true;
+                    break;
+                }
+            }
+            
+            // If template is in filtered rows, navigate to the correct page first
+            if (templateFound && foundPage !== templateCurrentPage) {
+                changeTemplatePage(foundPage);
+                // Wait for page to render before selecting
+                setTimeout(() => {
+                    selectTemplate(selectedTemplateParam);
+                }, 50);
+            } else {
+                // Template is on current page or not in filtered rows, select it directly
+                selectTemplate(selectedTemplateParam);
+            }
+        }, 100);
     }
 });
 </script>

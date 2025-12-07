@@ -464,20 +464,42 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Set default dates if not provided
-document.addEventListener('DOMContentLoaded', function() {
+function setDefaultDateValues() {
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const beginDateParam = urlParams.get('begin_date');
+    const endDateParam = urlParams.get('end_date');
+    
+    const formatDateForInput = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
     const beginDateInput = document.getElementById('begin_date');
     const endDateInput = document.getElementById('end_date');
     
-    if (!beginDateInput.value) {
+    // Use URL parameters if available, otherwise use current month dates
+    if (beginDateParam && beginDateInput) {
+        beginDateInput.value = beginDateParam;
+    } else if (beginDateInput && !beginDateInput.value) {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        beginDateInput.value = firstDay.toISOString().split('T')[0];
+        beginDateInput.value = formatDateForInput(firstDay);
     }
     
-    if (!endDateInput.value) {
+    if (endDateParam && endDateInput) {
+        endDateInput.value = endDateParam;
+    } else if (endDateInput && !endDateInput.value) {
         const today = new Date();
-        endDateInput.value = today.toISOString().split('T')[0];
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDateInput.value = formatDateForInput(lastDay);
     }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setDefaultDateValues();
     
     // Initialize tab view based on active_tab from server
     const activeTabInput = document.getElementById('active_tab');

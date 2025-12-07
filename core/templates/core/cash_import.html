@@ -126,6 +126,39 @@
 </div>
 
 <script>
+    // Number formatting functions
+    function normalizeNumericValue(value) {
+        if (value === undefined || value === null) {
+            return '';
+        }
+        return value.toString().replace(/,/g, '').trim();
+    }
+
+    function parseNumericValue(value, defaultValue = 0) {
+        const normalized = normalizeNumericValue(value);
+        if (normalized === '') {
+            return defaultValue;
+        }
+        const parsed = parseFloat(normalized);
+        return isNaN(parsed) ? defaultValue : parsed;
+    }
+
+    function formatNumericString(value) {
+        if (value === undefined || value === null || value === '') {
+            return '';
+        }
+        const normalized = normalizeNumericValue(value);
+        if (normalized === '' || isNaN(normalized)) {
+            return normalized;
+        }
+        const num = parseFloat(normalized);
+        if (isNaN(num)) {
+            return '';
+        }
+        // Format with 2 decimal places and thousand separators
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
     // Message Modal Function
     function showMessageModal(message, type = 'error', title = null) {
         const modal = document.getElementById('message-modal');
@@ -139,6 +172,15 @@
         const titleElement = document.getElementById('message-modal-title');
         const textElement = document.getElementById('message-modal-text');
         const okButton = document.getElementById('message-modal-ok-btn');
+        const yesNoButtons = document.getElementById('message-modal-yesno-buttons');
+        
+        // Hide YES/NO buttons, show OK button (for backward compatibility)
+        if (yesNoButtons) {
+            yesNoButtons.classList.add('hidden');
+        }
+        if (okButton) {
+            okButton.classList.remove('hidden');
+        }
         
         // Hide all icons
         const icons = {
@@ -348,8 +390,8 @@
             // Convert date to YYYY-MM-DD format
             const dateString = convertDateToYYYYMMDD(cells[0]);
 
-            // Store data - expecting 6 columns: Огноо, Гүйлгээний утга, Кредит дүн, Дебит дүн, Данс, Харилцагч
-            // Note: Excel column 2 is Кредит дүн, column 3 is Дебит дүн (swapped in Excel)
+            // Store data - expecting 6 columns: Огноо, Гүйлгээний утга, Дебит дүн, Кредит дүн, Данс, Харилцагч
+            // Note: Excel column 2 is Дебит дүн, column 3 is Кредит дүн (matching table order: Debit before Credit)
             // Append ":имп" to Description
             const description = (cells[1] || '').trim();
             const descriptionWithImport = description ? description + ':имп' : '';
@@ -357,8 +399,8 @@
             importedData.push({
                 DocumentDate: dateString,
                 Description: descriptionWithImport,
-                DebitAmount: parseFloat(cells[3].replace(/,/g, '')) || 0, // Excel column 3 is Дебит дүн - use as-is
-                CreditAmount: parseFloat(cells[2].replace(/,/g, '')) || 0, // Excel column 2 is Кредит дүн - use as-is, no calculation
+                DebitAmount: Math.abs(parseFloat(cells[2].replace(/,/g, '')) || 0), // Excel column 2 is Дебит дүн - use absolute value
+                CreditAmount: Math.abs(parseFloat(cells[3].replace(/,/g, '')) || 0), // Excel column 3 is Кредит дүн - use absolute value
                 AccountCode: cells[4] || '',
                 AccountId: null, // Will be populated after lookup or modal selection
                 ClientCode: cells[5] || '', // Excel column 5 is Харилцагч (ClientName)
@@ -524,7 +566,7 @@
             descCell.appendChild(descInput);
             row.appendChild(descCell);
 
-            // DebitAmount - editable input
+            // DebitAmount - editable input with formatting
             const debitCell = document.createElement('td');
             if (invalidRowIndices.includes(actualRowIndex)) {
                 debitCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
@@ -532,13 +574,29 @@
                 debitCell.className = 'px-2 py-1 border border-gray-300';
             }
             const debitInput = document.createElement('input');
-            debitInput.type = 'number';
-            debitInput.step = '0.01';
-            debitInput.min = '0';
+            debitInput.type = 'text';
+            debitInput.inputMode = 'decimal';
             debitInput.className = 'w-full px-2 py-1 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
-            debitInput.value = rowData.DebitAmount || 0;
+            debitInput.value = formatNumericString(rowData.DebitAmount || 0);
+            debitInput.onfocus = () => {
+                // Show raw number when focused for easier editing
+                const rawValue = parseNumericValue(debitInput.value, 0);
+                debitInput.value = rawValue === 0 ? '' : rawValue.toString();
+            };
+            debitInput.onblur = () => {
+                // Format on blur
+                const parsed = parseNumericValue(debitInput.value, 0);
+                importedData[actualRowIndex].DebitAmount = parsed;
+                debitInput.value = formatNumericString(parsed);
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                }
+            };
             debitInput.onchange = () => {
-                importedData[actualRowIndex].DebitAmount = parseFloat(debitInput.value) || 0;
+                const parsed = parseNumericValue(debitInput.value, 0);
+                importedData[actualRowIndex].DebitAmount = parsed;
+                debitInput.value = formatNumericString(parsed);
                 // Remove from invalid rows if it was marked
                 if (invalidRowIndices.includes(actualRowIndex)) {
                     invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
@@ -548,7 +606,7 @@
             debitCell.appendChild(debitInput);
             row.appendChild(debitCell);
 
-            // CreditAmount - editable input
+            // CreditAmount - editable input with formatting
             const creditCell = document.createElement('td');
             if (invalidRowIndices.includes(actualRowIndex)) {
                 creditCell.className = 'px-2 py-1 border border-red-300 bg-red-50';
@@ -556,13 +614,29 @@
                 creditCell.className = 'px-2 py-1 border border-gray-300';
             }
             const creditInput = document.createElement('input');
-            creditInput.type = 'number';
-            creditInput.step = '0.01';
-            creditInput.min = '0';
+            creditInput.type = 'text';
+            creditInput.inputMode = 'decimal';
             creditInput.className = 'w-full px-2 py-1 text-xs text-right border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
-            creditInput.value = rowData.CreditAmount || 0;
+            creditInput.value = formatNumericString(rowData.CreditAmount || 0);
+            creditInput.onfocus = () => {
+                // Show raw number when focused for easier editing
+                const rawValue = parseNumericValue(creditInput.value, 0);
+                creditInput.value = rawValue === 0 ? '' : rawValue.toString();
+            };
+            creditInput.onblur = () => {
+                // Format on blur
+                const parsed = parseNumericValue(creditInput.value, 0);
+                importedData[actualRowIndex].CreditAmount = parsed;
+                creditInput.value = formatNumericString(parsed);
+                // Remove from invalid rows if it was marked
+                if (invalidRowIndices.includes(actualRowIndex)) {
+                    invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);
+                }
+            };
             creditInput.onchange = () => {
-                importedData[actualRowIndex].CreditAmount = parseFloat(creditInput.value) || 0;
+                const parsed = parseNumericValue(creditInput.value, 0);
+                importedData[actualRowIndex].CreditAmount = parsed;
+                creditInput.value = formatNumericString(parsed);
                 // Remove from invalid rows if it was marked
                 if (invalidRowIndices.includes(actualRowIndex)) {
                     invalidRowIndices = invalidRowIndices.filter(idx => idx !== actualRowIndex);

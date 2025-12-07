@@ -32,14 +32,30 @@
                 </p>
             </div>
             
-            <!-- OK Button -->
-            <div class="items-center px-4 py-3">
+            <!-- Button Container -->
+            <div id="message-modal-button-container" class="items-center px-4 py-3">
+                <!-- OK Button (default, single button) -->
                 <button type="button" 
                         id="message-modal-ok-btn"
                         onclick="document.getElementById('message-modal').classList.add('hidden')" 
                         class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-24 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
                     OK
                 </button>
+                
+                <!-- YES/NO Buttons (hidden by default) -->
+                <div id="message-modal-yesno-buttons" class="hidden justify-center space-x-3" style="display: none;">
+                    <button type="button" 
+                            id="message-modal-yes-btn"
+                            class="px-6 py-2 bg-green-500 text-white text-base font-medium rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                        Тийм
+                    </button>
+                    <button type="button" 
+                            id="message-modal-no-btn"
+                            onclick="document.getElementById('message-modal').classList.add('hidden')" 
+                            class="px-6 py-2 bg-gray-500 text-white text-base font-medium rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Үгүй
+                    </button>
+                </div>
             </div>
         </div>
     </div>

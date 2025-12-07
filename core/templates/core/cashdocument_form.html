@@ -132,20 +132,23 @@
                 <!-- Template -->
                 <div class="grid grid-cols-[1fr_4fr] border-b border-gray-200 p-2">
                     <div class="flex items-center border-r border-gray-200 pr-2">
-                        <label for="TemplateId" class="text-xs text-gray-700 font-normal uppercase">
+                        <label for="TemplateIdDisplay" class="text-xs text-gray-700 font-normal uppercase">
                             ГҮЙЛГЭЭНИЙ ЗАГВАР:
                         </label>
                     </div>
                     <div class="flex justify-start pl-2">
                         <div class="relative w-full">
-                            <select id="TemplateId" 
-                                    name="TemplateId" 
-                                    class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white appearance-none"
-                                    onchange="handleTemplateSelection(this)"
-                                    value="{% if item and item.TemplateId %}{{ item.TemplateId.TemplateId }}{% endif %}">
-                                <option value="">Template сонгоно уу?</option>
-                                <!-- Templates will be populated dynamically -->
-                            </select>
+                            <input type="text" 
+                                   id="TemplateIdDisplay" 
+                                   readonly
+                                   value="{% if item and item.TemplateId %}{{ item.TemplateId.TemplateName }}{% endif %}"
+                                   class="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-gray-50"
+                                   placeholder="Click to select template"
+                                   onclick="openTemplateSelectionPopup(this)">
+                            <input type="hidden" 
+                                   name="TemplateId" 
+                                   id="TemplateId" 
+                                   value="{% if item and item.TemplateId %}{{ item.TemplateId.TemplateId }}{% endif %}">
                             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                 <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -659,8 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setVatAccountForDocumentType(this.value);
             }
             
-            // Update templates when document type changes
-            updateTemplateDropdown();
+            // Template selection is now done via popup, no need to update dropdown
         });
     }
     
@@ -1071,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
-                    updateTemplateDropdown();
+                    // Template selection is now done via popup, no need to update dropdown
                     // Also update CurrencyExchange readonly state when account changes
                     // (CurrencyId is typically set when AccountId is set)
                     setTimeout(updateCurrencyExchangeReadonly, 100);
@@ -1082,22 +1084,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Also listen for direct value changes
         accountIdField.addEventListener('change', function() {
-            updateTemplateDropdown();
+            // Template selection is now done via popup, no need to update dropdown
             // Update CurrencyExchange readonly state when account changes
             setTimeout(updateCurrencyExchangeReadonly, 100);
         });
     }
     
-    // Initialize template dropdown on page load if editing and both AccountId and DocumentTypeId are present
-    if (accountIdField && documentTypeSelect && templateSelect) {
-        const accountValue = accountIdField.value;
-        const documentTypeValue = documentTypeSelect.value;
-        
-        if (accountValue && documentTypeValue) {
-            // Call updateTemplateDropdown to populate templates and restore saved TemplateId
-            updateTemplateDropdown();
-        }
-    }
+    // Template selection is now done via popup, no need to initialize dropdown on page load
+    // The template field will be populated from the saved value if editing
 });
 
 // Function to handle account selection with document type validation
@@ -1141,6 +1135,100 @@ function handleAccountSelection(accountDisplayInput) {
         modalTitle: 'Select Cash Account', 
         modalSubtitle: 'Choose an account for cash transactions' 
     });
+}
+
+// Function to open template selection popup
+function openTemplateSelectionPopup(templateDisplayInput) {
+    // Check if account and document type are selected first
+    const accountIdField = document.getElementById('AccountId');
+    const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+    
+    if (!accountIdField || !accountIdField.value) {
+        Silicon4Message.error('account-required');
+        const accountErrorDiv = document.getElementById('account-id-error');
+        if (accountErrorDiv) {
+            accountErrorDiv.textContent = 'Please select account first.';
+        }
+        return false;
+    }
+    
+    if (!documentTypeSelect || !documentTypeSelect.value) {
+        Silicon4Message.error('document-type-required');
+        if (documentTypeSelect) {
+            documentTypeSelect.focus();
+            documentTypeSelect.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                documentTypeSelect.style.borderColor = '';
+            }, 3000);
+        }
+        return false;
+    }
+    
+    // Build URL with filters
+    const accountId = accountIdField.value;
+    const documentTypeId = documentTypeSelect.value;
+    const url = `/core/templates/?account_id=${encodeURIComponent(accountId)}&document_type_id=${encodeURIComponent(documentTypeId)}&popup=1`;
+    
+    // Calculate center position for popup
+    const width = 1200;
+    const height = 800;
+    const left = (screen.width / 2) - (width / 2);
+    const top = (screen.height / 2) - (height / 2);
+    
+    // Open popup window centered
+    const popup = window.open(
+        url,
+        'templateSelection',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+    );
+    
+    // Listen for message from popup
+    const messageHandler = function(event) {
+        // Verify origin for security
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+        
+        if (event.data && event.data.type === 'templateSelected') {
+            const templateData = event.data.template;
+            
+            // Update hidden field
+            const templateIdField = document.getElementById('TemplateId');
+            if (templateIdField) {
+                templateIdField.value = templateData.TemplateId;
+            }
+            
+            // Update display field
+            if (templateDisplayInput) {
+                templateDisplayInput.value = templateData.TemplateName + (templateData.IsVat ? ' (VAT)' : '');
+            }
+            
+            // Trigger template selection handler
+            if (typeof handleTemplateSelection === 'function') {
+                // Create a mock select element for compatibility
+                const mockSelect = {
+                    value: templateData.TemplateId,
+                    options: [{
+                        getAttribute: function(attr) {
+                            return attr === 'data-isvat' ? String(templateData.IsVat) : null;
+                        }
+                    }],
+                    selectedIndex: 0
+                };
+                handleTemplateSelection(mockSelect);
+            }
+            
+            // Remove event listener
+            window.removeEventListener('message', messageHandler);
+            
+            // Close popup
+            if (popup) {
+                popup.close();
+            }
+        }
+    };
+    
+    window.addEventListener('message', messageHandler);
 }
 
 // Function to update template dropdown based on selected AccountId and DocumentTypeId

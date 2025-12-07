@@ -24,6 +24,15 @@ window.showMessageModal = function(message, type = 'error', title = null) {
     const titleElement = document.getElementById('message-modal-title');
     const textElement = document.getElementById('message-modal-text');
     const okButton = document.getElementById('message-modal-ok-btn');
+    const yesNoButtons = document.getElementById('message-modal-yesno-buttons');
+    
+    // Hide YES/NO buttons, show OK button (for backward compatibility)
+    if (yesNoButtons) {
+        yesNoButtons.classList.add('hidden');
+    }
+    if (okButton) {
+        okButton.classList.remove('hidden');
+    }
     
     // Hide all icons
     const icons = {

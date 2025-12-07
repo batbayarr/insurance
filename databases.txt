@@ -1,4 +1,4 @@
-test,silicon4fresh,"ZayaAI-2025"
+lkham,kharkhiraat2025,"Kharkhiraat-2025"
 test,otgoo,"Shinee-2025"
 6553621,devjikh2025,"DevjihHurd 2025"
 test,test,"Test-2025"

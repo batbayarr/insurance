@@ -269,6 +269,12 @@
     // Local FillAccountingDetails wrapper function for cash documents
     window.FillAccountingDetails = function() {
         console.log('FillAccountingDetails wrapper called');
+        console.log('Checking tbody state before fill:', {
+            tbodyExists: !!document.getElementById('details-tbody'),
+            tbodyChildren: document.getElementById('details-tbody')?.children.length || 0,
+            tbodyRows: document.getElementById('details-tbody')?.querySelectorAll('tr').length || 0
+        });
+        
         window.fillAccountingDetailsHasRun = true; // Set flag to prevent fixIncorrectDebitCreditLogic from running
         window.disableEventListeners = true;
         const state = getCashAutoFillState();
@@ -279,6 +285,7 @@
     const documentDataElement = document.getElementById('document-data');
     if (documentDataElement) {
         const docData = JSON.parse(documentDataElement.textContent);
+        console.log('FillAccountingDetails: Document data check - CurrencyId:', docData.CurrencyId, 'TemplateId:', docData.TemplateId);
         if (docData.CurrencyId && docData.CurrencyId > 1) {
             console.log('FillAccountingDetails: CurrencyId is', docData.CurrencyId, '(> 1), skipping automatic fill.');
             window.disableEventListeners = false;
@@ -286,6 +293,11 @@
             state.manualEditing = true;
             return;
         }
+    } else {
+        console.error('FillAccountingDetails: document-data element not found!');
+        window.disableEventListeners = false;
+        state.isRunning = false;
+        return;
     }
     
     // Configuration for cash documents
@@ -300,13 +312,21 @@
     };
     
     console.log('Calling FillAccountingDetailsCashGeneric with config:', config);
+    console.log('addNewDetailRowForCash function available:', typeof addNewDetailRowForCash);
+    console.log('updateBalanceDisplay function available:', typeof updateBalanceDisplay);
     
     // Call the cash-specific generic function
     if (typeof window.FillAccountingDetailsCashGeneric === 'function') {
-        window.FillAccountingDetailsCashGeneric(config);
-        // After table is filled, run bulk row adjustments
-        if (typeof window.bulkAdjustRows === 'function') {
-            window.bulkAdjustRows();
+        try {
+            window.FillAccountingDetailsCashGeneric(config);
+            console.log('FillAccountingDetailsCashGeneric completed');
+            // After table is filled, run bulk row adjustments
+            if (typeof window.bulkAdjustRows === 'function') {
+                window.bulkAdjustRows();
+                console.log('bulkAdjustRows completed');
+            }
+        } catch (error) {
+            console.error('Error in FillAccountingDetailsCashGeneric:', error);
         }
     } else {
         console.error('FillAccountingDetailsCashGeneric function not found');
@@ -317,6 +337,8 @@
     const stateAfterFill = getCashAutoFillState();
     stateAfterFill.isRunning = false;
     stateAfterFill.manualEditing = true;
+    
+    console.log('FillAccountingDetails wrapper completed');
 };
 
 // Helper function to add new detail row for cash documents
@@ -681,16 +703,98 @@ document.addEventListener('DOMContentLoaded', function() {
             const detailRows = document.querySelectorAll('#details-tbody tr');
             
             detailRows.forEach((row, index) => {
-                // Look for both existing and new row patterns
-                const accountId = row.querySelector('input[name*="account_id"]')?.value || row.querySelector('input[name*="new_account_id"]')?.value;
-                const clientId = row.querySelector('input[name*="client_id"]')?.value || row.querySelector('input[name*="new_client_id"]')?.value;
-                const currencyId = row.querySelector('select[name*="currency_id"]')?.value || row.querySelector('select[name*="new_currency_id"]')?.value;
-                const currencyExchange = normalizeNumericValue(row.querySelector('input[name*="currency_exchange"]')?.value || row.querySelector('input[name*="new_currency_exchange"]')?.value || '');
-                const currencyAmount = normalizeNumericValue(row.querySelector('input[name*="currency_amount"]')?.value || row.querySelector('input[name*="new_currency_amount"]')?.value || '');
-                const isDebit = row.querySelector('select[name*="is_debit"]')?.value || row.querySelector('select[name*="new_is_debit"]')?.value;
-                const cashflowId = row.querySelector('select[name*="cashflow_id"]')?.value || row.querySelector('select[name*="new_cashflow_id"]')?.value;
-                const contractId = row.querySelector('select[name*="contract_id"]')?.value || row.querySelector('select[name*="new_contract_id"]')?.value;
+                // Skip deleted or hidden rows
+                if (row.style.display === 'none' || row.classList.contains('deleted-row')) {
+                    return;
+                }
                 
+                // Check if this is an existing row (has data-detail-id) or new row
+                const detailId = row.getAttribute('data-detail-id');
+                const isExistingRow = detailId !== null && detailId !== '';
+                
+                let accountId, clientId, currencyId, currencyExchange, currencyAmount, isDebit, cashflowId, contractId;
+                
+                if (isExistingRow) {
+                    // Existing row: use exact field names with detailId
+                    // Pattern: account_id_{{ detail.DocumentDetailId }}
+                    accountId = row.querySelector(`input[name="account_id_${detailId}"]`)?.value;
+                    clientId = row.querySelector(`input[name="client_id_${detailId}"]`)?.value;
+                    currencyId = row.querySelector(`select[name="currency_id_${detailId}"]`)?.value;
+                    currencyExchange = normalizeNumericValue(row.querySelector(`input[name="currency_exchange_${detailId}"]`)?.value || '');
+                    currencyAmount = normalizeNumericValue(row.querySelector(`input[name="currency_amount_${detailId}"]`)?.value || '');
+                    isDebit = row.querySelector(`select[name="is_debit_${detailId}"]`)?.value;
+                    cashflowId = row.querySelector(`select[name="cashflow_id_${detailId}"]`)?.value;
+                    contractId = row.querySelector(`select[name="contract_id_${detailId}"]`)?.value;
+                } else {
+                    // New row: find the counter from any input/select name
+                    // Pattern: new_account_id_${counter}
+                    const anyInput = row.querySelector('input[name*="new_"], select[name*="new_"]');
+                    if (anyInput) {
+                        const nameMatch = anyInput.name.match(/new_\w+_(\d+)/);
+                        const counter = nameMatch ? nameMatch[1] : null;
+                        
+                        if (counter !== null) {
+                            accountId = row.querySelector(`input[name="new_account_id_${counter}"]`)?.value;
+                            clientId = row.querySelector(`input[name="new_client_id_${counter}"]`)?.value;
+                            currencyId = row.querySelector(`select[name="new_currency_id_${counter}"]`)?.value;
+                            currencyExchange = normalizeNumericValue(row.querySelector(`input[name="new_currency_exchange_${counter}"]`)?.value || '');
+                            currencyAmount = normalizeNumericValue(row.querySelector(`input[name="new_currency_amount_${counter}"]`)?.value || '');
+                            isDebit = row.querySelector(`select[name="new_is_debit_${counter}"]`)?.value;
+                            cashflowId = row.querySelector(`select[name="new_cashflow_id_${counter}"]`)?.value;
+                            contractId = row.querySelector(`select[name="new_contract_id_${counter}"]`)?.value;
+                        }
+                    }
+                }
+                
+                // Fallback to generic search if specific search didn't work (for edge cases)
+                if (!accountId) {
+                    const accountInput = row.querySelector('input[name*="account_id"]');
+                    if (accountInput) {
+                        accountId = accountInput.value;
+                    }
+                }
+                if (!clientId) {
+                    const clientInput = row.querySelector('input[name*="client_id"]');
+                    if (clientInput) {
+                        clientId = clientInput.value;
+                    }
+                }
+                if (!currencyId) {
+                    const currencySelect = row.querySelector('select[name*="currency_id"]');
+                    if (currencySelect) {
+                        currencyId = currencySelect.value;
+                    }
+                }
+                if (!currencyExchange) {
+                    const exchangeInput = row.querySelector('input[name*="currency_exchange"]');
+                    if (exchangeInput) {
+                        currencyExchange = normalizeNumericValue(exchangeInput.value || '');
+                    }
+                }
+                if (!currencyAmount) {
+                    const amountInput = row.querySelector('input[name*="currency_amount"]');
+                    if (amountInput) {
+                        currencyAmount = normalizeNumericValue(amountInput.value || '');
+                    }
+                }
+                if (!isDebit) {
+                    const isDebitSelect = row.querySelector('select[name*="is_debit"]');
+                    if (isDebitSelect) {
+                        isDebit = isDebitSelect.value;
+                    }
+                }
+                if (!cashflowId) {
+                    const cashflowSelect = row.querySelector('select[name*="cashflow_id"]');
+                    if (cashflowSelect) {
+                        cashflowId = cashflowSelect.value;
+                    }
+                }
+                if (!contractId) {
+                    const contractSelect = row.querySelector('select[name*="contract_id"]');
+                    if (contractSelect) {
+                        contractId = contractSelect.value;
+                    }
+                }
                 
                 if (accountId && currencyAmount && isDebit) {
                     details.push({
@@ -702,6 +806,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         is_debit: isDebit,
                         cashflow_id: cashflowId || null,
                         contract_id: contractId || null
+                    });
+                } else {
+                    console.warn(`Skipping row ${index}: missing required fields`, {
+                        accountId: accountId,
+                        currencyAmount: currencyAmount,
+                        isDebit: isDebit,
+                        isExistingRow: isExistingRow,
+                        detailId: detailId,
+                        rowClass: row.className
                     });
                 }
             });
@@ -791,34 +904,81 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-populate rows if table is empty
     const tbody = document.getElementById('details-tbody');
     if (tbody) {
+        // Check for existing detail rows
+        // IMPORTANT: Only count rows with VALID numeric data-detail-id (actual saved records)
+        // Temporary rows (created by view when no details exist) have empty/None data-detail-id
+        const allRows = tbody.querySelectorAll('tr');
+        const existingRows = Array.from(allRows).filter(row => {
+            const detailId = row.getAttribute('data-detail-id');
+            
+            // Check if it's a valid numeric ID (not empty, not None, not undefined, is a number)
+            const hasValidDetailId = detailId !== null && 
+                                     detailId !== '' && 
+                                     detailId !== 'undefined' && 
+                                     detailId !== 'None' &&
+                                     !isNaN(parseInt(detailId)) && // Must be a valid number
+                                     parseInt(detailId) > 0; // Must be positive
+            
+            const isDeleted = row.classList.contains('deleted-row') || row.style.display === 'none';
+            const isNewRow = row.classList.contains('new-row');
+            
+            // Only count as existing if it has a valid detail ID (saved record)
+            return hasValidDetailId && !isDeleted && !isNewRow;
+        });
+        
         const visibleRows = tbody.querySelectorAll('tr:not(.deleted-row)');
         const visibleCount = visibleRows.length;
+        const existingCount = existingRows.length;
         
-        // Check if we have template data and should use FillAccountingDetails
-        const documentDataElement = document.getElementById('document-data');
-        if (documentDataElement) {
-            const docData = JSON.parse(documentDataElement.textContent);
-            console.log('Document data debug:', {
-                TemplateId: docData.TemplateId,
-                template_details_count: docData.template_details ? docData.template_details.length : 0,
-                template_details: docData.template_details,
-                visibleRowsCount: visibleCount
-            });
-            
-            if (docData.TemplateId && docData.template_details && docData.template_details.length > 0) {
-                // Use FillAccountingDetails for template-based population
-                console.log('Auto-triggering FillAccountingDetails for template data');
-                console.log('Template details before FillAccountingDetails:', docData.template_details);
-                window.FillAccountingDetails();
+        console.log('Row count check:', {
+            totalRows: allRows.length,
+            visibleCount: visibleCount,
+            existingCount: existingCount,
+            hasExistingRows: existingCount > 0,
+            hasTemporaryRows: allRows.length > existingCount
+        });
+        
+        // Only auto-populate if there are NO existing detail records (with valid IDs)
+        // Temporary rows (without valid IDs) should be ignored
+        if (existingCount === 0) {
+            // Check if we have template data and should use FillAccountingDetails
+            const documentDataElement = document.getElementById('document-data');
+            if (documentDataElement) {
+                const docData = JSON.parse(documentDataElement.textContent);
+                console.log('Document data debug:', {
+                    TemplateId: docData.TemplateId,
+                    template_details_count: docData.template_details ? docData.template_details.length : 0,
+                    template_details: docData.template_details,
+                    visibleRowsCount: visibleCount
+                });
+                
+                if (docData.TemplateId && docData.template_details && docData.template_details.length > 0) {
+                    // Use FillAccountingDetails for template-based population
+                    console.log('Auto-triggering FillAccountingDetails for template data (no existing rows)');
+                    console.log('Template details before FillAccountingDetails:', docData.template_details);
+                    console.log('FillAccountingDetails function available:', typeof window.FillAccountingDetails);
+                    console.log('FillAccountingDetailsCashGeneric function available:', typeof window.FillAccountingDetailsCashGeneric);
+                    
+                    // Ensure function is available before calling
+                    if (typeof window.FillAccountingDetails === 'function') {
+                        window.FillAccountingDetails();
+                    } else {
+                        console.error('FillAccountingDetails function is not available!');
+                    }
+                } else if (visibleCount === 0) {
+                    console.log('No template data found, using legacy auto-population');
+                    // Use legacy auto-population only if no template data and no existing rows
+                    autoPopulateRows();
+                }
             } else if (visibleCount === 0) {
-                console.log('No template data found, using legacy auto-population');
-                // Use legacy auto-population only if no template data and no existing rows
+                console.log('No document data element found, using legacy auto-population');
+                // Use legacy auto-population only if no document data and no existing rows
                 autoPopulateRows();
             }
-        } else if (visibleCount === 0) {
-            console.log('No document data element found, using legacy auto-population');
-            // Use legacy auto-population only if no document data and no existing rows
-            autoPopulateRows();
+        } else {
+            console.log('Existing detail records found, skipping auto-population. Displaying', existingCount, 'existing rows.');
+            // Existing rows are already rendered by the template, just ensure calculations are correct
+            // The existing rows are already in the DOM from the template rendering
         }
     }
 });

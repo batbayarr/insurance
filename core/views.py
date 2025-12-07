@@ -193,7 +193,7 @@ def refaccount_list(request):
                 elif doc_type.ParentId == 2:
                     account_type_filter = '2'
                 else:
-                    account_type_filter = '1,2,3,5,42,43,44,51,55,67,68,45,46,47,48'
+                    account_type_filter = '1,2,3,5,12,42,43,44,51,55,67,68,45,46,47,48'
             except Ref_Document_Type.DoesNotExist:
                 pass
 
@@ -428,6 +428,20 @@ def refaccount_delete(request, pk):
                     'message': 'Энэ дансаар эхний үлдэгдэл оруулсан эсвэл гүйлгээ хийсэн тул устгах боолмжгүй. Эхлээд шалгана уу?'
                 })
             
+            # Check if account is used in Ref_Template
+            if Ref_Template.objects.filter(AccountId=account, IsDelete=False).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ данс загварт ашиглаж байгаа тул устгах боломжгүй. Эхлээд шалгана уу?'
+                })
+            
+            # Check if account is used in Ref_Template_Detail
+            if Ref_Template_Detail.objects.filter(AccountId=account).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Энэ данс загварын дэлгэрэнгүйд ашиглаж байгаа тул устгах боломжгүй. Эхлээд шалгана уу?'
+                })
+            
             # Perform soft delete
             account.IsDelete = True
             account.save()
@@ -514,6 +528,16 @@ def refaccount_delete(request, pk):
                AstDepreciationExpense.objects.filter(CreditAccountId=account).exists() or \
                AstDepreciationExpense.objects.filter(AccountId=account).exists():
                 messages.error(request, error_message)
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ref_Template
+            if Ref_Template.objects.filter(AccountId=account, IsDelete=False).exists():
+                messages.error(request, 'Энэ данс загварт ашиглаж байгаа тул устгах боломжгүй. Эхлээд шалгана уу?')
+                return redirect('core:refaccount_list')
+            
+            # Check if account is used in Ref_Template_Detail
+            if Ref_Template_Detail.objects.filter(AccountId=account).exists():
+                messages.error(request, 'Энэ данс загварын дэлгэрэнгүйд ашиглаж байгаа тул устгах боломжгүй. Эхлээд шалгана уу?')
                 return redirect('core:refaccount_list')
             
             # Perform soft delete
@@ -1399,6 +1423,7 @@ def get_cash_documents_master(request):
                 'ClientBankId': doc.ClientBankId.ClientBankId if doc.ClientBankId else None,
                 'BankAccount': doc.ClientBankId.BankAccount if doc.ClientBankId else '',
                 'BankName': doc.ClientBankId.BankName if doc.ClientBankId else '',
+                'TemplateId': doc.TemplateId.TemplateId if doc.TemplateId else None,
             })
         
         return JsonResponse({
@@ -1838,26 +1863,17 @@ def cashdocument_update(request, pk):
                         'timestamp': int(time.time())
                     })
             
-            deleted_count = 0
             with transaction.atomic():
                 cash_document.ModifiedBy = request.user
                 cash_document.save()
-                deleted_count, _ = Cash_DocumentDetail.objects.filter(
-                    DocumentId=cash_document
-                ).delete()
             
-            if deleted_count:
-                message_text = f"Cash document updated successfully. {deleted_count} detail record{'s' if deleted_count != 1 else ''} cleared."
-            else:
-                message_text = 'Cash document updated successfully. No detail records were associated with this document.'
-            messages.success(request, message_text)
+            messages.success(request, 'Cash document updated successfully.')
             
             # Check if AJAX request and return JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': f'/core/cashdocuments/?selected_document={pk}',
-                    'deleted_details': deleted_count
+                    'redirect_url': f'/core/cashdocuments/?selected_document={pk}'
                 })
             
             # Redirect to master detail page
@@ -2096,14 +2112,6 @@ def cashdocumentdetail_delete(request, pk):
 def bulk_manage_details(request, document_id):
     """Unified view for managing cash document details - add, update, and delete"""
     document = get_object_or_404(Cash_Document, pk=document_id)
-    
-    # Delete all existing details when accessing via GET (Manage Detail button clicked)
-    if request.method == 'GET':
-        existing_details = Cash_DocumentDetail.objects.filter(DocumentId=document)
-        deleted_count = existing_details.count()
-        if deleted_count > 0:
-            existing_details.delete()
-            print(f"Deleted {deleted_count} existing detail records for document {document.DocumentId}")
     
     # Get existing details
     document_details = Cash_DocumentDetail.objects.filter(DocumentId=document).select_related(
@@ -3615,9 +3623,9 @@ def cashbeginningbalance_list(request, balance_type='cash'):
                 AccountID__AccountTypeId__AccountTypeId__in=[1, 2]
             )
         elif balance_type == 'receivable':
-            # Receivable and Payable accounts: AccountTypeId between 3-6 OR 42-58
+            # Receivable and Payable accounts: AccountTypeId in (3,4,5,6,12) OR between 42-58
             balances = base_qs.filter(
-                Q(AccountID__AccountTypeId__AccountTypeId__range=(3, 6)) |
+                Q(AccountID__AccountTypeId__AccountTypeId__in=[3, 4, 5, 6, 12]) |
                 Q(AccountID__AccountTypeId__AccountTypeId__range=(42, 58))
             )
         elif balance_type == 'genledger':
@@ -4854,7 +4862,7 @@ def api_accounts_json(request):
                     elif doc_type.ParentId == 2:
                         account_type_filter = '2'
                     else:
-                        account_type_filter = '1,2,3,5,42,43,44,51,55,67,68,45,46,47,48'
+                        account_type_filter = '1,2,3,5,12,42,43,44,51,55,67,68,45,46,47,48'
                 except Ref_Document_Type.DoesNotExist:
                     pass
         
@@ -9461,7 +9469,7 @@ def get_inventory_documents_master(request):
         selected_document = request.GET.get('selected_document', '')
         
         documents_query = Inv_Document.objects.select_related(
-            'DocumentTypeId', 'ClientId', 'AccountId', 'WarehouseId', 'CreatedBy'
+            'DocumentTypeId', 'ClientId', 'AccountId', 'WarehouseId', 'CreatedBy', 'TemplateId'
         ).filter(IsDelete=False)
         
         # If selected_document is provided, filter to only that document
@@ -9507,6 +9515,7 @@ def get_inventory_documents_master(request):
                     'PriceAmount': float(doc.PriceAmount) if doc.PriceAmount is not None else 0,
                     'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
                     'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
+                    'TemplateId': doc.TemplateId.TemplateId if doc.TemplateId else None,
                 })
             except Exception as doc_error:
                 logger.error(f"Error processing document {doc.DocumentId}: {str(doc_error)}")
@@ -9586,10 +9595,36 @@ def get_asset_documents_master(request):
 def template_master_detail(request):
     """Master-detail view for template management"""
     
+    # Get filter parameters from URL (for popup mode)
+    account_id = request.GET.get('account_id')
+    document_type_id = request.GET.get('document_type_id')
+    
     # Get all templates for the master table
     templates = Ref_Template.objects.select_related(
         'DocumentTypeId', 'AccountId', 'CreatedBy'
-    ).filter(IsDelete=False).order_by('-CreatedDate')
+    ).filter(IsDelete=False)
+    
+    # Apply filters if provided (for popup mode when called from cash document form)
+    if account_id:
+        try:
+            # Convert to integer and filter by account ID
+            account_id_int = int(account_id)
+            templates = templates.filter(AccountId=account_id_int)
+        except (ValueError, TypeError):
+            # Invalid account_id, ignore filter
+            pass
+    
+    if document_type_id:
+        try:
+            # Convert to integer and filter by document type ID
+            document_type_id_int = int(document_type_id)
+            templates = templates.filter(DocumentTypeId=document_type_id_int)
+        except (ValueError, TypeError):
+            # Invalid document_type_id, ignore filter
+            pass
+    
+    # Order templates
+    templates = templates.order_by('-CreatedDate')
     
     # Get selected template ID for detail grids (AJAX request)
     selected_template_id = request.GET.get('selected_template')
@@ -9715,8 +9750,8 @@ def template_delete(request, pk):
         return redirect('core:template_master_detail')
     
     # Template is not used, proceed with deletion
-        template.IsDelete = True
-        template.save()
+    template.IsDelete = True
+    template.save()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
@@ -9747,7 +9782,8 @@ def template_detail_create(request, template_id):
             template_detail.save()
             
             messages.success(request, 'Template detail added successfully.')
-            return redirect('core:template_master_detail')
+            url = reverse('core:template_master_detail')
+            return redirect(f'{url}?selected_template={template_id}')
     else:
         form = Ref_Template_DetailForm()
     
@@ -9768,7 +9804,13 @@ def template_detail_update(request, pk):
     
     # Check if user owns this template
     if template.CreatedBy != request.user:
-        messages.error(request, 'You do not have permission to edit this template.')
+        error_message = 'You do not have permission to edit this template.'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': error_message
+            }, status=403)
+        messages.error(request, error_message)
         return redirect('core:template_master_detail')
     
     if request.method == 'POST':
@@ -9797,9 +9839,41 @@ def template_detail_delete(request, pk):
     
     # Check if user owns this template
     if template.CreatedBy != request.user:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'You do not have permission to delete this template.'
+            }, status=403)
         messages.error(request, 'You do not have permission to delete this template.')
-    else:
-        template_detail.delete()
-        messages.success(request, 'Template detail deleted successfully.')
+        return redirect('core:template_master_detail')
     
+    # Check if template is used in any documents
+    is_used_in_cash = Cash_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    is_used_in_inv = Inv_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    is_used_in_ast = Ast_Document.objects.filter(TemplateId=template, IsDelete=False).exists()
+    
+    if is_used_in_cash or is_used_in_inv or is_used_in_ast:
+        error_message = 'Энэ загвараар гүйлгээ хийсэн байна. Эхлээд гүйлгээгээ устгана уу'
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': error_message
+            }, status=400)
+        
+        # For regular POST requests, show error message and redirect
+        messages.error(request, error_message)
+        return redirect('core:template_master_detail')
+    
+    # Template is not used, proceed with deletion
+    template_detail.delete()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': 'Template detail deleted successfully.'
+        })
+    
+    messages.success(request, 'Template detail deleted successfully.')
     return redirect('core:template_master_detail')

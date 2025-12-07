@@ -242,9 +242,9 @@
                 </div>
                 
                 <!-- Sidebar Navigation -->
-                <nav class="flex-1 px-4 py-4 lg:px-6 lg:py-6 space-y-2 overflow-y-auto">
+                <nav class="flex-1 px-4 py-4 lg:px-6 lg:py-6 space-y-1 overflow-y-auto">
                     <!-- Dashboard -->
-                    <a href="{% url 'home' %}" class="flex items-center px-3 py-1 lg:px-4 lg:py-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'home' %}bg-gray-100 text-accounting-blue{% endif %}">
+                    <a href="{% url 'home' %}" class="flex items-center px-2 py-0.5 lg:px-3 lg:py-1.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'home' %}bg-gray-100 text-accounting-blue{% endif %}">
                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
@@ -253,7 +253,7 @@
 
                     <!-- Beginning Balance Section -->
                     <div id="menu-section-beginning-balance" class="space-y-1">
-                        <button onclick="toggleMenuSection('beginning-balance')" class="w-full flex items-center justify-between px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('beginning-balance')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>ЭХНИЙ ҮЛДЭГДЭЛ</span>
                             <svg id="chevron-beginning-balance" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -261,31 +261,31 @@
                         </button>
                         
                         <div id="menu-content-beginning-balance" class="space-y-1 ml-4">
-                            <a href="{% url 'core:beginningbalance_list' 'cash' %}" class="flex items-center py-1 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 uppercase">
+                            <a href="{% url 'core:beginningbalance_list' 'cash' %}" class="flex items-center py-0.5 px-2 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 uppercase">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                                 МӨНГӨН ХӨРӨНГӨ
                             </a>
-                            <a href="{% url 'core:beginningbalance_list' 'receivable' %}" class="flex items-center py-1 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'core:beginningbalance_list' 'receivable' %}" class="flex items-center py-0.5 px-2 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                 </svg>
                                 АВЛАГА,ӨГЛӨГ
                             </a>
-                            <a href="{% url 'core:beginningbalance_list' 'genledger' %}" class="flex items-center py-1 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'core:beginningbalance_list' 'genledger' %}" class="flex items-center py-0.5 px-2 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 ЕРӨНХИЙ ДЭВТЭР
                             </a>
-                            <a href="{% url 'core:invbeginningbalance_list' %}" class="flex items-center py-1 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'core:invbeginningbalance_list' %}" class="flex items-center py-0.5 px-2 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                 </svg>
                                 БАРАА МАТЕРИАЛ
                             </a>
-                            <a href="{% url 'core:astbeginningbalance_list' %}" class="flex items-center py-1 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'core:astbeginningbalance_list' %}" class="flex items-center py-0.5 px-2 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                 </svg>
@@ -296,7 +296,7 @@
 
                     <!-- Мөнгөн хөрөнгө Section -->
                     <div id="menu-section-cash-assets" class="space-y-1">
-                        <button onclick="toggleMenuSection('cash-assets')" class="w-full flex items-center justify-between px-3  text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('cash-assets')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>МӨНГӨН ХӨРӨНГӨ</span>
                             <svg id="chevron-cash-assets" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -304,19 +304,19 @@
                         </button>
                         
                         <div id="menu-content-cash-assets" class="space-y-1 ml-4" style="display: block !important; visibility: visible !important;">
-                            <a href="{% url 'core:cashdocument_master_detail' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cashdocument_master_detail' %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:cashdocument_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cashdocument_master_detail' %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span class="whitespace-nowrap">ГҮЙЛГЭЭ</span>
                             </a>
-                            <a href="{% url 'core:cash_journal' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cash_journal' %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:cash_journal' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cash_journal' %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                 </svg>
                                 <span class="whitespace-nowrap">ТАЙЛАН</span>
                             </a>
-                            <a href="{% url 'core:cash_import' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cash_import' %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:cash_import' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cash_import' %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -327,7 +327,7 @@
 
                     <!-- Бараа материал Section -->
                     <div id="menu-section-inventory" class="space-y-1">
-                        <button onclick="toggleMenuSection('inventory')" class="w-full flex items-center justify-between px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('inventory')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>БАРАА МАТЕРИАЛ</span>
                             <svg id="chevron-inventory" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -336,7 +336,7 @@
                         
                         <div id="menu-content-inventory" class="space-y-1 ml-4">
                             {% if perms.core.view_invdocument %}
-                            <a href="{% url 'core:invdocument_master_detail' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'invdocument' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:invdocument_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'invdocument' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -344,7 +344,7 @@
                             </a>
                             {% endif %}
                             {% if perms.core.view_invdocument %}
-                            <a href="{% url 'core:invjournal' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'invjournal' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:invjournal' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'invjournal' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                 </svg>
@@ -356,7 +356,7 @@
 
                     <!-- Үндсэн хөрөнгө Section -->
                     <div id="menu-section-fixed-assets" class="space-y-1">
-                        <button onclick="toggleMenuSection('fixed-assets')" class="w-full flex items-center justify-between px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('fixed-assets')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>ҮНДСЭН ХӨРӨНГӨ</span>
                             <svg id="chevron-fixed-assets" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -365,7 +365,7 @@
                         
                         <div id="menu-content-fixed-assets" class="space-y-1 ml-4">
                             {% if perms.core.view_ast_document %}
-                            <a href="{% url 'core:astdocument_master_detail' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'astdocument' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:astdocument_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'astdocument' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -373,7 +373,7 @@
                             </a>
                             {% endif %}
                             {% if perms.core.view_ast_document %}
-                            <a href="{% url 'core:astjournal' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'astdocuments-tabs' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:astjournal' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'astdocuments-tabs' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                 </svg>
@@ -381,7 +381,7 @@
                             </a>
                             {% endif %}
                             {% if perms.core.view_astdepreciationexpense %}
-                            <a href="{% url 'core:trial_depreciation' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-depreciation' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:trial_depreciation' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-depreciation' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -393,7 +393,7 @@
 
                     <!-- Reference Section -->
                     <div id="menu-section-reference" class="space-y-1">
-                        <button onclick="toggleMenuSection('reference')" class="w-full flex items-center justify-between px-3  text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('reference')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>СИСТЕМИЙН ЛАВЛАХ</span>
                             <svg id="chevron-reference" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -402,7 +402,7 @@
                         
                         <div id="menu-content-reference" class="space-y-1 ml-4">
                             {% if perms.core.view_refinventory %}
-                            <a href="{% url 'core:refinventory_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refinventory' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:refinventory_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refinventory' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                 </svg>
@@ -411,7 +411,7 @@
                             {% endif %}
                             
                             {% if perms.core.view_refclient %}
-                            <a href="{% url 'core:refclient_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refclient' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:refclient_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refclient' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
@@ -420,7 +420,7 @@
                             {% endif %}
                             
                             {% if perms.core.view_refasset %}
-                            <a href="{% url 'core:ref_asset_card_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'asset-cards' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:ref_asset_card_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'asset-cards' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                 </svg>
@@ -429,7 +429,7 @@
                             {% endif %}
                             
                             {% if perms.core.view_refaccount %}
-                            <a href="{% url 'core:refaccount_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refaccount' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:refaccount_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'refaccount' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                 </svg>
@@ -447,7 +447,7 @@
 
                     <!-- Reports Section -->
                     <div id="menu-section-reports" class="space-y-1">
-                        <button onclick="toggleMenuSection('reports')" class="w-full flex items-center justify-between px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('reports')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>ТАЙЛАН</span>
                             <svg id="chevron-reports" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -455,27 +455,27 @@
                         </button>
                         
                         <div id="menu-content-reports" class="space-y-1 ml-4">
-                            <a href="{% url 'core:trial_balance' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:trial_balance' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
                                 ГҮЙЛГЭЭ БАЛАНС
                             </a>
-                            <a href="{% url 'core:recpay_balance' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-recpay-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:recpay_balance' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-recpay-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                 </svg>
                                 АВЛАГА,ӨГЛӨГ
                             </a>
                             
-                            <a href="{% url 'core:currency_journal' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'currencyjournal' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:currency_journal' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'currencyjournal' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 ГАДААД ВАЛЮТ
                             </a>
                             
-                            <a href="{% url 'core:y_balance' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'y-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:y_balance' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'y-balance' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
@@ -487,7 +487,7 @@
 
                     <!-- System Configuration Section -->
                     <div id="menu-section-system-config" class="space-y-1 pt-4 border-t border-gray-200">
-                        <button onclick="toggleMenuSection('system-config')" class="w-full flex items-center justify-between px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('system-config')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>СИСТЕМИЙН ТОХИРГОО</span>
                             <svg id="chevron-system-config" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -496,21 +496,21 @@
                         
                         <div id="menu-content-system-config" class="space-y-1 ml-4">
                             {% if perms.core.view_astdepreciationexpense %}
-                            <a href="{% url 'core:trial_closing_entry' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-closing' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:trial_closing_entry' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'trial-closing' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 ХААЛТЫН БИЧИЛТ
                             </a>
                             {% endif %}
-                            <a href="{% url 'core:period_lock_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'core:period_lock_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 ГҮЙЛГЭЭ ТҮГЖИХ
                             </a>
                             {% if perms.core.view_refasset %}
-                            <a href="{% url 'core:ref_asset_depreciation_account_list' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'asset-depreciation-accounts' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:ref_asset_depreciation_account_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'asset-depreciation-accounts' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -518,7 +518,7 @@
                             </a>
                             {% endif %}
                             {% if perms.core.view_ref_template %}
-                            <a href="{% url 'core:template_master_detail' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'templates' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                            <a href="{% url 'core:template_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'templates' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                 </svg>
@@ -531,7 +531,7 @@
                     <!-- Admin Section -->
                     {% if user.is_staff %}
                     <div id="menu-section-administration" class="space-y-1 pt-4 border-t border-gray-200">
-                        <button onclick="toggleMenuSection('administration')" class="w-full flex items-center justify-between px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                        <button onclick="toggleMenuSection('administration')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <span>ADMINISTRATION</span>
                             <svg id="chevron-administration" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -539,13 +539,13 @@
                         </button>
                         
                         <div id="menu-content-administration" class="space-y-1 ml-4">
-                            <a href="{% url 'admin:index' %}" class="flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <a href="{% url 'admin:index' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 АДМИН                            </a>
-                            <button onclick="showDatabaseSwitcher()" class="w-full flex items-center px-3 py-1 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                            <button onclick="showDatabaseSwitcher()" class="w-full flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>

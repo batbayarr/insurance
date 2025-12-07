@@ -69,8 +69,10 @@
                         <tr class="bg-gray-100">
                             <td class="px-2 py-1 border-r border-gray-200 text-center text-xs text-gray-500">#</td>
                             <td class="px-2 py-1 border-r border-gray-200">
-                                <input type="text" id="filter-account" placeholder="Filter..."
+                                <select id="filter-account" 
                                        class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Бүгд</option>
+                                </select>
                             </td>
                             <td class="px-2 py-1 border-r border-gray-200">
                                 <input type="text" id="filter-client" placeholder="Filter..."
@@ -89,6 +91,7 @@
                         {% for balance in balances %}
                         <tr class="balance-row" 
                             data-account="{{ balance.AccountID.AccountCode|lower }} {{ balance.AccountID.AccountName|lower }}" 
+                            data-account-code="{{ balance.AccountID.AccountCode|lower }}"
                             data-client="{{ balance.ClientID.ClientName|lower|default:'' }}" 
                             data-currency="{{ balance.CurrencyID.Currency_name|lower }}">
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center">
@@ -253,9 +256,8 @@
                 </div>
 
                 <!-- Client Selection -->
-                {% if balance_type == 'receivable' or balance_type == 'payable' %}
                 <div id="client-field-container">
-                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ХАРИЛЦАГЧ *</label>
+                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ХАРИЛЦАГЧ{% if balance_type == 'receivable' or balance_type == 'payable' %} *{% endif %}</label>
                     <div class="relative">
                         <input type="text" 
                                id="ClientIdDisplay" 
@@ -263,24 +265,10 @@
                                placeholder="Click to select client..."
                                onclick="openClientPopup(this, null)"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white"
-                               required>
-                        <input type="hidden" id="ClientId" name="ClientID" required>
+                               {% if balance_type == 'receivable' or balance_type == 'payable' %}required{% endif %}>
+                        <input type="hidden" id="ClientId" name="ClientID" {% if balance_type == 'receivable' or balance_type == 'payable' %}required{% endif %}>
                     </div>
                 </div>
-                {% else %}
-                <div id="client-field-container" class="hidden">
-                    <label for="ClientIdDisplay" class="block text-sm font-medium text-gray-700 mb-1">ХАРИЛЦАГЧ *</label>
-                    <div class="relative">
-                        <input type="text" 
-                               id="ClientIdDisplay" 
-                               readonly
-                               placeholder="Click to select client..."
-                               onclick="openClientPopup(this, null)"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white">
-                        <input type="hidden" id="ClientId" name="ClientID" value="1">
-                    </div>
-                </div>
-                {% endif %}
 
                 <!-- Currency Selection -->
                 <div id="currency-field-container" {% if balance_type == 'genledger' %}class="hidden"{% endif %}>
@@ -305,12 +293,11 @@
                 <!-- Exchange Rate -->
                 <div id="exchange-rate-field-container" {% if balance_type == 'genledger' %}class="hidden"{% endif %}>
                     <label for="CurrencyExchange" class="block text-sm font-medium text-gray-700 mb-1">ХАНШ *</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="CurrencyExchange" 
                            {% if balance_type != 'genledger' %}name="CurrencyExchange" required{% endif %}
                            {% if balance_type == 'genledger' %}disabled{% endif %}
-                           step="0.0000001" 
-                           min="0" 
+                           inputmode="decimal"
                            {% if balance_type == 'genledger' %}value="1"{% endif %}
                            placeholder="1.0000"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -322,11 +309,10 @@
                 <!-- Currency Amount -->
                 <div>
                     <label for="CurrencyAmount" class="block text-sm font-medium text-gray-700 mb-1">ВАЛЮТЫН ДҮН *</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="CurrencyAmount" 
                            name="CurrencyAmount" 
-                           step="0.0000001" 
-                           min="0" 
+                           inputmode="decimal"
                            required
                            placeholder="0.00"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -335,7 +321,7 @@
                 <!-- MNT Amount (Calculated) -->
                 <div>
                     <label for="MNTAmount" class="block text-sm font-medium text-gray-700 mb-1">ТӨГРӨГИЙН ДҮН</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="MNTAmount" 
                            readonly
                            placeholder="0.00"
@@ -407,7 +393,7 @@ function getAccountTypeFilter() {
             return '1,2';
         case 'receivable':
         case 'payable':
-            return '3,4,5,6,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58';
+            return '3,4,5,6,12,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58';
         case 'genledger':
             // AccountTypeId in (33,37,38,39,40,41) OR between (59 and 68)
             return '33,37,38,39,40,41,59,60,61,62,63,64,65,66,67,68';
@@ -420,6 +406,8 @@ function getAccountTypeFilter() {
 function openAccountPopupWithFilter(inputElement) {
     const accountTypeFilter = getAccountTypeFilter();
     const extraParams = accountTypeFilter ? `&account_type=${accountTypeFilter}` : '';
+    console.log('Account type filter for', balanceType, ':', accountTypeFilter);
+    console.log('Extra params:', extraParams);
     openAccountPopup(inputElement, null, {
         modalTitle: 'Select Account for Beginning Balance',
         modalSubtitle: 'Choose an account to set the beginning balance',
@@ -435,25 +423,24 @@ function updateClientFieldVisibility() {
     
     if (!clientContainer) return;
     
-    if (balanceType === 'cash' || balanceType === 'genledger') {
-        // Hide client field and set ClientId to 1
-        clientContainer.classList.add('hidden');
-        if (clientIdInput) {
-            clientIdInput.value = '1';
-            clientIdInput.removeAttribute('required');
-        }
-        if (clientIdDisplay) {
-            clientIdDisplay.value = '';
-            clientIdDisplay.removeAttribute('required');
-        }
-    } else if (balanceType === 'receivable' || balanceType === 'payable') {
-        // Show client field and make it required
-        clientContainer.classList.remove('hidden');
+    // Show client field for all balance types
+    clientContainer.classList.remove('hidden');
+    
+    if (balanceType === 'receivable' || balanceType === 'payable') {
+        // Make client field required for receivable and payable
         if (clientIdInput) {
             clientIdInput.setAttribute('required', 'required');
         }
         if (clientIdDisplay) {
             clientIdDisplay.setAttribute('required', 'required');
+        }
+    } else {
+        // Make client field optional for cash and genledger
+        if (clientIdInput) {
+            clientIdInput.removeAttribute('required');
+        }
+        if (clientIdDisplay) {
+            clientIdDisplay.removeAttribute('required');
         }
     }
 }
@@ -543,14 +530,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                // Ensure ClientId is set to 1 for cash/genledger after account selection
-                if (balanceType === 'cash' || balanceType === 'genledger') {
-                    const clientIdInput = document.getElementById('ClientId');
-                    if (clientIdInput) {
-                        clientIdInput.value = '1';
-                    }
-                    updateClientFieldVisibility();
-                }
+                // Update client field visibility after account selection
+                updateClientFieldVisibility();
             };
         }
     }, 100);
@@ -686,14 +667,9 @@ function editBalance(balanceId) {
     document.getElementById('AccountId').value = balance.AccountID;
     document.getElementById('AccountIdDisplay').value = `${balance.account_code} - ${balance.account_name}`;
     
-    // Handle ClientId based on balance type
-    if (balanceType === 'cash' || balanceType === 'genledger') {
-        document.getElementById('ClientId').value = '1';
-        document.getElementById('ClientIdDisplay').value = '';
-    } else {
-        document.getElementById('ClientId').value = balance.ClientID || '';
-        document.getElementById('ClientIdDisplay').value = balance.client_name || '';
-    }
+    // Handle ClientId - show actual client for all balance types
+    document.getElementById('ClientId').value = balance.ClientID || '';
+    document.getElementById('ClientIdDisplay').value = balance.client_name || '';
     
     // Handle CurrencyId and CurrencyExchange based on balance type
     if (balanceType === 'genledger') {
@@ -711,10 +687,17 @@ function editBalance(balanceId) {
         const currencyExchangeInput = document.getElementById('CurrencyExchange');
         if (currencyDisplayInput) currencyDisplayInput.value = balance.currency_name || '';
         if (currencyHiddenInput) currencyHiddenInput.value = balance.CurrencyID;
-        if (currencyExchangeInput) currencyExchangeInput.value = balance.CurrencyExchange;
+        if (currencyExchangeInput) {
+            const exchangeValue = parseFloat(balance.CurrencyExchange) || 0;
+            currencyExchangeInput.value = formatNumericString(exchangeValue, 4);
+        }
     }
     
-    document.getElementById('CurrencyAmount').value = balance.CurrencyAmount;
+    const currencyAmountInput = document.getElementById('CurrencyAmount');
+    if (currencyAmountInput) {
+        const amountValue = parseFloat(balance.CurrencyAmount) || 0;
+        currencyAmountInput.value = formatNumericString(amountValue, 2);
+    }
     
     // Calculate MNT amount
     calculateMNTAmount();
@@ -776,14 +759,39 @@ function setupFormValidation() {
     
     // Calculate MNT amount when currency amount or exchange rate changes
     const calculateMNTAmount = () => {
-        const currencyAmount = parseFloat(currencyAmountInput.value) || 0;
-        const exchangeRate = parseFloat(currencyExchangeInput.value) || 0;
+        const currencyAmount = parseNumericValue(currencyAmountInput.value, 0);
+        const exchangeRate = parseNumericValue(currencyExchangeInput.value, 0);
         const mntAmount = currencyAmount * exchangeRate;
-        mntAmountInput.value = mntAmount.toFixed(2);
+        mntAmountInput.value = formatNumericString(mntAmount, 2);
     };
     
-    currencyAmountInput.addEventListener('input', calculateMNTAmount);
-    currencyExchangeInput.addEventListener('input', calculateMNTAmount);
+    // Format CurrencyAmount on blur
+    if (currencyAmountInput) {
+        currencyAmountInput.addEventListener('focus', () => {
+            const rawValue = parseNumericValue(currencyAmountInput.value, 0);
+            currencyAmountInput.value = rawValue === 0 ? '' : rawValue.toString();
+        });
+        currencyAmountInput.addEventListener('blur', () => {
+            const parsed = parseNumericValue(currencyAmountInput.value, 0);
+            currencyAmountInput.value = formatNumericString(parsed, 2);
+            calculateMNTAmount();
+        });
+        currencyAmountInput.addEventListener('input', calculateMNTAmount);
+    }
+    
+    // Format CurrencyExchange on blur
+    if (currencyExchangeInput) {
+        currencyExchangeInput.addEventListener('focus', () => {
+            const rawValue = parseNumericValue(currencyExchangeInput.value, 0);
+            currencyExchangeInput.value = rawValue === 0 ? '' : rawValue.toString();
+        });
+        currencyExchangeInput.addEventListener('blur', () => {
+            const parsed = parseNumericValue(currencyExchangeInput.value, 0);
+            currencyExchangeInput.value = formatNumericString(parsed, 4);
+            calculateMNTAmount();
+        });
+        currencyExchangeInput.addEventListener('input', calculateMNTAmount);
+    }
     
     // Make calculateMNTAmount globally available
     window.calculateMNTAmount = calculateMNTAmount;
@@ -795,7 +803,40 @@ function refreshBalanceList() {
     window.location.reload();
 }
 
-// Format number with thousands separator and fixed decimals (match cashdocument_master_detail.html)
+// Number formatting functions for input fields
+function normalizeNumericValue(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+    return value.toString().replace(/,/g, '').trim();
+}
+
+function parseNumericValue(value, defaultValue = 0) {
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '') {
+        return defaultValue;
+    }
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function formatNumericString(value, decimals = 2) {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '' || isNaN(normalized)) {
+        return normalized;
+    }
+    const num = parseFloat(normalized);
+    if (isNaN(num)) {
+        return '';
+    }
+    // Format with specified decimal places and thousand separators
+    return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Format number with thousands separator and fixed decimals (for display)
 function formatNumber(num, decimals = 2) {
     const n = parseFloat(num);
     if (isNaN(n) || n === 0) return '-';
@@ -846,6 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initialize filters and summary
+    populateAccountCodeDropdown();
     setupInlineFilters();
     recalculateSummaryForVisibleRows();
 
@@ -857,6 +899,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (balanceForm) {
         balanceForm.addEventListener('submit', function(e) {
             try {
+                // Parse formatted numeric values before submission
+                const currencyAmountInput = document.getElementById('CurrencyAmount');
+                const currencyExchangeInput = document.getElementById('CurrencyExchange');
+                
+                if (currencyAmountInput) {
+                    const parsedAmount = parseNumericValue(currencyAmountInput.value, 0);
+                    currencyAmountInput.value = parsedAmount.toString();
+                }
+                
+                if (currencyExchangeInput && !currencyExchangeInput.disabled) {
+                    const parsedExchange = parseNumericValue(currencyExchangeInput.value, 0);
+                    currencyExchangeInput.value = parsedExchange.toString();
+                }
+                
                 const isCreate = !isEditMode;
                 if (!isCreate) return; // allow updates
 
@@ -904,9 +960,11 @@ function setupInlineFilters() {
 
         const rows = document.querySelectorAll('.balance-row');
         rows.forEach(row => {
+            const accountCode = row.dataset.accountCode || '';
             const account = row.dataset.account || '';
             const client = row.dataset.client || '';
-            const matchesAccount = !accountTerm || account.includes(accountTerm);
+            // For dropdown, use exact match on account code
+            const matchesAccount = !accountTerm || accountCode === accountTerm;
             const matchesClient = !clientTerm || client.includes(clientTerm);
             row.style.display = (matchesAccount && matchesClient) ? '' : 'none';
         });
@@ -917,8 +975,42 @@ function setupInlineFilters() {
         bbApplyPagination();
     };
 
-    if (accountFilter) accountFilter.addEventListener('input', applyFilters);
+    // Use 'change' event for dropdown, 'input' for text input
+    if (accountFilter) {
+        const eventType = accountFilter.tagName === 'SELECT' ? 'change' : 'input';
+        accountFilter.addEventListener(eventType, applyFilters);
+    }
     if (clientFilter) clientFilter.addEventListener('input', applyFilters);
+}
+
+// Populate account code dropdown with unique account codes from table data
+function populateAccountCodeDropdown() {
+    const dropdown = document.getElementById('filter-account');
+    if (!dropdown) return;
+    
+    // Get unique account codes from all rows
+    const accountCodes = new Set();
+    const allRows = document.querySelectorAll('.balance-row');
+    allRows.forEach(row => {
+        const accountCode = row.dataset.accountCode;
+        if (accountCode && accountCode.trim() !== '') {
+            accountCodes.add(accountCode.trim());
+        }
+    });
+    
+    // Sort account codes
+    const sortedCodes = Array.from(accountCodes).sort();
+    
+    // Clear existing options except the first "Бүгд" option
+    dropdown.innerHTML = '<option value="">Бүгд</option>';
+    
+    // Add account codes as options
+    sortedCodes.forEach(code => {
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = code.toUpperCase(); // Display in uppercase for consistency
+        dropdown.appendChild(option);
+    });
 }
 
 // Summarize visible MNT amounts
@@ -953,23 +1045,39 @@ let bbPageSize = 15;
 
 function bbGetVisibleRows() {
     const rows = Array.from(document.querySelectorAll('.balance-row'));
+    // Filter out rows that are explicitly hidden by filters (display: 'none')
     return rows.filter(r => r.style.display !== 'none');
 }
 
 function bbRenderPage() {
-    const visible = bbGetVisibleRows();
+    // Get all rows first (before any filtering)
+    const allRows = Array.from(document.querySelectorAll('.balance-row'));
+    
+    // Get visible rows (those not hidden by filters)
+    const visible = allRows.filter(r => {
+        const display = r.style.display;
+        return display === '' || display === null || display === undefined || display === 'visible';
+    });
+    
     const total = visible.length;
     const totalPages = Math.max(1, Math.ceil(total / bbPageSize));
     if (bbCurrentPage > totalPages) bbCurrentPage = totalPages;
     const startIndex = (bbCurrentPage - 1) * bbPageSize;
     const endIndex = Math.min(startIndex + bbPageSize, total);
 
-    // Hide all, then show current page slice
-    const allRows = document.querySelectorAll('.balance-row');
-    allRows.forEach(r => { if (r) r.style.visibility = 'hidden'; });
+    // Hide all rows first
+    allRows.forEach(r => { 
+        if (r) {
+            r.style.display = 'none';
+        }
+    });
+    
+    // Show only the rows on the current page from the visible array
     visible.forEach((row, idx) => {
         const inPage = idx >= startIndex && idx < endIndex;
-        row.style.visibility = inPage ? '' : 'hidden';
+        if (inPage) {
+            row.style.display = '';
+        }
         // Set row index number (1-based across visible list)
         const indexCell = row.querySelector('.row-index');
         if (indexCell) {

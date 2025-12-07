@@ -85,7 +85,49 @@ function FillAccountingDetailsCashGeneric(config) {
         console.error(`${debugPrefix}: Second table '${secondTableId}' not found`);
         return;
     }
+    
+    // Check if there are existing detail rows before clearing
+    // IMPORTANT: Only count rows with VALID numeric data-detail-id (actual saved records)
+    // Temporary rows (created by view when no details exist) have empty/None data-detail-id
+    const allRows = detailsTbody.querySelectorAll('tr');
+    const existingRows = Array.from(allRows).filter(row => {
+        // Get data-detail-id attribute value
+        const detailId = row.getAttribute('data-detail-id');
+        
+        // Check if it's a valid numeric ID (not empty, not None, not undefined, is a number)
+        const hasValidDetailId = detailId !== null && 
+                                 detailId !== '' && 
+                                 detailId !== 'undefined' && 
+                                 detailId !== 'None' &&
+                                 !isNaN(parseInt(detailId)) && // Must be a valid number
+                                 parseInt(detailId) > 0; // Must be positive
+        
+        const isDeleted = row.classList.contains('deleted-row') || row.style.display === 'none';
+        const isNewRow = row.classList.contains('new-row');
+        
+        // Only count as existing if it has a VALID detail ID (saved record) AND is not deleted AND is not new
+        // Temporary rows won't have valid detail IDs, so they won't be counted
+        const isValidExisting = hasValidDetailId && !isDeleted && !isNewRow;
+        
+        if (isValidExisting) {
+            console.log(`${debugPrefix}: Found existing row with valid detail ID:`, detailId);
+        } else if (row.classList.contains('existing-row') && !hasValidDetailId) {
+            console.log(`${debugPrefix}: Found temporary row (existing-row class but no valid detail ID):`, detailId);
+        }
+        
+        return isValidExisting;
+    });
+    
+    console.log(`${debugPrefix}: Checking for existing rows - Total <tr> elements: ${allRows.length}, Valid existing rows (with detail ID): ${existingRows.length}`);
+    
+    if (existingRows.length > 0) {
+        console.warn(`${debugPrefix}: Existing detail rows found (${existingRows.length} rows). Skipping auto-population to preserve existing data.`);
+        return;
+    }
+    
+    // Clear tbody - safe to do even if empty
     detailsTbody.innerHTML = '';
+    console.log(`${debugPrefix}: Cleared tbody, ready to populate with template data`);
     
     // Step 4: Check if template exists
     console.log(`${debugPrefix}: Template check - TemplateId:`, docData.TemplateId, 'template_details:', docData.template_details);
