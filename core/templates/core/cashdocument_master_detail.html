@@ -665,6 +665,15 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
     // Create new AbortController for this request
     currentApiRequest = new AbortController();
     
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+        if (currentApiRequest) {
+            currentApiRequest.abort();
+            currentApiRequest = null;
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Холболт удаан үргэлжилж байна. Дахин оролдоно уу.</td></tr>';
+        }
+    }, 30000); // 30 second timeout
+    
     return fetch(url, {
         method: 'GET',
         headers: {
@@ -673,13 +682,48 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
         },
         signal: currentApiRequest.signal
     })
-    .then(response => response.json())
+    .then(response => {
+        clearTimeout(timeoutId);
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         // Clear request reference on success
         currentApiRequest = null;
         
         if (data.success) {
-            allDocumentsData = data.documents;
+            allDocumentsData = data.documents || [];
+            
+            // CRITICAL: If selected_document is in URL but no data returned (deleted or not found),
+            // clear loading state and fetch all documents
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedDocId = urlParams.get('selected_document');
+            if (selectedDocId && (!allDocumentsData || allDocumentsData.length === 0)) {
+                // Document was deleted or not found - remove from URL and fetch all documents
+                urlParams.delete('selected_document');
+                const cleanUrl = urlParams.toString() 
+                    ? `${window.location.pathname}?${urlParams.toString()}`
+                    : window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+                
+                // Fetch all documents without selected_document parameter
+                const startDateInput = document.getElementById('start-date');
+                const endDateInput = document.getElementById('end-date');
+                if (startDateInput && endDateInput) {
+                    // Recursively call fetchDocuments without selected_document
+                    return fetchDocuments(startDateInput.value, endDateInput.value, null);
+                } else {
+                    // Fallback: clear loading state
+                    const tbody = document.getElementById('documents-tbody');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-gray-500">Баримт олдсонгүй</td></tr>';
+                    }
+                }
+                return data; // Return early to prevent calling applyFrontendFilter with empty data
+            }
             
             // If this is initial document filter load, don't call applyFrontendFilter here
             // The promise chain in initializeDateInputs() will handle it
@@ -689,23 +733,34 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
             
             // Normal flow: apply filter after data is loaded
             setTimeout(() => {
+                // CRITICAL: Ensure flags are cleared before calling applyFrontendFilter
+                // This prevents applyFrontendFilter from being blocked
+                window.skipFilterAfterDelete = false;
+                if (window.Silicon4SoftDelete) {
+                    window.Silicon4SoftDelete.isDeleting = false;
+                }
+                
                 applyFrontendFilter();
             }, 10);
             
             return data;
         } else {
+            currentApiRequest = null;
             tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
             throw new Error(data.error || 'Unknown error');
         }
     })
     .catch(error => {
+        clearTimeout(timeoutId);
         // Clear request reference
         currentApiRequest = null;
         
         // Only show error if it's not an abort error (abort is intentional)
         if (error.name !== 'AbortError') {
             console.error('Error fetching documents:', error);
-            tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа</td></tr>';
+            console.error('Error details:', error.message, error.stack);
+            console.error('Failed URL:', url);
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа: ' + error.message + '</td></tr>';
         }
         // If AbortError, silently ignore (user triggered it by changing filters)
     });
@@ -713,6 +768,16 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
 
 // Apply frontend filters
 function applyFrontendFilter() {
+    // Skip filtering if we just deleted a record (prevents re-rendering after delete)
+    if (window.skipFilterAfterDelete) {
+        return;
+    }
+    
+    // Also check if we're currently deleting (double safety)
+    if (window.Silicon4SoftDelete && window.Silicon4SoftDelete.isDeleting) {
+        return;
+    }
+    
     // Get filter values
     const filters = {
         documentNo: document.getElementById('filter-document-no')?.value.toLowerCase().trim() || '',
@@ -743,47 +808,78 @@ function applyFrontendFilter() {
             return;
         }
         
-        // Backend already filtered, so allDocumentsData should contain only the selected document
-        if (allDocumentsData.length === 1) {
-            const selectedDoc = allDocumentsData[0];
-            
-            // Set filter input value to make filtering explicit and visible to user
-            const documentNoFilter = document.getElementById('filter-document-no');
-            if (documentNoFilter && selectedDoc.DocumentNo) {
-                documentNoFilter.value = selectedDoc.DocumentNo;
+        // CRITICAL: Check if the selected document is deleted - if so, remove from URL and skip loading details
+        const selectedDoc = allDocumentsData.find(doc => doc.DocumentId == selectedDocumentId);
+        
+        if (selectedDoc && selectedDoc.IsDelete === true) {
+            // Document is deleted - remove from URL and continue with normal filtering
+            urlParams.delete('selected_document');
+            const cleanUrl = urlParams.toString() 
+                ? `${window.location.pathname}?${urlParams.toString()}`
+                : window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            // Fall through to normal filtering logic below
+        } else if (selectedDoc && selectedDoc.IsDelete !== true) {
+            // Document exists and is NOT deleted - proceed with loading details
+            // Backend already filtered, so allDocumentsData should contain only the selected document
+            if (allDocumentsData.length === 1) {
+                // Set filter input value to make filtering explicit and visible to user
+                const documentNoFilter = document.getElementById('filter-document-no');
+                if (documentNoFilter && selectedDoc.DocumentNo) {
+                    documentNoFilter.value = selectedDoc.DocumentNo;
+                }
+                
+                // Just show this one document - backend already filtered it!
+                filteredData = [selectedDoc];
+                pageData = [selectedDoc];
+                currentPage = 1;
+                totalPages = 1;
+                
+                // Render immediately
+                renderDocumentsTable(pageData);
+                updatePaginationInfo(1, 1, 1);
+                generatePaginationButtons();
+                
+                // Load details immediately (only if not deleted)
+                setTimeout(() => {
+                    // Double-check document is not deleted before loading details
+                    const docCheck = allDocumentsData.find(d => d.DocumentId == selectedDocumentId);
+                    if (docCheck && docCheck.IsDelete !== true) {
+                        updateRowSelection(selectedDocumentId);
+                        loadDocumentDetails(selectedDocumentId);
+                    } else {
+                        // Remove from URL if deleted
+                        urlParams.delete('selected_document');
+                        const cleanUrl = urlParams.toString() 
+                            ? `${window.location.pathname}?${urlParams.toString()}`
+                            : window.location.pathname;
+                        window.history.replaceState({}, '', cleanUrl);
+                    }
+                }, 200);
+                
+                // Save filters to localStorage
+                saveAllFiltersToLocalStorage();
+                
+                return; // Exit early
+            } else {
+                // Document not found - backend returned empty or multiple
+                filteredData = [];
+                pageData = [];
+                currentPage = 1;
+                totalPages = 1;
+                renderDocumentsTable(pageData);
+                updatePaginationInfo(0, 0, 0);
+                generatePaginationButtons();
+                return; // Exit early
             }
-            
-            // Just show this one document - backend already filtered it!
-            filteredData = [selectedDoc];
-            pageData = [selectedDoc];
-            currentPage = 1;
-            totalPages = 1;
-            
-            // Render immediately
-            renderDocumentsTable(pageData);
-            updatePaginationInfo(1, 1, 1);
-            generatePaginationButtons();
-            
-            // Load details immediately
-            setTimeout(() => {
-                updateRowSelection(selectedDocumentId);
-                loadDocumentDetails(selectedDocumentId);
-            }, 200);
-            
-            // Save filters to localStorage
-            saveAllFiltersToLocalStorage();
-            
-            return; // Exit early
         } else {
-            // Document not found - backend returned empty or multiple
-            filteredData = [];
-            pageData = [];
-            currentPage = 1;
-            totalPages = 1;
-            renderDocumentsTable(pageData);
-            updatePaginationInfo(0, 0, 0);
-            generatePaginationButtons();
-            return; // Exit early
+            // Document not found in data - remove from URL and continue with normal filtering
+            urlParams.delete('selected_document');
+            const cleanUrl = urlParams.toString() 
+                ? `${window.location.pathname}?${urlParams.toString()}`
+                : window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            // Fall through to normal filtering logic below
         }
     }
     
@@ -846,6 +942,16 @@ function applyFrontendFilter() {
 
 // Render documents table
 function renderDocumentsTable(documents) {
+    // Skip re-rendering if we just deleted a record (prevents filtering/re-rendering after delete)
+    if (window.skipFilterAfterDelete) {
+        return;
+    }
+    
+    // Also check if we're currently deleting (double safety)
+    if (window.Silicon4SoftDelete && window.Silicon4SoftDelete.isDeleting) {
+        return;
+    }
+    
     const tbody = document.getElementById('documents-tbody');
     if (!tbody) return;
     
@@ -858,7 +964,13 @@ function renderDocumentsTable(documents) {
     
     documents.forEach(doc => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 cursor-pointer';
+        // Apply deleted styling if IsDelete is true
+        if (doc.IsDelete) {
+            tr.className = 'deleted-row';
+            tr.style.cssText = 'opacity: 0.5; text-decoration: line-through; pointer-events: none; cursor: default;';
+        } else {
+            tr.className = 'hover:bg-gray-50 cursor-pointer';
+        }
         tr.setAttribute('data-document-id', doc.DocumentId);
         tr.setAttribute('data-document-type-id', doc.DocumentTypeId || '');
         tr.setAttribute('data-document-type-name', doc.DocumentTypeName || '');
@@ -868,33 +980,19 @@ function renderDocumentsTable(documents) {
         tr.setAttribute('data-account-name', doc.AccountName || '');
         tr.setAttribute('data-template-id', doc.TemplateId || '');
         
-        // Check permissions for action buttons
-        const canManageDetails = (doc.CreatedById === currentUserId) && (hasViewDetailPermission || hasAddDetailPermission || hasChangeDetailPermission);
-        const canEdit = hasChangePermission && (doc.CreatedById === currentUserId);
-        const canDelete = hasDeletePermission && (doc.CreatedById === currentUserId);
+        // Check permissions for action buttons (hide for deleted records)
+        const isDeleted = doc.IsDelete === true;
+        const canManageDetails = !isDeleted && (doc.CreatedById === currentUserId) && (hasViewDetailPermission || hasAddDetailPermission || hasChangeDetailPermission);
+        const canEdit = !isDeleted && hasChangePermission && (doc.CreatedById === currentUserId);
+        const canDelete = !isDeleted && hasDeletePermission && (doc.CreatedById === currentUserId);
         
-        tr.innerHTML = `
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || ''}</td>
-            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || ''}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 hidden">${doc.DocumentTypeCode || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                <span class="text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
-            </td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-8">${doc.IsVat ? 'Y' : 'N'}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
-                <span>${doc.Description || '-'}</span>
-            </td>
-                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 w-16">
-                <span title="${doc.CurrencyName || ''}">${truncateText(doc.CurrencyName || '', 3)}</span>
-                        </td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyAmount)}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyExchange)}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyMNT)}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.CreatedByUsername || '-'}</td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.TemplateId || '-'}</td>
-                        <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
-                            <div class="flex items-center justify-end space-x-1 lg:space-x-2">
+        // Build action cell content
+        let actionCellContent = '';
+        if (isDeleted) {
+            actionCellContent = '<span class="text-red-500 text-xs font-medium">(Устгагдсан)</span>';
+        } else {
+            actionCellContent = `
+                <div class="flex items-center justify-end space-x-1 lg:space-x-2">
                     ${canManageDetails ? `
                     <button class="manage-details-btn text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
                             data-document-id="${doc.DocumentId}"
@@ -927,14 +1025,42 @@ function renderDocumentsTable(documents) {
                                 <button class="delete-document-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                             data-delete-url="/core/cashdocuments/${doc.DocumentId}/delete/"
                             data-document-name="Document ${doc.DocumentNo}" 
-                                        title="Delete Document">
+                            data-soft-delete
+                            data-item-id="${doc.DocumentId}"
+                            data-item-name="${doc.DocumentNo}"
+                            title="Delete Document">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
                     ` : ''}
                             </div>
+            `;
+        }
+        
+        tr.innerHTML = `
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || ''}</td>
+            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || ''}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 hidden">${doc.DocumentTypeCode || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                <span class="text-xs" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
+            </td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-8">${doc.IsVat ? 'Y' : 'N'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span>${doc.Description || '-'}</span>
+            </td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 w-16">
+                <span title="${doc.CurrencyName || ''}">${truncateText(doc.CurrencyName || '', 3)}</span>
                         </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyAmount)}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyExchange)}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(doc.CurrencyMNT)}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.CreatedByUsername || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.TemplateId || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                ${actionCellContent}
+            </td>
         `;
         
         fragment.appendChild(tr);
@@ -1104,6 +1230,10 @@ function initializeEventHandlers() {
         // Handle row clicks for document selection
         const row = e.target.closest('tr[data-document-id]');
         if (row && !e.target.closest('button') && !e.target.closest('a')) {
+            // CRITICAL: Don't load details for deleted rows
+            if (row.classList.contains('deleted-row') || row.style.pointerEvents === 'none') {
+                return;
+            }
             const documentId = row.getAttribute('data-document-id');
             if (documentId) {
                 loadDocumentDetails(documentId);
@@ -1344,6 +1474,21 @@ window.calculateCashDocumentTotals = calculateCashDocumentTotals;
 
 // Load document details via AJAX with caching
 function loadDocumentDetails(documentId) {
+    // CRITICAL: Don't load details for deleted documents
+    // Check if the document is deleted by looking at the row
+    const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
+    if (row && (row.classList.contains('deleted-row') || row.style.pointerEvents === 'none')) {
+        return;
+    }
+    
+    // Also check if document is deleted in allDocumentsData
+    if (typeof allDocumentsData !== 'undefined' && Array.isArray(allDocumentsData)) {
+        const doc = allDocumentsData.find(d => d.DocumentId == documentId);
+        if (doc && doc.IsDelete === true) {
+            return;
+        }
+    }
+    
     // Check cache first
     if (detailCache.has(documentId)) {
         renderCachedDetails(documentId);
