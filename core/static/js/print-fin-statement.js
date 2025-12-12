@@ -1,22 +1,18 @@
 /**
- * Trial Balance Print System
+ * Financial Statement Print System
  * 
- * Handles landscape A4 printing for trial balance tables
+ * Handles landscape A4 printing for financial statement tables
  * 
  * Usage:
- * window.printTrialBalanceTable({
- *     title: 'ГҮЙЛГЭЭ БАЛАНС',
+ * window.printFinancialStatement({
+ *     title: 'САНХҮҮГИЙН БАЙДЛЫН ТАЙЛАН',
  *     startDate: '2025-01-01',
  *     endDate: '2025-01-31',
- *     allData: trialBalanceData,
- *     columnHeaders: ['Дансны код', 'Дансны нэр', 'Эхний үлдэгдэл (Дт)', ...],
+ *     allData: statementData,
+ *     columnHeaders: ['Код', 'Нэр', 'Эхний үлдэгдэл', 'Эцсийн үлдэгдэл'],
  *     totals: {
- *         beginDebit: totalBeginDebit,
- *         beginCredit: totalBeginCredit,
- *         debitAmount: totalDebitAmount,
- *         creditAmount: totalCreditAmount,
- *         endDebit: totalEndDebit,
- *         endCredit: totalEndCredit
+ *         beginBalance: totalBeginBalance,
+ *         endBalance: totalEndBalance
  *     }
  * })
  */
@@ -77,21 +73,16 @@
     }
 
     /**
-     * Map data field names to column headers for trial balance
+     * Map data field names to column headers for financial statements
      */
     function getDataFieldMapping() {
         return {
-            'Дансны код': 'AccountCode',
-            'Дансны нэр': 'AccountName',
-            'Код': 'ClientCode',
-            'Харилцагчийн код': 'ClientCode', // Keep for backward compatibility
-            'Харилцагчийн нэр': 'ClientName',
-            'Эхний үлдэгдэл (Дт)': 'BeginningBalanceDebit',
-            'Эхний үлдэгдэл (Кт)': 'BeginningBalanceCredit',
-            'Дт гүйлгээ': 'DebitAmount',
-            'Кт гүйлгээ': 'CreditAmount',
-            'Эцсийн үлдэгдэл (Дт)': 'EndingBalanceDebit',
-            'Эцсийн үлдэгдэл (Кт)': 'EndingBalanceCredit'
+            'Код': 'Code',
+            'Нэр': 'Name',
+            'ҮЗҮҮЛЭЛТ': 'Name',
+            'Эхний үлдэгдэл': 'BeginBalance',
+            'Эцсийн үлдэгдэл': 'EndBalance',
+            'ДҮН': 'EndBalance'
         };
     }
 
@@ -120,12 +111,7 @@
                 
                 // Format numeric values
                 let isNumeric = false;
-                if (fieldName === 'BeginningBalanceDebit' || 
-                    fieldName === 'BeginningBalanceCredit' ||
-                    fieldName === 'DebitAmount' || 
-                    fieldName === 'CreditAmount' ||
-                    fieldName === 'EndingBalanceDebit' ||
-                    fieldName === 'EndingBalanceCredit') {
+                if (fieldName === 'BeginBalance' || fieldName === 'EndBalance') {
                     value = formatNumber(value, 2);
                     isNumeric = true;
                 } else {
@@ -158,23 +144,15 @@
             const fieldName = fieldMapping[header];
             let value = '';
             
-            if (header === 'Дансны код' || header === 'Дансны нэр') {
+            if (header === 'Код' || header === 'Нэр' || header === 'ҮЗҮҮЛЭЛТ') {
                 value = 'НИЙТ:';
-            } else if (fieldName === 'BeginningBalanceDebit') {
-                value = formatNumber(totals.beginDebit, 2);
-            } else if (fieldName === 'BeginningBalanceCredit') {
-                value = formatNumber(totals.beginCredit, 2);
-            } else if (fieldName === 'DebitAmount') {
-                value = formatNumber(totals.debitAmount, 2);
-            } else if (fieldName === 'CreditAmount') {
-                value = formatNumber(totals.creditAmount, 2);
-            } else if (fieldName === 'EndingBalanceDebit') {
-                value = formatNumber(totals.endDebit, 2);
-            } else if (fieldName === 'EndingBalanceCredit') {
-                value = formatNumber(totals.endCredit, 2);
+            } else if (fieldName === 'BeginBalance') {
+                value = formatNumber(totals.beginBalance, 2);
+            } else if (fieldName === 'EndBalance') {
+                value = formatNumber(totals.endBalance, 2);
             }
             
-            const alignClass = (fieldName && fieldName !== 'AccountCode' && fieldName !== 'AccountName') ? ' class="text-right"' : '';
+            const alignClass = (fieldName && fieldName !== 'Code' && fieldName !== 'Name') ? ' class="text-right"' : '';
             html += `<td${alignClass}>${escapeTemplateLiteral(String(value))}</td>`;
         });
         
@@ -278,8 +256,8 @@
         
         th.text-right {
             text-align: right;
-            width: 12%;
-            min-width: 100px;
+            width: 15%;
+            min-width: 120px;
         }
         
         td {
@@ -290,8 +268,8 @@
         
         td.text-right {
             text-align: right;
-            width: 12%;
-            min-width: 100px;
+            width: 15%;
+            min-width: 120px;
         }
         
         tbody tr:nth-child(even) {
@@ -391,7 +369,7 @@
     <table id="print-table">
         <thead>
             <tr>
-                ${config.columnHeaders.map(header => `<th class="${getDataFieldMapping()[header] && getDataFieldMapping()[header] !== 'AccountCode' && getDataFieldMapping()[header] !== 'AccountName' ? 'text-right' : ''}">${escapeTemplateLiteral(header)}</th>`).join('')}
+                ${config.columnHeaders.map(header => `<th class="${getDataFieldMapping()[header] && getDataFieldMapping()[header] !== 'Code' && getDataFieldMapping()[header] !== 'Name' ? 'text-right' : ''}">${escapeTemplateLiteral(header)}</th>`).join('')}
             </tr>
         </thead>
         <tbody>
@@ -474,7 +452,7 @@
             // Force download directly without showing source
             const link = document.createElement('a');
             link.setAttribute('href', url);
-            link.setAttribute('download', 'trial_balance_' + new Date().toISOString().split('T')[0] + '.csv');
+            link.setAttribute('download', 'financial_statement_' + new Date().toISOString().split('T')[0] + '.csv');
             link.style.visibility = 'hidden';
             link.style.display = 'none';
             
@@ -490,7 +468,7 @@
                 }, 100);
             }, 100);
             
-            alert('Trial balance exported to Excel successfully! The file should open automatically if Excel is your default application for CSV files.');
+            alert('Financial statement exported to Excel successfully! The file should open automatically if Excel is your default application for CSV files.');
         }
         
         // Also assign to window to ensure global availability
@@ -541,7 +519,7 @@
     /**
      * Main print function
      */
-    window.printTrialBalanceTable = function(config) {
+    window.printFinancialStatement = function(config) {
         // Validate config
         if (!config || !config.allData || !Array.isArray(config.allData)) {
             alert('Invalid print configuration: allData must be an array');
@@ -553,13 +531,13 @@
             return;
         }
         
-        if (!config.totals || typeof config.totals.beginDebit === 'undefined') {
-            alert('Invalid print configuration: totals must have beginDebit, beginCredit, debitAmount, creditAmount, endDebit, endCredit');
+        if (!config.totals || (typeof config.totals.beginBalance === 'undefined' && typeof config.totals.endBalance === 'undefined')) {
+            alert('Invalid print configuration: totals must have beginBalance and/or endBalance');
             return;
         }
         
         // Default values
-        config.title = config.title || 'ГҮЙЛГЭЭ БАЛАНС';
+        config.title = config.title || 'САНХҮҮГИЙН ТАЙЛАН';
         config.startDate = config.startDate || '';
         config.endDate = config.endDate || '';
         
@@ -574,7 +552,7 @@
         // Make it visible so user can see preview and use buttons
         const printWindow = window.open(blobUrl, '_blank', 'width=1200,height=800');
         if (!printWindow) {
-            alert('Please allow popups to print the trial balance');
+            alert('Please allow popups to print the financial statement');
             URL.revokeObjectURL(blobUrl);
             return;
         }
@@ -591,3 +569,4 @@
         });
     };
 })();
+

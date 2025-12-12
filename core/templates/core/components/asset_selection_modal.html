@@ -444,6 +444,17 @@ window.selectAsset = async function(
         const normalizedUnitPrice = (unitPrice && unitPrice !== '-' && unitPrice.trim() !== '') ? unitPrice : '0';
         const normalizedCumulatedDepreciation = (cumulatedDepreciation && cumulatedDepreciation !== '-' && cumulatedDepreciation.trim() !== '') ? cumulatedDepreciation : '0';
         
+        // Format function for numbers with 2 decimals and thousand separators
+        const formatNumberForInput = (value) => {
+            if (!value || value === '-' || value.trim() === '') return '0.00';
+            const num = parseFloat(value.toString().replace(/,/g, ''));
+            if (isNaN(num)) return '0.00';
+            return num.toLocaleString('en-US', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            });
+        };
+        
         // If values are still missing or invalid, try to fetch from asset card data
         if ((normalizedUnitCost === '0' || normalizedUnitPrice === '0') && assetCardId) {
             // Try to get values from data attributes if available in the modal
@@ -453,33 +464,33 @@ window.selectAsset = async function(
                 const dataUnitPrice = assetRow.getAttribute('data-unit-price');
                 const dataCumulatedDepreciation = assetRow.getAttribute('data-cumulated-depreciation');
                 if (dataUnitCost && dataUnitCost !== '-') {
-                    if (unitCostInput) unitCostInput.value = dataUnitCost;
+                    if (unitCostInput) unitCostInput.value = formatNumberForInput(dataUnitCost);
                 }
                 if (dataUnitPrice && dataUnitPrice !== '-') {
-                    if (unitPriceInput) unitPriceInput.value = dataUnitPrice;
+                    if (unitPriceInput) unitPriceInput.value = formatNumberForInput(dataUnitPrice);
                 }
                 if (dataCumulatedDepreciation && dataCumulatedDepreciation !== '-') {
-                    if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = dataCumulatedDepreciation;
+                    if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = formatNumberForInput(dataCumulatedDepreciation);
                 }
             } else {
                 // Set to 0 if no data available
-                if (unitCostInput) unitCostInput.value = normalizedUnitCost;
-                if (unitPriceInput) unitPriceInput.value = normalizedUnitPrice;
-                if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
+                if (unitCostInput) unitCostInput.value = formatNumberForInput(normalizedUnitCost);
+                if (unitPriceInput) unitPriceInput.value = formatNumberForInput(normalizedUnitPrice);
+                if (cumulatedDepreciationInput) cumulatedDepreciationInput.value = formatNumberForInput(normalizedCumulatedDepreciation);
             }
         } else {
-            // Use normalized values
+            // Use normalized values and format them
         if (unitCostInput) {
-                unitCostInput.value = normalizedUnitCost;
-                console.log('DEBUG: Set UnitCost to:', normalizedUnitCost);
+                unitCostInput.value = formatNumberForInput(normalizedUnitCost);
+                console.log('DEBUG: Set UnitCost to:', unitCostInput.value);
         }
         if (unitPriceInput) {
-                unitPriceInput.value = normalizedUnitPrice;
-                console.log('DEBUG: Set UnitPrice to:', normalizedUnitPrice);
+                unitPriceInput.value = formatNumberForInput(normalizedUnitPrice);
+                console.log('DEBUG: Set UnitPrice to:', unitPriceInput.value);
             }
             if (cumulatedDepreciationInput) {
-                cumulatedDepreciationInput.value = normalizedCumulatedDepreciation;
-                console.log('DEBUG: Set CumulatedDepreciation to:', normalizedCumulatedDepreciation);
+                cumulatedDepreciationInput.value = formatNumberForInput(normalizedCumulatedDepreciation);
+                console.log('DEBUG: Set CumulatedDepreciation to:', cumulatedDepreciationInput.value);
             }
         }
     }
@@ -1471,39 +1482,40 @@ function renderRegularViewTable(data) {
     
     let assetsHtml = `
         <div class="space-y-0">
-            <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wider">
-                <div class="col-span-1 px-4 border-r border-gray-200">
+            <div style="display: grid; grid-template-columns: 80px 1.5fr 1.5fr 0.8fr 1fr 1fr 1fr 1fr 80px; gap: 0;" class="px-0 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <div class="px-4 border-r border-gray-200">
                     <div class="mb-1">Код</div>
                     <input type="text" 
                            id="filter-asset-code" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-3 px-4 border-r border-gray-200">
+                <div class="px-4 border-r border-gray-200">
                     <div class="mb-1">Хөрөнгийн картын нэр</div>
                     <input type="text" 
                            id="filter-asset-name" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-3 px-4 border-r border-gray-200">
+                <div class="px-4 border-r border-gray-200">
                     <div class="mb-1">Хөрөнгө</div>
                     <input type="text" 
                            id="filter-asset-asset" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-1 px-4 border-r border-gray-200">
+                <div class="px-4 border-r border-gray-200">
                     <div class="mb-1">Төрөл</div>
                     <input type="text" 
                            id="filter-asset-type" 
                            placeholder="Filter..." 
                            class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн өртөг</div>
-                <div class="col-span-1 px-4 border-r border-gray-200 text-right">Нэгжийн үнэ</div>
-                <div class="col-span-1 px-4 border-r border-gray-200">Ажилтан</div>
-                <div class="col-span-1 px-4 text-center">Сонгох</div>
+                <div class="px-4 border-r border-gray-200 text-right">Нэгжийн өртөг</div>
+                <div class="px-4 border-r border-gray-200 text-right">Нэгжийн үнэ</div>
+                <div class="px-4 border-r border-gray-200 text-right">Эхний элэгдэл</div>
+                <div class="px-4 border-r border-gray-200">Ажилтан</div>
+                <div class="px-4 text-center">Сонгох</div>
             </div>
     `;
     
@@ -1514,15 +1526,28 @@ function renderRegularViewTable(data) {
         const assetName = item.assetname || '-';
         const assetTypeName = item.assettypename || '-';
         const employee = item.employee || '-';
-        const unitCost = item.unitcost !== undefined && item.unitcost !== null ? parseFloat(item.unitcost).toFixed(6) : (item.unitCost || '-');
-        const unitPrice = item.unitprice !== undefined && item.unitprice !== null ? parseFloat(item.unitprice).toFixed(6) : (item.unitPrice || '-');
+        
+        // Format numbers with 2 decimals and thousand separators for display
+        const formatNumber = (num, decimals = 2) => {
+            if (num === null || num === undefined || num === '-') return '-';
+            const n = parseFloat(num);
+            if (isNaN(n)) return '-';
+            return n.toLocaleString('en-US', { 
+                minimumFractionDigits: decimals, 
+                maximumFractionDigits: decimals 
+            });
+        };
+        
+        const unitCostDisplay = formatNumber(item.unitcost !== undefined && item.unitcost !== null ? item.unitcost : item.unitCost, 2);
+        const unitPriceDisplay = formatNumber(item.unitprice !== undefined && item.unitprice !== null ? item.unitprice : item.unitPrice, 2);
+        const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
+        const cumulatedDepreciationDisplay = formatNumber(baseCumDep, 2);
         
         const formattedAssetCardName = assetCardCode && assetCardCode !== '-' ? 
             `${assetCardCode} - ${assetCardName}` : assetCardName;
         
         const unitCostForSelect = (item.unitcost !== undefined && item.unitcost !== null ? item.unitcost.toString() : '') || item.unitCost || '';
         const unitPriceForSelect = (item.unitprice !== undefined && item.unitprice !== null ? item.unitprice.toString() : '') || item.unitPrice || '';
-        const baseCumDep = item.cumulateddepreciation !== undefined && item.cumulateddepreciation !== null ? parseFloat(item.cumulateddepreciation) : null;
         const expenseDep = item.depreciationexpense !== undefined && item.depreciationexpense !== null ? parseFloat(item.depreciationexpense) : null;
         const totalExpenseValue = item.totalexpense !== undefined && item.totalexpense !== null ? parseFloat(item.totalexpense) : null;
         const hasCombinedDepreciation = baseCumDep !== null || expenseDep !== null;
@@ -1533,34 +1558,37 @@ function renderRegularViewTable(data) {
         const totalExpenseForSelect = totalExpenseValue !== null ? totalExpenseValue.toString() : combinedDepreciationValue.toString();
                     
                     assetsHtml += `
-                        <div class="grid grid-cols-12 gap-0 px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
+                        <div style="display: grid; grid-template-columns: 80px 1.5fr 1.5fr 0.8fr 1fr 1fr 1fr 1fr 80px; gap: 0;" class="px-0 py-3 bg-white border-b border-gray-200 hover:bg-blue-50 transition-colors asset-row cursor-pointer" 
                              data-asset-code="${assetCardCode.toLowerCase()}" 
                              data-asset-name="${assetCardName.toLowerCase()}" 
                              data-asset-type="${assetName.toLowerCase()}"
                              data-employee="${employee.toLowerCase()}"
                  onclick="selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')">
-                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                            <div class="px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetCardCode}</span>
                             </div>
-                            <div class="col-span-3 px-4 border-r border-gray-200 flex items-center">
+                            <div class="px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetCardName}</span>
                             </div>
-                            <div class="col-span-3 px-4 border-r border-gray-200 flex items-center">
+                            <div class="px-4 border-r border-gray-200 flex items-center">
                                 <span class="text-sm text-gray-900">${assetName}</span>
                             </div>
-                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                            <div class="px-4 border-r border-gray-200 flex items-center">
                     <span class="text-sm text-gray-900">${assetTypeName}</span>
                             </div>
-                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
-                    <span class="text-sm text-gray-900">${unitCost}</span>
+                <div class="px-4 border-r border-gray-200 flex items-center justify-end">
+                    <span class="text-sm text-gray-900">${unitCostDisplay}</span>
                 </div>
-                <div class="col-span-1 px-4 border-r border-gray-200 flex items-center justify-end">
-                    <span class="text-sm text-gray-900">${unitPrice}</span>
+                <div class="px-4 border-r border-gray-200 flex items-center justify-end">
+                    <span class="text-sm text-gray-900">${unitPriceDisplay}</span>
                             </div>
-                            <div class="col-span-1 px-4 border-r border-gray-200 flex items-center">
+                            <div class="px-4 border-r border-gray-200 flex items-center justify-end">
+                                <span class="text-sm text-gray-900">${cumulatedDepreciationDisplay}</span>
+                            </div>
+                            <div class="px-4 border-r border-gray-200 flex items-center">
                                 <span class="text-sm text-gray-900">${employee}</span>
                             </div>
-                            <div class="col-span-1 px-4 flex items-center justify-center">
+                            <div class="px-4 flex items-center justify-center">
                     <button onclick="event.stopPropagation(); selectAsset('${assetCardId}', '${formattedAssetCardName}', '${assetName}', '${unitCostForSelect}', '${unitPriceForSelect}', '${cumulatedDepreciationForSelect}', '${dailyExpenseForSelect}', '${depreciationExpenseForSelect}', '${totalExpenseForSelect}')" 
                             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors">
                         Сонгох

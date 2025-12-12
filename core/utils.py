@@ -1,5 +1,7 @@
 import os
 from django.conf import settings
+from django.utils import timezone
+from datetime import date
 
 def get_available_databases(company_code=None):
     """
@@ -51,4 +53,34 @@ def get_database_description(company_code, db_name):
     for db in databases:
         if db['db_name'] == db_name:
             return db['description']
-    return db_name  # Fallback to database name if not found 
+    return db_name  # Fallback to database name if not found
+
+def check_dep_expense_after_date(document_date):
+    """
+    Check if depreciation expenses exist in periods that start on or after the given document date.
+    
+    Args:
+        document_date: A date object or string in 'YYYY-MM-DD' format representing the document date
+        
+    Returns:
+        bool: True if depreciation expenses exist in periods with BeginDate >= document_date, False otherwise
+        
+    Example:
+        >>> from datetime import date
+        >>> check_dep_expense_after_date(date(2024, 1, 15))
+        True  # or False
+    """
+    # Import here to avoid circular imports
+    from core.models import AstDepreciationExpense
+    
+    # Convert string to date if needed
+    if isinstance(document_date, str):
+        from datetime import datetime
+        document_date = datetime.strptime(document_date, '%Y-%m-%d').date()
+    elif isinstance(document_date, timezone.datetime):
+        document_date = document_date.date()
+    
+    # Check if any depreciation expenses exist where period BeginDate >= document_date
+    return AstDepreciationExpense.objects.filter(
+        PeriodId__BeginDate__gte=document_date
+    ).exists() 

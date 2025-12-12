@@ -312,6 +312,113 @@
 </div>
 
 <script>
+// Number formatting utilities
+function normalizeNumericValue(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+    return String(value).replace(/,/g, '').trim();
+}
+
+function parseNumericValue(value, defaultValue = 0) {
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '') {
+        return defaultValue;
+    }
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function formatNumericInput(value, decimals = 2) {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+    
+    // Convert to string and trim
+    const strValue = String(value).trim();
+    if (strValue === '' || strValue === '-') {
+        return '';
+    }
+    
+    const normalized = normalizeNumericValue(strValue);
+    if (normalized === '' || normalized === '-') {
+        return '';
+    }
+    
+    // Handle partial decimal inputs (e.g., "123." or "123.4")
+    // Don't format if it ends with a decimal point (user might still be typing)
+    if (normalized.endsWith('.')) {
+        // Format the integer part with thousand separators, keep the decimal point
+        const intPart = normalized.slice(0, -1);
+        if (intPart === '' || intPart === '-') {
+            return normalized;
+        }
+        const num = parseFloat(intPart);
+        if (isNaN(num) || !isFinite(num)) {
+            return normalized;
+        }
+        try {
+            return num.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '.';
+        } catch (e) {
+            return normalized;
+        }
+    }
+    
+    const num = parseFloat(normalized);
+    if (isNaN(num) || !isFinite(num)) {
+        // Return original normalized value if it looks like it might be a number
+        // This preserves partial inputs like "123." or "-"
+        if (/^-?\d*\.?\d*$/.test(normalized)) {
+            return normalized;
+        }
+        // If it doesn't look like a number, return original value to prevent clearing
+        // The validation will catch invalid values later
+        return strValue;
+    }
+    
+    // Format with specified decimal places and thousand separators
+    try {
+        return num.toLocaleString('en-US', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    } catch (e) {
+        // Fallback to manual formatting if toLocaleString fails
+        return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+}
+
+function formatNumericField(input, decimals = 2) {
+    if (!input) return;
+    const currentValue = input.value;
+    // Don't format if the field is empty or just whitespace
+    if (!currentValue || currentValue.trim() === '') {
+        return;
+    }
+    
+    // Preserve the original value in case formatting fails
+    const originalValue = currentValue.trim();
+    const formatted = formatNumericInput(currentValue, decimals);
+    
+    // Only update if:
+    // 1. The formatted value is different from current
+    // 2. The formatted value is not empty (to prevent clearing)
+    // 3. The formatted value is a valid number (not NaN when parsed)
+    if (formatted !== '' && formatted !== currentValue) {
+        // Double-check that formatted value is valid
+        const normalized = normalizeNumericValue(formatted);
+        if (normalized !== '' && !isNaN(parseFloat(normalized))) {
+            input.value = formatted;
+        } else {
+            // If formatting produced invalid result, keep original value
+            input.value = originalValue;
+        }
+    } else if (formatted === '' && originalValue !== '') {
+        // If formatting would clear a non-empty value, keep original
+        input.value = originalValue;
+    }
+}
+
 // Function to calculate days of usage from ReceivedDate and MonthsToUse
 function calculateDaysOfUsage(receivedDate, monthsToUse) {
     if (!receivedDate || !monthsToUse || monthsToUse <= 0) {
@@ -353,36 +460,232 @@ function calculateDaysOfUsage(receivedDate, monthsToUse) {
 
 // Function to calculate DailyExpense
 function calculateDailyExpense() {
+    try {
     const receivedDateInput = document.getElementById('id_ReceivedDate');
     const monthsToUseInput = document.getElementById('id_MonthsToUse');
     const unitCostInput = document.getElementById('id_UnitCost');
+        const unitPriceInput = document.getElementById('id_UnitPrice');
     const dailyExpenseInput = document.getElementById('id_DailyExpense');
     
-    if (!receivedDateInput || !monthsToUseInput || !unitCostInput || !dailyExpenseInput) {
+        if (!receivedDateInput || !monthsToUseInput || !dailyExpenseInput) {
+            console.log('calculateDailyExpense: Missing required inputs', {
+                receivedDateInput: !!receivedDateInput,
+                monthsToUseInput: !!monthsToUseInput,
+                dailyExpenseInput: !!dailyExpenseInput
+            });
         return;
     }
     
-    const receivedDate = receivedDateInput.value;
-    const monthsToUse = parseFloat(monthsToUseInput.value);
-    const unitCost = parseFloat(unitCostInput.value);
-    
-    if (!receivedDate || !monthsToUse || monthsToUse <= 0 || !unitCost || unitCost <= 0) {
+        // Get values and normalize them (remove commas, etc.)
+        const receivedDate = receivedDateInput.value ? receivedDateInput.value.trim() : '';
+        const monthsToUseRaw = monthsToUseInput.value ? normalizeNumericValue(String(monthsToUseInput.value)) : '';
+        
+        // Use UnitPrice if available, otherwise fall back to UnitCost
+        let unitValueRaw = '';
+        if (unitPriceInput && unitPriceInput.value && unitPriceInput.value.trim() !== '') {
+            unitValueRaw = normalizeNumericValue(String(unitPriceInput.value));
+        } else if (unitCostInput && unitCostInput.value && unitCostInput.value.trim() !== '') {
+            unitValueRaw = normalizeNumericValue(String(unitCostInput.value));
+        }
+        
+        // Parse numeric values - handle empty strings properly
+        const monthsToUse = monthsToUseRaw === '' ? 0 : parseFloat(monthsToUseRaw);
+        const unitValue = unitValueRaw === '' ? 0 : parseFloat(unitValueRaw);
+        
+        console.log('calculateDailyExpense: Values', {
+            receivedDate,
+            monthsToUseRaw,
+            monthsToUse,
+            unitValueRaw,
+            unitValue,
+            unitPriceValue: unitPriceInput ? unitPriceInput.value : 'N/A',
+            unitCostValue: unitCostInput ? unitCostInput.value : 'N/A'
+        });
+        
+        // Validate inputs - ReceivedDate, MonthsToUse, and UnitPrice/UnitCost must be present and valid
+        if (!receivedDate || isNaN(monthsToUse) || monthsToUse <= 0 || isNaN(unitValue) || unitValue <= 0) {
+            console.log('calculateDailyExpense: Validation failed', {
+                hasReceivedDate: !!receivedDate,
+                monthsToUseValid: !isNaN(monthsToUse) && monthsToUse > 0,
+                unitValueValid: !isNaN(unitValue) && unitValue > 0
+            });
         return;
     }
     
     const daysOfUsage = calculateDaysOfUsage(receivedDate, monthsToUse);
+        console.log('calculateDailyExpense: daysOfUsage', daysOfUsage);
     
     if (daysOfUsage && daysOfUsage > 0) {
-        const dailyExpense = unitCost / daysOfUsage;
-        // Round to 6 decimal places
-        dailyExpenseInput.value = dailyExpense.toFixed(6);
+            const dailyExpense = unitValue / daysOfUsage;
+            console.log('calculateDailyExpense: dailyExpense calculated', dailyExpense);
+            
+            // Format with 2 decimal places and thousand separators
+            const formattedValue = formatNumericInput(dailyExpense, 2);
+            console.log('calculateDailyExpense: formattedValue', formattedValue);
+            
+            // Only update if we got a valid formatted value
+            if (formattedValue && formattedValue !== '') {
+                // Set flag to prevent blur handler from reformatting
+                window.dailyExpenseJustCalculated = true;
+                
+                dailyExpenseInput.value = formattedValue;
         
         // Visual feedback
         dailyExpenseInput.style.backgroundColor = '#dcfce7';
         setTimeout(() => {
             dailyExpenseInput.style.backgroundColor = '';
         }, 2000);
+                
+                console.log('calculateDailyExpense: Successfully updated DailyExpense');
+            } else {
+                console.log('calculateDailyExpense: Formatted value is empty');
+            }
+        } else {
+            console.log('calculateDailyExpense: Invalid daysOfUsage', daysOfUsage);
+        }
+    } catch (error) {
+        console.error('calculateDailyExpense: Error', error);
     }
+}
+
+// Make function globally accessible
+window.calculateDailyExpense = calculateDailyExpense;
+
+// Form validation function
+function validateForm() {
+    let isValid = true;
+    const errors = [];
+    
+    // Validate AssetId (required)
+    const assetIdInput = document.getElementById('id_AssetId');
+    const assetIdHidden = document.querySelector('input[name="AssetId"][type="hidden"]');
+    const assetIdValue = assetIdInput?.value || assetIdHidden?.value;
+    if (!assetIdValue || assetIdValue === '') {
+        isValid = false;
+        errors.push('Хөрөнгийн нэрийг сонгох шаардлагатай.');
+        if (assetIdInput && !assetIdInput.disabled) {
+            assetIdInput.classList.add('border-red-500');
+        }
+    } else {
+        if (assetIdInput) {
+            assetIdInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate MonthsToUse (must be positive if provided)
+    const monthsToUseInput = document.getElementById('id_MonthsToUse');
+    if (monthsToUseInput && monthsToUseInput.value) {
+        const monthsToUse = parseNumericValue(monthsToUseInput.value);
+        if (isNaN(monthsToUse) || monthsToUse <= 0) {
+            isValid = false;
+            errors.push('Ашиглах сар нь эерэг тоо байх ёстой.');
+            monthsToUseInput.classList.add('border-red-500');
+        } else {
+            monthsToUseInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate UnitCost (must be positive if provided)
+    const unitCostInput = document.getElementById('id_UnitCost');
+    if (unitCostInput && unitCostInput.value) {
+        const unitCost = parseNumericValue(unitCostInput.value);
+        if (isNaN(unitCost) || unitCost <= 0) {
+            isValid = false;
+            errors.push('Нэгж өртөг нь эерэг тоо байх ёстой.');
+            unitCostInput.classList.add('border-red-500');
+        } else {
+            unitCostInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate UnitPrice (must be positive if provided)
+    const unitPriceInput = document.getElementById('id_UnitPrice');
+    if (unitPriceInput && unitPriceInput.value) {
+        const unitPrice = parseNumericValue(unitPriceInput.value);
+        if (isNaN(unitPrice) || unitPrice <= 0) {
+            isValid = false;
+            errors.push('Нэгж үнэ нь эерэг тоо байх ёстой.');
+            unitPriceInput.classList.add('border-red-500');
+        } else {
+            unitPriceInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate DailyExpense (must be positive if provided)
+    const dailyExpenseInput = document.getElementById('id_DailyExpense');
+    if (dailyExpenseInput && dailyExpenseInput.value) {
+        const dailyExpense = parseNumericValue(dailyExpenseInput.value);
+        if (isNaN(dailyExpense) || dailyExpense <= 0) {
+            isValid = false;
+            errors.push('Өдрийн элэгдэл нь эерэг тоо байх ёстой.');
+            dailyExpenseInput.classList.add('border-red-500');
+        } else {
+            dailyExpenseInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate CumulatedDepreciation (must be non-negative if provided)
+    const cumulatedDepInput = document.getElementById('id_CumulatedDepreciation');
+    if (cumulatedDepInput && cumulatedDepInput.value) {
+        const cumulatedDep = parseNumericValue(cumulatedDepInput.value);
+        if (isNaN(cumulatedDep) || cumulatedDep < 0) {
+            isValid = false;
+            errors.push('Эхний элэгдэл нь сөрөг биш тоо байх ёстой.');
+            cumulatedDepInput.classList.add('border-red-500');
+        } else {
+            cumulatedDepInput.classList.remove('border-red-500');
+        }
+    }
+    
+    // Validate UnitCost > CumulatedDepreciation
+    if (unitCostInput && cumulatedDepInput && unitCostInput.value && cumulatedDepInput.value) {
+        const unitCost = parseNumericValue(unitCostInput.value);
+        const cumulatedDep = parseNumericValue(cumulatedDepInput.value);
+        if (unitCost <= cumulatedDep) {
+            isValid = false;
+            errors.push('Нэгжийн өртөг нь эхний элэгдлээс их байх ёстой.');
+            unitCostInput.classList.add('border-red-500');
+            cumulatedDepInput.classList.add('border-red-500');
+        }
+    }
+    
+    // Validate dates if provided
+    const manufacturedDateInput = document.getElementById('id_ManufacturedDate');
+    if (manufacturedDateInput && manufacturedDateInput.value) {
+        const manufacturedDate = new Date(manufacturedDateInput.value);
+        if (isNaN(manufacturedDate.getTime())) {
+            isValid = false;
+            errors.push('Үйлдвэрлэсэн огноо буруу байна.');
+            manufacturedDateInput.classList.add('border-red-500');
+        } else {
+            manufacturedDateInput.classList.remove('border-red-500');
+        }
+    }
+    
+    const receivedDateInput = document.getElementById('id_ReceivedDate');
+    if (receivedDateInput && receivedDateInput.value) {
+        const receivedDate = new Date(receivedDateInput.value);
+        if (isNaN(receivedDate.getTime())) {
+            isValid = false;
+            errors.push('Ашиглалтанд авсан огноо буруу байна.');
+            receivedDateInput.classList.add('border-red-500');
+        } else {
+            receivedDateInput.classList.remove('border-red-500');
+        }
+        
+        // Validate ReceivedDate >= ManufacturedDate if both are provided
+        if (manufacturedDateInput && manufacturedDateInput.value) {
+            const manufacturedDate = new Date(manufacturedDateInput.value);
+            if (receivedDate < manufacturedDate) {
+                isValid = false;
+                errors.push('Ашиглалтанд авсан огноо нь үйлдвэрлэсэн огнооноос хойш байх ёстой.');
+                receivedDateInput.classList.add('border-red-500');
+                manufacturedDateInput.classList.add('border-red-500');
+            }
+        }
+    }
+    
+    return { isValid, errors };
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -405,54 +708,353 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Format initial values for numeric fields (only if they have values)
+    const numericFields = [
+        { id: 'id_UnitCost', decimals: 2 },
+        { id: 'id_UnitPrice', decimals: 2 },
+        { id: 'id_DailyExpense', decimals: 2 },
+        { id: 'id_CumulatedDepreciation', decimals: 2 }
+    ];
+    
+    // Also handle MonthsToUse separately (integer, no decimals)
+    // Note: monthsToUseInput will be declared again later for event listeners
+    const monthsToUseInputSetup = document.getElementById('id_MonthsToUse');
+    if (monthsToUseInputSetup) {
+        if (monthsToUseInputSetup.type === 'number') {
+            monthsToUseInputSetup.type = 'text';
+            monthsToUseInputSetup.setAttribute('inputmode', 'numeric');
+        }
+    }
+    
+    // Ensure numeric fields are text inputs (not number inputs) to support formatting
+    numericFields.forEach(field => {
+        const input = document.getElementById(field.id);
+        if (input) {
+            // Change to text input if it's a number input (to support comma formatting)
+            if (input.type === 'number') {
+                input.type = 'text';
+                input.setAttribute('inputmode', 'numeric');
+            }
+            
+            // Format initial value if present
+            if (input.value && input.value.trim() !== '') {
+                const normalized = normalizeNumericValue(input.value);
+                if (normalized !== '' && !isNaN(parseFloat(normalized))) {
+                    formatNumericField(input, field.decimals);
+                }
+            }
+        }
+    });
+    
+    // Make DailyExpense read-only (calculated field)
+    const dailyExpenseInput = document.getElementById('id_DailyExpense');
+    if (dailyExpenseInput) {
+        dailyExpenseInput.setAttribute('readonly', 'readonly');
+        dailyExpenseInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+    }
+    
+    // Auto-fill UnitPrice from UnitCost on page load if UnitCost has value
+    const unitCostInputForInit = document.getElementById('id_UnitCost');
+    const unitPriceInputForInit = document.getElementById('id_UnitPrice');
+    if (unitCostInputForInit && unitPriceInputForInit) {
+        const unitCostValue = unitCostInputForInit.value;
+        const unitPriceValue = unitPriceInputForInit.value;
+        // Only auto-fill if UnitCost has value and UnitPrice is empty
+        if (unitCostValue && unitCostValue.trim() !== '' && (!unitPriceValue || unitPriceValue.trim() === '')) {
+            unitPriceInputForInit.value = unitCostValue;
+            // Format it after a short delay
+            setTimeout(function() {
+                formatNumericField(unitPriceInputForInit, 2);
+            }, 100);
+        }
+    }
+    
+    // Track if DailyExpense was just calculated to prevent reformatting
+    window.dailyExpenseJustCalculated = false;
+    
+    // Add event listeners for numeric field formatting
+    numericFields.forEach(field => {
+        const input = document.getElementById(field.id);
+        if (input) {
+            const isDailyExpense = field.id === 'id_DailyExpense';
+            
+            // Format on blur - this is when user finishes typing
+            input.addEventListener('blur', function() {
+                // Skip formatting for DailyExpense if it was just calculated
+                if (isDailyExpense && window.dailyExpenseJustCalculated) {
+                    window.dailyExpenseJustCalculated = false;
+                    return;
+                }
+                
+                // Only format if there's a value
+                const currentValue = input.value;
+                if (currentValue && currentValue.trim() !== '') {
+                    // Store original value before formatting
+                    const originalValue = currentValue.trim();
+                    formatNumericField(input, field.decimals);
+                    // If formatting cleared the value, restore original
+                    if (!input.value || input.value.trim() === '') {
+                        input.value = originalValue;
+                    }
+                }
+            });
+            
+            // Remove error styling when user starts typing
+            input.addEventListener('input', function(e) {
+                e.target.classList.remove('border-red-500');
+                // If user manually edits DailyExpense, allow formatting
+                if (isDailyExpense) {
+                    window.dailyExpenseJustCalculated = false;
+                }
+            });
+            
+            // Format on paste
+            input.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    // Clean pasted value first, then format
+                    const value = e.target.value;
+                    const cleaned = normalizeNumericValue(value);
+                    if (cleaned !== value && cleaned !== '') {
+                        e.target.value = cleaned;
+                    }
+                    if (e.target.value && e.target.value.trim() !== '') {
+                        formatNumericField(input, field.decimals);
+                    }
+                }, 10);
+            });
+        }
+    });
+    
     // Add event listeners for automatic calculation
+    // Note: dailyExpenseInput already declared above
     const receivedDateInput = document.getElementById('id_ReceivedDate');
     const monthsToUseInput = document.getElementById('id_MonthsToUse');
     const unitCostInput = document.getElementById('id_UnitCost');
     
+    // Immediate calculation function (for change events)
+    function immediateCalculation() {
+        console.log('immediateCalculation: called');
+        calculateDailyExpense();
+    }
+    
+    // Function to trigger calculation after formatting completes
+    function triggerCalculation() {
+        console.log('triggerCalculation: called');
+        // Use setTimeout to ensure any blur formatting completes first
+        setTimeout(function() {
+            calculateDailyExpense();
+        }, 250);
+    }
+    
     if (receivedDateInput) {
-        receivedDateInput.addEventListener('change', calculateDailyExpense);
-        receivedDateInput.addEventListener('input', calculateDailyExpense);
+        console.log('Setting up event listeners for receivedDateInput');
+        receivedDateInput.addEventListener('change', immediateCalculation);
+        receivedDateInput.addEventListener('blur', triggerCalculation);
+        receivedDateInput.addEventListener('input', function() {
+            clearTimeout(window.calculationTimeout);
+            window.calculationTimeout = setTimeout(calculateDailyExpense, 800);
+        });
+    } else {
+        console.log('receivedDateInput not found');
     }
     
     if (monthsToUseInput) {
-        monthsToUseInput.addEventListener('change', calculateDailyExpense);
-        monthsToUseInput.addEventListener('input', calculateDailyExpense);
+        console.log('Setting up event listeners for monthsToUseInput');
+        
+        // Store previous value to detect changes
+        let previousMonthsToUseValue = monthsToUseInput.value || '';
+        
+        // Function to check if value changed and trigger calculation
+        function checkAndCalculateMonthsToUse() {
+            const currentValue = monthsToUseInput.value || '';
+            if (currentValue !== previousMonthsToUseValue) {
+                console.log('monthsToUseInput: value changed from', previousMonthsToUseValue, 'to', currentValue);
+                previousMonthsToUseValue = currentValue;
+                // Normalize value if needed
+                if (currentValue.trim() !== '') {
+                    const normalized = normalizeNumericValue(currentValue);
+                    if (normalized !== '' && !isNaN(parseFloat(normalized))) {
+                        const numValue = parseInt(normalized, 10);
+                        if (!isNaN(numValue) && numValue.toString() !== currentValue) {
+                            monthsToUseInput.value = numValue.toString();
+                            previousMonthsToUseValue = numValue.toString();
+                        }
+                    }
+                }
+                // Trigger calculation
+                immediateCalculation();
+            }
+        }
+        
+        // Change event - fires when value changes and field loses focus
+        monthsToUseInput.addEventListener('change', function(e) {
+            console.log('monthsToUseInput: change event fired, value:', e.target.value);
+            checkAndCalculateMonthsToUse();
+        });
+        
+        // Blur event - fires when field loses focus
+        monthsToUseInput.addEventListener('blur', function(e) {
+            console.log('monthsToUseInput: blur event fired, value:', e.target.value);
+            checkAndCalculateMonthsToUse();
+            // Also trigger calculation after a short delay
+            setTimeout(function() {
+                triggerCalculation();
+            }, 100);
+        });
+        
+        // Input event - fires on every keystroke
+        monthsToUseInput.addEventListener('input', function(e) {
+            console.log('monthsToUseInput: input event fired, value:', e.target.value);
+            clearTimeout(window.monthsToUseCalculationTimeout);
+            window.monthsToUseCalculationTimeout = setTimeout(function() {
+                console.log('monthsToUseInput: triggering calculation after input delay');
+                checkAndCalculateMonthsToUse();
+            }, 500);
+        });
+        
+        // Also listen for keyup to catch immediate changes
+        monthsToUseInput.addEventListener('keyup', function(e) {
+            // Trigger on Enter key
+            if (e.key === 'Enter') {
+                console.log('monthsToUseInput: Enter key pressed');
+                checkAndCalculateMonthsToUse();
+            }
+        });
+        
+        // Force trigger on paste
+        monthsToUseInput.addEventListener('paste', function(e) {
+            setTimeout(function() {
+                console.log('monthsToUseInput: paste event, triggering calculation');
+                checkAndCalculateMonthsToUse();
+            }, 10);
+        });
+    } else {
+        console.log('monthsToUseInput not found');
+    }
+    
+    // Function to auto-fill UnitPrice from UnitCost
+    function autoFillUnitPrice() {
+        const unitPriceInput = document.getElementById('id_UnitPrice');
+        if (unitCostInput && unitPriceInput) {
+            const unitCostValue = unitCostInput.value;
+            if (unitCostValue && unitCostValue.trim() !== '') {
+                // Copy the value (will be formatted on blur)
+                unitPriceInput.value = unitCostValue;
+                // Trigger formatting
+                setTimeout(function() {
+                    formatNumericField(unitPriceInput, 2);
+                }, 100);
+            }
+        }
     }
     
     if (unitCostInput) {
-        unitCostInput.addEventListener('change', calculateDailyExpense);
-        unitCostInput.addEventListener('input', calculateDailyExpense);
+        console.log('Setting up event listeners for unitCostInput');
+        // Auto-fill UnitPrice when UnitCost changes
+        unitCostInput.addEventListener('change', function() {
+            console.log('unitCostInput: change event');
+            autoFillUnitPrice();
+            immediateCalculation();
+        });
+        unitCostInput.addEventListener('blur', function() {
+            console.log('unitCostInput: blur event');
+            // Auto-fill after formatting completes
+            setTimeout(function() {
+                autoFillUnitPrice();
+            }, 300);
+            triggerCalculation();
+        });
+        unitCostInput.addEventListener('input', function() {
+            console.log('unitCostInput: input event');
+            clearTimeout(window.calculationTimeout);
+            window.calculationTimeout = setTimeout(function() {
+                autoFillUnitPrice();
+                calculateDailyExpense();
+            }, 800);
+        });
+    } else {
+        console.log('unitCostInput not found');
+    }
+    
+    // Add event listeners for UnitPrice to trigger calculation
+    const unitPriceInput = document.getElementById('id_UnitPrice');
+    if (unitPriceInput) {
+        console.log('Setting up event listeners for unitPriceInput');
+        unitPriceInput.addEventListener('change', function() {
+            console.log('unitPriceInput: change event');
+            immediateCalculation();
+        });
+        unitPriceInput.addEventListener('blur', function() {
+            console.log('unitPriceInput: blur event');
+            triggerCalculation();
+        });
+        unitPriceInput.addEventListener('input', function() {
+            console.log('unitPriceInput: input event');
+            clearTimeout(window.calculationTimeout);
+            window.calculationTimeout = setTimeout(calculateDailyExpense, 800);
+        });
+    } else {
+        console.log('unitPriceInput not found');
     }
     
     // Auto-focus on the first input field
-    const firstInput = document.querySelector('input[type="text"]:not([readonly])');
+    const firstInput = document.querySelector('input[type="text"]:not([readonly]), select:not([disabled])');
     if (firstInput) {
         firstInput.focus();
     }
     
-    // Add loading state to submit button
+    // Form submission handler with validation and value normalization
     const form = document.querySelector('form');
     const submitButton = document.querySelector('button[type="submit"]');
     if (submitButton && form) {
         form.addEventListener('submit', function(event) {
-            const unitCostInput = document.getElementById('id_UnitCost');
-            const cumulatedDepInput = document.getElementById('id_CumulatedDepreciation');
-
-            const unitCost = parseFloat(unitCostInput?.value || '0');
-            const cumulatedDep = parseFloat(cumulatedDepInput?.value || '0');
-
-            if (isNaN(unitCost) || isNaN(cumulatedDep) || unitCost <= cumulatedDep) {
-                event.preventDefault();
-                alert('Нэгжийн өртөг нь эхний элэгдлээс их байх ёстой.');
-                unitCostInput?.focus();
+            event.preventDefault();
+            
+            // Validate form
+            const validation = validateForm();
+            if (!validation.isValid) {
+                alert(validation.errors.join('\n'));
+                // Focus on first error field
+                const firstErrorField = document.querySelector('.border-red-500');
+                if (firstErrorField) {
+                    firstErrorField.focus();
+                    firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return;
             }
 
+            // Normalize numeric values (remove commas) before submission
+            numericFields.forEach(field => {
+                const input = document.getElementById(field.id);
+                if (input && input.value) {
+                    input.value = normalizeNumericValue(input.value);
+                }
+            });
+            
+            // Normalize MonthsToUse if it exists
+            if (monthsToUseInput && monthsToUseInput.value) {
+                monthsToUseInput.value = normalizeNumericValue(monthsToUseInput.value);
+            }
+            
+            // Disable submit button and show loading state
             submitButton.disabled = true;
             submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Боловсруулж байна...';
+            
+            // Submit the form
+            form.submit();
         });
     }
+    
+    // Add real-time validation feedback
+    const allInputs = form.querySelectorAll('input, select');
+    allInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            // Remove error styling on blur if value is valid
+            if (input.value && !input.classList.contains('border-red-500')) {
+                input.classList.remove('border-red-500');
+            }
+        });
+    });
 });
 </script>
 

@@ -55,7 +55,9 @@
                         <tr class="bg-gray-100">
                             <td class="px-2 py-1 border-r border-gray-200 text-center text-xs text-gray-500">#</td>
                             <td class="px-2 py-1 border-r border-gray-200">
-                                <input type="text" id="ast-filter-account" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <select id="ast-filter-account" class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Бүгд</option>
+                                </select>
                             </td>
                             <td class="px-2 py-1 border-r border-gray-200">
                                 <input type="text" id="ast-filter-asset" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -235,38 +237,35 @@
                 <!-- Unit Cost -->
                 <div>
                     <label for="UnitCost" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ӨРТӨГ *</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="UnitCost" 
                            name="UnitCost" 
-                           step="0.000001" 
-                           min="0" 
+                           inputmode="numeric"
                            required
-                           placeholder="0.000000"
+                           placeholder="0.00"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
                 <!-- Unit Price -->
                 <div>
                     <label for="UnitPrice" class="block text-sm font-medium text-gray-700 mb-1">НЭГЖ ҮНЭ *</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="UnitPrice" 
                            name="UnitPrice" 
-                           step="0.000001" 
-                           min="0" 
+                           inputmode="numeric"
                            required
-                           placeholder="0.000000"
+                           placeholder="0.00"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
                 <!-- Cumulated Depreciation -->
                 <div>
                     <label for="CumulatedDepreciation" class="block text-sm font-medium text-gray-700 mb-1">ЭХНИЙ ЭЛЭГДЭЛ</label>
-                    <input type="number" 
+                    <input type="text" 
                            id="CumulatedDepreciation" 
                            name="CumulatedDepreciation" 
-                           step="0.000001" 
-                           min="0" 
-                           placeholder="0.000000"
+                           inputmode="numeric"
+                           placeholder="0.00"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
@@ -312,6 +311,7 @@
 {% include 'core/components/account_selection_modal.html' %}
 {% include 'core/components/asset_selection_modal.html' %}
 {% include 'core/components/client_selection_modal.html' %}
+{% include 'core/components/message_modal.html' %}
 
 <!-- Initialize balance data from server -->
 <script type="application/json" id="balance-data">
@@ -344,6 +344,53 @@
 let balanceData = JSON.parse(document.getElementById('balance-data').textContent);
 let isEditMode = false;
 
+// Number formatting utilities
+function normalizeNumericValue(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+    return String(value).replace(/,/g, '').trim();
+}
+
+function parseNumericValue(value, defaultValue = 0) {
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '' || normalized === '-') {
+        return defaultValue;
+    }
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function formatNumericInput(value, decimals = 2) {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+    const normalized = normalizeNumericValue(value);
+    if (normalized === '' || normalized === '-') {
+        return '';
+    }
+    const num = parseFloat(normalized);
+    if (isNaN(num)) {
+        return normalized;
+    }
+    return num.toLocaleString('en-US', { 
+        minimumFractionDigits: decimals, 
+        maximumFractionDigits: decimals 
+    });
+}
+
+function formatNumericField(input, decimals = 2) {
+    if (!input) return;
+    const currentValue = input.value;
+    if (!currentValue || currentValue.trim() === '') {
+        return;
+    }
+    const formatted = formatNumericInput(currentValue, decimals);
+    if (formatted !== '' && formatted !== currentValue) {
+        input.value = formatted;
+    }
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     setupActionButtons();
@@ -351,6 +398,41 @@ document.addEventListener('DOMContentLoaded', function() {
     astSetupInlineFilters();
     astRecalculateSummary();
     initializeAstPagination();
+    
+    // Setup number formatting for form fields
+    const unitCostInput = document.getElementById('UnitCost');
+    const unitPriceInput = document.getElementById('UnitPrice');
+    const cumulatedDepreciationInput = document.getElementById('CumulatedDepreciation');
+    
+    // Format on blur
+    [unitCostInput, unitPriceInput, cumulatedDepreciationInput].forEach(input => {
+        if (input) {
+            input.addEventListener('blur', function() {
+                formatNumericField(input, 2);
+            });
+        }
+    });
+    
+    // Override selectAsset to format values
+    const originalSelectAsset = window.selectAsset;
+    if (originalSelectAsset) {
+        window.selectAsset = async function(...args) {
+            await originalSelectAsset.apply(this, args);
+            
+            // Format the values after they're set
+            setTimeout(function() {
+                if (unitCostInput && unitCostInput.value) {
+                    formatNumericField(unitCostInput, 2);
+                }
+                if (unitPriceInput && unitPriceInput.value) {
+                    formatNumericField(unitPriceInput, 2);
+                }
+                if (cumulatedDepreciationInput && cumulatedDepreciationInput.value) {
+                    formatNumericField(cumulatedDepreciationInput, 2);
+                }
+            }, 100);
+        };
+    }
 });
 
 // Setup action buttons with event listeners
@@ -421,6 +503,30 @@ function astSetupInlineFilters() {
     const accountFilter = document.getElementById('ast-filter-account');
     const assetFilter = document.getElementById('ast-filter-asset');
 
+    // Populate account code dropdown with unique account codes
+    if (accountFilter) {
+        const accountCodes = new Set();
+        const rows = document.querySelectorAll('.balance-row');
+        rows.forEach(row => {
+            const accountCodeElement = row.querySelector('.account-format');
+            if (accountCodeElement) {
+                const accountCode = accountCodeElement.textContent.trim();
+                if (accountCode) {
+                    accountCodes.add(accountCode);
+                }
+            }
+        });
+        
+        // Sort account codes and add to dropdown
+        const sortedCodes = Array.from(accountCodes).sort();
+        sortedCodes.forEach(code => {
+            const option = document.createElement('option');
+            option.value = code.toLowerCase();
+            option.textContent = code;
+            accountFilter.appendChild(option);
+        });
+    }
+
     const applyFilters = () => {
         const accountTerm = (accountFilter?.value || '').toLowerCase();
         const assetTerm = (assetFilter?.value || '').toLowerCase();
@@ -429,7 +535,10 @@ function astSetupInlineFilters() {
         rows.forEach(row => {
             const account = row.dataset.account || '';
             const asset = row.dataset.asset || '';
-            const matchesAccount = !accountTerm || account.includes(accountTerm);
+            // For dropdown, match exact account code (first part of account string)
+            const accountCodeElement = row.querySelector('.account-format');
+            const accountCode = accountCodeElement ? accountCodeElement.textContent.trim().toLowerCase() : '';
+            const matchesAccount = !accountTerm || accountCode === accountTerm || account.includes(accountTerm);
             const matchesAsset = !assetTerm || asset.includes(assetTerm);
             row.style.display = (matchesAccount && matchesAsset) ? '' : 'none';
         });
@@ -439,7 +548,7 @@ function astSetupInlineFilters() {
         astApplyPagination();
     };
 
-    if (accountFilter) accountFilter.addEventListener('input', applyFilters);
+    if (accountFilter) accountFilter.addEventListener('change', applyFilters);
     if (assetFilter) assetFilter.addEventListener('input', applyFilters);
 }
 
@@ -635,10 +744,44 @@ function addNewBalance() {
 }
 
 // Edit balance
-function editBalance(balanceId) {
+async function editBalance(balanceId) {
     const balance = balanceData.find(b => b.BeginningBalanceId === balanceId);
     if (!balance) return;
     
+    // Check if asset card has depreciation
+    try {
+        const checkUrl = `/core/api/check-asset-card-depreciation/?asset_card_id=${balance.AssetCardId}`;
+        const checkResponse = await fetch(checkUrl);
+        const checkData = await checkResponse.json();
+        
+        if (!checkData.success) {
+            // If API error, show error but allow edit (fail open)
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(checkData.error || 'Шалгахад алдаа гарлаа', 'error');
+            } else {
+                alert(checkData.error || 'Шалгахад алдаа гарлаа');
+            }
+            return;
+        }
+        
+        if (checkData.has_depreciation) {
+            // Show modal and prevent edit
+            const errorMessage = checkData.message || 'Тухайн хөрөнгийн элэгдэл бодсон байна. Элэгдлээ устгана уу?';
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(errorMessage, 'error');
+            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking asset card:', error);
+        // Fail open - allow edit if check fails
+    }
+    
+    // If check passes, proceed with edit
     isEditMode = true;
     document.getElementById('modal-title').textContent = 'Edit Asset Balance';
     document.getElementById('submit-text').textContent = 'Update Balance';
@@ -653,31 +796,33 @@ function editBalance(balanceId) {
     document.getElementById('AssetCardId').value = balance.AssetCardId;
     document.getElementById('AssetCardIdDisplay').value = `${balance.asset_card_code} - ${balance.asset_card_name}`;
     document.getElementById('Quantity').value = balance.Quantity;
-    document.getElementById('UnitCost').value = balance.UnitCost;
-    document.getElementById('UnitPrice').value = balance.UnitPrice;
-    document.getElementById('CumulatedDepreciation').value = balance.CumulatedDepreciation || '0';
-    document.getElementById('ClientId').value = balance.ClientId || '';
-    document.getElementById('ClientIdDisplay').value = balance.client_name || '';
     
-    // Keep UnitCost, UnitPrice, and CumulatedDepreciation read-only even when editing
+    // Format numeric values with thousand separators and 2 decimals
     const unitCostInput = document.getElementById('UnitCost');
     const unitPriceInput = document.getElementById('UnitPrice');
     const cumulatedDepreciationInput = document.getElementById('CumulatedDepreciation');
+    
     if (unitCostInput) {
+        unitCostInput.value = formatNumericInput(balance.UnitCost || '0', 2);
         unitCostInput.readOnly = true;
         unitCostInput.classList.add('bg-gray-100', 'cursor-not-allowed');
         unitCostInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
     }
     if (unitPriceInput) {
+        unitPriceInput.value = formatNumericInput(balance.UnitPrice || '0', 2);
         unitPriceInput.readOnly = true;
         unitPriceInput.classList.add('bg-gray-100', 'cursor-not-allowed');
         unitPriceInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
     }
     if (cumulatedDepreciationInput) {
+        cumulatedDepreciationInput.value = formatNumericInput(balance.CumulatedDepreciation || '0', 2);
         cumulatedDepreciationInput.readOnly = true;
         cumulatedDepreciationInput.classList.add('bg-gray-100', 'cursor-not-allowed');
         cumulatedDepreciationInput.classList.remove('focus:ring-2', 'focus:ring-blue-500');
     }
+    
+    document.getElementById('ClientId').value = balance.ClientId || '';
+    document.getElementById('ClientIdDisplay').value = balance.client_name || '';
     
     document.getElementById('balance-modal').classList.remove('hidden');
 }
@@ -773,9 +918,27 @@ function handleFormSubmit(event) {
     const accountId = accountIdElement ? accountIdElement.value : '';
     const assetCardId = assetCardIdElement ? assetCardIdElement.value : '';
     const quantity = quantityElement ? quantityElement.value : '';
-    const unitCost = unitCostElement ? unitCostElement.value : '';
-    const unitPrice = unitPriceElement ? unitPriceElement.value : '';
+    const unitCostRaw = unitCostElement ? unitCostElement.value : '';
+    const unitPriceRaw = unitPriceElement ? unitPriceElement.value : '';
+    const cumulatedDepreciationRaw = document.getElementById('CumulatedDepreciation') ? document.getElementById('CumulatedDepreciation').value : '';
     const clientId = document.getElementById('ClientId') ? document.getElementById('ClientId').value : '';
+    
+    // Normalize numeric values (remove commas) before validation and submission
+    const unitCost = normalizeNumericValue(unitCostRaw);
+    const unitPrice = normalizeNumericValue(unitPriceRaw);
+    const cumulatedDepreciation = normalizeNumericValue(cumulatedDepreciationRaw);
+    
+    // Update form fields with normalized values before submission
+    if (unitCostElement && unitCost !== unitCostRaw) {
+        unitCostElement.value = unitCost;
+    }
+    if (unitPriceElement && unitPrice !== unitPriceRaw) {
+        unitPriceElement.value = unitPrice;
+    }
+    const cumulatedDepreciationElement = document.getElementById('CumulatedDepreciation');
+    if (cumulatedDepreciationElement && cumulatedDepreciation !== cumulatedDepreciationRaw) {
+        cumulatedDepreciationElement.value = cumulatedDepreciation;
+    }
     
     console.log('DEBUG: Required fields check:');
     console.log(`  AccountId element: ${accountIdElement ? 'found' : 'NOT FOUND'}, value: "${accountId}"`);
@@ -783,6 +946,7 @@ function handleFormSubmit(event) {
     console.log(`  Quantity: "${quantity}"`);
     console.log(`  UnitCost: "${unitCost}"`);
     console.log(`  UnitPrice: "${unitPrice}"`);
+    console.log(`  CumulatedDepreciation: "${cumulatedDepreciation}"`);
     console.log(`  ClientId: "${clientId}"`);
     
     // Validate required fields - allow "0" as valid value for unitCost and unitPrice

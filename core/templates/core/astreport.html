@@ -56,7 +56,7 @@
     </div>
 
     <!-- Asset Documents View (Hidden by default) -->
-    <div id="ast-documents-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+    <div id="ast-documents-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;" tabindex="-1">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -211,7 +211,7 @@
     </div>
 
     <!-- Asset Journal Detail View (Hidden by default) -->
-    <div id="ast-journal-detail-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+    <div id="ast-journal-detail-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;" tabindex="-1">
                 
         <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -333,7 +333,7 @@
     </div>
 
     <!-- Asset Account Balance View (Hidden by default) -->
-    <div id="ast-balance-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+    <div id="ast-balance-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;" tabindex="-1">
         <div class="overflow-x-auto">
             <table class="min-w-full">
                 <thead class="bg-gray-50">
@@ -482,20 +482,19 @@
     </div>
 
     <!-- БАЙГУУЛСАН ЭЛЭГДЭЛ View (Hidden by default) -->
-    <div id="ast-trial-balance-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+    <div id="ast-trial-balance-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;" tabindex="-1">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдлийн огноо</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Данс</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хөрөнгө</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хон.элэг</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хоног</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Байгуулсан</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдлийн огноо</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт огноо</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зардал</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Элэгдэл</th>
@@ -504,6 +503,10 @@
                     <tr class="bg-gray-100">
                         <td class="px-2 py-1 border-r border-gray-200">
                             <input type="text" id="filter-tb-document-no" placeholder="Filter..." 
+                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-1 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-tb-depreciation-date" placeholder="Filter..."
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
@@ -528,15 +531,7 @@
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-tb-depreciation-date" placeholder="Filter..."
-                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-1 py-1 border-r border-gray-200">
                             <input type="text" id="filter-tb-created-date" placeholder="Filter..."
-                                   class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-1 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-tb-document-date" placeholder="Filter..."
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-1 py-1 border-r border-gray-200">
@@ -620,7 +615,7 @@
     </div>
 
     <!-- ЭЛЭГДЛИЙН БИЧИЛТ View (Hidden by default) -->
-    <div id="ast-depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;">
+    <div id="ast-depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: none;" tabindex="-1">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -1073,31 +1068,12 @@
             updateDocumentIdSets(documentsData);
             detailsData = filterDetailsByActiveDocuments(cachedData.details || []);
             
-                    // Show documents view by default after loading from cache
-                    const detailView = document.getElementById('ast-journal-detail-view');
-                    const documentsView = document.getElementById('ast-documents-view');
-                    const balanceView = document.getElementById('ast-balance-view');
-                    const trialBalanceView = document.getElementById('ast-trial-balance-view');
-                    const depreciationView = document.getElementById('ast-depreciation-view');
-                    if (documentsView && detailView) {
-                        documentsView.style.display = 'block';
-                        detailView.style.display = 'none';
-                        if (balanceView) {
-                            balanceView.style.display = 'none';
-                        }
-                        if (trialBalanceView) {
-                            trialBalanceView.style.display = 'none';
-                        }
-                        if (depreciationView) {
-                            depreciationView.style.display = 'none';
-                        }
-                        updateTabStyling('documents');
-                    } else {
-                        // If views don't exist yet, just update tab styling
-                        updateTabStyling('documents');
-                    }
+            // Restore the active tab view (preserves current tab instead of defaulting to documents)
+            restoreActiveTabView();
             
             applyFrontendFilter();
+            // Focus the active tab view after loading from cache
+            focusActiveTabView();
             return;
         }
         
@@ -1116,29 +1092,8 @@
                     updateDocumentIdSets(documentsData);
                     detailsData = filterDetailsByActiveDocuments(data.details || []);
                     
-                    // Show documents view by default after loading
-                    const detailView = document.getElementById('ast-journal-detail-view');
-                    const documentsView = document.getElementById('ast-documents-view');
-                    const balanceView = document.getElementById('ast-balance-view');
-                    const trialBalanceView = document.getElementById('ast-trial-balance-view');
-                    const depreciationView = document.getElementById('ast-depreciation-view');
-                    if (documentsView && detailView) {
-                        documentsView.style.display = 'block';
-                        detailView.style.display = 'none';
-                        if (balanceView) {
-                            balanceView.style.display = 'none';
-                        }
-                        if (trialBalanceView) {
-                            trialBalanceView.style.display = 'none';
-                        }
-                        if (depreciationView) {
-                            depreciationView.style.display = 'none';
-                        }
-                        updateTabStyling('documents');
-                    } else {
-                        // If views don't exist yet, just update tab styling
-                        updateTabStyling('documents');
-                    }
+                    // Restore the active tab view (preserves current tab instead of defaulting to documents)
+                    restoreActiveTabView();
                     
                     applyFrontendFilter();
                     
@@ -1146,8 +1101,13 @@
                     Promise.all([
                         fetchTrialBalanceData(startDate, endDate),
                         fetchDepreciationJournalData(startDate, endDate)
-                    ]).catch(error => {
+                    ]).then(() => {
+                        // Focus the active tab view after all data is loaded
+                        focusActiveTabView();
+                    }).catch(error => {
                         console.error('Error fetching additional data:', error);
+                        // Still focus even if there's an error
+                        focusActiveTabView();
                     });
                 } else {
                     showDocumentsError(data.error || 'Failed to load comprehensive data');
@@ -1787,7 +1747,13 @@
     }
     
     
+    // Track current active tab
+    let currentActiveTab = 'documents';
+    
     function updateTabStyling(activeTab) {
+        // Store current active tab
+        currentActiveTab = activeTab;
+        
         // Use IDs for more reliable tab selection
         const tabDocuments = document.getElementById('tab-documents');
         const tabDetail = document.getElementById('tab-detail');
@@ -1824,6 +1790,108 @@
             tabDepreciation.classList.remove('border-gray-300', 'text-gray-500');
             tabDepreciation.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
         }
+    }
+    
+    // Function to get the active tab view element
+    function getActiveTabView() {
+        const viewMap = {
+            'documents': 'ast-documents-view',
+            'detail': 'ast-journal-detail-view',
+            'balance': 'ast-balance-view',
+            'deleted': 'ast-documents-view', // Deleted uses same view as documents
+            'trial-balance': 'ast-trial-balance-view',
+            'depreciation': 'ast-depreciation-view'
+        };
+        
+        const viewId = viewMap[currentActiveTab];
+        return viewId ? document.getElementById(viewId) : null;
+    }
+    
+    // Function to restore the active tab view
+    function restoreActiveTabView() {
+        const detailView = document.getElementById('ast-journal-detail-view');
+        const documentsView = document.getElementById('ast-documents-view');
+        const balanceView = document.getElementById('ast-balance-view');
+        const trialBalanceView = document.getElementById('ast-trial-balance-view');
+        const depreciationView = document.getElementById('ast-depreciation-view');
+        
+        // Hide all views first
+        if (documentsView) documentsView.style.display = 'none';
+        if (detailView) detailView.style.display = 'none';
+        if (balanceView) balanceView.style.display = 'none';
+        if (trialBalanceView) trialBalanceView.style.display = 'none';
+        if (depreciationView) depreciationView.style.display = 'none';
+        
+        // Show the active tab view based on currentActiveTab
+        switch(currentActiveTab) {
+            case 'documents':
+                if (documentsView) {
+                    documentsView.style.display = 'block';
+                    updateTabStyling('documents');
+                }
+                break;
+            case 'detail':
+                if (detailView) {
+                    detailView.style.display = 'block';
+                    updateTabStyling('detail');
+                }
+                break;
+            case 'balance':
+                if (balanceView) {
+                    balanceView.style.display = 'block';
+                    updateTabStyling('balance');
+                }
+                break;
+            case 'deleted':
+                if (documentsView) {
+                    documentsView.style.display = 'block';
+                    updateTabStyling('deleted');
+                }
+                break;
+            case 'trial-balance':
+                if (trialBalanceView) {
+                    trialBalanceView.style.display = 'block';
+                    updateTabStyling('trial-balance');
+                }
+                break;
+            case 'depreciation':
+                if (depreciationView) {
+                    depreciationView.style.display = 'block';
+                    updateTabStyling('depreciation');
+                }
+                break;
+            default:
+                // Default to documents if unknown
+                if (documentsView) {
+                    documentsView.style.display = 'block';
+                    updateTabStyling('documents');
+                }
+        }
+    }
+    
+    // Function to focus the active tab view
+    function focusActiveTabView() {
+        setTimeout(() => {
+            // Get the active tab button instead of the table view
+            const tabMap = {
+                'documents': 'tab-documents',
+                'detail': 'tab-detail',
+                'balance': 'tab-balance',
+                'deleted': 'tab-deleted',
+                'trial-balance': 'tab-trial-balance',
+                'depreciation': 'tab-depreciation'
+            };
+            
+            const activeTabId = tabMap[currentActiveTab];
+            const activeTabButton = activeTabId ? document.getElementById(activeTabId) : null;
+            
+            if (activeTabButton) {
+                // Scroll to the tab navigation area, not the table
+                activeTabButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Optionally focus the tab button (but don't focus the table)
+                // activeTabButton.focus();
+            }
+        }, 100);
     }
     
     function formatNumber(value, decimals = 2) {
@@ -2292,14 +2360,13 @@
         // Get filter values
         const filters = {
             documentNo: document.getElementById('filter-tb-document-no')?.value.toLowerCase().trim() || '',
+            depreciationDate: document.getElementById('filter-tb-depreciation-date')?.value.toLowerCase().trim() || '',
             accountCode: document.getElementById('filter-tb-account-code')?.value.toLowerCase().trim() || '',
             assetName: document.getElementById('filter-tb-asset-name')?.value.toLowerCase().trim() || '',
             dailyExpense: document.getElementById('filter-tb-daily-expense')?.value.toLowerCase().trim() || '',
             expenseDay: document.getElementById('filter-tb-expense-day')?.value.toLowerCase().trim() || '',
             expenseAmount: document.getElementById('filter-tb-expense-amount')?.value.toLowerCase().trim() || '',
-            depreciationDate: document.getElementById('filter-tb-depreciation-date')?.value.toLowerCase().trim() || '',
             createdDate: document.getElementById('filter-tb-created-date')?.value.toLowerCase().trim() || '',
-            documentDate: document.getElementById('filter-tb-document-date')?.value.toLowerCase().trim() || '',
             createdBy: document.getElementById('filter-tb-created-by')?.value.toLowerCase().trim() || '',
             debitAccount: document.getElementById('filter-tb-debit-account')?.value.toLowerCase().trim() || '',
             creditAccount: document.getElementById('filter-tb-credit-account')?.value.toLowerCase().trim() || ''
@@ -2310,14 +2377,13 @@
             filteredData = trialBalanceData.filter(item => {
                 const values = {
                     documentNo: String(item.document_no || '').toLowerCase(),
+                    depreciationDate: String(item.depreciation_date || '').toLowerCase(),
                     accountCode: String(item.account_code || '').toLowerCase(),
                     assetName: String(item.asset_card_name || '').toLowerCase(),
                     dailyExpense: String(item.daily_expense || '').toLowerCase(),
                     expenseDay: String(item.expense_day || '').toLowerCase(),
                     expenseAmount: String(item.expense_amount || '').toLowerCase(),
-                    depreciationDate: String(item.depreciation_date || '').toLowerCase(),
                     createdDate: String(item.created_date || '').toLowerCase(),
-                    documentDate: String(item.document_date || '').toLowerCase(),
                     createdBy: String(item.created_by || '').toLowerCase(),
                     debitAccount: String(item.debit_account_code || '').toLowerCase(),
                     creditAccount: String(item.credit_account_code || '').toLowerCase()
@@ -2394,7 +2460,7 @@
         if (!displayData || displayData.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="11" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center justify-center">
                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2414,14 +2480,13 @@
             htmlContent += `
                 <tr class="hover:bg-gray-50">
                     <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_no || ''}</td>
+                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.depreciation_date || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.account_code || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.asset_card_name || ''}</td>
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.daily_expense, 6)}</td>
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${item.expense_day || ''}</td>
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">${formatNumber(item.expense_amount, 2)}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.depreciation_date || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.created_date || ''}</td>
-                    <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.document_date || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.created_by || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.debit_account_code || ''}</td>
                     <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.credit_account_code || ''}</td>
@@ -2433,9 +2498,9 @@
         if (totalExpenseAmount !== null && totalExpenseAmount !== undefined) {
             htmlContent += `
                 <tr class="bg-gray-100 border-t-2 border-gray-300">
-                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="5">НИЙТЛЭГ:</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="6">НИЙТЛЭГ:</td>
                     <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200 text-right font-semibold">${formatNumber(totalExpenseAmount, 2)}</td>
-                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="6"></td>
+                    <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200" colspan="4"></td>
                 </tr>
             `;
         }

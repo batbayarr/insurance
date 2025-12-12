@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load humanize %}
 <!-- Receivable/Payable Balance Report -->
 
@@ -76,7 +77,7 @@
                     <tr>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны код</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дансны нэр</th>
-                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагчийн код</th>
+                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-16">Код</th>
                         <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагчийн нэр</th>
                         <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхний үлдэгдэл (Дт)</th>
                         <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхний үлдэгдэл (Кт)</th>
@@ -96,7 +97,7 @@
                             <input type="text" id="filter-account-name" placeholder="Filter..." 
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
-                        <th class="px-1 py-1 border-r border-gray-200">
+                        <th class="px-1 py-1 border-r border-gray-200 w-16">
                             <input type="text" id="filter-client-code" placeholder="Filter..." 
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </th>
@@ -152,7 +153,7 @@
                         <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">
                             {{ row.accountname }}
                         </td>
-                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
+                        <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 w-16">
                             {{ row.clientcode|default:"-" }}
                         </td>
                         <td class="px-1 py-1 text-xs text-gray-900 border-r border-gray-200">
@@ -275,6 +276,10 @@
                         <option value="50">50</option>
                         <option value="100">100</option>
                     </select>
+                    <button id="print-recpay-balance" 
+                            class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                        ХЭВЛЭХ
+                    </button>
                 </div>
             </div>
         </div>
@@ -292,6 +297,9 @@
 
 <!-- Include Subsidiary Ledger Modal -->
 {% include 'core/components/print_subsidiary_ledger_modal.html' %}
+
+<!-- Include Print Script -->
+<script src="{% static 'js/print-trial-balance.js' %}"></script>
 
 <!-- Context Menu -->
 <div id="context-menu" class="hidden fixed bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
@@ -348,6 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Client-side filtering and pagination
 let allRows = [];
 let filteredRows = [];
+let allFilteredRecpayRowData = []; // Store all filtered row data for printing
 let currentPage = 1;
 let rowsPerPage = 25;
 
@@ -560,6 +569,23 @@ function applyAllFilters() {
 function displayRows() {
     const tbody = document.querySelector('#recpay-balance-table tbody');
     if (!tbody) return;
+    
+    // Store all filtered row data before clearing (for print function)
+    allFilteredRecpayRowData = filteredRows.map(row => ({
+        accountId: row.dataset.accountId || '',
+        accountCode: row.dataset.accountCode || '',
+        accountName: row.dataset.accountName || '',
+        accountType: row.dataset.accountType || '',
+        clientId: row.dataset.clientId || '',
+        clientCode: row.dataset.clientCode || '',
+        clientName: row.dataset.clientName || '',
+        beginningBalanceDebit: parseFloat(row.dataset.beginningBalanceDebit) || 0,
+        beginningBalanceCredit: parseFloat(row.dataset.beginningBalanceCredit) || 0,
+        debitAmount: parseFloat(row.dataset.debitAmount) || 0,
+        creditAmount: parseFloat(row.dataset.creditAmount) || 0,
+        endingBalanceDebit: parseFloat(row.dataset.endingBalanceDebit) || 0,
+        endingBalanceCredit: parseFloat(row.dataset.endingBalanceCredit) || 0
+    }));
     
     tbody.innerHTML = '';
     
@@ -866,6 +892,87 @@ function handleEditSubsidiaryLedger() {
     hideContextMenu();
 }
 
+// Print handler function
+function handlePrintRecpayBalance() {
+    // Use allFilteredRecpayRowData if available, otherwise use filteredRows
+    const dataToUse = allFilteredRecpayRowData.length > 0 ? allFilteredRecpayRowData : filteredRows.map(row => ({
+        accountId: row.dataset.accountId || '',
+        accountCode: row.dataset.accountCode || '',
+        accountName: row.dataset.accountName || '',
+        accountType: row.dataset.accountType || '',
+        clientId: row.dataset.clientId || '',
+        clientCode: row.dataset.clientCode || '',
+        clientName: row.dataset.clientName || '',
+        beginningBalanceDebit: parseFloat(row.dataset.beginningBalanceDebit) || 0,
+        beginningBalanceCredit: parseFloat(row.dataset.beginningBalanceCredit) || 0,
+        debitAmount: parseFloat(row.dataset.debitAmount) || 0,
+        creditAmount: parseFloat(row.dataset.creditAmount) || 0,
+        endingBalanceDebit: parseFloat(row.dataset.endingBalanceDebit) || 0,
+        endingBalanceCredit: parseFloat(row.dataset.endingBalanceCredit) || 0
+    }));
+
+    if (!dataToUse || dataToUse.length === 0) {
+        alert('Хэвлэх мэдээлэл алга байна.');
+        return;
+    }
+
+    // Get date range from form inputs
+    const beginDateInput = document.getElementById('begin_date');
+    const endDateInput = document.getElementById('end_date');
+    const beginDate = beginDateInput ? beginDateInput.value : '';
+    const endDate = endDateInput ? endDateInput.value : '';
+
+    // Get column headers from table, excluding AccountName (Дансны нэр)
+    const allHeaders = Array.from(document.querySelectorAll('#recpay-balance-table thead tr:first-child th'))
+        .map(th => th.textContent.trim());
+    const headers = allHeaders.filter(header => header !== 'Дансны нэр');
+
+    // Use the print-trial-balance.js function
+    if (typeof window.printTrialBalanceTable === 'function') {
+        const mappedData = dataToUse.map(row => ({
+            AccountCode: row.accountCode || '',
+            ClientCode: row.clientCode || '-',
+            ClientName: row.clientName || '-',
+            BeginningBalanceDebit: row.beginningBalanceDebit || 0,
+            BeginningBalanceCredit: row.beginningBalanceCredit || 0,
+            DebitAmount: row.debitAmount || 0,
+            CreditAmount: row.creditAmount || 0,
+            EndingBalanceDebit: row.endingBalanceDebit || 0,
+            EndingBalanceCredit: row.endingBalanceCredit || 0
+        }));
+
+        // Calculate totals from all filtered rows
+        const totals = {
+            beginDebit: 0,
+            beginCredit: 0,
+            debitAmount: 0,
+            creditAmount: 0,
+            endDebit: 0,
+            endCredit: 0
+        };
+
+        dataToUse.forEach(row => {
+            totals.beginDebit += row.beginningBalanceDebit || 0;
+            totals.beginCredit += row.beginningBalanceCredit || 0;
+            totals.debitAmount += row.debitAmount || 0;
+            totals.creditAmount += row.creditAmount || 0;
+            totals.endDebit += row.endingBalanceDebit || 0;
+            totals.endCredit += row.endingBalanceCredit || 0;
+        });
+
+        window.printTrialBalanceTable({
+            title: 'АВЛАГА, ӨГЛӨГИЙН ҮЛДЭГДЭЛ',
+            startDate: beginDate,
+            endDate: endDate,
+            allData: mappedData,
+            columnHeaders: headers,
+            totals: totals
+        });
+    } else {
+        alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+    }
+}
+
 // Event listeners for pagination
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initializeTableFeatures, 100);
@@ -901,6 +1008,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuEditSubsidiaryLedger = document.getElementById('menu-edit-subsidiary-ledger');
     if (menuEditSubsidiaryLedger) {
         menuEditSubsidiaryLedger.addEventListener('click', handleEditSubsidiaryLedger);
+    }
+    
+    // Print button event listener
+    const printButton = document.getElementById('print-recpay-balance');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrintRecpayBalance);
     }
 });
 })();

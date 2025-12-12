@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // API submission function
-    window.submitViaAPI = function() {
+    window.submitViaAPI = async function() {
         try {
             // Check if first table (asset items) has any rows before submission
             const assetTbody = document.getElementById('details-tbody');
@@ -742,11 +742,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Submit to API
+            // Get document data
             const documentId = "{{ document.DocumentId }}";
+            const documentDataScript = document.getElementById('document-data');
+            const documentData = JSON.parse(documentDataScript.textContent);
+            const documentTypeId = documentData.DocumentTypeId;
+            
+            // For DocumentTypeId = 11, first check if all previous periods have depreciation
+            if (documentTypeId === 11) {
+                const checkPreviousPeriodsUrl = `/core/api/check-all-previous-periods-depreciation/?document_id=${documentId}`;
+                
+                console.log('Checking previous periods depreciation for document:', documentId);
+                
+                try {
+                    const previousPeriodsResponse = await fetch(checkPreviousPeriodsUrl);
+                    const previousPeriodsData = await previousPeriodsResponse.json();
+                    
+                    console.log('Previous periods check response:', previousPeriodsData);
+                    
+                    if (!previousPeriodsData.success) {
+                        showMessageModal(previousPeriodsData.error || 'Элэгдэл шалгахад алдаа гарлаа', 'error');
+                        return;
+                    }
+                    
+                    if (!previousPeriodsData.all_periods_have_depreciation) {
+                        // Show error modal and prevent save
+                        const errorMessage = previousPeriodsData.message || 'Элэгдэл бодогдоогүй хугацаа байна';
+                        showMessageModal(errorMessage, 'error');
+                        return;
+                    }
+                    
+                    console.log('All previous periods have depreciation, continuing with future depreciation check');
+                } catch (error) {
+                    console.error('Previous periods check error:', error);
+                    showMessageModal('Элэгдэл шалгахад алдаа гарлаа', 'error');
+                    return;
+                }
+            }
+            
+            // Continue with existing future depreciation check
+            const checkDepreciationUrl = `/core/api/check-depreciation-expense-for-period/?document_id=${documentId}`;
+            
+            console.log('Checking depreciation expense for document:', documentId);
+            const checkResponse = await fetch(checkDepreciationUrl);
+            const checkData = await checkResponse.json();
+            
+            console.log('Depreciation check response:', checkData);
+            if (!checkData.success) {
+                showMessageModal(checkData.error || 'Элэгдэл шалгахад алдаа гарлаа', 'error');
+                return;
+            }
+            
+            if (checkData.has_future_depreciation) {
+                // Show error modal and prevent save
+                const errorMessage = checkData.message || `${checkData.period_id}Сараас хойш элэгдэл бодогдсон байгаа тул тухайн сараас хойшхи элэгдлээ эхлээд устгана уу?`;
+                showMessageModal(errorMessage, 'error');
+                return;
+            }
+            
+            // No future depreciation, proceed with save
+            console.log('No future depreciation, proceeding with save');
             const apiUrl = `/core/astdocuments/${documentId}/bulk-manage-details/api/`;
             
-            fetch(apiUrl, {
+            const saveResponse = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -758,22 +816,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     deleted_items: deletedItems,
                     details: details 
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Redirect to master detail page
-                    window.location.href = `/core/astdocuments/?selected_document=${documentId}`;
-                } else {
-                    alert(`Error: ${data.error}`);
-                }
-            })
-            .catch(error => {
-                console.error('API Error:', error);
-                alert(`API Error: ${error.message}`);
             });
+            
+            const saveData = await saveResponse.json();
+            
+            if (saveData.success) {
+                // Redirect to master detail page
+                window.location.href = `/core/astdocuments/?selected_document=${documentId}`;
+            } else {
+                const errorMsg = saveData.error || 'Хадгалахад алдаа гарлаа';
+                showMessageModal(errorMsg, 'error');
+            }
                 
-            } catch (error) {
+        } catch (error) {
             console.error('Error in API submission:', error);
             alert(`Error: ${error.message}`);
         }

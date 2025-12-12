@@ -59,6 +59,7 @@ urlpatterns = [
     path('api/calculate-closing-record/', views.api_calculate_closing_record, name='api_calculate_closing_record'),
     path('api/delete-closing-entries/', views.api_delete_closing_entries, name='api_delete_closing_entries'),
     path('api/delete-depreciation-entries/', views.api_delete_depreciation_entries, name='api_delete_depreciation_entries'),
+    path('api/check-future-period-depreciation/', views.api_check_future_period_depreciation, name='api_check_future_period_depreciation'),
     path('api/period-begin-date/', views.api_get_period_begin_date, name='api_get_period_begin_date'),
     path('api/periods-list/', views.api_get_periods_list, name='api_get_periods_list'),
     path('api/calculate-cost-adjustment/', views.api_calculate_cost_adjustment, name='api_calculate_cost_adjustment'),
@@ -148,6 +149,12 @@ urlpatterns = [
     path('api/refmeasurements/', views.refmeasurements_json, name='refmeasurements_json'),
     path('api/asset-card-usage-check/', views.api_asset_card_usage_check, name='api_asset_card_usage_check'),
     path('api/check-asset-document-depreciation/', views.api_check_asset_document_depreciation, name='api_check_asset_document_depreciation'),
+    path('api/check-depreciation-expense-for-period/', views.api_check_depreciation_expense_for_period, name='api_check_depreciation_expense_for_period'),
+    path('api/check-depreciation-expense-by-date/', views.api_check_depreciation_expense_by_date, name='api_check_depreciation_expense_by_date'),
+    path('api/check-all-previous-periods-depreciation/', views.api_check_all_previous_periods_have_depreciation, name='api_check_all_previous_periods_have_depreciation'),
+    path('api/check-asset-document-balance/', views.api_check_asset_document_balance, name='api_check_asset_document_balance'),
+    path('api/check-document-period-depreciation/', views.api_check_document_period_depreciation, name='api_check_document_period_depreciation'),
+    path('api/check-asset-card-depreciation/', views.api_check_asset_card_has_depreciation, name='api_check_asset_card_has_depreciation'),
     
 
     # Beginning Balance (Generic)
@@ -191,6 +198,7 @@ urlpatterns = [
     path('reports/account-statement/', views.account_statement, name='account_statement'),
     path('reports/subsidiary-ledger/', views.subsidiary_ledger, name='subsidiary_ledger'),
     path('reports/y-balance/', views.y_balance, name='y_balance'),
+    path('api/trial-balance-by-stbalance/', views.api_trial_balance_by_stbalance, name='api_trial_balance_by_stbalance'),
     path('api/account-statement/', views.account_statement_detail, name='account_statement_detail'),
     path('api/subsidiary-ledger/', views.subsidiary_ledger_detail, name='subsidiary_ledger_detail'),
     path('api/inventory-balance-warehouse/', views.api_get_inventory_balance_warehouse, name='api_get_inventory_balance_warehouse'),

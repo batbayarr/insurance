@@ -379,6 +379,80 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // Check depreciation expense before submission (only for creating new documents)
+            const isNewDocument = {% if item %}false{% else %}true{% endif %};
+            const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+            const documentDateField = document.getElementById('id_DocumentDate');
+            
+            if (isNewDocument && documentTypeSelect && documentDateField) {
+                const documentTypeId = documentTypeSelect.value;
+                const documentDate = documentDateField.value;
+                
+                // Only check for DocumentTypeId 10 and 11
+                if (documentTypeId && (documentTypeId === '10' || documentTypeId === '11') && documentDate) {
+                    // Check if this is the first time checking (prevent infinite loop)
+                    if (form.dataset.depreciationCheckInProgress === 'true') {
+                        // Already checked, allow submission
+                        form.dataset.depreciationCheckInProgress = 'false';
+                        return true;
+                    }
+                    
+                    event.preventDefault();
+                    form.dataset.depreciationCheckInProgress = 'true';
+                    
+                    const submitButton = document.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        Silicon4Form.showLoading(submitButton, 'Шалгаж байна...');
+                    }
+                    
+                    // Check depreciation expense
+                    fetch(`/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            form.dataset.depreciationCheckInProgress = 'false';
+                            
+                            if (submitButton) {
+                                Silicon4Form.hideLoading(submitButton);
+                            }
+                            
+                            if (!data.success) {
+                                console.error('Depreciation check API error:', data.error);
+                                // If API fails, allow submission to proceed (fail open)
+                                form.submit();
+                                return;
+                            }
+                            
+                            if (data.has_depreciation) {
+                                // Show error modal and prevent submission
+                                const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
+                                if (typeof showMessageModal === 'function') {
+                                    showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                    Silicon4Message.error(errorMessage);
+                                } else {
+                                    alert(errorMessage);
+                                }
+                                return;
+                            }
+                            
+                            // No depreciation, proceed with form submission
+                            form.submit();
+                        })
+                        .catch(error => {
+                            console.error('Error checking depreciation expense:', error);
+                            form.dataset.depreciationCheckInProgress = 'false';
+                            
+                            if (submitButton) {
+                                Silicon4Form.hideLoading(submitButton);
+                            }
+                            // If API fails, allow submission to proceed (fail open)
+                            form.submit();
+                        });
+                    
+                    return false;
+                }
+            }
+            
             const submitButton = document.querySelector('button[type="submit"]');
             if (submitButton) {
                 Silicon4Form.showLoading(submitButton, 'Processing...');

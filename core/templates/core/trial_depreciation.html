@@ -32,7 +32,7 @@
     </div>
 
     <!-- ЭЛЭГДЛИЙН БИЧИЛТ (Depreciation Journal) -->
-    <div id="depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: block;">
+    <div id="depreciation-view" class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200" style="display: block;" tabindex="-1">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -313,20 +313,55 @@
             return;
         }
         
+        // Validate periodId
+        const periodIdNum = parseInt(periodId, 10);
+        if (isNaN(periodIdNum) || periodIdNum <= 0) {
+            alert('Хугацаа сонгоно уу');
+            return;
+        }
+        
         apiCache.clear();
         
         const filterButton = document.getElementById('filter-button');
         if (filterButton) {
-            filterButton.textContent = 'Тооцоолж байна...';
+            filterButton.textContent = 'Шалгаж байна...';
             filterButton.disabled = true;
         }
         
-        let adjustedStartDate = startDate;
-        let adjustedEndDate = endDate;
-        
         try {
+            // Check if future periods have depreciation before creating
+            const checkUrl = `/core/api/check-future-period-depreciation/?period_id=${periodIdNum}`;
+            const checkResponse = await fetch(checkUrl);
+            const checkData = await checkResponse.json();
+            
+            if (!checkData.success) {
+                showMessageModal(checkData.error || 'Элэгдэл шалгахад алдаа гарлаа', 'error');
+                if (filterButton) {
+                    filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
+                    filterButton.disabled = false;
+                }
+                return;
+            }
+            
+            if (checkData.has_future_periods) {
+                showMessageModal(checkData.message || 'Энэ сараас хойш элэгдэл байгуулсан тул эхлээд тэдгээрийг устгана уу?', 'error');
+                if (filterButton) {
+                    filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
+                    filterButton.disabled = false;
+                }
+                return;
+            }
+            
+            // If no future periods, proceed with depreciation calculation
+            if (filterButton) {
+                filterButton.textContent = 'Тооцоолж байна...';
+            }
+            
+            let adjustedStartDate = startDate;
+            let adjustedEndDate = endDate;
+            
             // Call depreciation calculation function with period_id
-            const depreciationResult = await callCalculateDepreciation(periodId, startDate, endDate);
+            const depreciationResult = await callCalculateDepreciation(periodIdNum, startDate, endDate);
             
             // Update dates if they were adjusted
             if (depreciationResult && depreciationResult.adjusted_dates) {
@@ -338,19 +373,17 @@
             if (!depreciationResult || !depreciationResult.success) {
                 console.warn('Depreciation calculation warning:', depreciationResult?.error || 'Unknown error');
             }
+            
+            // Update button text for data fetching
+            if (filterButton) {
+                filterButton.textContent = 'Ачаалж байна...';
+            }
+            
+            // Fetch depreciation data using adjusted dates
+            await fetchDepreciationJournalData(adjustedStartDate, adjustedEndDate);
         } catch (error) {
             console.error('Error during calculations:', error);
-            // Continue with data fetching even if calculations fail
-        }
-        
-        // Update button text for data fetching
-        if (filterButton) {
-            filterButton.textContent = 'Ачаалж байна...';
-        }
-        
-        // Fetch depreciation data using adjusted dates
-        try {
-            await fetchDepreciationJournalData(adjustedStartDate, adjustedEndDate);
+            showMessageModal('Алдаа гарлаа: ' + error.message, 'error');
         } finally {
             if (filterButton) {
                 filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
@@ -549,8 +582,26 @@
     }
     
     // Delete depreciation entries for selected period
-    async function deleteDepreciationEntries(startDate, endDate) {
-        const url = `/core/api/delete-depreciation-entries/?start_date=${startDate}&end_date=${endDate}`;
+    async function deleteDepreciationEntries(periodId) {
+        // Validate periodId - ensure it's a valid non-empty value
+        const periodIdStr = String(periodId || '').trim();
+        if (!periodIdStr || periodIdStr === '' || periodIdStr === '0' || periodIdStr === 'null' || periodIdStr === 'undefined') {
+            return {
+                success: false,
+                error: 'Хугацаа сонгоно уу'
+            };
+        }
+        
+        // Ensure periodId is a valid number
+        const periodIdNum = parseInt(periodIdStr, 10);
+        if (isNaN(periodIdNum) || periodIdNum <= 0) {
+            return {
+                success: false,
+                error: 'Хугацаа сонгоно уу'
+            };
+        }
+        
+        const url = `/core/api/delete-depreciation-entries/?period_id=${periodIdNum}`;
         return fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -563,7 +614,8 @@
                 } else {
                     return {
                         success: false,
-                        error: data.error || 'Failed to delete depreciation entries'
+                        error: data.error || 'Failed to delete depreciation entries',
+                        has_future_periods: data.has_future_periods || false
                     };
                 }
             })
@@ -621,8 +673,31 @@
         }
         
         try {
+            // Validate periodId before deletion
+            const periodId = periodDates.periodId;
+            const periodIdStr = String(periodId || '').trim();
+            if (!periodIdStr || periodIdStr === '' || periodIdStr === '0' || periodIdStr === 'null' || periodIdStr === 'undefined') {
+                alert('Хугацаа сонгоно уу');
+                if (restoreButton) {
+                    restoreButton.textContent = 'ЭЛЭГДЭЛ УСТГАХ';
+                    restoreButton.disabled = false;
+                }
+                return;
+            }
+            
+            // Ensure periodId is a valid number
+            const periodIdNum = parseInt(periodIdStr, 10);
+            if (isNaN(periodIdNum) || periodIdNum <= 0) {
+                alert('Хугацаа сонгоно уу');
+                if (restoreButton) {
+                    restoreButton.textContent = 'ЭЛЭГДЭЛ УСТГАХ';
+                    restoreButton.disabled = false;
+                }
+                return;
+            }
+            
             // Delete depreciation entries first
-            const deleteResult = await deleteDepreciationEntries(startDate, endDate);
+            const deleteResult = await deleteDepreciationEntries(periodIdNum);
             
             if (deleteResult.success) {
                 // Show success message
@@ -639,8 +714,22 @@
                 
                 // Fetch depreciation data after deletion
                 await fetchDepreciationJournalData(startDate, endDate);
+                
+                // Focus the active tab view after data is loaded
+                setTimeout(() => {
+                    const depreciationView = document.getElementById('depreciation-view');
+                    if (depreciationView) {
+                        depreciationView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        depreciationView.focus();
+                    }
+                }, 100);
             } else {
-                alert(`Алдаа: ${deleteResult.error}`);
+                // Check if it's a future periods error
+                if (deleteResult.has_future_periods) {
+                    showMessageModal(deleteResult.error || 'Элэгдлийг хамгийн сүүлийн сараа эхлэн устгнана уу?', 'error');
+                } else {
+                    alert(`Алдаа: ${deleteResult.error}`);
+                }
             }
         } finally {
             if (restoreButton) {
