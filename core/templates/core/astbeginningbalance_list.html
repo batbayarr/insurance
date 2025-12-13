@@ -135,6 +135,10 @@
                                 <option value="10">10</option>
                                 <option value="15" selected>15</option>
                             </select>
+                            <button id="print-balance-list" 
+                                    class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                                ХЭВЛЭХ
+                            </button>
                         </div>
                         <div>
                             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
@@ -164,7 +168,7 @@
                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Add New Balance
+                        Үлдэгдэл оруулах
                     </button>
                 </div>
             </div>
@@ -312,6 +316,9 @@
 {% include 'core/components/asset_selection_modal.html' %}
 {% include 'core/components/client_selection_modal.html' %}
 {% include 'core/components/message_modal.html' %}
+
+<!-- Include Print Script -->
+<script src="{% static 'js/print-ast-balance.js' %}"></script>
 
 <!-- Initialize balance data from server -->
 <script type="application/json" id="balance-data">
@@ -766,7 +773,7 @@ async function editBalance(balanceId) {
         
         if (checkData.has_depreciation) {
             // Show modal and prevent edit
-            const errorMessage = checkData.message || 'Тухайн хөрөнгийн элэгдэл бодсон байна. Элэгдлээ устгана уу?';
+            const errorMessage = checkData.message || 'Тухайн хөрөнгийн элэгдэл бодсон байна. Засахын тулд элэгдлээ устгана уу?';
             if (typeof showMessageModal === 'function') {
                 showMessageModal(errorMessage, 'error');
             } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
@@ -828,10 +835,44 @@ async function editBalance(balanceId) {
 }
 
 // Delete balance
-function deleteBalance(balanceId) {
+async function deleteBalance(balanceId) {
     const balance = balanceData.find(b => b.BeginningBalanceId === balanceId);
     if (!balance) return;
     
+    // Check if asset card has depreciation
+    try {
+        const checkUrl = `/core/api/check-asset-card-depreciation/?asset_card_id=${balance.AssetCardId}`;
+        const checkResponse = await fetch(checkUrl);
+        const checkData = await checkResponse.json();
+        
+        if (!checkData.success) {
+            // If API error, show error but allow delete (fail open)
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(checkData.error || 'Шалгахад алдаа гарлаа', 'error');
+            } else {
+                alert(checkData.error || 'Шалгахад алдаа гарлаа');
+            }
+            return;
+        }
+        
+        if (checkData.has_depreciation) {
+            // Show modal and prevent delete
+            const errorMessage = checkData.message || 'Тухайн хөрөнгийн элэгдэл бодсон байна. Элэгдлээ устгана уу?';
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(errorMessage, 'error');
+            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking asset card:', error);
+        // Fail open - allow delete if check fails
+    }
+    
+    // If check passes, proceed with delete confirmation
     const accountName = `${balance.account_code} - ${balance.account_name}`;
     const assetName = `${balance.asset_card_code} - ${balance.asset_card_name}`;
     const quantity = parseFloat(balance.Quantity).toFixed(2);
@@ -978,6 +1019,98 @@ function handleFormSubmit(event) {
     console.log('DEBUG: Form validation passed, submitting...');
     return true;
 }
+
+// Print handler function
+function handlePrintBalanceList() {
+    // Get all visible (filtered) rows
+    const visibleRows = astGetVisibleRows();
+    
+    if (!visibleRows || visibleRows.length === 0) {
+        alert('Хэвлэх мэдээлэл алга байна.');
+        return;
+    }
+
+    // Collect data from visible rows
+    const balanceData = visibleRows.map((row, index) => {
+        const accountCodeElement = row.querySelector('.account-format');
+        const accountCode = accountCodeElement ? accountCodeElement.textContent.trim() : '';
+        const accountName = accountCodeElement ? accountCodeElement.getAttribute('title') || '' : '';
+        const assetName = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.trim() : '';
+        const clientName = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').textContent.trim() : '';
+        const unitCostText = row.querySelector('.ucost-val') ? row.querySelector('.ucost-val').textContent.trim() : '0';
+        const unitPriceText = row.querySelector('.uprice-val') ? row.querySelector('.uprice-val').textContent.trim() : '0';
+        const cumulatedDepreciationText = row.querySelector('.cumulated-depreciation-val') ? row.querySelector('.cumulated-depreciation-val').textContent.trim() : '0';
+        const remainingCostText = row.querySelector('.remaining-cost-val') ? row.querySelector('.remaining-cost-val').textContent.trim() : '0';
+        const dateText = row.querySelector('td:nth-child(9)') ? row.querySelector('td:nth-child(9)').textContent.trim() : '';
+        const userText = row.querySelector('td:nth-child(10)') ? row.querySelector('td:nth-child(10)').textContent.trim() : '';
+        
+        // Parse numeric values (remove commas)
+        const unitCost = parseFloat(unitCostText.replace(/,/g, '')) || 0;
+        const unitPrice = parseFloat(unitPriceText.replace(/,/g, '')) || 0;
+        const cumulatedDepreciation = parseFloat(cumulatedDepreciationText.replace(/,/g, '')) || 0;
+        const remainingCost = parseFloat(remainingCostText.replace(/,/g, '')) || 0;
+        const quantity = parseFloat(row.dataset.quantity) || 0;
+        
+        // Extract account name from title (format: "code - name")
+        const accountNameOnly = accountName.includes(' - ') ? accountName.split(' - ')[1] : accountName;
+        
+        return {
+            Account: accountCode + (accountNameOnly ? ' - ' + accountNameOnly : ''),
+            AssetName: assetName,
+            ClientName: clientName === '-' ? '' : clientName,
+            UnitCost: unitCost,
+            UnitPrice: unitPrice,
+            CumulatedDepreciation: cumulatedDepreciation,
+            RemainingCost: remainingCost,
+            Date: dateText,
+            User: userText === '-' ? '' : userText
+        };
+    });
+
+    // Get column headers from table (excluding # and action columns)
+    const allHeaders = Array.from(document.querySelectorAll('#asset-beginning-container table thead tr:first-child th'))
+        .map(th => th.textContent.trim());
+    const headers = allHeaders.filter((h, idx) => idx !== 0 && idx !== allHeaders.length - 1);
+
+    // Calculate totals
+    const totals = {
+        totalUnitCost: 0,
+        totalCumulatedDepreciation: 0,
+        totalRemainingCost: 0
+    };
+
+    visibleRows.forEach(row => {
+        const qty = parseFloat(row.dataset.quantity) || 0;
+        const ucost = parseFloat(row.dataset.unitcost) || 0;
+        const cumulatedDepreciation = parseFloat(row.dataset.cumulateddepreciation) || 0;
+        const remainingCostText = row.querySelector('.remaining-cost-val') ? row.querySelector('.remaining-cost-val').textContent.trim() : '0';
+        const remainingCost = parseFloat(remainingCostText.replace(/,/g, '')) || 0;
+        
+        totals.totalUnitCost += ucost * qty;
+        totals.totalCumulatedDepreciation += cumulatedDepreciation;
+        totals.totalRemainingCost += remainingCost;
+    });
+
+    // Use the print-ast-balance.js function
+    if (typeof window.printAstBalanceTable === 'function') {
+        window.printAstBalanceTable({
+            title: 'ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЭЛ',
+            allData: balanceData,
+            columnHeaders: headers,
+            totals: totals
+        });
+    } else {
+        alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+    }
+}
+
+// Initialize print button event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-balance-list');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrintBalanceList);
+    }
+});
 
 // No select-all checkbox in this compact grid
 </script>

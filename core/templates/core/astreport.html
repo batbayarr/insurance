@@ -11,6 +11,7 @@
 
 {% block content %}
 <script src="{% static 'js/print-journal.js' %}"></script>
+<script src="{% static 'js/print-ast-balance.js' %}"></script>
 <div class="">
     <!-- Date Filter Section -->
     <div class="bg-white shadow rounded-lg p-1 mb-2">
@@ -456,6 +457,10 @@
                             <option value="40">40</option>
                             <option value="100">100</option>
                         </select>
+                        <button id="print-balance-view" 
+                                class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                            ХЭВЛЭХ
+                        </button>
                     </div>
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
@@ -1469,6 +1474,14 @@
         // Apply filters first
         const filteredDetails = applyDetailFilters(details);
         
+        // Calculate grand totals from ALL filtered data (not just current page)
+        let totalDebit = 0;
+        let totalCredit = 0;
+        filteredDetails.forEach((item) => {
+            totalDebit += parseFloat(item.debit_amount) || 0;
+            totalCredit += parseFloat(item.credit_amount) || 0;
+        });
+        
         // Calculate pagination on filtered data
         totalPagesDetail = Math.ceil(filteredDetails.length / pageSizeDetail);
         if (currentPageDetail > totalPagesDetail) currentPageDetail = 1;
@@ -1492,8 +1505,6 @@
         });
         
         let htmlContent = '';
-        let totalDebit = 0;
-        let totalCredit = 0;
         
         // Render grouped by document with borders
         Object.keys(groupedByDocument).forEach((docKey, docIndex) => {
@@ -1501,9 +1512,6 @@
             const isLastDocument = docIndex === Object.keys(groupedByDocument).length - 1;
             
             docItems.forEach((item, itemIndex) => {
-                // Calculate totals
-                totalDebit += parseFloat(item.debit_amount) || 0;
-                totalCredit += parseFloat(item.credit_amount) || 0;
                 
                 const isLastItem = itemIndex === docItems.length - 1;
                 // Add border only after the last row of each document batch (except the last document)
@@ -2807,11 +2815,115 @@
         }
     }
     
+    // Print handler for ДАНСНЫ ҮЛДЭГДЭЛ tab
+    function handlePrintBalanceView() {
+        if (!balanceData || balanceData.length === 0) {
+            alert('Хэвлэх мэдээлэл алга байна.');
+            return;
+        }
+        
+        // Get all filtered data (apply same filters as applyBalanceFilter)
+        let filteredData = balanceData;
+        
+        // Get filter values
+        const accountFilter = document.getElementById('filter-balance-account')?.value.toLowerCase().trim() || '';
+        const assetCodeFilter = document.getElementById('filter-balance-asset-code')?.value.toLowerCase().trim() || '';
+        const assetNameFilter = document.getElementById('filter-balance-asset-name')?.value.toLowerCase().trim() || '';
+        const beginningQuantityFilter = document.getElementById('filter-balance-beginning-quantity')?.value.toLowerCase().trim() || '';
+        const beginningCostFilter = document.getElementById('filter-balance-beginning-cost')?.value.toLowerCase().trim() || '';
+        const inQuantityFilter = document.getElementById('filter-balance-in-quantity')?.value.toLowerCase().trim() || '';
+        const inCostFilter = document.getElementById('filter-balance-in-cost')?.value.toLowerCase().trim() || '';
+        const outQuantityFilter = document.getElementById('filter-balance-out-quantity')?.value.toLowerCase().trim() || '';
+        const outCostFilter = document.getElementById('filter-balance-out-cost')?.value.toLowerCase().trim() || '';
+        const endingQuantityFilter = document.getElementById('filter-balance-ending-quantity')?.value.toLowerCase().trim() || '';
+        const endingCostFilter = document.getElementById('filter-balance-ending-cost')?.value.toLowerCase().trim() || '';
+        const cumulatedDepreciationFilter = document.getElementById('filter-balance-cumulated-depreciation')?.value.toLowerCase().trim() || '';
+        const depreciationExpenseFilter = document.getElementById('filter-balance-depreciation-expense')?.value.toLowerCase().trim() || '';
+        const netbookValueFilter = document.getElementById('filter-balance-netbook-value')?.value.toLowerCase().trim() || '';
+        
+        // Apply filters (same logic as applyBalanceFilter)
+        if (accountFilter || assetCodeFilter || assetNameFilter || 
+            beginningQuantityFilter || beginningCostFilter || inQuantityFilter || inCostFilter ||
+            outQuantityFilter || outCostFilter || endingQuantityFilter || endingCostFilter ||
+            cumulatedDepreciationFilter || depreciationExpenseFilter || netbookValueFilter) {
+            filteredData = filteredData.filter(balance => {
+                const accountMatch = !accountFilter || String(balance.accountcode || '').toLowerCase().includes(accountFilter);
+                const assetCodeMatch = !assetCodeFilter || String(balance.assetcardcode || '').toLowerCase().includes(assetCodeFilter);
+                const assetNameMatch = !assetNameFilter || String(balance.assetcardname || '').toLowerCase().includes(assetNameFilter);
+                const beginningQuantityMatch = !beginningQuantityFilter || String(balance.beginningquantity || '').toLowerCase().includes(beginningQuantityFilter);
+                const beginningCostMatch = !beginningCostFilter || String(balance.beginningcost || '').toLowerCase().includes(beginningCostFilter);
+                const inQuantityMatch = !inQuantityFilter || String(balance.inquantity || '').toLowerCase().includes(inQuantityFilter);
+                const inCostMatch = !inCostFilter || String(balance.incost || '').toLowerCase().includes(inCostFilter);
+                const outQuantityMatch = !outQuantityFilter || String(balance.outquantity || '').toLowerCase().includes(outQuantityFilter);
+                const outCostMatch = !outCostFilter || String(balance.outcost || '').toLowerCase().includes(outCostFilter);
+                const endingQuantityMatch = !endingQuantityFilter || String(balance.endingquantity || '').toLowerCase().includes(endingQuantityFilter);
+                const endingCostMatch = !endingCostFilter || String(balance.endingcost || '').toLowerCase().includes(endingCostFilter);
+                const cumulatedDepreciationMatch = !cumulatedDepreciationFilter || String(balance.cumulateddepreciation || '').toLowerCase().includes(cumulatedDepreciationFilter);
+                const depreciationExpenseMatch = !depreciationExpenseFilter || String(balance.depreciationexpense || '').toLowerCase().includes(depreciationExpenseFilter);
+                const netbookValueMatch = !netbookValueFilter || String(balance.netbookvalue || '').toLowerCase().includes(netbookValueFilter);
+                
+                return accountMatch && assetCodeMatch && assetNameMatch &&
+                       beginningQuantityMatch && beginningCostMatch && inQuantityMatch && inCostMatch &&
+                       outQuantityMatch && outCostMatch && endingQuantityMatch && endingCostMatch &&
+                       cumulatedDepreciationMatch && depreciationExpenseMatch && netbookValueMatch;
+            });
+        }
+        
+        // Collect data for printing
+        const printData = filteredData.map(balance => ({
+            AccountCode: balance.accountcode || '',
+            AssetCode: balance.assetcardcode || '',
+            AssetName: balance.assetcardname || '',
+            BeginningQuantity: parseFloat(balance.beginningquantity || 0),
+            BeginningCost: parseFloat(balance.beginningcost || 0),
+            InQuantity: parseFloat(balance.inquantity || 0),
+            InCost: parseFloat(balance.incost || 0),
+            OutQuantity: parseFloat(balance.outquantity || 0),
+            OutCost: parseFloat(balance.outcost || 0),
+            EndingQuantity: parseFloat(balance.endingquantity || 0),
+            EndingCost: parseFloat(balance.endingcost || 0),
+            CumulatedDepreciation: parseFloat(balance.cumulateddepreciation || 0),
+            DepreciationExpense: parseFloat(balance.depreciationexpense || 0),
+            NetbookValue: parseFloat(balance.netbookvalue || 0)
+        }));
+        
+        // Get column headers from table
+        const headers = Array.from(document.querySelectorAll('#ast-balance-view thead tr:first-child th'))
+            .map(th => th.textContent.trim());
+        
+        // Calculate totals from all filtered data
+        const totals = calculateBalanceTotals(filteredData);
+        
+        // Get date range
+        const startDate = document.getElementById('start-date')?.value || '';
+        const endDate = document.getElementById('end-date')?.value || '';
+        
+        // Call the print function
+        if (typeof window.printAstAccountBalanceTable === 'function') {
+            window.printAstAccountBalanceTable({
+                title: 'ҮНДСЭН ХӨРӨНГИЙН ҮЛДЭГДЛИЙН ТАЙЛАН',
+                startDate: startDate,
+                endDate: endDate,
+                allData: printData,
+                columnHeaders: headers,
+                totals: totals
+            });
+        } else {
+            alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+        }
+    }
+    
     // Event listeners
     document.addEventListener('DOMContentLoaded', function() {
         const filterButton = document.getElementById('filter-button');
         if (filterButton) {
             filterButton.addEventListener('click', applyDateFilter);
+        }
+        
+        // Print button for balance view
+        const printBalanceButton = document.getElementById('print-balance-view');
+        if (printBalanceButton) {
+            printBalanceButton.addEventListener('click', handlePrintBalanceView);
         }
     });
 </script>

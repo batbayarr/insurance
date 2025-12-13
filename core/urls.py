@@ -148,13 +148,12 @@ urlpatterns = [
     path('api/refinventorytypes/', views.refinventory_types_json, name='refinventory_types_json'),
     path('api/refmeasurements/', views.refmeasurements_json, name='refmeasurements_json'),
     path('api/asset-card-usage-check/', views.api_asset_card_usage_check, name='api_asset_card_usage_check'),
-    path('api/check-asset-document-depreciation/', views.api_check_asset_document_depreciation, name='api_check_asset_document_depreciation'),
-    path('api/check-depreciation-expense-for-period/', views.api_check_depreciation_expense_for_period, name='api_check_depreciation_expense_for_period'),
     path('api/check-depreciation-expense-by-date/', views.api_check_depreciation_expense_by_date, name='api_check_depreciation_expense_by_date'),
-    path('api/check-all-previous-periods-depreciation/', views.api_check_all_previous_periods_have_depreciation, name='api_check_all_previous_periods_have_depreciation'),
+    path('api/check-all-previous-periods-depreciation-by-date/', views.api_check_all_previous_periods_depreciation_by_date, name='api_check_all_previous_periods_depreciation_by_date'),
     path('api/check-asset-document-balance/', views.api_check_asset_document_balance, name='api_check_asset_document_balance'),
     path('api/check-document-period-depreciation/', views.api_check_document_period_depreciation, name='api_check_document_period_depreciation'),
     path('api/check-asset-card-depreciation/', views.api_check_asset_card_has_depreciation, name='api_check_asset_card_has_depreciation'),
+    path('api/check-asset-card-usage-edit-delete/', views.api_check_asset_card_usage_for_edit_delete, name='api_check_asset_card_usage_for_edit_delete'),
     
 
     # Beginning Balance (Generic)

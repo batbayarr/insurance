@@ -328,25 +328,41 @@ document.addEventListener('DOMContentLoaded', function() {
         dateField.value = `${year}-${month}-${day}`;
     }
     
-    // Form submission handling
+    // Form submission handling - consolidated single handler
     const form = document.querySelector('form');
     if (form) {
+        // Prevent multiple validation runs
+        let isValidationInProgress = false;
+        let validationPassed = false;
+        
         form.addEventListener('submit', function(event) {
-            // Check HTML5 validation first
+            // If validation already passed, allow submission
+            if (validationPassed) {
+                validationPassed = false; // Reset for next submission
+                return true;
+            }
+            
+            // Prevent duplicate validation runs
+            if (isValidationInProgress) {
+                event.preventDefault();
+                return false;
+            }
+            
+            // Step 1: Check HTML5 validation first
             if (!form.checkValidity()) {
                 event.preventDefault();
                 // Let HTML5 validation show its native messages
                 return false;
             }
             
-            // Validate modal-selected fields
+            // Step 2: Validate modal-selected fields
             if (!validateModalFields()) {
                 event.preventDefault();
                 Silicon4Message.error('required-fields');
                 return false;
             }
             
-            // Additional validation for VAT account when VAT is enabled
+            // Step 3: Additional validation for VAT account when VAT is enabled
             const vatCheckbox = document.getElementById('{{ form.IsVat.id_for_label }}');
             const vatAccountHidden = document.getElementById('VatAccountId');
             if (vatCheckbox && vatCheckbox.checked) {
@@ -363,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Additional validation for Description field
+            // Step 4: Additional validation for Description field
             const descriptionField = document.getElementById('id_Description');
             if (descriptionField) {
                 const value = descriptionField.value.trim();
@@ -379,84 +395,223 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Check depreciation expense before submission (only for creating new documents)
-            const isNewDocument = {% if item %}false{% else %}true{% endif %};
-            const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+            // Step 5: Period lock check (for all submissions)
             const documentDateField = document.getElementById('id_DocumentDate');
-            
-            if (isNewDocument && documentTypeSelect && documentDateField) {
-                const documentTypeId = documentTypeSelect.value;
-                const documentDate = documentDateField.value;
-                
-                // Only check for DocumentTypeId 10 and 11
-                if (documentTypeId && (documentTypeId === '10' || documentTypeId === '11') && documentDate) {
-                    // Check if this is the first time checking (prevent infinite loop)
-                    if (form.dataset.depreciationCheckInProgress === 'true') {
-                        // Already checked, allow submission
-                        form.dataset.depreciationCheckInProgress = 'false';
-                        return true;
-                    }
-                    
-                    event.preventDefault();
-                    form.dataset.depreciationCheckInProgress = 'true';
-                    
-                    const submitButton = document.querySelector('button[type="submit"]');
-                    if (submitButton) {
-                        Silicon4Form.showLoading(submitButton, 'Шалгаж байна...');
-                    }
-                    
-                    // Check depreciation expense
-                    fetch(`/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            form.dataset.depreciationCheckInProgress = 'false';
-                            
-                            if (submitButton) {
-                                Silicon4Form.hideLoading(submitButton);
-                            }
-                            
-                            if (!data.success) {
-                                console.error('Depreciation check API error:', data.error);
-                                // If API fails, allow submission to proceed (fail open)
-                                form.submit();
-                                return;
-                            }
-                            
-                            if (data.has_depreciation) {
-                                // Show error modal and prevent submission
-                                const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
-                                if (typeof showMessageModal === 'function') {
-                                    showMessageModal(errorMessage, 'error', 'Анхааруулга');
-                                } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
-                                    Silicon4Message.error(errorMessage);
-                                } else {
-                                    alert(errorMessage);
-                                }
-                                return;
-                            }
-                            
-                            // No depreciation, proceed with form submission
-                            form.submit();
-                        })
-                        .catch(error => {
-                            console.error('Error checking depreciation expense:', error);
-                            form.dataset.depreciationCheckInProgress = 'false';
-                            
-                            if (submitButton) {
-                                Silicon4Form.hideLoading(submitButton);
-                            }
-                            // If API fails, allow submission to proceed (fail open)
-                            form.submit();
-                        });
-                    
-                    return false;
+            if (!documentDateField || !documentDateField.value) {
+                // No date, proceed to final submission
+                const submitButton = document.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    Silicon4Form.showLoading(submitButton, 'Processing...');
                 }
+                return true;
             }
+            
+            // Prevent default submission - we'll handle it after validation
+            event.preventDefault();
+            isValidationInProgress = true;
             
             const submitButton = document.querySelector('button[type="submit"]');
             if (submitButton) {
-                Silicon4Form.showLoading(submitButton, 'Processing...');
+                Silicon4Form.showLoading(submitButton, 'Шалгаж байна...');
             }
+            
+            const documentDate = documentDateField.value;
+            
+            // Check period lock first
+            validatePeriodLock(documentDate, function(isLocked, message) {
+                if (isLocked) {
+                    isValidationInProgress = false;
+                    if (submitButton) {
+                        Silicon4Form.hideLoading(submitButton);
+                    }
+                    
+                    // Show error modal for locked period
+                    if (typeof showMessageModal === 'function') {
+                        showMessageModal(message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                    } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                        Silicon4Message.error(message);
+                    } else {
+                        alert(message);
+                    }
+                    documentDateField.focus();
+                    return;
+                }
+                
+                // Period not locked, proceed to depreciation check (if needed)
+                const isNewDocument = {% if item %}false{% else %}true{% endif %};
+                const documentTypeSelect = document.getElementById('id_DocumentTypeId');
+                
+                // Step 6: Depreciation check (for both creating and updating, types 10 and 11)
+                // Use the updated document date from the form (documentDate variable already contains current form value)
+                if (documentTypeSelect) {
+                    const documentTypeId = documentTypeSelect.value;
+                    
+                    // Only check for DocumentTypeId 10 and 11
+                    if (documentTypeId && (documentTypeId === '10' || documentTypeId === '11')) {
+                        // For DocumentTypeId 11 and new documents: check if all previous periods have depreciation (only if periodId > 1)
+                        if (documentTypeId === '11' && isNewDocument) {
+                            // First, get the periodId for the document date to check if it's > 1
+                            // We'll check this in the API, but we need to call a different endpoint
+                            const previousPeriodsCheckUrl = `/core/api/check-all-previous-periods-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                            
+                            fetch(previousPeriodsCheckUrl)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (!data.success) {
+                                        console.error('Previous periods depreciation check API error:', data.error);
+                                        // If API fails, proceed to regular depreciation check (fail open)
+                                        checkDepreciationAfterDate();
+                                        return;
+                                    }
+                                    
+                                    // Check if all previous periods have depreciation
+                                    if (!data.all_periods_have_depreciation) {
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
+                                        
+                                        // Show error modal with missing periods
+                                        const errorMessage = data.message || 'Элэгдэл бодогдоогүй хугацаа байна. Дараах хугацаануудад элэгдэл бодно уу.';
+                                        if (typeof showMessageModal === 'function') {
+                                            showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                        } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                            Silicon4Message.error(errorMessage);
+                                        } else {
+                                            alert(errorMessage);
+                                        }
+                                        return;
+                                    }
+                                    
+                                    // All previous periods have depreciation (or periodId = 1, so no previous periods)
+                                    // Proceed to check depreciation after date
+                                    checkDepreciationAfterDate();
+                                })
+                                .catch(error => {
+                                    console.error('Error checking previous periods depreciation:', error);
+                                    // If API fails, proceed to regular depreciation check (fail open)
+                                    checkDepreciationAfterDate();
+                                });
+                            
+                            // Helper function to check depreciation after date
+                            function checkDepreciationAfterDate() {
+                                // For both new and updating: check if depreciation exists after the updated document date
+                                const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+                                
+                                fetch(depreciationCheckUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
+                                        
+                                        if (!data.success) {
+                                            console.error('Depreciation check API error:', data.error);
+                                            // If API fails, allow submission to proceed (fail open)
+                                            validationPassed = true;
+                                            form.submit();
+                                            return;
+                                        }
+                                        
+                                        // Check for depreciation
+                                        if (data.has_depreciation) {
+                                            // Show error modal and prevent submission
+                                            const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // No depreciation, proceed with form submission
+                                        validationPassed = true;
+                                        form.submit();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking depreciation expense:', error);
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
+                                        // If API fails, allow submission to proceed (fail open)
+                                        validationPassed = true;
+                                        form.submit();
+                                    });
+                            }
+                            
+                            return; // Exit early, form submission will be handled in the fetch callbacks
+                        } else {
+                            // For DocumentTypeId 10 or updating DocumentTypeId 11: check if depreciation exists after the updated document date
+                            const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+                            
+                            // Check depreciation expense
+                            fetch(depreciationCheckUrl)
+                                .then(response => response.json())
+                                .then(data => {
+                                    isValidationInProgress = false;
+                                    
+                                    if (submitButton) {
+                                        Silicon4Form.hideLoading(submitButton);
+                                    }
+                                    
+                                    if (!data.success) {
+                                        console.error('Depreciation check API error:', data.error);
+                                        // If API fails, allow submission to proceed (fail open)
+                                        validationPassed = true;
+                                        form.submit();
+                                        return;
+                                    }
+                                    
+                                    // Check for depreciation
+                                    if (data.has_depreciation) {
+                                        // Show error modal and prevent submission
+                                        const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
+                                        if (typeof showMessageModal === 'function') {
+                                            showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                        } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                            Silicon4Message.error(errorMessage);
+                                        } else {
+                                            alert(errorMessage);
+                                        }
+                                        return;
+                                    }
+                                    
+                                    // No depreciation, proceed with form submission
+                                    validationPassed = true;
+                                    form.submit();
+                                })
+                                .catch(error => {
+                                    console.error('Error checking depreciation expense:', error);
+                                    isValidationInProgress = false;
+                                    
+                                    if (submitButton) {
+                                        Silicon4Form.hideLoading(submitButton);
+                                    }
+                                    // If API fails, allow submission to proceed (fail open)
+                                    validationPassed = true;
+                                    form.submit();
+                                });
+                            return;
+                        }
+                    }
+                }
+                
+                // No depreciation check needed, proceed with final submission
+                isValidationInProgress = false;
+                if (submitButton) {
+                    Silicon4Form.showLoading(submitButton, 'Processing...');
+                }
+                validationPassed = true;
+                form.submit();
+            });
         });
     }
     
@@ -748,63 +903,8 @@ function validatePeriodLock(dateValue, callback) {
         .catch(() => { clearTimeout(timeoutId); callback(false, ''); });
 }
 
-function attachPeriodLockValidation(formSelector, dateInputSelector) {
-    const form = document.querySelector(formSelector);
-    const dateInput = document.querySelector(dateInputSelector);
-    if (!form || !dateInput) return;
-    let validationFlag = document.createElement('input');
-    validationFlag.type = 'hidden';
-    validationFlag.name = 'period_validation_passed';
-    validationFlag.value = 'false';
-    form.appendChild(validationFlag);
-    let apiFailureCount = 0;
-    form.addEventListener('submit', function(e) {
-        if (!form.checkValidity()) { e.preventDefault(); return false; }
-        if (validationFlag.value === 'true') return true;
-        if (apiFailureCount >= 3) return true;
-        e.preventDefault(); e.stopPropagation();
-        const dateValue = dateInput.value;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = submitBtn.innerHTML.replace('Processing...', 'Үүсгэх'); }
-        validatePeriodLock(dateValue, function(isLocked, message) {
-            if (isLocked) {
-                if (typeof showMessageModal === 'function') showMessageModal(message, 'error', 'Тухайн сар цоожлогдсон байна.'); else alert(message);
-                dateInput.focus();
-                validationFlag.value = 'false';
-            } else {
-                validationFlag.value = 'true';
-                const formData = new FormData(form);
-                formData.append('csrfmiddlewaretoken', getCSRFToken());
-                fetch(form.action || window.location.href, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-                    .then(response => response.headers.get('content-type')?.includes('application/json') ? response.json() : (window.location.href = response.url || window.location.href, null))
-                    .then(data => {
-                        if (data) {
-                            if (data.success === false && data.error) {
-                                if (typeof showMessageModal === 'function') showMessageModal(data.error, 'error', 'Тухайн сар цоожлогдсон байна.'); else alert(data.error);
-                                validationFlag.value = 'false';
-                            } else if (data && (data.success === true || data.success)) {
-                                window.location.href = data.redirect_url || '/core/astdocuments/';
-                            } else if (data && data.redirect_url) {
-                                window.location.href = data.redirect_url;
-                            }
-                        }
-                    })
-                    .catch(() => form.submit());
-            }
-        });
-    });
-    const originalValidatePeriodLock = validatePeriodLock;
-    validatePeriodLock = function(dateValue, callback) {
-        originalValidatePeriodLock(dateValue, function(isLocked, message) {
-            if (message === '' && !isLocked) apiFailureCount++;
-            callback(isLocked, message);
-        });
-    };
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    try { attachPeriodLockValidation('form', '#id_DocumentDate'); } catch (e) { console.error('Error in attachPeriodLockValidation:', e); }
-});
+// Period lock validation is now integrated into the main form submit handler above
+// No separate attachment needed
 
 // Function to handle account selection with document type validation
 function handleAccountSelection(accountDisplayInput) {

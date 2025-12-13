@@ -670,7 +670,7 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
         if (currentApiRequest) {
             currentApiRequest.abort();
             currentApiRequest = null;
-            tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Холболт удаан үргэлжилж байна. Дахин оролдоно уу.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center py-8 text-red-600">Холболт удаан байна. Дахин оролдоно уу.</td></tr>';
         }
     }, 30000); // 30 second timeout
     

@@ -234,7 +234,8 @@
                             </td>
                             <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
                                 <div class="flex items-center justify-end space-x-1 lg:space-x-2">
-                                    <a href="{% url 'core:ref_asset_card_update' card.AssetCardId %}" 
+                                    <a href="#" 
+                                       onclick="event.preventDefault(); checkAssetCardUsage({{ card.AssetCardId }}, 'edit', '{% url 'core:ref_asset_card_update' card.AssetCardId %}', '{{ card.AssetCardCode }} - {{ card.AssetCardName }}'); return false;"
                                        class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -243,7 +244,7 @@
                                     <button type="button" 
                                             class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                                             title="Устгах"
-                                            onclick="Silicon4Delete.showModal('{% url 'core:ref_asset_card_delete' card.AssetCardId %}', '{{ card.AssetCardCode }} - {{ card.AssetId.AssetName }}')">
+                                            onclick="event.preventDefault(); checkAssetCardUsage({{ card.AssetCardId }}, 'delete', '{% url 'core:ref_asset_card_delete' card.AssetCardId %}', '{{ card.AssetCardCode }} - {{ card.AssetId.AssetName }}'); return false;">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                         </svg>
@@ -397,7 +398,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
-                                    <button onclick="deleteAsset('{{ asset_card.AssetCardId }}', '{{ asset_card.AssetCardName }}')" 
+                                    <button onclick="event.preventDefault(); checkAssetCardUsage({{ asset_card.AssetCardId }}, 'delete', '{% url 'core:ref_asset_card_delete' asset_card.AssetCardId %}', '{{ asset_card.AssetCardCode }} - {{ asset_card.AssetCardName }}'); return false;"
                                             class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -407,7 +408,9 @@
                                 {% else %}
                                 <div class="flex items-center justify-end space-x-2">
                                     {% if perms.core.change_ref_asset_card %}
-                                    <a href="{% url 'core:ref_asset_card_update' asset_card.AssetCardId %}" class="text-accounting-blue hover:text-accounting-blue-dark p-1 rounded hover:bg-blue-50" title="Засах">
+                                    <a href="#" 
+                                       onclick="event.preventDefault(); checkAssetCardUsage({{ asset_card.AssetCardId }}, 'edit', '{% url 'core:ref_asset_card_update' asset_card.AssetCardId %}', '{{ asset_card.AssetCardCode }} - {{ asset_card.AssetCardName }}'); return false;"
+                                       class="text-accounting-blue hover:text-accounting-blue-dark p-1 rounded hover:bg-blue-50" title="Засах">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
@@ -418,10 +421,7 @@
                                         type="button" 
                                         class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                                         title="Устгах"
-                                        data-soft-delete
-                                        data-item-id="{{ asset_card.AssetCardId }}"
-                                        data-item-name="{{ asset_card.AssetCardCode }} - {{ asset_card.AssetCardName }}"
-                                        data-delete-url="{% url 'core:ref_asset_card_delete' asset_card.AssetCardId %}">
+                                        onclick="event.preventDefault(); checkAssetCardUsage({{ asset_card.AssetCardId }}, 'delete', '{% url 'core:ref_asset_card_delete' asset_card.AssetCardId %}', '{{ asset_card.AssetCardCode }} - {{ asset_card.AssetCardName }}'); return false;">
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -539,7 +539,68 @@
 {% include 'core/components/delete_modal.html' %}
 {% endif %}
 
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
 <script>
+// Check if asset card can be edited/deleted
+async function checkAssetCardUsage(assetCardId, action, actionUrl, itemName) {
+    try {
+        const checkUrl = `/core/api/check-asset-card-usage-edit-delete/?asset_card_id=${assetCardId}`;
+        const checkResponse = await fetch(checkUrl);
+        const checkData = await checkResponse.json();
+        
+        if (!checkData.success) {
+            console.error('Asset card usage check API error:', checkData.error);
+            // On error, allow action (fail open)
+            if (action === 'edit') {
+                window.location.href = actionUrl;
+            } else if (action === 'delete') {
+                if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+                    Silicon4Delete.showModal(actionUrl, itemName);
+                } else {
+                    alert('Delete functionality not available');
+                }
+            }
+            return;
+        }
+        
+        if (!checkData.can_edit_delete) {
+            // Show error modal and prevent action
+            const errorMessage = checkData.message || 'Устгах болон засах боломжгүй. Энэ хөрөнгө эхний үлдэгдэлтэй, элэгдэл бодогдсон, эсвэл гүйлгээ хийгдсэн байна. Холбогдох үлдэгдэл, гүйлгээг шалгана уу?';
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            return;
+        }
+        
+        // If check passes, proceed with action
+        if (action === 'edit') {
+            window.location.href = actionUrl;
+        } else if (action === 'delete') {
+            if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+                Silicon4Delete.showModal(actionUrl, itemName);
+            } else {
+                alert('Delete functionality not available');
+            }
+        }
+    } catch (error) {
+        console.error('Asset card usage check failed:', error);
+        // On error, allow action (fail open)
+        if (action === 'edit') {
+            window.location.href = actionUrl;
+        } else if (action === 'delete') {
+            if (typeof Silicon4Delete !== 'undefined' && Silicon4Delete.showModal) {
+                Silicon4Delete.showModal(actionUrl, itemName);
+            }
+        }
+    }
+}
+
 // Handle page size change
 document.addEventListener('DOMContentLoaded', function() {
     const pageSizeSelect = document.getElementById('page-size-select');

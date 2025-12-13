@@ -1621,56 +1621,7 @@ function attachPeriodLockValidation(formSelector, dateInputSelector) {
                 validationFlag.value = 'false'; // Reset flag
             } else {
                 // Not locked, submit form via AJAX
-                validationFlag.value = 'true';
-                
-                // Submit form via AJAX to handle JSON responses
-                const formData = new FormData(form);
-                formData.append('csrfmiddlewaretoken', getCSRFToken());
-                
-                fetch(form.action || window.location.href, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (response.headers.get('content-type')?.includes('application/json')) {
-                        return response.json();
-                    } else {
-                        // Regular HTML response - redirect to it
-                        window.location.href = response.url || window.location.href;
-                        return null;
-                    }
-                })
-                .then(data => {
-                    if (data) {
-                        if (data.success === false && data.error) {
-                            // Server-side validation error
-                            if (typeof showMessageModal === 'function') {
-                                showMessageModal(data.error, 'error', 'Тухайн сар цоожлогдсон байна.');
-                            } else {
-                                alert(data.error);
-                            }
-                            validationFlag.value = 'false';
-                        } else if (data.success === true || data.success) {
-                            // Success - redirect
-                            window.location.href = data.redirect_url || '/core/cashdocuments/';
-                        } else {
-                            // Fallback: if response exists but doesn't match, try redirect anyway
-                            if (data.redirect_url) {
-                                window.location.href = data.redirect_url;
-                            }
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Form submission error:', error);
-                    // Fallback to regular form submission
-                    form.submit();
-                });
-            }
-        });
+                validationFlag.value = 'true';);
     });
     
     // Track API failures

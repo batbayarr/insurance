@@ -1280,6 +1280,14 @@
         // Apply filters first
         const filteredDetails = applyDetailFilters(details);
         
+        // Calculate grand totals from ALL filtered data (not just current page)
+        let totalDebit = 0;
+        let totalCredit = 0;
+        filteredDetails.forEach((item) => {
+            totalDebit += parseFloat(item.debit_amount) || 0;
+            totalCredit += parseFloat(item.credit_amount) || 0;
+        });
+        
         // Calculate pagination on filtered data
         totalPagesDetail = Math.ceil(filteredDetails.length / pageSizeDetail);
         if (currentPageDetail > totalPagesDetail) currentPageDetail = 1;
@@ -1303,8 +1311,6 @@
         });
         
         let htmlContent = '';
-        let totalDebit = 0;
-        let totalCredit = 0;
         
         // Render grouped by document with borders
         Object.keys(groupedByDocument).forEach((docKey, docIndex) => {
@@ -1312,9 +1318,6 @@
             const isLastDocument = docIndex === Object.keys(groupedByDocument).length - 1;
             
             docItems.forEach((item, itemIndex) => {
-                // Calculate totals
-                totalDebit += parseFloat(item.debit_amount) || 0;
-                totalCredit += parseFloat(item.credit_amount) || 0;
                 
                 const isLastItem = itemIndex === docItems.length - 1;
                 // Add border only after the last row of each document batch (except the last document)

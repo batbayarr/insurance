@@ -5448,47 +5448,64 @@ def api_asset_card_usage_check(request):
 
 @login_required
 @require_http_methods(["GET"])
-def api_check_asset_document_depreciation(request):
-    """Check if any assets in a document have depreciation records"""
-    document_id = request.GET.get('document_id')
-    
-    if not document_id:
-        return JsonResponse({
-            'success': False,
-            'error': 'document_id parameter is required'
-        }, status=400)
-    
+def api_check_asset_card_usage_for_edit_delete(request):
+    """Check if asset card can be edited or deleted based on usage in beginning balance, documents, or depreciation"""
     try:
-        document_id = int(document_id)
-    except (TypeError, ValueError):
-        return JsonResponse({
-            'success': False,
-            'error': 'Invalid document_id'
-        }, status=400)
-    
-    try:
-        # Get all asset cards in the document
-        asset_cards = Ast_Document_Item.objects.filter(
-            DocumentId_id=document_id
-        ).values_list('AssetCardId', flat=True).distinct()
+        asset_card_id_str = request.GET.get('asset_card_id')
         
-        # Check if any have depreciation records
-        has_depreciation = AstDepreciationExpense.objects.filter(
-            AssetCardId__in=asset_cards
+        if not asset_card_id_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'asset_card_id parameter is required'
+            }, status=400)
+        
+        try:
+            asset_card_id = int(asset_card_id_str)
+        except (TypeError, ValueError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid asset_card_id format'
+            }, status=400)
+        
+        # Check if asset card exists in:
+        # 1. ast_beginning_balance (IsDelete=False)
+        # 2. ast_document_item (where related ast_documents have IsDelete=False)
+        # 3. ast_depreciation_expense
+        
+        has_beginning_balance = Ast_Beginning_Balance.objects.filter(
+            AssetCardId_id=asset_card_id,
+            IsDelete=False
         ).exists()
         
-        message = 'элэгдлийн зардал бодогдсон тул энэ баримтыг засах боломжгүй. Баримтыг устган шинээр оруулаад элэгдлээ дахин сар бүрээр тооцоолно уу?' if has_depreciation else ''
+        has_document_items = Ast_Document_Item.objects.filter(
+            AssetCardId_id=asset_card_id,
+            DocumentId__IsDelete=False
+        ).exists()
         
-        return JsonResponse({
-            'success': True,
-            'has_depreciation': has_depreciation,
-            'message': message
-        })
+        has_depreciation = AstDepreciationExpense.objects.filter(
+            AssetCardId_id=asset_card_id
+        ).exists()
+        
+        can_edit_delete = not (has_beginning_balance or has_document_items or has_depreciation)
+        
+        if can_edit_delete:
+            return JsonResponse({
+                'success': True,
+                'can_edit_delete': True,
+                'message': None
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'can_edit_delete': False,
+                'message': 'Устгах болон засах боломжгүй. Энэ хөрөнгө эхний үлдэгдэлтэй, элэгдэл бодогдсон, эсвэл гүйлгээ хийгдсэн байна. Холбогдох үлдэгдэл, гүйлгээг шалгана уу?'
+            })
         
     except Exception as e:
+        logger.error(f'Error checking asset card usage for edit/delete: {str(e)}', exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': f'Error checking depreciation: {str(e)}'
+            'error': f'Error checking asset card usage: {str(e)}'
         }, status=500)
 
 
@@ -5522,7 +5539,7 @@ def api_check_asset_card_has_depreciation(request):
             return JsonResponse({
                 'success': True,
                 'has_depreciation': True,
-                'message': 'Тухайн хөрөнгийн элэгдэл бодсон байна. Элэгдлээ устгана уу?'
+                'message': 'Тухайн хөрөнгийн элэгдэл бодсон байна засах боломжгүй. Засахын тулд элэгдлээ устгана уу?'
             })
         
         return JsonResponse({
@@ -6932,7 +6949,6 @@ def api_bulk_manage_ast_details(request, document_id):
             }, status=400)
         
         # Complete replacement approach: Delete all existing records first
-        AstDepreciationExpense.objects.filter(DocumentId=document).delete()
         Ast_Document_Detail.objects.filter(DocumentId=document).delete()
         Ast_Document_Item.objects.filter(DocumentId=document).delete()
         
@@ -6995,44 +7011,6 @@ def api_bulk_manage_ast_details(request, document_id):
                 CreditAmount=detail_data.get('credit_amount', 0)
             )
         
-        # Create ast_depreciation_expense records for documentTypeId == 11 only
-        if document.DocumentTypeId_id == 11:
-            # Get expense and depreciation accounts from Ref_Asset_Depreciation_Account
-            depreciation_account_mapping = None
-            if document.AccountId_id:
-                depreciation_account_mapping = Ref_Asset_Depreciation_Account.objects.filter(
-                    AssetAccountId_id=document.AccountId_id,
-                    IsDelete=False
-                ).first()
-            
-            if depreciation_account_mapping:
-                # Calculate expense days (from period begin to document date)
-                expense_days = (document.DocumentDate - period.BeginDate).days + 1
-                
-                # Create depreciation expense records for each asset item
-                for item_info in created_items:
-                    item = item_info['item']
-                    predicted_dep = item_info['predicted_depreciation']
-                    
-                    # Convert to decimal, default to 0
-                    from decimal import Decimal
-                    predicted_dep_amount = Decimal(str(predicted_dep).replace(',', '')) if predicted_dep else Decimal('0')
-                    
-                    # Only create record if predicted depreciation > 0
-                    if predicted_dep_amount > 0:
-                        AstDepreciationExpense.objects.create(
-                            AssetCardId=item.AssetCardId,
-                            PeriodId=period,
-                            ExpenseDay=expense_days,
-                            DepreciationDate=document.DocumentDate,
-                            DocumentId=document,
-                            ExpenseAmount=predicted_dep_amount,
-                            DebitAccountId=depreciation_account_mapping.ExpenseAccountId,
-                            CreditAccountId=depreciation_account_mapping.DepreciationAccountId,
-                            AccountId=depreciation_account_mapping.AssetAccountId,
-                            CreatedBy=request.user
-                        )
-        
         return JsonResponse({'success': True})
         
     except Exception as e:
@@ -7047,63 +7025,56 @@ def api_bulk_manage_ast_details(request, document_id):
 
 @login_required
 @require_http_methods(["GET"])
-def api_check_depreciation_expense_for_period(request):
-    """API endpoint to check if depreciation expenses exist for periods >= document date's period"""
+def api_check_depreciation_expense_by_date(request):
+    """
+    API endpoint to check if depreciation expenses exist for periods >= document date.
+    Used before creating new asset documents to prevent creation if depreciation already exists.
+    """
+    from core.utils import check_dep_expense_after_date
+    
+    document_date = request.GET.get('document_date')
+    document_type_id = request.GET.get('document_type_id')
+    
+    # Validate document_date parameter
+    if not document_date:
+        return JsonResponse({
+            'success': False,
+            'error': 'document_date parameter is required'
+        }, status=400)
+    
+    # Only check for DocumentTypeId 10 and 11
+    if document_type_id:
+        try:
+            doc_type_id = int(document_type_id)
+            if doc_type_id not in (10, 11):
+                return JsonResponse({
+                    'success': True,
+                    'has_depreciation': False,
+                    'message': None
+                })
+        except (TypeError, ValueError):
+            pass
+    
     try:
-        document_id = request.GET.get('document_id')
+        # Use the generic function check_dep_expense_after_date
+        has_depreciation = check_dep_expense_after_date(document_date)
         
-        if not document_id:
-            return JsonResponse({
-                'success': False,
-                'error': 'document_id parameter is required'
-            }, status=400)
-        
-        # Get the document
-        document = get_object_or_404(Ast_Document, pk=document_id, IsDelete=False)
-        
-        # Only check for DocumentTypeId 10 and 11
-        if document.DocumentTypeId_id not in (10, 11):
+        if has_depreciation:
+            error_message = "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?"
             return JsonResponse({
                 'success': True,
-                'has_future_depreciation': False,
-                'message': None
-            })
-        
-        # Get period for document date
-        period = Ref_Period.objects.filter(
-            BeginDate__lte=document.DocumentDate,
-            EndDate__gte=document.DocumentDate
-        ).first()
-        
-        if not period:
-            return JsonResponse({
-                'success': False,
-                'error': 'No period found for the document date'
-            }, status=400)
-        
-        # Check if depreciation expenses exist where period BeginDate >= document's DocumentDate
-        has_future_depreciation = check_dep_expense_after_date(document.DocumentDate)
-        
-        if has_future_depreciation:
-            error_message = "Энэ баримтыг оруулах өдрөөс хойш элэгдэл бодогдсон байна. Иймд энэ хугацаанаас хойш бодогдсон элэгдийн бичлитийг эхлээд усгтана уу?"
-            return JsonResponse({
-                'success': True,
-                'has_future_depreciation': True,
-                'period_id': period.PeriodId,
-                'period_name': period.PeriodName,
+                'has_depreciation': True,
                 'message': error_message
             })
         
         return JsonResponse({
             'success': True,
-            'has_future_depreciation': False,
-            'period_id': period.PeriodId,
-            'period_name': period.PeriodName,
+            'has_depreciation': False,
             'message': None
         })
         
     except Exception as e:
-        logger.error(f'Error checking depreciation expense for period: {str(e)}', exc_info=True)
+        logger.error(f'Error checking depreciation expense by date: {str(e)}', exc_info=True)
         return JsonResponse({
             'success': False,
             'error': f'Error checking depreciation expense: {str(e)}'
@@ -7112,36 +7083,35 @@ def api_check_depreciation_expense_for_period(request):
 
 @login_required
 @require_http_methods(["GET"])
-def api_check_all_previous_periods_have_depreciation(request):
+def api_check_all_previous_periods_depreciation_by_date(request):
     """
     API endpoint to check if all PeriodIds < PeriodId(documentDate) have depreciation expense records.
-    Used for DocumentTypeId = 11 (disposal) to ensure all previous periods have depreciation calculated.
+    Used for asset documents with DocumentTypeId = 11 (disposal) to ensure all previous periods have depreciation calculated.
+    Takes document_date as parameter instead of document_id.
     """
     try:
-        document_id = request.GET.get('document_id')
+        document_date_str = request.GET.get('document_date')
         
-        if not document_id:
+        if not document_date_str:
             return JsonResponse({
                 'success': False,
-                'error': 'document_id parameter is required'
+                'error': 'document_date parameter is required'
             }, status=400)
         
-        # Get the document
-        document = get_object_or_404(Ast_Document, pk=document_id, IsDelete=False)
-        
-        # Only check for DocumentTypeId 11
-        if document.DocumentTypeId_id != 11:
+        # Parse document date
+        from datetime import datetime
+        try:
+            document_date = datetime.strptime(document_date_str, '%Y-%m-%d').date()
+        except ValueError:
             return JsonResponse({
-                'success': True,
-                'all_periods_have_depreciation': True,
-                'missing_periods': [],
-                'message': None
-            })
+                'success': False,
+                'error': 'Invalid document_date format. Expected YYYY-MM-DD'
+            }, status=400)
         
         # Get period for document date
         period = Ref_Period.objects.filter(
-            BeginDate__lte=document.DocumentDate,
-            EndDate__gte=document.DocumentDate
+            BeginDate__lte=document_date,
+            EndDate__gte=document_date
         ).first()
         
         if not period:
@@ -7204,68 +7174,10 @@ def api_check_all_previous_periods_have_depreciation(request):
         })
         
     except Exception as e:
-        logger.error(f'Error checking previous periods depreciation: {str(e)}', exc_info=True)
+        logger.error(f'Error checking previous periods depreciation by date: {str(e)}', exc_info=True)
         return JsonResponse({
             'success': False,
             'error': f'Error checking previous periods depreciation: {str(e)}'
-        }, status=500)
-
-
-@login_required
-@require_http_methods(["GET"])
-def api_check_depreciation_expense_by_date(request):
-    """
-    API endpoint to check if depreciation expenses exist for periods >= document date.
-    Used before creating new asset documents to prevent creation if depreciation already exists.
-    """
-    from core.utils import check_dep_expense_after_date
-    
-    document_date = request.GET.get('document_date')
-    document_type_id = request.GET.get('document_type_id')
-    
-    # Validate document_date parameter
-    if not document_date:
-        return JsonResponse({
-            'success': False,
-            'error': 'document_date parameter is required'
-        }, status=400)
-    
-    # Only check for DocumentTypeId 10 and 11
-    if document_type_id:
-        try:
-            doc_type_id = int(document_type_id)
-            if doc_type_id not in (10, 11):
-                return JsonResponse({
-                    'success': True,
-                    'has_depreciation': False,
-                    'message': None
-                })
-        except (TypeError, ValueError):
-            pass
-    
-    try:
-        # Use the generic function check_dep_expense_after_date
-        has_depreciation = check_dep_expense_after_date(document_date)
-        
-        if has_depreciation:
-            error_message = "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?"
-            return JsonResponse({
-                'success': True,
-                'has_depreciation': True,
-                'message': error_message
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'has_depreciation': False,
-            'message': None
-        })
-        
-    except Exception as e:
-        logger.error(f'Error checking depreciation expense by date: {str(e)}', exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': f'Error checking depreciation expense: {str(e)}'
         }, status=500)
 
 
