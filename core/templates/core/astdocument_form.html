@@ -448,203 +448,296 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Only check for DocumentTypeId 10 and 11
                     if (documentTypeId && (documentTypeId === '10' || documentTypeId === '11')) {
-                        // For new documents: first check if depreciation exists for current month
+                        // For new documents: check in chronological order (Previous → Current → Future)
                         if (isNewDocument) {
-                            const currentMonthDepreciationUrl = `/core/api/check-period-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                            // For DocumentTypeId 11: first check if all previous periods have depreciation
+                            if (documentTypeId === '11') {
+                                const previousPeriodsCheckUrl = `/core/api/check-all-previous-periods-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                                
+                                fetch(previousPeriodsCheckUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (!data.success) {
+                                            console.error('Previous periods depreciation check API error:', data.error);
+                                            // If API fails, proceed to current month check (fail open)
+                                            checkCurrentMonthDepreciation();
+                                            return;
+                                        }
+                                        
+                                        // Check if all previous periods have depreciation
+                                        if (!data.all_periods_have_depreciation) {
+                                            isValidationInProgress = false;
+                                            
+                                            if (submitButton) {
+                                                Silicon4Form.hideLoading(submitButton);
+                                            }
+                                            
+                                            // Show error modal with missing periods
+                                            const errorMessage = data.message || 'Элэгдэл бодогдоогүй хугацаа байна. Дараах хугацаануудад элэгдэл бодно уу.';
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // All previous periods have depreciation (or periodId = 1, so no previous periods)
+                                        // Proceed to current month check
+                                        checkCurrentMonthDepreciation();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking previous periods depreciation:', error);
+                                        // If API fails, proceed to current month check (fail open)
+                                        checkCurrentMonthDepreciation();
+                                    });
+                            } else {
+                                // For DocumentTypeId 10: directly check current month
+                                checkCurrentMonthDepreciation();
+                            }
                             
-                            fetch(currentMonthDepreciationUrl)
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (!data.success) {
-                                        console.error('Current month depreciation check API error:', data.error);
-                                        // If API fails, proceed to other depreciation checks (fail open)
-                                        proceedWithOtherDepreciationChecks();
-                                        return;
-                                    }
-                                    
-                                    if (data.has_depreciation_for_period) {
+                            // Helper function to check current month depreciation
+                            function checkCurrentMonthDepreciation() {
+                                const currentMonthDepreciationUrl = `/core/api/check-period-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                                
+                                fetch(currentMonthDepreciationUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (!data.success) {
+                                            console.error('Current month depreciation check API error:', data.error);
+                                            // If API fails, proceed to depreciation after date check (fail open)
+                                            checkDepreciationAfterDate();
+                                            return;
+                                        }
+                                        
+                                        if (data.has_depreciation_for_period) {
+                                            isValidationInProgress = false;
+                                            if (submitButton) {
+                                                Silicon4Form.hideLoading(submitButton);
+                                            }
+                                            
+                                            // Show error modal for current month depreciation
+                                            const errorMessage = data.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг үүсгэх боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // No depreciation for current month, proceed to check depreciation after date
+                                        checkDepreciationAfterDate();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking current month depreciation:', error);
+                                        // If API fails, proceed to depreciation after date check (fail open)
+                                        checkDepreciationAfterDate();
+                                    });
+                            }
+                            
+                            // Helper function to check depreciation after date
+                            function checkDepreciationAfterDate() {
+                                const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+                                
+                                fetch(depreciationCheckUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
                                         isValidationInProgress = false;
+                                        
                                         if (submitButton) {
                                             Silicon4Form.hideLoading(submitButton);
                                         }
                                         
-                                        // Show error modal for current month depreciation
-                                        const errorMessage = data.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг үүсгэх боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
-                                        if (typeof showMessageModal === 'function') {
-                                            showMessageModal(errorMessage, 'error', 'Анхааруулга');
-                                        } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
-                                            Silicon4Message.error(errorMessage);
-                                        } else {
-                                            alert(errorMessage);
-                                        }
-                                        return;
-                                    }
-                                    
-                                    // No depreciation for current month, proceed to other depreciation checks
-                                    proceedWithOtherDepreciationChecks();
-                                })
-                                .catch(error => {
-                                    console.error('Error checking current month depreciation:', error);
-                                    // If API fails, proceed to other depreciation checks (fail open)
-                                    proceedWithOtherDepreciationChecks();
-                                });
-                            
-                            // Helper function to proceed with other depreciation checks
-                            function proceedWithOtherDepreciationChecks() {
-                                // For DocumentTypeId 11: check if all previous periods have depreciation
-                                if (documentTypeId === '11') {
-                                    const previousPeriodsCheckUrl = `/core/api/check-all-previous-periods-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
-                                    
-                                    fetch(previousPeriodsCheckUrl)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (!data.success) {
-                                                console.error('Previous periods depreciation check API error:', data.error);
-                                                // If API fails, proceed to regular depreciation check (fail open)
-                                                checkDepreciationAfterDate();
-                                                return;
-                                            }
-                                            
-                                            // Check if all previous periods have depreciation
-                                            if (!data.all_periods_have_depreciation) {
-                                                isValidationInProgress = false;
-                                                
-                                                if (submitButton) {
-                                                    Silicon4Form.hideLoading(submitButton);
-                                                }
-                                                
-                                                // Show error modal with missing periods
-                                                const errorMessage = data.message || 'Элэгдэл бодогдоогүй хугацаа байна. Дараах хугацаануудад элэгдэл бодно уу.';
-                                                if (typeof showMessageModal === 'function') {
-                                                    showMessageModal(errorMessage, 'error', 'Анхааруулга');
-                                                } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
-                                                    Silicon4Message.error(errorMessage);
-                                                } else {
-                                                    alert(errorMessage);
-                                                }
-                                                return;
-                                            }
-                                            
-                                            // All previous periods have depreciation (or periodId = 1, so no previous periods)
-                                            // Proceed to check depreciation after date
-                                            checkDepreciationAfterDate();
-                                        })
-                                        .catch(error => {
-                                            console.error('Error checking previous periods depreciation:', error);
-                                            // If API fails, proceed to regular depreciation check (fail open)
-                                            checkDepreciationAfterDate();
-                                        });
-                                } else {
-                                    // For DocumentTypeId 10: check if depreciation exists after the document date
-                                    checkDepreciationAfterDate();
-                                }
-                                
-                                // Helper function to check depreciation after date
-                                function checkDepreciationAfterDate() {
-                                    const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
-                                    
-                                    fetch(depreciationCheckUrl)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            isValidationInProgress = false;
-                                            
-                                            if (submitButton) {
-                                                Silicon4Form.hideLoading(submitButton);
-                                            }
-                                            
-                                            if (!data.success) {
-                                                console.error('Depreciation check API error:', data.error);
-                                                // If API fails, allow submission to proceed (fail open)
-                                                validationPassed = true;
-                                                form.submit();
-                                                return;
-                                            }
-                                            
-                                            // Check for depreciation
-                                            if (data.has_depreciation) {
-                                                // Show error modal and prevent submission
-                                                const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
-                                                if (typeof showMessageModal === 'function') {
-                                                    showMessageModal(errorMessage, 'error', 'Анхааруулга');
-                                                } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
-                                                    Silicon4Message.error(errorMessage);
-                                                } else {
-                                                    alert(errorMessage);
-                                                }
-                                                return;
-                                            }
-                                            
-                                            // No depreciation, proceed with form submission
-                                            validationPassed = true;
-                                            form.submit();
-                                        })
-                                        .catch(error => {
-                                            console.error('Error checking depreciation expense:', error);
-                                            isValidationInProgress = false;
-                                            
-                                            if (submitButton) {
-                                                Silicon4Form.hideLoading(submitButton);
-                                            }
+                                        if (!data.success) {
+                                            console.error('Depreciation check API error:', data.error);
                                             // If API fails, allow submission to proceed (fail open)
                                             validationPassed = true;
                                             form.submit();
-                                        });
-                                }
+                                            return;
+                                        }
+                                        
+                                        // Check for depreciation
+                                        if (data.has_depreciation) {
+                                            // Show error modal and prevent submission
+                                            const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // No depreciation, proceed with form submission
+                                        validationPassed = true;
+                                        form.submit();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking depreciation expense:', error);
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
+                                        // If API fails, allow submission to proceed (fail open)
+                                        validationPassed = true;
+                                        form.submit();
+                                    });
                             }
                             
                             return; // Exit early, form submission will be handled in the fetch callbacks
                         } else {
-                            // For updating documents: check if depreciation exists after the updated document date
-                            const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+                            // For updating documents: check in chronological order (Previous → Current → Future)
+                            // For DocumentTypeId 11: first check if all previous periods have depreciation
+                            if (documentTypeId === '11') {
+                                const previousPeriodsCheckUrl = `/core/api/check-all-previous-periods-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                                
+                                fetch(previousPeriodsCheckUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (!data.success) {
+                                            console.error('Previous periods depreciation check API error:', data.error);
+                                            // If API fails, proceed to current month check (fail open)
+                                            checkCurrentMonthDepreciationForUpdate();
+                                            return;
+                                        }
+                                        
+                                        // Check if all previous periods have depreciation
+                                        if (!data.all_periods_have_depreciation) {
+                                            isValidationInProgress = false;
+                                            
+                                            if (submitButton) {
+                                                Silicon4Form.hideLoading(submitButton);
+                                            }
+                                            
+                                            // Show error modal with missing periods
+                                            const errorMessage = data.message || 'Элэгдэл бодогдоогүй хугацаа байна. Дараах хугацаануудад элэгдэл бодно уу.';
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // All previous periods have depreciation (or periodId = 1, so no previous periods)
+                                        // Proceed to current month check
+                                        checkCurrentMonthDepreciationForUpdate();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking previous periods depreciation:', error);
+                                        // If API fails, proceed to current month check (fail open)
+                                        checkCurrentMonthDepreciationForUpdate();
+                                    });
+                            } else {
+                                // For DocumentTypeId 10: directly check current month
+                                checkCurrentMonthDepreciationForUpdate();
+                            }
                             
-                            // Check depreciation expense
-                            fetch(depreciationCheckUrl)
-                                .then(response => response.json())
-                                .then(data => {
-                                    isValidationInProgress = false;
-                                    
-                                    if (submitButton) {
-                                        Silicon4Form.hideLoading(submitButton);
-                                    }
-                                    
-                                    if (!data.success) {
-                                        console.error('Depreciation check API error:', data.error);
+                            // Helper function to check current month depreciation for updates
+                            function checkCurrentMonthDepreciationForUpdate() {
+                                const currentMonthDepreciationUrl = `/core/api/check-period-depreciation-by-date/?document_date=${encodeURIComponent(documentDate)}`;
+                                
+                                fetch(currentMonthDepreciationUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (!data.success) {
+                                            console.error('Current month depreciation check API error:', data.error);
+                                            // If API fails, proceed to depreciation after date check (fail open)
+                                            checkDepreciationAfterDateForUpdate();
+                                            return;
+                                        }
+                                        
+                                        if (data.has_depreciation_for_period) {
+                                            isValidationInProgress = false;
+                                            if (submitButton) {
+                                                Silicon4Form.hideLoading(submitButton);
+                                            }
+                                            
+                                            // Show error modal for current month depreciation
+                                            const errorMessage = data.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг шинэчлэх боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // No depreciation for current month, proceed to check depreciation after date
+                                        checkDepreciationAfterDateForUpdate();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking current month depreciation:', error);
+                                        // If API fails, proceed to depreciation after date check (fail open)
+                                        checkDepreciationAfterDateForUpdate();
+                                    });
+                            }
+                            
+                            // Helper function to check depreciation after date for updates
+                            function checkDepreciationAfterDateForUpdate() {
+                                const depreciationCheckUrl = `/core/api/check-depreciation-expense-by-date/?document_date=${encodeURIComponent(documentDate)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+                                
+                                fetch(depreciationCheckUrl)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
+                                        
+                                        if (!data.success) {
+                                            console.error('Depreciation check API error:', data.error);
+                                            // If API fails, allow submission to proceed (fail open)
+                                            validationPassed = true;
+                                            form.submit();
+                                            return;
+                                        }
+                                        
+                                        // Check for depreciation
+                                        if (data.has_depreciation) {
+                                            // Show error modal and prevent submission
+                                            const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
+                                            if (typeof showMessageModal === 'function') {
+                                                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+                                            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                                                Silicon4Message.error(errorMessage);
+                                            } else {
+                                                alert(errorMessage);
+                                            }
+                                            return;
+                                        }
+                                        
+                                        // No depreciation, proceed with form submission
+                                        validationPassed = true;
+                                        form.submit();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking depreciation expense:', error);
+                                        isValidationInProgress = false;
+                                        
+                                        if (submitButton) {
+                                            Silicon4Form.hideLoading(submitButton);
+                                        }
                                         // If API fails, allow submission to proceed (fail open)
                                         validationPassed = true;
                                         form.submit();
-                                        return;
-                                    }
-                                    
-                                    // Check for depreciation
-                                    if (data.has_depreciation) {
-                                        // Show error modal and prevent submission
-                                        const errorMessage = data.message || "Энэ хугацаанаас хойш элэгдэл бодсон тул тэдгээр элэгдлийн бичилтийг устгана уу ?";
-                                        if (typeof showMessageModal === 'function') {
-                                            showMessageModal(errorMessage, 'error', 'Анхааруулга');
-                                        } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
-                                            Silicon4Message.error(errorMessage);
-                                        } else {
-                                            alert(errorMessage);
-                                        }
-                                        return;
-                                    }
-                                    
-                                    // No depreciation, proceed with form submission
-                                    validationPassed = true;
-                                    form.submit();
-                                })
-                                .catch(error => {
-                                    console.error('Error checking depreciation expense:', error);
-                                    isValidationInProgress = false;
-                                    
-                                    if (submitButton) {
-                                        Silicon4Form.hideLoading(submitButton);
-                                    }
-                                    // If API fails, allow submission to proceed (fail open)
-                                    validationPassed = true;
-                                    form.submit();
-                                });
-                            return;
+                                    });
+                            }
+                            
+                            return; // Exit early, form submission will be handled in the fetch callbacks
                         }
                     }
                 }
