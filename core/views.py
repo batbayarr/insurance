@@ -5627,6 +5627,118 @@ def api_check_document_period_depreciation(request):
 
 @login_required
 @require_http_methods(["GET"])
+def api_check_period_depreciation_by_date(request):
+    """Check if depreciation expenses exist for a specific date's period"""
+    try:
+        document_date_str = request.GET.get('document_date')
+        
+        if not document_date_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'document_date parameter is required'
+            }, status=400)
+        
+        try:
+            from datetime import datetime
+            document_date = datetime.strptime(document_date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid document_date format. Expected YYYY-MM-DD'
+            }, status=400)
+        
+        # Get period for document date
+        period = Ref_Period.objects.filter(
+            BeginDate__lte=document_date,
+            EndDate__gte=document_date
+        ).first()
+        
+        if not period:
+            return JsonResponse({
+                'success': True,
+                'has_depreciation_for_period': False,
+                'message': None
+            })
+        
+        # Check if ast_depreciation_expense has records for this period
+        has_depreciation = AstDepreciationExpense.objects.filter(
+            PeriodId=period.PeriodId
+        ).exists()
+        
+        if has_depreciation:
+            return JsonResponse({
+                'success': True,
+                'has_depreciation_for_period': True,
+                'message': 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг үүсгэх боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'has_depreciation_for_period': False,
+            'message': None
+        })
+        
+    except Exception as e:
+        logger.error(f'Error checking period depreciation by date: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error checking period depreciation by date: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_check_asset_document_has_details(request):
+    """Check if asset document has any details or items"""
+    try:
+        document_id_str = request.GET.get('document_id')
+        
+        if not document_id_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'document_id parameter is required'
+            }, status=400)
+        
+        try:
+            document_id = int(document_id_str)
+        except (TypeError, ValueError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid document_id format'
+            }, status=400)
+        
+        # Check if document exists
+        try:
+            document = Ast_Document.objects.get(DocumentId=document_id, IsDelete=False)
+        except Ast_Document.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Document not found'
+            }, status=404)
+        
+        # Check if document has any items
+        has_items = Ast_Document_Item.objects.filter(DocumentId=document).exists()
+        
+        # Check if document has any details
+        has_details = Ast_Document_Detail.objects.filter(DocumentId=document).exists()
+        
+        return JsonResponse({
+            'success': True,
+            'has_items': has_items,
+            'has_details': has_details,
+            'is_empty': not (has_items or has_details)
+        })
+        
+    except Exception as e:
+        logger.error(f'Error checking asset document details: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error checking document details: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
 def api_check_asset_document_balance(request):
     """Check if asset document can be deleted based on whether asset cards have been disposed"""
     document_id = request.GET.get('document_id')
@@ -6701,23 +6813,78 @@ def astdocument_update(request, pk, parentid=None):
 @login_required
 @permission_required('core.delete_ast_document', raise_exception=True)
 def astdocument_delete(request, pk):
-    """Delete an asset document"""
+    """Delete an asset document with soft delete"""
     document = get_object_or_404(Ast_Document, pk=pk)
     
     # Check if user owns this document
     if document.CreatedBy != request.user:
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({
+                'success': False,
+                'message': 'You do not have permission to delete this document.'
+            })
         messages.error(request, 'You do not have permission to delete this document.')
         return redirect('core:astdocument_master_detail')
     
+    # Check if this is a modal request
+    if request.GET.get('modal'):
+        # Return modal content
+        return render(request, 'core/components/delete_modal.html', {
+            'item_name': f"{document.DocumentNo} - {document.Description}",
+            'delete_url': reverse('core:astdocument_delete', args=[pk])
+        })
+    
+    # Handle API request (JSON)
+    if request.method == 'POST' and ('application/json' in request.headers.get('Content-Type', '') or request.headers.get('Content-Type') == 'application/json'):
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            # Check if already deleted
+            if document.IsDelete:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Asset document "{document.DocumentNo}" is already deleted.'
+                })
+            
+            # Perform soft delete
+            document.IsDelete = True
+            if hasattr(document, 'ModifiedBy'):
+                document.ModifiedBy = request.user
+            document.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Asset document "{document.DocumentNo}" has been deleted successfully.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error deleting asset document: {str(e)}'
+            })
+    
+    # Handle regular form POST
     if request.method == 'POST':
         try:
-            # Soft delete the document
+            # Check if already deleted
+            if document.IsDelete:
+                messages.warning(request, f'Asset document "{document.DocumentNo}" is already deleted.')
+                return redirect('core:astdocument_master_detail')
+            
+            # Perform soft delete
             document.IsDelete = True
+            if hasattr(document, 'ModifiedBy'):
+                document.ModifiedBy = request.user
             document.save()
-            messages.success(request, 'Asset document deleted successfully.')
+            messages.success(request, f'Asset document "{document.DocumentNo}" has been deleted successfully.')
+            
         except Exception as e:
             messages.error(request, f'Error deleting asset document: {str(e)}')
+        
+        return redirect('core:astdocument_master_detail')
     
+    # GET request without modal parameter - redirect to list
     return redirect('core:astdocument_master_detail')
 
 
@@ -10086,7 +10253,7 @@ def get_asset_documents_master(request):
 
         documents_query = Ast_Document.objects.select_related(
             'DocumentTypeId', 'ClientId', 'AccountId', 'CreatedBy'
-        ).filter(IsDelete=False)
+        ).filter(IsDelete=False)  # Exclude deleted records
 
         if start_date:
             documents_query = documents_query.filter(DocumentDate__gte=start_date)
@@ -10111,6 +10278,8 @@ def get_asset_documents_master(request):
                 'PriceAmount': float(doc.PriceAmount) if doc.PriceAmount else 0,
                 'CreatedByUsername': doc.CreatedBy.username if doc.CreatedBy else '',
                 'CreatedById': doc.CreatedBy.id if doc.CreatedBy else None,
+                'ClientRegister': doc.ClientId.ClientRegister if doc.ClientId else '',
+                'DocumentTypeId': doc.DocumentTypeId.DocumentTypeId if doc.DocumentTypeId else None,
             })
 
         return JsonResponse({

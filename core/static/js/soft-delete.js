@@ -83,7 +83,9 @@ class Silicon4SoftDelete {
         
         // Set flag IMMEDIATELY to prevent any filtering during delete
         const cashDocContainer = document.getElementById('cash-document-container');
+        const assetDocContainer = document.getElementById('asset-document-container');
         const pathIncludesCashDocs = window.location.pathname.includes('/cashdocuments/');
+        const pathIncludesAstDocs = window.location.pathname.includes('/astdocuments/');
         
         // Clear any existing timeout from previous delete operations
         if (this.filterClearTimeout) {
@@ -92,6 +94,10 @@ class Silicon4SoftDelete {
         }
         
         if (pathIncludesCashDocs && cashDocContainer) {
+            window.skipFilterAfterDelete = true;
+        }
+        
+        if (pathIncludesAstDocs && assetDocContainer) {
             window.skipFilterAfterDelete = true;
         }
         
@@ -125,15 +131,17 @@ class Silicon4SoftDelete {
             this.showLoading(false);
             
             if (result.success) {
-                // Check if we're on cash document master detail page (cache DOM check)
+                // Check if we're on cash or asset document master detail page (cache DOM check)
                 // Be very explicit to avoid false positives
                 const cashDocContainer = document.getElementById('cash-document-container');
+                const assetDocContainer = document.getElementById('asset-document-container');
                 const pathIncludesCashDocs = window.location.pathname.includes('/cashdocuments/');
+                const pathIncludesAstDocs = window.location.pathname.includes('/astdocuments/');
                 const hasAllDocumentsData = typeof allDocumentsData !== 'undefined' && Array.isArray(allDocumentsData);
                 
-                // CRITICAL: If we're on cashdocuments path, NEVER reload - always use instant delete
+                // CRITICAL: If we're on cashdocuments or astdocuments path, NEVER reload - always use instant delete
                 // This prevents accidental reloads even if detection fails
-                if (pathIncludesCashDocs && cashDocContainer) {
+                if ((pathIncludesCashDocs && cashDocContainer) || (pathIncludesAstDocs && assetDocContainer)) {
                     
                     // Set a flag to prevent applyFrontendFilter from re-rendering after delete
                     window.skipFilterAfterDelete = true;
@@ -145,51 +153,95 @@ class Silicon4SoftDelete {
                         // Single DOM query - cache the row
                         const row = document.querySelector(`tr[data-document-id="${itemId}"]`);
                         if (row) {
-                            // Batch all style updates at once
-                            row.style.cssText = 'opacity: 0.5; text-decoration: line-through; pointer-events: none; cursor: default;';
-                            row.classList.add('deleted-row');
-                            
-                            // Hide action buttons (use for loop for better performance)
-                            const actionButtons = row.querySelectorAll('button');
-                            for (let i = 0; i < actionButtons.length; i++) {
-                                actionButtons[i].style.display = 'none';
-                            }
-                            
-                            // Update action cell - use textContent instead of innerHTML to avoid triggering observers
-                            const actionCell = row.querySelector('td:last-child');
-                            if (actionCell) {
-                                // Clear existing content without using innerHTML
-                                while (actionCell.firstChild) {
-                                    actionCell.removeChild(actionCell.firstChild);
-                                }
-                                // Create and append new element
-                                const deletedSpan = document.createElement('span');
-                                deletedSpan.className = 'text-red-500 text-xs font-medium';
-                                deletedSpan.textContent = '(Устгагдсан)';
-                                actionCell.appendChild(deletedSpan);
-                            }
-                        }
-                        
-                        // Mark as deleted in data arrays (optimized with early exit)
-                        const markAsDeleted = (arr) => {
-                            if (Array.isArray(arr)) {
-                                for (let i = 0; i < arr.length; i++) {
-                                    if (arr[i].DocumentId == itemId) {
-                                        arr[i].IsDelete = true;
-                                        break; // Early exit
+                            // For asset documents, remove the row completely (don't show deleted records)
+                            if (pathIncludesAstDocs && assetDocContainer) {
+                                // Remove from DOM
+                                row.remove();
+                                
+                                // Remove from data arrays
+                                const removeFromArray = (arr) => {
+                                    if (Array.isArray(arr)) {
+                                        for (let i = arr.length - 1; i >= 0; i--) {
+                                            if (arr[i].DocumentId == itemId) {
+                                                arr.splice(i, 1);
+                                                break; // Early exit
+                                            }
+                                        }
+                                    }
+                                };
+                                
+                                if (hasAllDocumentsData) {
+                                    removeFromArray(allDocumentsData);
+                                    if (typeof filteredData !== 'undefined') {
+                                        removeFromArray(filteredData);
+                                    }
+                                    if (typeof pageData !== 'undefined') {
+                                        removeFromArray(pageData);
                                     }
                                 }
-                            }
-                        };
-                        
-                        // Only mark in arrays if they exist
-                        if (hasAllDocumentsData) {
-                            markAsDeleted(allDocumentsData);
-                            if (typeof filteredData !== 'undefined') {
-                                markAsDeleted(filteredData);
-                            }
-                            if (typeof pageData !== 'undefined') {
-                                markAsDeleted(pageData);
+                                
+                                // Clear detail container if this was the selected document
+                                const detailContainer = document.getElementById('detail-grid-container');
+                                if (detailContainer) {
+                                    detailContainer.innerHTML = '';
+                                }
+                                
+                                // Update pagination info
+                                if (typeof applyFrontendFilter === 'function') {
+                                    // Clear the skip flag temporarily to allow pagination update
+                                    const wasSkipping = window.skipFilterAfterDelete;
+                                    window.skipFilterAfterDelete = false;
+                                    applyFrontendFilter();
+                                    window.skipFilterAfterDelete = wasSkipping;
+                                }
+                            } else {
+                                // For cash documents, keep the old behavior (show as deleted)
+                                // Batch all style updates at once
+                                row.style.cssText = 'opacity: 0.5; text-decoration: line-through; pointer-events: none; cursor: default;';
+                                row.classList.add('deleted-row');
+                                
+                                // Hide action buttons (use for loop for better performance)
+                                const actionButtons = row.querySelectorAll('button');
+                                for (let i = 0; i < actionButtons.length; i++) {
+                                    actionButtons[i].style.display = 'none';
+                                }
+                                
+                                // Update action cell - use textContent instead of innerHTML to avoid triggering observers
+                                const actionCell = row.querySelector('td:last-child');
+                                if (actionCell) {
+                                    // Clear existing content without using innerHTML
+                                    while (actionCell.firstChild) {
+                                        actionCell.removeChild(actionCell.firstChild);
+                                    }
+                                    // Create and append new element
+                                    const deletedSpan = document.createElement('span');
+                                    deletedSpan.className = 'text-red-500 text-xs font-medium';
+                                    deletedSpan.textContent = '(Устгагдсан)';
+                                    actionCell.appendChild(deletedSpan);
+                                }
+                                
+                                // Mark as deleted in data arrays (optimized with early exit)
+                                const markAsDeleted = (arr) => {
+                                    if (Array.isArray(arr)) {
+                                        for (let i = 0; i < arr.length; i++) {
+                                            if (arr[i].DocumentId == itemId) {
+                                                arr[i].IsDelete = true;
+                                                break; // Early exit
+                                            }
+                                        }
+                                    }
+                                };
+                                
+                                // Only mark in arrays if they exist
+                                if (hasAllDocumentsData) {
+                                    markAsDeleted(allDocumentsData);
+                                    if (typeof filteredData !== 'undefined') {
+                                        markAsDeleted(filteredData);
+                                    }
+                                    if (typeof pageData !== 'undefined') {
+                                        markAsDeleted(pageData);
+                                    }
+                                }
                             }
                         }
                         
@@ -348,10 +400,12 @@ class Silicon4SoftDelete {
             console.error('Error stack:', error.stack);
             this.showLoading(false);
             this.closeModal();
-            // Only show error message for non-cash document pages
+            // Only show error message for non-cash and non-asset document pages
             const cashDocContainer = document.getElementById('cash-document-container');
+            const assetDocContainer = document.getElementById('asset-document-container');
             const pathIncludesCashDocs = window.location.pathname.includes('/cashdocuments/');
-            if (!(pathIncludesCashDocs && cashDocContainer)) {
+            const pathIncludesAstDocs = window.location.pathname.includes('/astdocuments/');
+            if (!((pathIncludesCashDocs && cashDocContainer) || (pathIncludesAstDocs && assetDocContainer))) {
                 this.showErrorMessage(`Network error occurred while deleting item: ${error.message}`);
             }
         } finally {

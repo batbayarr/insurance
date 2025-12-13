@@ -152,6 +152,8 @@ urlpatterns = [
     path('api/check-all-previous-periods-depreciation-by-date/', views.api_check_all_previous_periods_depreciation_by_date, name='api_check_all_previous_periods_depreciation_by_date'),
     path('api/check-asset-document-balance/', views.api_check_asset_document_balance, name='api_check_asset_document_balance'),
     path('api/check-document-period-depreciation/', views.api_check_document_period_depreciation, name='api_check_document_period_depreciation'),
+    path('api/check-period-depreciation-by-date/', views.api_check_period_depreciation_by_date, name='api_check_period_depreciation_by_date'),
+    path('api/check-asset-document-has-details/', views.api_check_asset_document_has_details, name='api_check_asset_document_has_details'),
     path('api/check-asset-card-depreciation/', views.api_check_asset_card_has_depreciation, name='api_check_asset_card_has_depreciation'),
     path('api/check-asset-card-usage-edit-delete/', views.api_check_asset_card_usage_for_edit_delete, name='api_check_asset_card_usage_for_edit_delete'),
     

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Asset Documents - Silicon-AI Accounting{% endblock %}
 
@@ -128,6 +129,9 @@
 
 <!-- Include Delete Modal -->
 {% include 'core/components/delete_modal.html' %}
+
+<!-- Include Soft Delete Script -->
+<script src="{% static 'js/soft-delete.js' %}"></script>
 
 <script>
 // Prevent script re-execution
@@ -306,8 +310,24 @@ function applyFrontendFilter() {
 }
 
 function renderDocumentsTable(documents) {
+    // Skip re-rendering if we just deleted a record (prevents filtering/re-rendering after delete)
+    if (window.skipFilterAfterDelete) {
+        return;
+    }
+    
+    // Also check if we're currently deleting (double safety)
+    if (window.Silicon4SoftDelete && window.Silicon4SoftDelete.isDeleting) {
+        return;
+    }
+    
     const tbody = document.getElementById('documents-tbody');
     if (!tbody) return;
+    
+    if (documents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-gray-500">Баримт олдсонгүй</td></tr>';
+        return;
+    }
+    
     const fragment = document.createDocumentFragment();
     documents.forEach(doc => {
         const tr = document.createElement('tr');
@@ -364,6 +384,11 @@ function renderDocumentsTable(documents) {
                                 <button class="delete-document-btn text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
                         data-delete-url="/core/astdocuments/${doc.DocumentId}/delete/"
                         data-document-name="Document ${doc.DocumentNo}" 
+                        data-soft-delete
+                        data-item-id="${doc.DocumentId}"
+                        data-item-name="${doc.DocumentNo}"
+                        data-document-date="${doc.DocumentDate || ''}"
+                        data-document-type-id="${doc.DocumentTypeId || ''}"
                                         title="Delete Document">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -512,17 +537,31 @@ function initializeEventHandlers() {
         }
         const deleteBtn = e.target.closest('.delete-document-btn');
         if (deleteBtn) {
-            e.preventDefault(); e.stopPropagation();
-            const deleteUrl = deleteBtn.getAttribute('data-delete-url');
-            const documentName = deleteBtn.getAttribute('data-document-name');
-            const row = deleteBtn.closest('tr[data-document-id]');
-            if (row && deleteUrl && documentName) {
-                const documentId = row.getAttribute('data-document-id');
-                const documentDate = row.getAttribute('data-document-date');
-                const documentTypeId = parseInt(row.getAttribute('data-document-type-id') || '0');
+            e.preventDefault();
+            e.stopPropagation();
+            // Check if this is a soft delete button (has data-soft-delete attribute)
+            if (deleteBtn.hasAttribute('data-soft-delete')) {
+                const documentId = deleteBtn.getAttribute('data-item-id');
+                const documentDate = deleteBtn.getAttribute('data-document-date');
+                const documentTypeId = parseInt(deleteBtn.getAttribute('data-document-type-id') || '0');
+                const deleteUrl = deleteBtn.getAttribute('data-delete-url');
+                const documentName = deleteBtn.getAttribute('data-document-name');
                 
-                // Check period lock and depreciation for all document types before delete
-                checkDocumentPeriodDepreciationBeforeDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId);
+                // Check period lock and depreciation before showing soft delete modal
+                checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId, deleteBtn);
+            } else {
+                // Legacy delete flow (should not happen with new buttons)
+                const deleteUrl = deleteBtn.getAttribute('data-delete-url');
+                const documentName = deleteBtn.getAttribute('data-document-name');
+                const row = deleteBtn.closest('tr[data-document-id]');
+                if (row && deleteUrl && documentName) {
+                    const documentId = row.getAttribute('data-document-id');
+                    const documentDate = row.getAttribute('data-document-date');
+                    const documentTypeId = parseInt(row.getAttribute('data-document-type-id') || '0');
+                    
+                    // Check period lock and depreciation for all document types before delete
+                    checkDocumentPeriodDepreciationBeforeDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId);
+                }
             }
             return;
         }
@@ -854,8 +893,92 @@ async function checkPeriodLockForEdit(documentId, documentDate) {
     }
 }
 
+// Check period lock and depreciation before allowing soft delete
+async function checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId, deleteButton) {
+    console.log('checkDocumentPeriodDepreciationBeforeSoftDelete called with:', documentId);
+    
+    // First check if document has empty details/items - if empty, allow delete regardless of checks
+    try {
+        const detailsCheckResponse = await fetch(`/core/api/check-asset-document-has-details/?document_id=${documentId}`);
+        const detailsCheckData = await detailsCheckResponse.json();
+        
+        if (detailsCheckData.success && detailsCheckData.is_empty) {
+            // Document has no items and no details, allow soft delete without any checks
+            console.log('Document has no items/details, allowing soft delete without validation');
+            if (window.Silicon4SoftDelete) {
+                window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
+            }
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking document details:', error);
+        // On error, proceed with normal checks (fail open)
+    }
+    
+    // Document has items or details, proceed with normal validation
+    // If no date, skip period lock check but still check depreciation
+    if (documentDate) {
+        try {
+            // First check period lock
+            const lockResponse = await fetch(`/core/api/check-period-lock/?date=${documentDate}`);
+            const lockData = await lockResponse.json();
+            if (lockData.is_locked) {
+                // Show modal for locked period
+                if (typeof showMessageModal === 'function') {
+                    showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                } else {
+                    alert(lockData.message);
+                }
+                return;
+            }
+        } catch (error) {
+            console.error('Period lock check failed:', error);
+            // On error, proceed with depreciation check (fail open)
+        }
+    }
+    
+    // Check if depreciation exists for document's period (current month)
+    try {
+        const depResponse = await fetch(`/core/api/check-document-period-depreciation/?document_id=${documentId}`);
+        const depData = await depResponse.json();
+        
+        if (!depData.success) {
+            console.error('Depreciation check API error:', depData.error);
+            // On error, proceed with soft delete (fail open)
+            if (window.Silicon4SoftDelete) {
+                window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
+            }
+            return;
+        }
+        
+        if (depData.has_depreciation_for_period) {
+            // Show modal for depreciation in period
+            const errorMessage = depData.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг засах болон устгах боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
+            if (typeof showMessageModal === 'function') {
+                showMessageModal(errorMessage, 'error', 'Анхааруулга');
+            } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
+                Silicon4Message.error(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+            return;
+        }
+        
+        // No depreciation issue, proceed with soft delete
+        if (window.Silicon4SoftDelete) {
+            window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
+        }
+    } catch (error) {
+        console.error('Depreciation check failed:', error);
+        // On error, proceed with soft delete (fail open)
+        if (window.Silicon4SoftDelete) {
+            window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
+        }
+    }
+}
+
 // Check if depreciation exists for document's period before allowing delete
-async function checkDocumentPeriodDepreciationBeforeDelete(documentId, deleteUrl, documentName, documentTypeId) {
+async function checkDocumentPeriodDepreciationBeforeDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId) {
     console.log('checkDocumentPeriodDepreciationBeforeDelete called with:', documentId);
     
     try {
