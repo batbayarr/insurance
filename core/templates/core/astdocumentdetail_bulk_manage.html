@@ -89,10 +89,11 @@ input[type="number"] {
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="display: none;">Тоо хэмжээ *</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн өртөг *</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэгжийн үнэ *</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нийт үнэ</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 daily-expense-header" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>Өдрийн зардал</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Байгуулсан</th>
-                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 predicted-depreciation-header" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>Байгуулах</th>
+                            <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 predicted-depreciation-header" style="display: none;">Байгуулах</th>
                             <th class="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭЦСИЙН ЭЛЭГДЭЛ</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
                         </tr>
@@ -140,6 +141,14 @@ input[type="number"] {
                                        class="unit-price-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                                        placeholder="0.00">
                             </td>
+                            <td class="px-1 py-1 text-right border-r border-gray-200">
+                                <input type="number" name="total_price_{{ item.DocumentItemId }}" min="0" readonly
+                                       value="{% widthratio item.Quantity 1 item.UnitPrice %}"
+                                       class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                                       placeholder="0.00"
+                                       data-quantity="{{ item.Quantity|default:1 }}"
+                                       data-unit-price="{{ item.UnitPrice|default:0 }}">
+                            </td>
                             <td class="px-1 py-1 text-right border-r border-gray-200 daily-expense-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
                                 <input type="text" name="daily_expense_{{ item.DocumentItemId }}" readonly
                                        value="{% if item.AssetCardId and item.AssetCardId.DailyExpense %}{{ item.AssetCardId.DailyExpense|floatformat:2 }}{% else %}0.00{% endif %}"
@@ -158,7 +167,7 @@ input[type="number"] {
                                        class="depreciation-amount-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
                                        placeholder="0.00">
                             </td>
-                            <td class="px-1 py-1 text-right border-r border-gray-200 predicted-depreciation-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
+                            <td class="px-1 py-1 text-right border-r border-gray-200 predicted-depreciation-cell" style="display: none;">
                                 <input type="text" name="predicted_depreciation_{{ item.DocumentItemId }}" readonly
                                        value="{% if document.DocumentTypeId.DocumentTypeId == 11 %}{{ item.balance_predicted_depreciation|default:0|floatformat:2 }}{% else %}0.00{% endif %}"
                                        class="predicted-depreciation-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
@@ -197,6 +206,9 @@ input[type="number"] {
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
                                 <span id="sum-unit-price" class="block text-right">0.00</span>
                             </td>
+                            <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
+                                <span id="sum-total-price" class="block text-right">0.00</span>
+                            </td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right daily-expense-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
                                 <span id="sum-daily-expense" class="block text-right">0.00</span>
                             </td>
@@ -206,7 +218,7 @@ input[type="number"] {
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
                                 <span id="sum-depreciation-amount" class="block text-right">0.00</span>
                             </td>
-                            <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right predicted-depreciation-cell" {% if document.DocumentTypeId.DocumentTypeId != 11 %}style="display: none;"{% endif %}>
+                            <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right predicted-depreciation-cell" style="display: none;">
                                 <span id="sum-predicted-depreciation" class="block text-right">0.00</span>
                             </td>
                             <td class="px-1 py-1 text-xs font-medium text-gray-900 border-r border-gray-200 text-right">
@@ -1173,6 +1185,11 @@ window.addNewRow = function() {
                    class="unit-price-input w-full border border-gray-300 rounded px-1 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
                    placeholder="0.00">
         </td>
+        <td class="px-1 py-1 text-right border-r border-gray-200">
+            <input type="number" name="new_total_price_${newRowCounter}" min="0" readonly
+                   class="total-price-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
+                   placeholder="0.00">
+        </td>
         <td class="px-1 py-1 text-right border-r border-gray-200 daily-expense-cell" style="display: none;">
             <input type="text" name="new_daily_expense_${newRowCounter}" readonly
                    class="daily-expense-display w-full border border-gray-300 rounded px-1 py-1 text-xs text-right bg-gray-50" 
@@ -1229,11 +1246,8 @@ window.addNewRow = function() {
                 }
             }
             if (predictedDepreciationCell) {
-                if (documentTypeId === 11) {
-                    predictedDepreciationCell.style.display = '';
-                } else {
-                    predictedDepreciationCell.style.display = 'none';
-                }
+                // Always hide predicted depreciation column
+                predictedDepreciationCell.style.display = 'none';
             }
         } catch (e) {
             console.error('Error parsing document data:', e);
@@ -1242,6 +1256,9 @@ window.addNewRow = function() {
     
     // Note: FillAccountingDetails will be called after asset is selected via refreshAccountingAfterAssetChange
     // Don't call it here because predicted depreciation won't be populated yet for new rows
+    
+    // Calculate total price for the new row
+    calculateAssetTotals(row);
     
     // Calculate depreciation amount for the new row
     if (typeof calculateDepreciationAmount === 'function') {
@@ -2102,6 +2119,18 @@ function addAssetCalculationListeners(row) {
 function calculateAssetTotals(row) {
     formatAssetRowNumericFields(row);
 
+    // Calculate total price (quantity * unit_price)
+    const quantityInput = row.querySelector('.quantity-input');
+    const unitPriceInput = row.querySelector('.unit-price-input');
+    const totalPriceDisplay = row.querySelector('.total-price-display');
+    
+    if (quantityInput && unitPriceInput && totalPriceDisplay) {
+        const quantity = parseFloat(quantityInput.value) || 1; // Default to 1 for asset documents
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const totalPrice = quantity * unitPrice;
+        totalPriceDisplay.value = totalPrice.toFixed(2);
+    }
+
     // Trigger ending depreciation calculation when unit price changes
     if (typeof calculateEndingDepreciation === 'function') {
         calculateEndingDepreciation(row);
@@ -2118,10 +2147,33 @@ function calculateAssetTotals(row) {
     }
 }
 
-// Recalculate all asset totals (now just triggers ending depreciation calculation)
+// Recalculate all asset totals (calculates total price and ending depreciation)
 function recalculateAllAssetTotals() {
+    const tbody = document.getElementById('details-tbody');
+    if (!tbody) return;
+    
+    const visibleRows = tbody.querySelectorAll('tr:not([style*="display: none"])');
+    visibleRows.forEach(row => {
+        // Calculate total price for each row
+        const quantityInput = row.querySelector('.quantity-input');
+        const unitPriceInput = row.querySelector('.unit-price-input');
+        const totalPriceDisplay = row.querySelector('.total-price-display');
+        
+        if (quantityInput && unitPriceInput && totalPriceDisplay) {
+            const quantity = parseFloat(quantityInput.value) || 1;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            const totalPrice = quantity * unitPrice;
+            totalPriceDisplay.value = totalPrice.toFixed(2);
+        }
+    });
+    
     // Recalculate ending depreciation for all rows
     calculateAllEndingDepreciation();
+    
+    // Update summary totals
+    if (typeof updateSummaryRowTotals === 'function') {
+        updateSummaryRowTotals();
+    }
 }
 
 // Ensure first-table numeric inputs always show two decimals
@@ -2325,6 +2377,7 @@ function updateSummaryRowTotals() {
     let totalQuantity = 0;
     let totalUnitCost = 0;
     let totalUnitPrice = 0;
+    let totalTotalPrice = 0;
     let totalDailyExpense = 0;
     let totalCumulatedDep = 0;
     let totalDepAmount = 0;
@@ -2335,6 +2388,7 @@ function updateSummaryRowTotals() {
         const quantityInput = row.querySelector('.quantity-input');
         const unitCostInput = row.querySelector('.unit-cost-input');
         const unitPriceInput = row.querySelector('.unit-price-input');
+        const totalPriceDisplay = row.querySelector('.total-price-display');
         const dailyExpenseInput = row.querySelector('.daily-expense-display');
         const cumulatedInput = row.querySelector('.cumulated-depreciation-display');
         const depAmountInput = row.querySelector('.depreciation-amount-display');
@@ -2349,6 +2403,9 @@ function updateSummaryRowTotals() {
         }
         if (unitPriceInput) {
             totalUnitPrice += parseFloat(unitPriceInput.value) || 0;
+        }
+        if (totalPriceDisplay) {
+            totalTotalPrice += parseFloat(totalPriceDisplay.value) || 0;
         }
         if (dailyExpenseInput) {
             totalDailyExpense += parseFloat(dailyExpenseInput.value.replace(/,/g, '')) || 0;
@@ -2377,6 +2434,7 @@ function updateSummaryRowTotals() {
     updateText('sum-quantity', totalQuantity.toFixed(2));
     updateText('sum-unit-cost', totalUnitCost.toFixed(2));
     updateText('sum-unit-price', totalUnitPrice.toFixed(2));
+    updateText('sum-total-price', totalTotalPrice.toFixed(2));
     updateText('sum-daily-expense', totalDailyExpense.toFixed(2));
     updateText('sum-cumulated-depreciation', totalCumulatedDep.toFixed(2));
     updateText('sum-depreciation-amount', totalDepAmount.toFixed(2));

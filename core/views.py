@@ -5815,8 +5815,8 @@ def api_check_asset_document_balance(request):
                     disposed_asset_cards.append(str(item.AssetCardId_id))
             
             error_message = "Энэ баримтанд байгаа хөрөнгийг зарлагадасан бага тул устгах боломжгүй Үлдэгдлээ шалгана уу?"
-            return JsonResponse({
-                'success': True,
+        return JsonResponse({
+            'success': True,
                 'can_delete': False,
                 'message': error_message,
                 'disposed_asset_cards': disposed_asset_cards
@@ -6311,6 +6311,25 @@ def api_delete_depreciation_entries(request):
             'error': 'Period not found'
         }, status=400)
     
+    # Optional: Validate that period dates match the provided date range
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            
+            # Validate that period dates match the provided date range
+            if period.BeginDate > start_date or period.EndDate < end_date:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Period dates do not match the provided date range'
+                }, status=400)
+        except (ValueError, TypeError) as e:
+            # If date parsing fails, continue without validation (optional check)
+            pass
+    
     # VALIDATION: Check if there are any ast_depreciation_expense records 
     # where PeriodId > period_id_parameter (i.e., future periods exist)
     # If such records exist, user cannot delete (must delete from latest period backwards)
@@ -6364,7 +6383,7 @@ def api_delete_depreciation_entries(request):
     return JsonResponse({
         'success': True,
         'message': f'Successfully deleted {deleted_depreciation_expense_count} depreciation expense record(s), {deleted_documents_count} depreciation document(s) and {deleted_details_count} detail record(s)',
-        'deleted_count': deleted_documents_count,
+            'deleted_count': deleted_documents_count,
         'deleted_details_count': deleted_details_count,
         'deleted_depreciation_expense_count': deleted_depreciation_expense_count
     })
@@ -6881,7 +6900,7 @@ def astdocument_delete(request, pk):
             
         except Exception as e:
             messages.error(request, f'Error deleting asset document: {str(e)}')
-        
+    
         return redirect('core:astdocument_master_detail')
     
     # GET request without modal parameter - redirect to list
@@ -7274,13 +7293,13 @@ def api_check_all_previous_periods_depreciation_by_date(request):
                 'success': False,
                 'error': 'Invalid document_date format. Expected YYYY-MM-DD'
             }, status=400)
-        
-        # Get period for document date
-        period = Ref_Period.objects.filter(
+            
+            # Get period for document date
+            period = Ref_Period.objects.filter(
             BeginDate__lte=document_date,
             EndDate__gte=document_date
-        ).first()
-        
+            ).first()
+            
         if not period:
             return JsonResponse({
                 'success': False,

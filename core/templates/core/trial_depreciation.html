@@ -582,7 +582,7 @@
     }
     
     // Delete depreciation entries for selected period
-    async function deleteDepreciationEntries(periodId) {
+    async function deleteDepreciationEntries(startDate, endDate, periodId) {
         // Validate periodId - ensure it's a valid non-empty value
         const periodIdStr = String(periodId || '').trim();
         if (!periodIdStr || periodIdStr === '' || periodIdStr === '0' || periodIdStr === 'null' || periodIdStr === 'undefined') {
@@ -601,7 +601,20 @@
             };
         }
         
-        const url = `/core/api/delete-depreciation-entries/?period_id=${periodIdNum}`;
+        // Build URL with all parameters
+        const urlParams = new URLSearchParams({
+            period_id: periodIdNum
+        });
+        
+        // Add start_date and end_date if provided
+        if (startDate) {
+            urlParams.append('start_date', startDate);
+        }
+        if (endDate) {
+            urlParams.append('end_date', endDate);
+        }
+        
+        const url = `/core/api/delete-depreciation-entries/?${urlParams.toString()}`;
         return fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -697,7 +710,7 @@
             }
             
             // Delete depreciation entries first
-            const deleteResult = await deleteDepreciationEntries(periodIdNum);
+            const deleteResult = await deleteDepreciationEntries(startDate, endDate, periodIdNum);
             
             if (deleteResult.success) {
                 // Show success message

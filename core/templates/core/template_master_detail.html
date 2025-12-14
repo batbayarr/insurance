@@ -66,12 +66,16 @@
                                     <tr class="bg-gray-100">
                                         <td class="px-2 py-1 border-r border-gray-200"></td>
                                         <td class="px-2 py-1 border-r border-gray-200">
-                                            <input type="text" id="filter-account" placeholder="Filter..."
+                                            <select id="filter-account" 
                                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="">Бүгд</option>
+                                            </select>
                                         </td>
                                         <td class="px-2 py-1 border-r border-gray-200">
-                                            <input type="text" id="filter-document-type" placeholder="Filter..."
+                                            <select id="filter-document-type" 
                                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="">Бүгд</option>
+                                            </select>
                                         </td>
                                         <td class="px-2 py-1 border-r border-gray-200">
                                             <input type="text" id="filter-template-name" placeholder="Filter..."
@@ -353,8 +357,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function applyTemplateFilters() {
-        const accountVal = (document.getElementById('filter-account')?.value || '').toLowerCase().trim();
-        const docTypeVal = (document.getElementById('filter-document-type')?.value || '').toLowerCase().trim();
+        const accountVal = document.getElementById('filter-account')?.value || ''; // Dropdown - exact match
+        const docTypeVal = document.getElementById('filter-document-type')?.value || ''; // Dropdown - exact match
         const nameVal = (document.getElementById('filter-template-name')?.value || '').toLowerCase().trim();
         const vatVal = (document.getElementById('filter-vat')?.value || '').toLowerCase().trim();
         
@@ -362,21 +366,111 @@ document.addEventListener('DOMContentLoaded', function() {
         templateFilteredRows = [];
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            const accountText = (cells[1]?.textContent || '').toLowerCase(); // Account is now in position 1
-            const docTypeText = (cells[2]?.textContent || '').toLowerCase(); // Document Type is now in position 2
+            const accountText = (cells[1]?.textContent || '').trim(); // Account is now in position 1
+            const docTypeText = (cells[2]?.textContent || '').trim(); // Document Type is now in position 2
             const nameText = (cells[3]?.textContent || '').toLowerCase(); // Template Name is now in position 3
             const vatText = (cells[4]?.textContent || '').toLowerCase();
-            const createdByText = ''; // column removed
             
-            const match = (!accountVal || accountText.includes(accountVal)) &&
-                          (!docTypeVal || docTypeText.includes(docTypeVal)) &&
-                          (!nameVal || nameText.includes(nameVal)) &&
-                          (!vatVal || (vatVal === 'y' ? vatText.includes('тийм') : vatText.includes('үгүй')));
+            // Account filter - exact match from dropdown
+            const accountMatch = !accountVal || accountText === accountVal;
+            // Document type filter - exact match from dropdown
+            const docTypeMatch = !docTypeVal || docTypeText === docTypeVal;
+            // Template name filter - partial match (text input)
+            const nameMatch = !nameVal || nameText.includes(nameVal);
+            // VAT filter - dropdown
+            const vatMatch = !vatVal || (vatVal === 'y' ? vatText.includes('тийм') : vatText.includes('үгүй'));
+            
+            const match = accountMatch && docTypeMatch && nameMatch && vatMatch;
             
             if (match) templateFilteredRows.push(row);
         });
         templateCurrentPage = 1;
         renderTemplatePage();
+    }
+    
+    // Populate filter dropdowns with unique values from loaded templates
+    function populateTemplateFilterDropdowns() {
+        if (!templateAllRows || templateAllRows.length === 0) {
+            return;
+        }
+        
+        // Get unique accounts and document types
+        const accountMap = new Map();
+        const documentTypeMap = new Map();
+        
+        templateAllRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            
+            // Collect unique accounts (from position 1)
+            if (cells[1]) {
+                const accountText = cells[1].textContent.trim();
+                if (accountText && accountText !== 'No Account') {
+                    if (!accountMap.has(accountText)) {
+                        accountMap.set(accountText, accountText);
+                    }
+                }
+            }
+            
+            // Collect unique document types (from position 2)
+            if (cells[2]) {
+                const docTypeText = cells[2].textContent.trim();
+                if (docTypeText) {
+                    if (!documentTypeMap.has(docTypeText)) {
+                        documentTypeMap.set(docTypeText, docTypeText);
+                    }
+                }
+            }
+        });
+        
+        // Populate account dropdown
+        const accountSelect = document.getElementById('filter-account');
+        if (accountSelect) {
+            // Save current selection
+            const currentValue = accountSelect.value;
+            
+            // Clear and add default option
+            accountSelect.innerHTML = '<option value="">Бүгд</option>';
+            
+            // Sort accounts and add options
+            const sortedAccounts = Array.from(accountMap.values()).sort();
+            
+            sortedAccounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account;
+                option.textContent = account;
+                accountSelect.appendChild(option);
+            });
+            
+            // Restore selection if it still exists
+            if (currentValue) {
+                accountSelect.value = currentValue;
+            }
+        }
+        
+        // Populate document type dropdown
+        const documentTypeSelect = document.getElementById('filter-document-type');
+        if (documentTypeSelect) {
+            // Save current selection
+            const currentValue = documentTypeSelect.value;
+            
+            // Clear and add default option
+            documentTypeSelect.innerHTML = '<option value="">Бүгд</option>';
+            
+            // Sort document types and add options
+            const sortedDocumentTypes = Array.from(documentTypeMap.values()).sort();
+            
+            sortedDocumentTypes.forEach(docType => {
+                const option = document.createElement('option');
+                option.value = docType;
+                option.textContent = docType;
+                documentTypeSelect.appendChild(option);
+            });
+            
+            // Restore selection if it still exists
+            if (currentValue) {
+                documentTypeSelect.value = currentValue;
+            }
+        }
     }
     
     function initializeTemplateFilterListeners() {
@@ -473,6 +567,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize pagination data
     templateAllRows = Array.from(document.querySelectorAll('#templates-tbody tr.template-row'));
     templateFilteredRows = templateAllRows.slice();
+    
+    // Populate filter dropdowns with unique values from loaded templates
+    populateTemplateFilterDropdowns();
+    
     initializeTemplatePaginationListeners();
     renderTemplatePage();
     
@@ -856,40 +954,70 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedTemplateParam = urlParams.get('selected_template');
     
     if (accountId || documentTypeId) {
-        // Wait for filters to be initialized and templates to be loaded
+        // Wait for dropdowns to be populated and templates to be loaded
         setTimeout(() => {
-            // Get account code and document type code from the template rows
+            // Find matching account and document type from template rows
             const templateRows = document.querySelectorAll('tr.template-row');
-            if (templateRows.length > 0) {
-                // Use the first row to extract filter values
-                const firstRow = templateRows[0];
-                const cells = firstRow.querySelectorAll('td');
+            let matchingAccount = null;
+            let matchingDocType = null;
+            
+            // Search through all rows to find matching account and document type
+            templateRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
                 
-                // Account filter (column index 1)
-                if (accountId && cells.length > 1) {
-                    const accountCode = cells[1]?.textContent?.trim() || '';
-                    const accountFilter = document.getElementById('filter-account');
-                    if (accountFilter && accountCode) {
-                        accountFilter.value = accountCode;
+                // Find account match (column index 1)
+                if (accountId && cells.length > 1 && !matchingAccount) {
+                    const accountText = cells[1]?.textContent?.trim() || '';
+                    // Check if this account text contains the account code or matches
+                    // We need to find the full account display text (AccountCode - AccountName)
+                    if (accountText && accountText !== 'No Account') {
+                        // Check if dropdown has this option
+                        const accountFilter = document.getElementById('filter-account');
+                        if (accountFilter) {
+                            const optionExists = Array.from(accountFilter.options).some(opt => opt.value === accountText);
+                            if (optionExists) {
+                                matchingAccount = accountText;
+                            }
+                        }
                     }
                 }
                 
-                // Document type filter (column index 2)
-                if (documentTypeId && cells.length > 2) {
-                    const docTypeCode = cells[2]?.textContent?.trim() || '';
-                    const docTypeFilter = document.getElementById('filter-document-type');
-                    if (docTypeFilter && docTypeCode) {
-                        docTypeFilter.value = docTypeCode;
+                // Find document type match (column index 2)
+                if (documentTypeId && cells.length > 2 && !matchingDocType) {
+                    const docTypeText = cells[2]?.textContent?.trim() || '';
+                    if (docTypeText) {
+                        // Check if dropdown has this option
+                        const docTypeFilter = document.getElementById('filter-document-type');
+                        if (docTypeFilter) {
+                            const optionExists = Array.from(docTypeFilter.options).some(opt => opt.value === docTypeText);
+                            if (optionExists) {
+                                matchingDocType = docTypeText;
+                            }
+                        }
                     }
                 }
-                
-                // Apply filters after setting values
-                if ((accountId && document.getElementById('filter-account')?.value) || 
-                    (documentTypeId && document.getElementById('filter-document-type')?.value)) {
-                    applyTemplateFilters();
+            });
+            
+            // Set filter values if matches found
+            if (matchingAccount) {
+                const accountFilter = document.getElementById('filter-account');
+                if (accountFilter) {
+                    accountFilter.value = matchingAccount;
                 }
             }
-        }, 500);
+            
+            if (matchingDocType) {
+                const docTypeFilter = document.getElementById('filter-document-type');
+                if (docTypeFilter) {
+                    docTypeFilter.value = matchingDocType;
+                }
+            }
+            
+            // Apply filters after setting values
+            if (matchingAccount || matchingDocType) {
+                applyTemplateFilters();
+            }
+        }, 600); // Increased timeout to ensure dropdowns are populated
     }
     
     // Auto-select template from URL parameter (after returning from detail creation)

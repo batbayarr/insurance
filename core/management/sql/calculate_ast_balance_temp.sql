@@ -216,14 +216,12 @@ BEGIN
         eq.ending_quantity::NUMERIC(24,6) AS EndingQuantity,
         COALESCE(eq.cumulated_depreciation, 0)::NUMERIC(24,6) AS CumulatedDepreciation,
         COALESCE(de.depreciation_expense, 0)::NUMERIC(24,6) AS DepreciationExpense,
-        COALESCE(pdc.predicted_depreciation, 0)::NUMERIC(24,6) AS Predicteddepreciation,
+        0::NUMERIC(24,6) AS Predicteddepreciation,
         (COALESCE(eq.cumulated_depreciation, 0) + 
-         COALESCE(de.depreciation_expense, 0) + 
-         COALESCE(pdc.predicted_depreciation, 0))::NUMERIC(24,6) AS TotalExpense,
+         COALESCE(de.depreciation_expense, 0))::NUMERIC(24,6) AS TotalExpense,
         (COALESCE(eq.unit_cost, rac."UnitCost", 0) - 
          (COALESCE(eq.cumulated_depreciation, 0) + 
-          COALESCE(de.depreciation_expense, 0) + 
-          COALESCE(pdc.predicted_depreciation, 0)))::NUMERIC(24,6) AS NetBookValue,
+          COALESCE(de.depreciation_expense, 0)))::NUMERIC(24,6) AS NetBookValue,
         COALESCE(rac."DailyExpense", 0)::NUMERIC(24,6) AS DailyExpense,
         COALESCE(pdc.usage_days, 0)::INTEGER AS UsageDays
     FROM ending_quantities eq

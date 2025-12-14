@@ -80,22 +80,12 @@ function FillAccountingDetailsGeneric(config) {
     let totalPrice = 0;
     let totalEndingDep = 0;
     let totalDepAmount = 0;
-    let totalPredictedDep = 0;
     
     const firstTable = document.getElementById(firstTableId);
     if (firstTable) {
         console.log(`${debugPrefix}: Calculating totals from first table (ID: ${firstTableId})...`);
         const allRows = firstTable.querySelectorAll('tr');
         console.log(`${debugPrefix}: Found ${allRows.length} rows in table`);
-        
-        // Debug: Check for predicted depreciation elements in the entire table
-        const allPredictedDepElements = firstTable.querySelectorAll('.predicted-depreciation-display');
-        console.log(`${debugPrefix}: Found ${allPredictedDepElements.length} .predicted-depreciation-display elements in table`);
-        if (allPredictedDepElements.length > 0) {
-            allPredictedDepElements.forEach((el, idx) => {
-                console.log(`${debugPrefix}: PredictedDep element ${idx + 1}: value="${el.value}", textContent="${el.textContent}", visible=${window.getComputedStyle(el).display !== 'none'}`);
-            });
-        }
         
         allRows.forEach((row, index) => {
             if (window.getComputedStyle(row).display === 'none') {
@@ -114,27 +104,48 @@ function FillAccountingDetailsGeneric(config) {
                 rowCost = parseFloat(costValue) || 0;
             }
             
-            if (totalPriceDisplayEl) {
-                const priceValue = (totalPriceDisplayEl.value ?? totalPriceDisplayEl.textContent ?? '0').toString().replace(/,/g, '');
-                rowPrice = parseFloat(priceValue) || 0;
-            }
-            
             // Fallback: compute from qty * unit values if displays are missing or zero
             if (!totalCostDisplayEl || rowCost === 0) {
-                const quantity = parseFloat(row.querySelector('.quantity-input')?.value || 0);
+                const quantity = parseFloat(row.querySelector('.quantity-input')?.value || 1); // Default to 1 for asset documents
                 const unitCost = parseFloat(row.querySelector('.unit-cost-input')?.value || 0);
-                if (quantity > 0 && unitCost > 0) {
+                if (unitCost > 0) { // Only require unitCost, quantity defaults to 1
                     rowCost = quantity * unitCost;
                     console.log(`Row ${index + 1} fallback compute cost: Qty=${quantity}, UnitCost=${unitCost}, RowCost=${rowCost}`);
                 }
             }
             
-            if (!totalPriceDisplayEl || rowPrice === 0) {
-                const quantity = parseFloat(row.querySelector('.quantity-input')?.value || 0);
-                const unitPrice = parseFloat(row.querySelector('.unit-price-input')?.value || 0);
-                if (quantity > 0 && unitPrice > 0) {
-                    rowPrice = quantity * unitPrice;
-                    console.log(`Row ${index + 1} fallback compute price: Qty=${quantity}, UnitPrice=${unitPrice}, RowPrice=${rowPrice}`);
+            // For asset documents, ALWAYS calculate from quantity * unitPrice for accuracy
+            // This ensures VAT calculation uses the correct totalPrice value
+            // Do NOT use totalPriceDisplayEl value as it may be incorrect or stale
+            const quantityInput = row.querySelector('.quantity-input');
+            const unitPriceInput = row.querySelector('.unit-price-input');
+            
+            if (!unitPriceInput) {
+                console.warn(`Row ${index + 1}: unit-price-input not found, skipping price calculation`);
+                rowPrice = 0;
+            } else {
+                // Parse values, removing any formatting (commas, spaces)
+                const quantityRaw = (quantityInput?.value || '1').toString().replace(/[,\s]/g, '');
+                const unitPriceRaw = (unitPriceInput?.value || '0').toString().replace(/[,\s]/g, '');
+                
+                // Also check the displayed value for comparison
+                const unitPriceDisplayed = unitPriceInput.getAttribute('value') || unitPriceInput.value;
+                
+                const quantity = parseFloat(quantityRaw) || 1; // Default to 1 for asset documents
+                const unitPrice = parseFloat(unitPriceRaw) || 0;
+                
+                // Always recalculate from raw values, ignore any display value
+                rowPrice = quantity * unitPrice;
+                
+                console.log(`Row ${index + 1} calculated price:`);
+                console.log(`  - Quantity: ${quantity} (raw: "${quantityRaw}")`);
+                console.log(`  - UnitPrice input.value: "${unitPriceInput.value}"`);
+                console.log(`  - UnitPrice raw parsed: ${unitPrice} (raw: "${unitPriceRaw}")`);
+                console.log(`  - RowPrice: ${rowPrice}`);
+                
+                // Validation: Warn if unitPrice seems unusually high (might be unitCost instead)
+                if (unitPrice > 0 && unitPrice > 1000000) {
+                    console.error(`Row ${index + 1}: ERROR - UnitPrice (${unitPrice}) seems unusually high! This might be unitCost instead of unitPrice. Expected value should match the displayed unit price in the table.`);
                 }
             }
 
@@ -151,37 +162,25 @@ function FillAccountingDetailsGeneric(config) {
                 const numericDepAmount = parseFloat(depAmountValue) || 0;
                 totalDepAmount += numericDepAmount;
             }
-
-            const predictedDepEl = row.querySelector('.predicted-depreciation-display');
-            if (predictedDepEl) {
-                // Get value and remove all formatting (commas, spaces, etc.)
-                let predictedDepValue = (predictedDepEl.value ?? predictedDepEl.textContent ?? '0').toString();
-                // Remove commas, spaces, and any other formatting characters
-                predictedDepValue = predictedDepValue.replace(/[,\s]/g, '').trim();
-                const numericPredictedDep = parseFloat(predictedDepValue) || 0;
-                totalPredictedDep += numericPredictedDep;
-                console.log(`Row ${index + 1}: PredictedDep=${numericPredictedDep}, RunningTotal=${totalPredictedDep}, RawValue="${predictedDepEl.value}", CleanedValue="${predictedDepValue}"`);
-            } else {
-                // Debug: Check if row has predicted-depreciation-cell but no input
-                const predictedDepCell = row.querySelector('.predicted-depreciation-cell');
-                if (predictedDepCell) {
-                    console.log(`Row ${index + 1}: Found .predicted-depreciation-cell but no .predicted-depreciation-display input. Cell HTML:`, predictedDepCell.innerHTML.substring(0, 100));
-                }
-            }
             
-            totalCost += rowCost;
-            totalPrice += rowPrice;
+            // Accumulate totals (ensure we're adding numbers, not strings)
+            totalCost = (Number(totalCost) || 0) + (Number(rowCost) || 0);
+            totalPrice = (Number(totalPrice) || 0) + (Number(rowPrice) || 0);
             
-            console.log(`Row ${index + 1}: RowCost=${rowCost}, RowPrice=${rowPrice}`);
+            console.log(`Row ${index + 1}: RowCost=${rowCost}, RowPrice=${rowPrice}, Running totals: TotalCost=${totalCost}, TotalPrice=${totalPrice}`);
         });
     }
     
+    // Final validation: ensure totals are numbers
+    totalCost = Number(totalCost) || 0;
+    totalPrice = Number(totalPrice) || 0;
     totalEndingDep = parseFloat(totalEndingDep.toFixed(6));
+    
+    console.log(`${debugPrefix}: Final totals after calculation: TotalCost=${totalCost}, TotalPrice=${totalPrice}, TotalEndingDep=${totalEndingDep}`);
 
     let doc11TotalCost = totalCost;
     let doc11EndingDep = totalEndingDep;
     let doc11DepAmount = totalDepAmount;
-    let doc11PredictedDep = totalPredictedDep;
 
     if (documentTypeId === 11) {
         const summaryCost = getSummaryValue('sum-unit-cost');
@@ -197,35 +196,34 @@ function FillAccountingDetailsGeneric(config) {
         if (summaryDepAmount !== null) {
             doc11DepAmount = summaryDepAmount;
         }
-        // Always recalculate predicted depreciation from rows (don't trust summary which might be stale)
-        // The summary element might have old values, so we always calculate fresh from the input fields
-        doc11PredictedDep = totalPredictedDep;
-    }
-    
-    console.log(`${debugPrefix}: Calculated totals - TotalCost: ${totalCost}, TotalPrice: ${totalPrice}, TotalEndingDep: ${totalEndingDep}, TotalPredictedDep: ${totalPredictedDep}`);
-    if (documentTypeId === 11) {
-        console.log(`${debugPrefix}: Doc11 values - TotalCost: ${doc11TotalCost}, EndingDep: ${doc11EndingDep}, DepAmount: ${doc11DepAmount}, PredictedDep: ${doc11PredictedDep}`);
-        if (doc11PredictedDep === 0 && totalPredictedDep === 0) {
-            console.warn(`${debugPrefix}: WARNING - PredictedDep is 0! This might mean predicted depreciation values are not populated in the table rows yet.`);
-            // Try to recalculate from summary as last resort
-            const summaryPredictedDep = getSummaryValue('sum-predicted-depreciation');
-            if (summaryPredictedDep !== null && summaryPredictedDep > 0) {
-                console.log(`${debugPrefix}: Using summary value as fallback: ${summaryPredictedDep}`);
-                doc11PredictedDep = summaryPredictedDep;
-            }
-        }
     }
     
     // Step 2: Calculate VAT amount using context processor rate
-    const vatRate = parseFloat(docData.VatPercent) || 0;
-    console.log(`${debugPrefix}: VAT Rate from docData.VatPercent:`, docData.VatPercent, 'Parsed:', vatRate);
+    // VatPercent from document data is a percentage (e.g., 10 for 10%)
+    // We need to divide by 100 to get the decimal rate for calculation
+    const vatPercentRaw = (docData.VatPercent || '0').toString().replace(/[,\s]/g, '');
+    const vatPercent = parseFloat(vatPercentRaw) || 0;
     
+    // VAT calculation: (basis * percentage) / 100
     // Only apply VAT when IsVat is true; choose basis by document type
-    // Asset issue (11) uses selling price, asset receipt (10) uses cost
+    // Asset issue (11) uses totalPrice, asset receipt (10) uses totalCost
     const vatBasis = documentTypeId === 11 ? totalPrice : totalCost;
-    const vatAmount = docData.IsVat ? (vatBasis * vatRate) / 100 : 0;
     
-    console.log(`${debugPrefix}: VAT Amount calculated:`, vatAmount, 'for document type:', docData.DocumentTypeId);
+    // Ensure all values are numbers
+    const vatBasisNum = Number(vatBasis) || 0;
+    const vatPercentNum = Number(vatPercent) || 0;
+    
+    // Calculate VAT: (basis * percentage) / 100
+    const vatAmount = docData.IsVat ? (vatBasisNum * vatPercentNum) / 100 : 0;
+    
+    console.log(`${debugPrefix}: VAT Calculation Details:`);
+    console.log(`  - DocumentTypeId: ${documentTypeId}`);
+    console.log(`  - IsVat: ${docData.IsVat}`);
+    console.log(`  - TotalCost: ${totalCost}`);
+    console.log(`  - TotalPrice: ${totalPrice}`);
+    console.log(`  - VatBasis: ${vatBasisNum} (${documentTypeId === 11 ? 'totalPrice' : 'totalCost'})`);
+    console.log(`  - VatPercent: ${vatPercentNum}% (from docData.VatPercent: "${docData.VatPercent}")`);
+    console.log(`  - VatAmount: ${vatAmount} = (${vatBasisNum} * ${vatPercentNum}) / 100`);
     
     // Step 3: Clear all rows from second table
     const detailsTbody = document.getElementById(secondTableId);
@@ -257,7 +255,7 @@ function FillAccountingDetailsGeneric(config) {
     console.log('VatAccountId:', docData.VatAccountId);
     console.log('TotalCost:', totalCost);
     console.log('TotalPrice:', totalPrice);
-    console.log('VatRate:', vatRate);
+    console.log('VatPercent:', vatPercent);
     console.log('VatAmount:', vatAmount);
     
     console.log(`${debugPrefix}: Processing ${docData.template_details.length} template details...`);
@@ -287,47 +285,22 @@ function FillAccountingDetailsGeneric(config) {
         let handledDoc11SpecialCase = false;
 
         if (documentTypeId === 11) {
+            // Handle specific DocumentType 11 cases first
             if (assetAccountId && templateDetail.AccountId === assetAccountId) {
                 currencyAmount = doc11TotalCost;
                 handledDoc11SpecialCase = true;
                 console.log('DocType 11 rule: asset account matched, using totalCost:', currencyAmount);
-            } else if (
-                depreciationAccountId &&
-                templateDetail.AccountId === depreciationAccountId &&
-                templateDetail.IsDebit === false
-            ) {
-                // Use predicted depreciation, but if it's 0, log a warning
-                currencyAmount = doc11PredictedDep;
-                handledDoc11SpecialCase = true;
-                if (doc11PredictedDep === 0) {
-                    console.warn('DocType 11 rule: depreciation account credit matched, but doc11PredictedDep is 0. Check if predicted depreciation values are populated in the table.');
-                }
-                console.log('DocType 11 rule: depreciation account credit matched, using predicted depreciation:', currencyAmount, '(doc11PredictedDep:', doc11PredictedDep, ')');
             } else if (depreciationAccountId && templateDetail.AccountId === depreciationAccountId) {
                 currencyAmount = doc11EndingDep;
                 handledDoc11SpecialCase = true;
                 console.log('DocType 11 rule: depreciation account matched, using totalEndingDep:', currencyAmount);
-            } else if (
-                expenseAccountId &&
-                templateDetail.AccountId === expenseAccountId &&
-                templateDetail.IsDebit === true
-            ) {
-                // Use predicted depreciation, but if it's 0, log a warning
-                currencyAmount = doc11PredictedDep;
-                handledDoc11SpecialCase = true;
-                if (doc11PredictedDep === 0) {
-                    console.warn('DocType 11 rule: expense account debit matched, but doc11PredictedDep is 0. Check if predicted depreciation values are populated in the table.');
-                }
-                console.log('DocType 11 rule: expense account debit matched, using predicted depreciation:', currencyAmount, '(doc11PredictedDep:', doc11PredictedDep, ')');
             } else if (templateDetail.AccountTypeId === 83) {
                 currencyAmount = templateDetail.IsDebit ? netBookValue : 0;
                 handledDoc11SpecialCase = true;
                 console.log('DocType 11 rule: accountType 83 matched, using net book value:', currencyAmount);
-            } else {
-                currencyAmount = 0;
-                handledDoc11SpecialCase = true;
-                console.log('DocType 11 rule: non-mapped account, currencyAmount forced to 0');
             }
+            // Note: Don't force currencyAmount to 0 for other accounts - let the normal IsVat logic handle them
+            // This allows VAT accounts (AccountTypeId 6, 47) and other account types to be processed correctly
         }
 
         // Apply logic based on document type (asset only) when special rule not triggered
@@ -357,6 +330,7 @@ function FillAccountingDetailsGeneric(config) {
                 }
             } else {
                 // IsVat = true rules
+                // For DocumentType 10: use totalCost, For DocumentType 11: use totalPrice
                 if ([3, 5, 42, 43].includes(accountTypeId)) {
                     // For DocumentTypeId=10, use totalCost + vatAmount; for DocumentTypeId=11, use totalPrice + vatAmount
                     const basis = documentTypeId === 10 ? totalCost : totalPrice;
@@ -384,7 +358,7 @@ function FillAccountingDetailsGeneric(config) {
         }
         
         // Fallback: If currencyAmount is still 0 and we have data, use a default calculation
-        // BUT: Don't override if we've already handled a special case (e.g., predicted depreciation might legitimately be 0)
+        // BUT: Don't override if we've already handled a special case (amount might legitimately be 0)
         if (!handledDoc11SpecialCase && currencyAmount === 0 && (totalCost > 0 || totalPrice > 0)) {
             console.warn('CurrencyAmount is 0, applying fallback calculation');
             if (templateDetail.IsDebit) {

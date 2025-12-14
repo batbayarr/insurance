@@ -46,26 +46,36 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Баримт</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Огноо</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Гүйлгээний утга</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 80px;">Данс</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 72px; max-width: 72px;">Огноо</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 80px; max-width: 80px;">Баримт</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">Данс</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 65px; max-width: 65px;">Агуулах</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 104px; max-width: 120px;">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 50px;">Төрөл</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 150px;">Гүйлгээний утга</th>
                         <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 40px; max-width: 40px;">НӨТ</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Агуулах</th>
-                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хэрэглэгч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 60px; max-width: 80px;">Хэрэглэгч</th>
                         <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">Загвар</th>
-                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 " style="width: 50px; max-width: 50px;">Үйлдэл</th>
                     </tr>
                     <!-- Filter Row -->
                     <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-date" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
                         <td class="px-4 py-1 border-r border-gray-200">
                             <input type="text" id="filter-document-no" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
+                        <td class="px-2 py-1 border-r border-gray-200" style="min-width: 80px;">
+                            <select id="filter-account" 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                            </select>
+                        </td>
                         <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-document-type" placeholder="Filter..." 
+                            <input type="text" id="filter-warehouse" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
@@ -73,24 +83,18 @@
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-date" placeholder="Filter..." 
+                            <select id="filter-document-type" 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                            </select>
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
                             <input type="text" id="filter-description" placeholder="Filter..." 
                                    class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
-                        <td class="px-2 py-1 border-r border-gray-200" style="min-width: 80px;">
-                            <input type="text" id="filter-account" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
                         <td class="px-2 py-1 border-r border-gray-200" style="width: 40px; max-width: 40px;">
                             <input type="text" id="filter-isvat" placeholder="Filter..." 
                                    class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                        </td>
-                        <td class="px-2 py-1 border-r border-gray-200">
-                            <input type="text" id="filter-warehouse" placeholder="Filter..." 
-                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </td>
                         <td class="px-2 py-1 border-r border-gray-200">
                             <input type="text" id="filter-created-by" placeholder="Filter..." 
@@ -600,6 +604,12 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
         if (data.success) {
             allDocumentsData = data.documents;
             
+            // Populate filter dropdowns with unique values from loaded documents
+            populateFilterDropdowns();
+            
+            // Restore saved filter values for dropdowns after they're populated
+            restoreDropdownFilters();
+            
             // If selected_document is in URL, optionally set document number filter for visual feedback
             const selectedDocumentIdFromUrl = urlParams.get('selected_document');
             if (selectedDocumentIdFromUrl) {
@@ -648,16 +658,130 @@ function fetchDocuments(startDate, endDate, selectedDocumentIdParam = null) {
     });
 }
 
+// Populate filter dropdowns with unique values from loaded documents
+function populateFilterDropdowns() {
+    if (!allDocumentsData || allDocumentsData.length === 0) {
+        return;
+    }
+    
+    // Get unique accounts and document types
+    const accountMap = new Map();
+    const documentTypeMap = new Map();
+    
+    allDocumentsData.forEach(doc => {
+        // Collect unique accounts (AccountCode - AccountName)
+        if (doc.AccountCode && doc.AccountName) {
+            const accountKey = `${doc.AccountCode} - ${doc.AccountName}`;
+            if (!accountMap.has(accountKey)) {
+                accountMap.set(accountKey, {
+                    code: doc.AccountCode,
+                    name: doc.AccountName,
+                    display: accountKey
+                });
+            }
+        }
+        
+        // Collect unique document types
+        if (doc.DocumentTypeCode) {
+            if (!documentTypeMap.has(doc.DocumentTypeCode)) {
+                documentTypeMap.set(doc.DocumentTypeCode, doc.DocumentTypeCode);
+            }
+        }
+    });
+    
+    // Populate account dropdown
+    const accountSelect = document.getElementById('filter-account');
+    if (accountSelect) {
+        // Save current selection
+        const currentValue = accountSelect.value;
+        
+        // Clear and add default option
+        accountSelect.innerHTML = '<option value="">Бүгд</option>';
+        
+        // Sort accounts by code and add options
+        const sortedAccounts = Array.from(accountMap.values()).sort((a, b) => {
+            return a.code.localeCompare(b.code);
+        });
+        
+        sortedAccounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.display;
+            option.textContent = account.display;
+            accountSelect.appendChild(option);
+        });
+        
+        // Restore selection if it still exists
+        if (currentValue) {
+            accountSelect.value = currentValue;
+        }
+    }
+    
+    // Populate document type dropdown
+    const documentTypeSelect = document.getElementById('filter-document-type');
+    if (documentTypeSelect) {
+        // Save current selection
+        const currentValue = documentTypeSelect.value;
+        
+        // Clear and add default option
+        documentTypeSelect.innerHTML = '<option value="">Бүгд</option>';
+        
+        // Sort document types and add options
+        const sortedDocumentTypes = Array.from(documentTypeMap.values()).sort();
+        
+        sortedDocumentTypes.forEach(docType => {
+            const option = document.createElement('option');
+            option.value = docType;
+            option.textContent = docType;
+            documentTypeSelect.appendChild(option);
+        });
+        
+        // Restore selection if it still exists
+        if (currentValue) {
+            documentTypeSelect.value = currentValue;
+        }
+    }
+}
+
+// Restore saved dropdown filter values
+function restoreDropdownFilters() {
+    try {
+        const savedFilters = loadAllFiltersFromLocalStorage();
+        if (!savedFilters) return;
+        
+        // Restore account dropdown
+        const accountSelect = document.getElementById('filter-account');
+        if (accountSelect && savedFilters.account) {
+            // Check if the saved value exists in the dropdown
+            const optionExists = Array.from(accountSelect.options).some(opt => opt.value === savedFilters.account);
+            if (optionExists) {
+                accountSelect.value = savedFilters.account;
+            }
+        }
+        
+        // Restore document type dropdown
+        const documentTypeSelect = document.getElementById('filter-document-type');
+        if (documentTypeSelect && savedFilters.documentType) {
+            // Check if the saved value exists in the dropdown
+            const optionExists = Array.from(documentTypeSelect.options).some(opt => opt.value === savedFilters.documentType);
+            if (optionExists) {
+                documentTypeSelect.value = savedFilters.documentType;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to restore dropdown filters:', e);
+    }
+}
+
 // Apply frontend filtering with null-safe operations
 function applyFrontendFilter() {
     // Get filter values
     const filters = {
         documentNo: getFilterValue('filter-document-no'),
-        documentType: getFilterValue('filter-document-type'),
+        documentType: document.getElementById('filter-document-type')?.value || '', // Dropdown - exact match
         client: getFilterValue('filter-client'),
         date: getFilterValue('filter-date'),
         description: getFilterValue('filter-description'),
-        account: getFilterValue('filter-account'),
+        account: document.getElementById('filter-account')?.value || '', // Dropdown - exact match
         isvat: getFilterValue('filter-isvat'),
         warehouse: getFilterValue('filter-warehouse'),
         createdBy: getFilterValue('filter-created-by'),
@@ -734,11 +858,16 @@ function applyFrontendFilter() {
     // Filter data with null-safe operations
     filteredData = allDocumentsData.filter(doc => {
         if (filters.documentNo && !(doc.DocumentNo || '').toLowerCase().includes(filters.documentNo)) return false;
-        if (filters.documentType && !(doc.DocumentTypeCode || '').toLowerCase().includes(filters.documentType)) return false;
+        // Document type filter - exact match from dropdown
+        if (filters.documentType && doc.DocumentTypeCode !== filters.documentType) return false;
         if (filters.client && !(doc.ClientName || '').toLowerCase().includes(filters.client)) return false;
         if (filters.date && !(doc.DocumentDate || '').toLowerCase().includes(filters.date)) return false;
         if (filters.description && !(doc.Description || '').toLowerCase().includes(filters.description)) return false;
-        if (filters.account && !(doc.AccountCode || '').toLowerCase().includes(filters.account)) return false;
+        // Account filter - exact match from dropdown (format: "AccountCode - AccountName")
+        if (filters.account) {
+            const accountDisplay = `${doc.AccountCode || ''} - ${doc.AccountName || ''}`;
+            if (accountDisplay !== filters.account) return false;
+        }
         if (filters.isvat) {
             const vatValue = doc.IsVat ? 'y' : 'n';
             if (!vatValue.includes(filters.isvat)) return false;
@@ -842,23 +971,23 @@ function renderDocumentsTable(documents) {
         }
         
         tr.innerHTML = `
-            <td class="px-4 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentNo || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentTypeCode || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.ClientName || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${doc.DocumentDate || '-'}</td>
-            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">
-                <span title="${doc.Description || ''}">${truncateText(doc.Description || '', 50)}</span>
-                        </td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 80px;">
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="width: 72px; max-width: 72px;">${doc.DocumentDate || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="width: 80px; max-width: 80px;">${doc.DocumentNo || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">
                 <span class="account-format" title="${doc.AccountCode || ''} - ${doc.AccountName || ''}">${doc.AccountCode || '-'}</span>
+            </td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="width: 55px; max-width: 55px;">
+                <span class="warehouse-format" title="${doc.WarehouseCode || ''} - ${doc.WarehouseName || ''}">${doc.WarehouseCode || '-'}</span>
+            </td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="width: 104px; max-width: 104px;">${doc.ClientName || '-'}</td>
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">${doc.DocumentTypeCode || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="min-width: 200px;">
+                <span title="${doc.Description || ''}">${truncateText(doc.Description || '', 50)}</span>
             </td>
             <td class="px-2 py-1 text-center text-xs text-gray-900 border-r border-gray-200" style="width: 40px; max-width: 40px;">
                 ${doc.IsVat ? 'Y' : 'N'}
             </td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
-                <span class="warehouse-format" title="${doc.WarehouseCode || ''} - ${doc.WarehouseName || ''}">${doc.WarehouseCode || '-'}</span>
-            </td>
-            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.CreatedByUsername || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200" style="width: 60px; max-width: 60px;">${doc.CreatedByUsername || '-'}</td>
             <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${doc.TemplateId || '-'}</td>
             <td class="px-2 py-1 whitespace-nowrap text-center text-sm font-medium">
                 <div class="flex items-center justify-center space-x-2">
@@ -1095,7 +1224,9 @@ function initializeFilterListeners() {
     filterInputs.forEach(filterId => {
         const input = document.getElementById(filterId);
         if (input) {
-            input.addEventListener('input', debouncedFilter);
+            // Use 'change' event for dropdowns (select), 'input' for text inputs
+            const eventType = input.tagName === 'SELECT' ? 'change' : 'input';
+            input.addEventListener(eventType, debouncedFilter);
         }
     });
     
@@ -1257,13 +1388,14 @@ async function printDocument(documentId) {
     const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
     if (!row) return;
     const cells = row.querySelectorAll('td');
-    const documentNo = cells[0]?.textContent?.trim() || '';
-    const clientName = cells[2]?.textContent?.trim() || '';
-    const documentDate = cells[3]?.textContent?.trim() || '';
-    const description = cells[4]?.textContent?.trim() || '';
+    // New column order: 0=Date, 1=Document, 2=Account, 3=Warehouse, 4=Client, 5=Type, 6=Description, 7=VAT, 8=User, 9=Template, 10=Actions
+    const documentDate = cells[0]?.textContent?.trim() || '';
+    const documentNo = cells[1]?.textContent?.trim() || '';
+    const clientName = cells[4]?.textContent?.trim() || '';
+    const description = cells[6]?.textContent?.trim() || '';
     const documentTypeId = parseInt(row.getAttribute('data-document-type-id') || '0');
-    // Extract IsVat from column 6 (index 6) - it shows 'Y' or 'N'
-    const isVat = cells[6]?.textContent?.trim() === 'Y';
+    // Extract IsVat from column 7 (index 7) - it shows 'Y' or 'N'
+    const isVat = cells[7]?.textContent?.trim() === 'Y';
     // Extract ClientRegister from data attribute
     const clientRegister = row.getAttribute('data-client-register') || '';
     // Extract WarehouseName from data attribute or fallback to cell title attribute
@@ -1274,7 +1406,7 @@ async function printDocument(documentId) {
     
     // Fallback: extract warehouse name from warehouse cell title attribute if not in data attribute
     if (!warehouseName) {
-        const warehouseCell = cells[7]; // Warehouse column is typically at index 7
+        const warehouseCell = cells[3]; // Warehouse column is now at index 3
         if (warehouseCell) {
             const warehouseSpan = warehouseCell.querySelector('span[title]');
             if (warehouseSpan) {
@@ -1290,7 +1422,7 @@ async function printDocument(documentId) {
     
     // Fallback: extract from account cell title attribute if not in data attributes
     if (!accountCode || !accountName) {
-        const accountCell = cells[5];
+        const accountCell = cells[2]; // Account column is now at index 2
         if (accountCell) {
             const accountSpan = accountCell.querySelector('span[title]');
             if (accountSpan) {
