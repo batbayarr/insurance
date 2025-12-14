@@ -7271,42 +7271,61 @@ def api_check_depreciation_expense_by_date(request):
 @require_http_methods(["GET"])
 def api_check_all_previous_periods_depreciation_by_date(request):
     """
-    API endpoint to check if all PeriodIds < PeriodId(documentDate) have depreciation expense records.
-    Used for asset documents with DocumentTypeId = 11 (disposal) to ensure all previous periods have depreciation calculated.
-    Takes document_date as parameter instead of document_id.
+    API endpoint to check if all PeriodIds < PeriodId have depreciation expense records.
+    Used for depreciation creation to ensure all previous periods have depreciation calculated.
+    Takes period_id as parameter (preferred) or document_date as fallback.
     """
     try:
+        period_id_str = request.GET.get('period_id')
         document_date_str = request.GET.get('document_date')
         
-        if not document_date_str:
-            return JsonResponse({
-                'success': False,
-                'error': 'document_date parameter is required'
-            }, status=400)
+        document_period_id = None
         
-        # Parse document date
-        from datetime import datetime
-        try:
-            document_date = datetime.strptime(document_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            return JsonResponse({
-                'success': False,
-                'error': 'Invalid document_date format. Expected YYYY-MM-DD'
-            }, status=400)
+        # Try to get period_id directly first
+        if period_id_str:
+            try:
+                document_period_id = int(period_id_str)
+            except (TypeError, ValueError):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid period_id format'
+                }, status=400)
+        # Fallback to document_date if period_id not provided
+        elif document_date_str:
+            from datetime import datetime
+            try:
+                document_date = datetime.strptime(document_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid document_date format. Expected YYYY-MM-DD'
+                }, status=400)
             
             # Get period for document date
             period = Ref_Period.objects.filter(
-            BeginDate__lte=document_date,
-            EndDate__gte=document_date
+                BeginDate__lte=document_date,
+                EndDate__gte=document_date
             ).first()
             
-        if not period:
+            if not period:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No period found for the document date'
+                }, status=400)
+            
+            document_period_id = period.PeriodId
+        else:
             return JsonResponse({
                 'success': False,
-                'error': 'No period found for the document date'
+                'error': 'Either period_id or document_date parameter is required'
             }, status=400)
         
-        document_period_id = period.PeriodId
+        # Validate period_id
+        if document_period_id is None or document_period_id <= 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid period_id'
+            }, status=400)
         
         # Get all PeriodIds that are less than the document's PeriodId
         previous_periods = Ref_Period.objects.filter(

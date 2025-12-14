@@ -329,7 +329,33 @@
         }
         
         try {
-            // Check if future periods have depreciation before creating
+            // NEW: Check if all previous periods have depreciation (skip if periodId = 1)
+            if (periodIdNum > 1) {
+                const previousCheckUrl = `/core/api/check-all-previous-periods-depreciation-by-date/?period_id=${periodIdNum}`;
+                const previousCheckResponse = await fetch(previousCheckUrl);
+                const previousCheckData = await previousCheckResponse.json();
+                
+                if (!previousCheckData.success) {
+                    showMessageModal(previousCheckData.error || 'Элэгдэл шалгахад алдаа гарлаа', 'error');
+                    if (filterButton) {
+                        filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
+                        filterButton.disabled = false;
+                    }
+                    return;
+                }
+                
+                if (!previousCheckData.all_periods_have_depreciation) {
+                    // Some previous periods are missing depreciation
+                    showMessageModal(previousCheckData.message || 'Элэгдэл бодогдоогүй хугацаа байна. Дараах хугацаануудад элэгдэл бодно уу.', 'error');
+                    if (filterButton) {
+                        filterButton.textContent = 'ЭЛЭГДЭЛ БАЙГУУЛАХ';
+                        filterButton.disabled = false;
+                    }
+                    return;
+                }
+            }
+            
+            // EXISTING: Check if future periods have depreciation before creating
             const checkUrl = `/core/api/check-future-period-depreciation/?period_id=${periodIdNum}`;
             const checkResponse = await fetch(checkUrl);
             const checkData = await checkResponse.json();
