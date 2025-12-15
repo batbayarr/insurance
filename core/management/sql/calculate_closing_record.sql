@@ -47,7 +47,7 @@ BEGIN
     
     DELETE FROM cash_document
     WHERE "DocumentTypeId" = 14
-        AND "DocumentDate" <= v_end_date;
+        AND "DocumentDate" = v_end_date;
     
     -- Create temporary table for calculated amounts
     CREATE TEMP TABLE temp_calculated_amounts AS
@@ -65,7 +65,7 @@ BEGIN
         INNER JOIN cash_document cd ON cdd."DocumentId" = cd."DocumentId"
         INNER JOIN ref_account rea ON rea."AccountId" = cdd."AccountId"
         INNER JOIN ref_account_type rat ON rat."AccountTypeId" = rea."AccountTypeId"
-        WHERE cd."DocumentDate" <= v_end_date
+        WHERE cd."DocumentDate" BETWEEN v_begin_date AND v_end_date
             AND cd."IsDelete" = false
             AND rat."AccountTypeId" BETWEEN 69 AND 101
         GROUP BY cdd."AccountId", rea."AccountCode", rat."AccountTypeId", rat."AccountTypeName", rat."IsActive"
@@ -85,7 +85,7 @@ BEGIN
         INNER JOIN inv_document id ON idd."DocumentId" = id."DocumentId"
         INNER JOIN ref_account rea ON rea."AccountId" = idd."AccountId"
         INNER JOIN ref_account_type rat ON rat."AccountTypeId" = rea."AccountTypeId"
-        WHERE id."DocumentDate" <= v_end_date
+        WHERE id."DocumentDate" BETWEEN v_begin_date AND v_end_date
             AND id."IsDelete" = false
             AND rat."AccountTypeId" BETWEEN 69 AND 101
         GROUP BY idd."AccountId", rea."AccountCode", rat."AccountTypeId", rat."AccountTypeName", rat."IsActive"
@@ -105,7 +105,7 @@ BEGIN
         INNER JOIN ast_document ad ON add."DocumentId" = ad."DocumentId"
         INNER JOIN ref_account rea ON rea."AccountId" = add."AccountId"
         INNER JOIN ref_account_type rat ON rat."AccountTypeId" = rea."AccountTypeId"
-        WHERE ad."DocumentDate" <= v_end_date
+        WHERE ad."DocumentDate" BETWEEN v_begin_date AND v_end_date
             AND ad."IsDelete" = false
             AND rat."AccountTypeId" BETWEEN 69 AND 101
         GROUP BY add."AccountId", rea."AccountCode", rat."AccountTypeId", rat."AccountTypeName", rat."IsActive"
