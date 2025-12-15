@@ -169,7 +169,7 @@ BEGIN
         -- Beginning Balance (as of begindate)
         -- Receivable accounts: Show in Debit column
         CASE 
-            WHEN rat."AccountTypeId" IN (3, 4, 5, 6) THEN 
+            WHEN rat."AccountTypeId" IN (3, 4, 5, 6, 12) THEN 
                 COALESCE(sb.starting_balance, 0) + 
                 COALESCE(abb.total_debit_before, 0) - 
                 COALESCE(abb.total_credit_before, 0)
@@ -192,7 +192,7 @@ BEGIN
         -- Ending Balance
         -- Receivable accounts: Show in Debit column
         CASE 
-            WHEN rat."AccountTypeId" IN (3, 4, 5, 6) THEN 
+            WHEN rat."AccountTypeId" IN (3, 4, 5, 6, 12) THEN 
                 COALESCE(sb.starting_balance, 0) + 
                 COALESCE(abb.total_debit_before, 0) - 
                 COALESCE(abb.total_credit_before, 0) +
@@ -224,7 +224,7 @@ BEGIN
         AND acc."ClientId" = ap."ClientId"
     WHERE ra."IsDelete" = false
         AND (
-            (rat."AccountTypeId" IN (3, 4, 5, 6) AND rat."IsActive" = true)  -- Receivable
+            (rat."AccountTypeId" IN (3, 4, 5, 6, 12) AND rat."IsActive" = true)  -- Receivable
             OR 
             (rat."AccountTypeId" > 41 AND rat."AccountTypeId" < 59 AND rat."IsActive" = false)  -- Payable
         )
