@@ -186,7 +186,9 @@ BEGIN
     FROM asset_usage_periods aup
     WHERE aup.usage_start_date <= aup.usage_end_date; -- Ensure valid date range
     
-    -- AFTER CALCULATION CHECK: Update expenseAmount to 0 if total depreciation exceeds unit cost
+    -- AFTER CALCULATION CHECK: Update expenseAmount if total depreciation exceeds unit cost
+    -- First, set to 0 if total exceeds unit cost
+    -- Then recalculate as remaining amount: unitCost - cumulatedDepreciation - all_periods_expense_total (excluding current period)
     WITH calculated_expenses AS (
         SELECT 
             ade."AstDepExpId",
@@ -195,18 +197,15 @@ BEGIN
             ade."ExpenseAmount" AS current_expense,
             COALESCE(bbd.cumulated_depreciation, 0) AS cumulated_depreciation,
             COALESCE(bbd.unit_cost, 0) AS unit_cost,
-            COALESCE(SUM(all_expenses."ExpenseAmount"), 0) AS all_periods_expense_total
+            -- Calculate all periods expense EXCLUDING current period's expense
+            COALESCE((
+                SELECT SUM(ade2."ExpenseAmount")
+                FROM ast_depreciation_expense ade2
+                WHERE ade2."AccountId" = ade."AccountId"
+                    AND ade2."AssetCardId" = ade."AssetCardId"
+                    AND (ade2."PeriodId" != p_period_id OR ade2."AstDepExpId" != ade."AstDepExpId")
+            ), 0) AS all_periods_expense_total_excluding_current
         FROM ast_depreciation_expense ade
-        LEFT JOIN ast_beginning_balance abb
-            ON ade."AccountId" = abb."AccountId"
-            AND ade."AssetCardId" = abb."AssetCardId"
-            AND abb."IsDelete" = false
-        LEFT JOIN LATERAL (
-            SELECT SUM(ade2."ExpenseAmount") AS "ExpenseAmount"
-            FROM ast_depreciation_expense ade2
-            WHERE ade2."AccountId" = ade."AccountId"
-                AND ade2."AssetCardId" = ade."AssetCardId"
-        ) all_expenses ON true
         LEFT JOIN (
             SELECT 
                 "AccountId",
@@ -220,19 +219,22 @@ BEGIN
             AND ade."AssetCardId" = bbd."AssetCardId"
         WHERE ade."PeriodId" = p_period_id
             AND ade."DocumentId" IS NULL
-        GROUP BY 
-            ade."AstDepExpId",
-            ade."AccountId",
-            ade."AssetCardId",
-            ade."ExpenseAmount",
-            bbd.cumulated_depreciation,
-            bbd.unit_cost
     )
     UPDATE ast_depreciation_expense ade
-    SET "ExpenseAmount" = 0
+    SET "ExpenseAmount" = CASE
+        -- If total depreciation (cumulated + all periods excluding current + current) >= unit_cost
+        WHEN (ce.cumulated_depreciation + ce.all_periods_expense_total_excluding_current + ce.current_expense) >= ce.unit_cost THEN
+            -- Set to remaining amount: unit_cost - cumulated_depreciation - all_periods_expense_total (excluding current)
+            GREATEST(
+                0::NUMERIC(24,6),
+                ce.unit_cost - ce.cumulated_depreciation - ce.all_periods_expense_total_excluding_current
+            )
+        ELSE
+            -- Keep the calculated expense amount
+            ce.current_expense
+    END
     FROM calculated_expenses ce
     WHERE ade."AstDepExpId" = ce."AstDepExpId"
-        AND (ce.cumulated_depreciation + ce.all_periods_expense_total) >= ce.unit_cost
         AND ce.current_expense > 0;
     
     -- Check for existing depreciation cash documents and delete them if they exist

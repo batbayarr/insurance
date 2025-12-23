@@ -3268,8 +3268,18 @@ def ref_asset_card_list(request):
         elif status_filter_master == 'inactive':
             assets = assets.filter(IsDelete=True)
     
-    # Pagination for assets (master table)
-    asset_paginator = Paginator(assets, 20)  # Show 20 assets per page
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
+    try:
+        page_size = int(page_size)
+        # Validate page size (allow 10, 15, 20, 25, 50)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
+    # Pagination for assets (master table) - use same page_size
+    asset_paginator = Paginator(assets, page_size)
     try:
         assets = asset_paginator.page(asset_page)
     except PageNotAnInteger:
@@ -3310,16 +3320,6 @@ def ref_asset_card_list(request):
             asset_cards = asset_cards.filter(IsDelete=False)
         elif status_filter == 'inactive':
             asset_cards = asset_cards.filter(IsDelete=True)
-    
-    # Get page size from request, default to 15
-    page_size = request.GET.get('page_size', '15')
-    try:
-        page_size = int(page_size)
-        # Validate page size (allow 10, 15, 20, 25, 50)
-        if page_size not in [10, 15, 20, 25, 50]:
-            page_size = 15
-    except (ValueError, TypeError):
-        page_size = 15
     
     # For modal requests, show more items and no pagination
     is_modal = request.GET.get('modal')

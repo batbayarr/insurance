@@ -153,6 +153,16 @@
                     Нийт <span class="font-medium">{{ asset_paginator.count }}</span> бичлэгээс <span class="font-medium">{{ master_assets.start_index }}</span> - <span class="font-medium">{{ master_assets.end_index }}</span> бичлэг харагдаж байна
                 </div>
                 <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="master-page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                        <select id="master-page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="15" {% if page_size == 15 %}selected{% endif %}>15</option>
+                            <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </div>
                     {% if master_assets.has_other_pages %}
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
@@ -679,9 +689,29 @@ async function checkAssetCardUsage(assetCardId, action, actionUrl, itemName) {
 
 // Handle page size change
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle detail table page size change
     const pageSizeSelect = document.getElementById('page-size-select');
     if (pageSizeSelect) {
         pageSizeSelect.addEventListener('change', function(e) {
+            const newPageSize = e.target.value;
+            const currentUrl = new URL(window.location);
+            
+            // Update page_size parameter
+            currentUrl.searchParams.set('page_size', newPageSize);
+            
+            // Reset to page 1 when changing page size
+            currentUrl.searchParams.set('page', '1');
+            currentUrl.searchParams.set('asset_page', '1');
+            
+            // Reload page with new page size
+            window.location.href = currentUrl.toString();
+        });
+    }
+    
+    // Handle master table page size change
+    const masterPageSizeSelect = document.getElementById('master-page-size-select');
+    if (masterPageSizeSelect) {
+        masterPageSizeSelect.addEventListener('change', function(e) {
             const newPageSize = e.target.value;
             const currentUrl = new URL(window.location);
             
