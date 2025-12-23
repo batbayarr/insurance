@@ -76,6 +76,28 @@ BEGIN
             AND ad."DocumentDate" BETWEEN v_begin_date AND v_end_date
         GROUP BY ad."AccountId", adi."AssetCardId"
     ),
+    -- Get beginning balance data (cumulated depreciation and unit cost)
+    beginning_balance_data AS (
+        SELECT 
+            abb."AccountId",
+            abb."AssetCardId",
+            COALESCE(SUM(abb."CumulatedDepreciation"), 0) AS cumulated_depreciation,
+            MAX(abb."UnitCost") AS unit_cost
+        FROM ast_beginning_balance abb
+        WHERE abb."IsDelete" = false
+        GROUP BY abb."AccountId", abb."AssetCardId"
+    ),
+    -- Calculate sum of expense amount for all previous periods
+    previous_periods_expense AS (
+        SELECT 
+            ade."AccountId",
+            ade."AssetCardId",
+            COALESCE(SUM(ade."ExpenseAmount"), 0) AS previous_expense_total
+        FROM ast_depreciation_expense ade
+        INNER JOIN ref_period rp ON ade."PeriodId" = rp."PeriodId"
+        WHERE rp."PeriodId" < p_period_id
+        GROUP BY ade."AccountId", ade."AssetCardId"
+    ),
     asset_usage_periods AS (
         -- Calculate actual usage period for each asset
         SELECT 
@@ -99,7 +121,12 @@ BEGIN
             LEAST(
                 COALESCE(ad.first_disposal_date, v_end_date),
                 v_end_date
-            ) AS usage_end_date
+            ) AS usage_end_date,
+            -- Get beginning balance data
+            COALESCE(bbd.cumulated_depreciation, 0) AS cumulated_depreciation,
+            COALESCE(bbd.unit_cost, 0) AS unit_cost,
+            -- Get previous periods expense total
+            COALESCE(ppe.previous_expense_total, 0) AS previous_expense_total
         FROM report_assetcard_balance(v_end_date) bal
         INNER JOIN ref_asset_card rac ON bal.assetcardid = rac."AssetCardId"
         INNER JOIN ref_asset_depreciation_account rada 
@@ -111,6 +138,12 @@ BEGIN
         LEFT JOIN asset_disposals ad 
             ON bal.accountid = ad."AccountId"
             AND bal.assetcardid = ad."AssetCardId"
+        LEFT JOIN beginning_balance_data bbd
+            ON bal.accountid = bbd."AccountId"
+            AND bal.assetcardid = bbd."AssetCardId"
+        LEFT JOIN previous_periods_expense ppe
+            ON bal.accountid = ppe."AccountId"
+            AND bal.assetcardid = ppe."AssetCardId"
         WHERE bal.endingquantity > 0
             AND rac."DailyExpense" > 0
             -- Only calculate if asset was received before or during the period
@@ -135,7 +168,14 @@ BEGIN
         p_period_id,
         (aup.usage_end_date - aup.usage_start_date + 1)::SMALLINT AS expense_days,
         aup.usage_end_date AS depreciation_date,
-        ((aup.usage_end_date - aup.usage_start_date + 1)::NUMERIC(24,6) * aup."DailyExpense")::NUMERIC(24,6) AS expense_amount,
+        -- BEFORE CALCULATION CHECK: If cumulated_depreciation + previous_expense_total >= unit_cost, set expenseAmount = 0
+        -- Otherwise, calculate normally
+        CASE 
+            WHEN (aup.cumulated_depreciation + aup.previous_expense_total) >= aup.unit_cost THEN
+                0::NUMERIC(24,6)
+            ELSE
+                ((aup.usage_end_date - aup.usage_start_date + 1)::NUMERIC(24,6) * aup."DailyExpense")::NUMERIC(24,6)
+        END AS expense_amount,
         aup."ExpenseAccountId", -- Debit: Expense Account
         aup."DepreciationAccountId", -- Credit: Accumulated Depreciation
         aup."AssetAccountId", -- Asset Account
@@ -145,6 +185,55 @@ BEGIN
         CURRENT_DATE
     FROM asset_usage_periods aup
     WHERE aup.usage_start_date <= aup.usage_end_date; -- Ensure valid date range
+    
+    -- AFTER CALCULATION CHECK: Update expenseAmount to 0 if total depreciation exceeds unit cost
+    WITH calculated_expenses AS (
+        SELECT 
+            ade."AstDepExpId",
+            ade."AccountId",
+            ade."AssetCardId",
+            ade."ExpenseAmount" AS current_expense,
+            COALESCE(bbd.cumulated_depreciation, 0) AS cumulated_depreciation,
+            COALESCE(bbd.unit_cost, 0) AS unit_cost,
+            COALESCE(SUM(all_expenses."ExpenseAmount"), 0) AS all_periods_expense_total
+        FROM ast_depreciation_expense ade
+        LEFT JOIN ast_beginning_balance abb
+            ON ade."AccountId" = abb."AccountId"
+            AND ade."AssetCardId" = abb."AssetCardId"
+            AND abb."IsDelete" = false
+        LEFT JOIN LATERAL (
+            SELECT SUM(ade2."ExpenseAmount") AS "ExpenseAmount"
+            FROM ast_depreciation_expense ade2
+            WHERE ade2."AccountId" = ade."AccountId"
+                AND ade2."AssetCardId" = ade."AssetCardId"
+        ) all_expenses ON true
+        LEFT JOIN (
+            SELECT 
+                "AccountId",
+                "AssetCardId",
+                COALESCE(SUM("CumulatedDepreciation"), 0) AS cumulated_depreciation,
+                MAX("UnitCost") AS unit_cost
+            FROM ast_beginning_balance
+            WHERE "IsDelete" = false
+            GROUP BY "AccountId", "AssetCardId"
+        ) bbd ON ade."AccountId" = bbd."AccountId"
+            AND ade."AssetCardId" = bbd."AssetCardId"
+        WHERE ade."PeriodId" = p_period_id
+            AND ade."DocumentId" IS NULL
+        GROUP BY 
+            ade."AstDepExpId",
+            ade."AccountId",
+            ade."AssetCardId",
+            ade."ExpenseAmount",
+            bbd.cumulated_depreciation,
+            bbd.unit_cost
+    )
+    UPDATE ast_depreciation_expense ade
+    SET "ExpenseAmount" = 0
+    FROM calculated_expenses ce
+    WHERE ade."AstDepExpId" = ce."AstDepExpId"
+        AND (ce.cumulated_depreciation + ce.all_periods_expense_total) >= ce.unit_cost
+        AND ce.current_expense > 0;
     
     -- Check for existing depreciation cash documents and delete them if they exist
     -- Delete from cash_document_detail first (due to foreign key constraint)
@@ -329,6 +418,8 @@ If asset is disposed within period resulting in ending quantity = 0, no deprecia
 If asset is received mid-period, depreciation is calculated from receipt date to period end.
 Deletes unposted records (DocumentId IS NULL) for the period before inserting new calculations.
 Automatically creates cash_document and cash_document_detail entries for the depreciation expenses.
+Before calculation: Checks if cumulated_depreciation + previous periods expense >= unit_cost, then sets expenseAmount = 0.
+After calculation: Updates expenseAmount to 0 if cumulated_depreciation + all periods expense >= unit_cost.
 Parameters: p_period_id (accounting period), p_user_id (session user for audit fields, required).
 Returns detailed results including account codes, period information, and document numbers.';
 

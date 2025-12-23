@@ -637,13 +637,13 @@ function validateForm() {
         }
     }
     
-    // Validate UnitCost > CumulatedDepreciation
+    // Validate UnitCost >= CumulatedDepreciation
     if (unitCostInput && cumulatedDepInput && unitCostInput.value && cumulatedDepInput.value) {
         const unitCost = parseNumericValue(unitCostInput.value);
         const cumulatedDep = parseNumericValue(cumulatedDepInput.value);
-        if (unitCost <= cumulatedDep) {
+        if (unitCost < cumulatedDep) {
             isValid = false;
-            errors.push('Нэгжийн өртөг нь эхний элэгдлээс их байх ёстой.');
+            errors.push('Нэгжийн өртөг нь эхний элэгдлээс их буюу тэнцүүбайх ёстой.');
             unitCostInput.classList.add('border-red-500');
             cumulatedDepInput.classList.add('border-red-500');
         }

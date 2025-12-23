@@ -6367,7 +6367,7 @@ def api_delete_depreciation_entries(request):
     
     # Delete cash_document records
     deleted_documents_count = depreciation_documents.delete()[0]
-    
+        
     # Check if anything was deleted
     total_deleted = deleted_depreciation_expense_count + deleted_documents_count + deleted_details_count
     

@@ -544,8 +544,8 @@ function initializeEventHandlers() {
                 const documentId = deleteBtn.getAttribute('data-item-id');
                 const documentDate = deleteBtn.getAttribute('data-document-date');
                 const documentTypeId = parseInt(deleteBtn.getAttribute('data-document-type-id') || '0');
-                const deleteUrl = deleteBtn.getAttribute('data-delete-url');
-                const documentName = deleteBtn.getAttribute('data-document-name');
+            const deleteUrl = deleteBtn.getAttribute('data-delete-url');
+            const documentName = deleteBtn.getAttribute('data-document-name');
                 
                 // Check period lock and depreciation before showing soft delete modal
                 checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, documentDate, deleteUrl, documentName, documentTypeId, deleteBtn);
@@ -837,26 +837,26 @@ async function printDocument(documentId) {
 async function checkPeriodLockForEdit(documentId, documentDate) {
     console.log('checkPeriodLockForEdit called with:', documentId, documentDate);
     
-    if (!documentDate) {
-        // No date, proceed to edit
-        window.location.href = `/core/astdocuments/${documentId}/update/`;
-        return;
-    }
-    
+            if (!documentDate) {
+                // No date, proceed to edit
+                window.location.href = `/core/astdocuments/${documentId}/update/`;
+                return;
+            }
+            
     console.log('Checking period lock and depreciation for date:', documentDate);
-    
+            
     try {
         // First check period lock
         const lockResponse = await fetch(`/core/api/check-period-lock/?date=${documentDate}`);
         const lockData = await lockResponse.json();
         
-        if (lockData.is_locked) {
-            // Show modal for locked period
-            if (typeof showMessageModal === 'function') {
-                showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
-            } else {
-                alert(lockData.message);
-            }
+                    if (lockData.is_locked) {
+                        // Show modal for locked period
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
             return;
         }
         
@@ -866,8 +866,8 @@ async function checkPeriodLockForEdit(documentId, documentDate) {
         
         if (!depData.success) {
             console.error('Depreciation check API error:', depData.error);
-            // On error, allow edit (fail open)
-            window.location.href = `/core/astdocuments/${documentId}/update/`;
+                    // On error, allow edit (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/update/`;
             return;
         }
         
@@ -888,8 +888,8 @@ async function checkPeriodLockForEdit(documentId, documentDate) {
         window.location.href = `/core/astdocuments/${documentId}/update/`;
     } catch (error) {
         console.error('Period lock or depreciation check failed:', error);
-        // On error, allow edit (fail open)
-        window.location.href = `/core/astdocuments/${documentId}/update/`;
+            // On error, allow edit (fail open)
+                window.location.href = `/core/astdocuments/${documentId}/update/`;
     }
 }
 
@@ -908,8 +908,8 @@ async function checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, docum
             if (window.Silicon4SoftDelete) {
                 window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
             }
-            return;
-        }
+                return;
+            }
     } catch (error) {
         console.error('Error checking document details:', error);
         // On error, proceed with normal checks (fail open)
@@ -924,19 +924,19 @@ async function checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, docum
             const lockData = await lockResponse.json();
             if (lockData.is_locked) {
                 // Show modal for locked period
-                if (typeof showMessageModal === 'function') {
-                    showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
-                } else {
-                    alert(lockData.message);
-                }
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
                 return;
             }
         } catch (error) {
             console.error('Period lock check failed:', error);
             // On error, proceed with depreciation check (fail open)
         }
-    }
-    
+}
+
     // Check if depreciation exists for document's period (current month)
     try {
         const depResponse = await fetch(`/core/api/check-document-period-depreciation/?document_id=${documentId}`);
@@ -954,16 +954,16 @@ async function checkDocumentPeriodDepreciationBeforeSoftDelete(documentId, docum
         if (depData.has_depreciation_for_period) {
             // Show modal for depreciation in period
             const errorMessage = depData.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг засах болон устгах боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
-            if (typeof showMessageModal === 'function') {
+                if (typeof showMessageModal === 'function') {
                 showMessageModal(errorMessage, 'error', 'Анхааруулга');
             } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
                 Silicon4Message.error(errorMessage);
-            } else {
+                } else {
                 alert(errorMessage);
+                }
+                return;
             }
-            return;
-        }
-        
+            
         // No depreciation issue, proceed with soft delete
         if (window.Silicon4SoftDelete) {
             window.Silicon4SoftDelete.handleDeleteClick(deleteButton);
@@ -1088,26 +1088,26 @@ async function checkAssetDocumentBalanceBeforeDelete(documentId, deleteUrl, docu
 async function checkPeriodLockForManageDetails(documentId, documentDate) {
     console.log('checkPeriodLockForManageDetails called with:', documentId, documentDate);
     
-    if (!documentDate) {
-        // No date, proceed to manage details
-        window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
-        return;
-    }
-    
+            if (!documentDate) {
+                // No date, proceed to manage details
+                window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                return;
+            }
+            
     console.log('Checking period lock and depreciation for date:', documentDate);
-    
+            
     try {
         // First check period lock
         const lockResponse = await fetch(`/core/api/check-period-lock/?date=${documentDate}`);
         const lockData = await lockResponse.json();
         
-        if (lockData.is_locked) {
-            // Show modal for locked period
-            if (typeof showMessageModal === 'function') {
-                showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
-            } else {
-                alert(lockData.message);
-            }
+                    if (lockData.is_locked) {
+                        // Show modal for locked period
+                        if (typeof showMessageModal === 'function') {
+                            showMessageModal(lockData.message, 'error', 'Тухайн сар цоожлогдсон байна.');
+                        } else {
+                            alert(lockData.message);
+                        }
             return;
         }
         
@@ -1117,21 +1117,21 @@ async function checkPeriodLockForManageDetails(documentId, documentDate) {
         
         if (!depData.success) {
             console.error('Depreciation check API error:', depData.error);
-            // On error, allow manage details (fail open)
-            window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
-            return;
-        }
+                    // On error, allow manage details (fail open)
+                window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                return;
+            }
         
         if (depData.has_depreciation_for_period) {
             // Show modal for depreciation in period
             const errorMessage = depData.message || 'Энэ сарын элэгдэл бодогдсон тул энэ баримтыг засах болон устгах боломжгүй. Элэгдлийн бичилтээ эхлээд устгана уу?';
-            if (typeof showMessageModal === 'function') {
+                        if (typeof showMessageModal === 'function') {
                 showMessageModal(errorMessage, 'error', 'Анхааруулга');
             } else if (typeof Silicon4Message !== 'undefined' && Silicon4Message.error) {
                 Silicon4Message.error(errorMessage);
-            } else {
+                        } else {
                 alert(errorMessage);
-            }
+                        }
             return;
         }
         
@@ -1139,8 +1139,8 @@ async function checkPeriodLockForManageDetails(documentId, documentDate) {
         window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
     } catch (error) {
         console.error('Period lock or depreciation check failed:', error);
-        // On error, allow manage details (fail open)
-        window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
+                    // On error, allow manage details (fail open)
+                    window.location.href = `/core/astdocuments/${documentId}/bulk-manage-details/`;
     }
 }
 

@@ -399,10 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const documentDateField = document.getElementById('id_DocumentDate');
             if (!documentDateField || !documentDateField.value) {
                 // No date, proceed to final submission
-                const submitButton = document.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    Silicon4Form.showLoading(submitButton, 'Processing...');
-                }
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                Silicon4Form.showLoading(submitButton, 'Processing...');
+            }
                 return true;
             }
             

@@ -30,20 +30,61 @@
             </div>
             
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 table-auto">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн огноо</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан огноо</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
-                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдлүүд</th>
-                        </tr>
-                    </thead>
+                <form method="get" id="master-filter-form">
+                    <input type="hidden" name="selected_asset" value="{{ selected_asset_id|default:'' }}">
+                    <input type="hidden" name="asset_page" value="{{ master_assets.number|default:1 }}">
+                    <input type="hidden" name="page" value="{{ asset_cards.number|default:1 }}">
+                    <input type="hidden" name="page_size" value="{{ page_size|default:15 }}">
+                    {% if filters.card_code %}<input type="hidden" name="card_code" value="{{ filters.card_code }}">{% endif %}
+                    {% if filters.card_name %}<input type="hidden" name="card_name" value="{{ filters.card_name }}">{% endif %}
+                    <table class="min-w-full divide-y divide-gray-200 table-auto">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн огноо</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зассан огноо</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                                <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдлүүд</th>
+                            </tr>
+                            <tr class="bg-gray-100">
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <input type="text" name="asset_code" value="{{ filters.asset_code|default:'' }}" 
+                                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Шүүх..." onchange="document.getElementById('master-filter-form').submit()">
+                                </td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <input type="text" name="asset_name" value="{{ filters.asset_name|default:'' }}" 
+                                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Шүүх..." onchange="document.getElementById('master-filter-form').submit()">
+                                </td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <select name="asset_type" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="document.getElementById('master-filter-form').submit()">
+                                        <option value="">Бүгд</option>
+                                        {% for asset_type in asset_types %}
+                                        <option value="{{ asset_type.AssetTypeId }}" {% if selected_asset_type_id == asset_type.AssetTypeId|stringformat:'s' %}selected{% endif %}>{{ asset_type.AssetTypeName }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <select name="status" class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" onchange="document.getElementById('master-filter-form').submit()">
+                                        <option value="">Бүгд</option>
+                                        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Идэвхтэй</option>
+                                        <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Устгасан</option>
+                                    </select>
+                                </td>
+                                <td class="px-2 py-1 text-center">
+                                    <a href="{% url 'core:ref_asset_card_list' %}" class="text-xs text-gray-500 hover:text-gray-700" title="Шүүлт цэвэрлэх">Цэвэрлэх</a>
+                                </td>
+                            </tr>
+                        </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for asset in master_assets %}
                         <tr class="hover:bg-gray-50 cursor-pointer {% if selected_asset_id == asset.AssetId|stringformat:'s' %}bg-blue-50{% endif %}" 
@@ -102,6 +143,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </form>
             </div>
             
             <!-- Pagination for Assets -->
@@ -115,7 +157,7 @@
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                             {% if master_assets.has_previous %}
-                            <a href="?asset_page={{ master_assets.previous_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                            <a href="?asset_page={{ master_assets.previous_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if page_size %}&page_size={{ page_size }}{% endif %}" 
                                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Previous</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -130,7 +172,7 @@
                                         {{ num }}
                                     </span>
                                     {% elif num > master_assets.number|add:'-3' and num < master_assets.number|add:'3' %}
-                                    <a href="?asset_page={{ num }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                                    <a href="?asset_page={{ num }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if page_size %}&page_size={{ page_size }}{% endif %}" 
                                        class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                                         {{ num }}
                                     </a>
@@ -138,7 +180,7 @@
                                 {% endfor %}
                             </span>
                             {% if master_assets.has_next %}
-                            <a href="?asset_page={{ master_assets.next_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                            <a href="?asset_page={{ master_assets.next_page_number }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if page_size %}&page_size={{ page_size }}{% endif %}" 
                                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Next</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -175,24 +217,57 @@
     </div>
     
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 table-auto">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">КАРТ №</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 180px;">ТАЙЛБАР</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдвэрлэсэн</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хүлээн авсан</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АШИГЛАХ САР</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ӨДРИЙН ЭЛЭГДЭЛ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
-                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ОГНОО</th>
-                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЛҮҮД</th>
-                        </tr>
-                    </thead>
+                <form method="get" id="detail-filter-form">
+                    <input type="hidden" name="selected_asset" value="{{ selected_asset_id|default:'' }}">
+                    <input type="hidden" name="asset_page" value="{{ master_assets.number|default:1 }}">
+                    <input type="hidden" name="page_size" value="{{ page_size|default:15 }}">
+                    {% if filters.asset_code %}<input type="hidden" name="asset_code" value="{{ filters.asset_code }}">{% endif %}
+                    {% if filters.asset_name %}<input type="hidden" name="asset_name" value="{{ filters.asset_name }}">{% endif %}
+                    {% if selected_asset_type_id %}<input type="hidden" name="asset_type" value="{{ selected_asset_type_id }}">{% endif %}
+                    {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+                    <table class="min-w-full divide-y divide-gray-200 table-auto">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">КАРТ №</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style="min-width: 180px;">ТАЙЛБАР</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдвэрлэсэн</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хүлээн авсан</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АШИГЛАХ САР</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ӨРТӨГ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">НЭГЖ ҮНЭ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ӨДРИЙН ЭЛЭГДЭЛ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭХНИЙ ЭЛЭГДЭЛ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХЭРЭГЛЭГЧ</th>
+                                <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ОГНОО</th>
+                                <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ҮЙЛДЛҮҮД</th>
+                            </tr>
+                            <tr class="bg-gray-100">
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <input type="text" name="card_code" value="{{ filters.card_code|default:'' }}" 
+                                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Шүүх..." onchange="document.getElementById('detail-filter-form').submit()">
+                                </td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                    <input type="text" name="card_name" value="{{ filters.card_name|default:'' }}" 
+                                           class="w-full px-1 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Шүүх..." onchange="document.getElementById('detail-filter-form').submit()">
+                                </td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 border-r border-gray-200"></td>
+                                <td class="px-2 py-1 text-center">
+                                    <a href="{% url 'core:ref_asset_card_list' %}{% if selected_asset_id %}?selected_asset={{ selected_asset_id }}{% endif %}" class="text-xs text-gray-500 hover:text-gray-700" title="Шүүлт цэвэрлэх">Цэвэрлэх</a>
+                                </td>
+                            </tr>
+                        </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for card in asset_cards %}
                         <tr class="hover:bg-gray-50">
@@ -261,6 +336,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </form>
             </div>
             
             <!-- Pagination for Asset Cards -->
@@ -274,7 +350,7 @@
                     <div>
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                             {% if asset_cards.has_previous %}
-                            <a href="?page={{ asset_cards.previous_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                            <a href="?page={{ asset_cards.previous_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.card_code %}&card_code={{ filters.card_code }}{% endif %}{% if filters.card_name %}&card_name={{ filters.card_name }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" 
                                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Previous</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -289,7 +365,7 @@
                                         {{ num }}
                                     </span>
                                     {% elif num > asset_cards.number|add:'-3' and num < asset_cards.number|add:'3' %}
-                                    <a href="?page={{ num }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                                    <a href="?page={{ num }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.card_code %}&card_code={{ filters.card_code }}{% endif %}{% if filters.card_name %}&card_name={{ filters.card_name }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" 
                                        class="px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                                         {{ num }}
                                     </a>
@@ -297,7 +373,7 @@
                                 {% endfor %}
                             </span>
                             {% if asset_cards.has_next %}
-                            <a href="?page={{ asset_cards.next_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}" 
+                            <a href="?page={{ asset_cards.next_page_number }}&page_size={{ page_size }}{% if selected_asset_id %}&selected_asset={{ selected_asset_id }}{% endif %}{% if filters.card_code %}&card_code={{ filters.card_code }}{% endif %}{% if filters.card_name %}&card_name={{ filters.card_name }}{% endif %}{% if filters.asset_code %}&asset_code={{ filters.asset_code }}{% endif %}{% if filters.asset_name %}&asset_name={{ filters.asset_name }}{% endif %}{% if selected_asset_type_id %}&asset_type={{ selected_asset_type_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" 
                                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                 <span class="sr-only">Next</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -614,9 +690,46 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reset to page 1 when changing page size
             currentUrl.searchParams.set('page', '1');
+            currentUrl.searchParams.set('asset_page', '1');
             
             // Reload page with new page size
             window.location.href = currentUrl.toString();
+        });
+    }
+    
+    // Reset pagination when master filters change
+    const masterFilterForm = document.getElementById('master-filter-form');
+    if (masterFilterForm) {
+        const filterInputs = masterFilterForm.querySelectorAll('input[type="text"], select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // Reset asset page to 1 when filter changes
+                const assetPageInput = masterFilterForm.querySelector('input[name="asset_page"]');
+                if (!assetPageInput) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'asset_page';
+                    hiddenInput.value = '1';
+                    masterFilterForm.appendChild(hiddenInput);
+                } else {
+                    assetPageInput.value = '1';
+                }
+            });
+        });
+    }
+    
+    // Reset pagination when detail filters change
+    const detailFilterForm = document.getElementById('detail-filter-form');
+    if (detailFilterForm) {
+        const filterInputs = detailFilterForm.querySelectorAll('input[type="text"], select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // Reset page to 1 when filter changes
+                const pageInput = detailFilterForm.querySelector('input[name="page"]');
+                if (pageInput) {
+                    pageInput.value = '1';
+                }
+            });
         });
     }
 });
@@ -624,11 +737,41 @@ document.addEventListener('DOMContentLoaded', function() {
 {% if not is_modal %}
 // Asset selection function
 function selectAsset(assetId) {
-    const params = new URLSearchParams();
-    params.append('selected_asset', assetId);
+    const params = new URLSearchParams(window.location.search);
+    
+    // Set selected asset
+    params.set('selected_asset', assetId);
     
     // Reset card page to 1 when selecting new asset
-    params.append('page', '1');
+    params.set('page', '1');
+    
+    // Preserve master table filters
+    const masterForm = document.getElementById('master-filter-form');
+    if (masterForm) {
+        const assetCode = masterForm.querySelector('input[name="asset_code"]')?.value;
+        const assetName = masterForm.querySelector('input[name="asset_name"]')?.value;
+        const assetType = masterForm.querySelector('select[name="asset_type"]')?.value;
+        const status = masterForm.querySelector('select[name="status"]')?.value;
+        
+        if (assetCode) params.set('asset_code', assetCode);
+        if (assetName) params.set('asset_name', assetName);
+        if (assetType) params.set('asset_type', assetType);
+        if (status) params.set('status', status);
+    }
+    
+    // Preserve detail table filters
+    const detailForm = document.getElementById('detail-filter-form');
+    if (detailForm) {
+        const cardCode = detailForm.querySelector('input[name="card_code"]')?.value;
+        const cardName = detailForm.querySelector('input[name="card_name"]')?.value;
+        
+        if (cardCode) params.set('card_code', cardCode);
+        if (cardName) params.set('card_name', cardName);
+    }
+    
+    // Preserve page size
+    const pageSize = params.get('page_size') || '15';
+    params.set('page_size', pageSize);
     
     window.location.href = '?' + params.toString();
 }
