@@ -42,6 +42,7 @@
                         <tr>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-10">#</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ДАНС</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"> КОД</th> 
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ХӨРӨНГӨ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ЭД ХАРИУЦАГЧ</th>
                             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">АНХНЫ ӨРТӨГ</th>
@@ -60,6 +61,9 @@
                                 </select>
                             </td>
                             <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="ast-filter-asset-code" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
                                 <input type="text" id="ast-filter-asset" placeholder="Filter..." class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             </td>
                             <td class="px-2 py-1 border-r border-gray-200"></td>
@@ -76,10 +80,12 @@
                         {% for balance in balances %}
                         <tr class="balance-row"
                             data-account="{{ balance.AccountId.AccountCode|lower }} {{ balance.AccountId.AccountName|lower }}"
+                            data-asset-code="{{ balance.AssetCardId.AssetCardCode|lower }}"
                             data-asset="{{ balance.AssetCardId.AssetCardCode|lower }} {{ balance.AssetCardId.AssetCardName|lower }}"
                             data-quantity="{{ balance.Quantity }}" data-unitcost="{{ balance.UnitCost }}" data-unitprice="{{ balance.UnitPrice }}" data-cumulateddepreciation="{{ balance.CumulatedDepreciation|default:0 }}">
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-center"><span class="row-index">1</span></td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200"><span class="account-format" title="{{ balance.AccountId.AccountCode }} - {{ balance.AccountId.AccountName }}">{{ balance.AccountId.AccountCode }}</span></td>
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.AssetCardId.AssetCardCode }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.AssetCardId.AssetCardName }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">{{ balance.ClientId.ClientName|default:"-" }}</td>
                             <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200 text-right"><span class="ucost-val">{{ balance.UnitCost|floatformat:2 }}</span></td>
@@ -101,13 +107,13 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="11" class="px-4 py-4 text-center text-xs text-gray-500">No asset beginning balances found</td>
+                            <td colspan="12" class="px-4 py-4 text-center text-xs text-gray-500">No asset beginning balances found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
                         <tr class="bg-gray-50">
-                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="4"></td>
+                            <td class="px-2 py-1 text-xs border-t border-gray-200" colspan="5"></td>
                             <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-unit-cost">-</span></td>
                             <td class="px-2 py-1 text-xs border-t border-gray-200"></td>
                             <td class="px-2 py-1 text-xs border-t border-gray-200 text-right font-medium"><span id="ast-total-cumulated-depreciation">-</span></td>
@@ -508,6 +514,7 @@ function astFormatNumbersAndRows() {
 
 function astSetupInlineFilters() {
     const accountFilter = document.getElementById('ast-filter-account');
+    const assetCodeFilter = document.getElementById('ast-filter-asset-code');
     const assetFilter = document.getElementById('ast-filter-asset');
 
     // Populate account code dropdown with unique account codes
@@ -536,18 +543,21 @@ function astSetupInlineFilters() {
 
     const applyFilters = () => {
         const accountTerm = (accountFilter?.value || '').toLowerCase();
+        const assetCodeTerm = (assetCodeFilter?.value || '').toLowerCase();
         const assetTerm = (assetFilter?.value || '').toLowerCase();
 
         const rows = document.querySelectorAll('.balance-row');
         rows.forEach(row => {
             const account = row.dataset.account || '';
+            const assetCode = row.dataset.assetCode || '';
             const asset = row.dataset.asset || '';
             // For dropdown, match exact account code (first part of account string)
             const accountCodeElement = row.querySelector('.account-format');
             const accountCode = accountCodeElement ? accountCodeElement.textContent.trim().toLowerCase() : '';
             const matchesAccount = !accountTerm || accountCode === accountTerm || account.includes(accountTerm);
+            const matchesAssetCode = !assetCodeTerm || assetCode.includes(assetCodeTerm);
             const matchesAsset = !assetTerm || asset.includes(assetTerm);
-            row.style.display = (matchesAccount && matchesAsset) ? '' : 'none';
+            row.style.display = (matchesAccount && matchesAssetCode && matchesAsset) ? '' : 'none';
         });
 
         astRecalculateSummary();
@@ -556,6 +566,7 @@ function astSetupInlineFilters() {
     };
 
     if (accountFilter) accountFilter.addEventListener('change', applyFilters);
+    if (assetCodeFilter) assetCodeFilter.addEventListener('input', applyFilters);
     if (assetFilter) assetFilter.addEventListener('input', applyFilters);
 }
 
@@ -605,21 +616,25 @@ let astPageSize = 15;
 function astGetVisibleRows() {
     const allRows = Array.from(document.querySelectorAll('.balance-row'));
     const accountFilter = document.getElementById('ast-filter-account');
+    const assetCodeFilter = document.getElementById('ast-filter-asset-code');
     const assetFilter = document.getElementById('ast-filter-asset');
     
     const accountTerm = (accountFilter?.value || '').toLowerCase();
+    const assetCodeTerm = (assetCodeFilter?.value || '').toLowerCase();
     const assetTerm = (assetFilter?.value || '').toLowerCase();
     
     // Filter rows based on filter criteria, not display style
     return allRows.filter(row => {
-        if (accountTerm || assetTerm) {
+        if (accountTerm || assetCodeTerm || assetTerm) {
             const account = row.dataset.account || '';
+            const assetCode = row.dataset.assetCode || '';
             const asset = row.dataset.asset || '';
             const accountCodeElement = row.querySelector('.account-format');
             const accountCode = accountCodeElement ? accountCodeElement.textContent.trim().toLowerCase() : '';
             const matchesAccount = !accountTerm || accountCode === accountTerm || account.includes(accountTerm);
+            const matchesAssetCode = !assetCodeTerm || assetCode.includes(assetCodeTerm);
             const matchesAsset = !assetTerm || asset.includes(assetTerm);
-            return matchesAccount && matchesAsset;
+            return matchesAccount && matchesAssetCode && matchesAsset;
         }
         return true; // No filters applied, show all
     });
@@ -1065,14 +1080,15 @@ function handlePrintBalanceList() {
         const accountCodeElement = row.querySelector('.account-format');
         const accountCode = accountCodeElement ? accountCodeElement.textContent.trim() : '';
         const accountName = accountCodeElement ? accountCodeElement.getAttribute('title') || '' : '';
-        const assetName = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.trim() : '';
-        const clientName = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').textContent.trim() : '';
+        const assetCardCode = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.trim() : '';
+        const assetName = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').textContent.trim() : '';
+        const clientName = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').textContent.trim() : '';
         const unitCostText = row.querySelector('.ucost-val') ? row.querySelector('.ucost-val').textContent.trim() : '0';
         const unitPriceText = row.querySelector('.uprice-val') ? row.querySelector('.uprice-val').textContent.trim() : '0';
         const cumulatedDepreciationText = row.querySelector('.cumulated-depreciation-val') ? row.querySelector('.cumulated-depreciation-val').textContent.trim() : '0';
         const remainingCostText = row.querySelector('.remaining-cost-val') ? row.querySelector('.remaining-cost-val').textContent.trim() : '0';
-        const dateText = row.querySelector('td:nth-child(9)') ? row.querySelector('td:nth-child(9)').textContent.trim() : '';
-        const userText = row.querySelector('td:nth-child(10)') ? row.querySelector('td:nth-child(10)').textContent.trim() : '';
+        const dateText = row.querySelector('td:nth-child(10)') ? row.querySelector('td:nth-child(10)').textContent.trim() : '';
+        const userText = row.querySelector('td:nth-child(11)') ? row.querySelector('td:nth-child(11)').textContent.trim() : '';
         
         // Parse numeric values (remove commas)
         const unitCost = parseFloat(unitCostText.replace(/,/g, '')) || 0;
@@ -1086,6 +1102,7 @@ function handlePrintBalanceList() {
         
         return {
             Account: accountCode + (accountNameOnly ? ' - ' + accountNameOnly : ''),
+            AssetCardCode: assetCardCode,
             AssetName: assetName,
             ClientName: clientName === '-' ? '' : clientName,
             UnitCost: unitCost,
