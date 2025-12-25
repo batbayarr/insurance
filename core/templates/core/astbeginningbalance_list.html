@@ -603,25 +603,55 @@ let astCurrentPage = 1;
 let astPageSize = 15;
 
 function astGetVisibleRows() {
-    const rows = Array.from(document.querySelectorAll('.balance-row'));
-    return rows.filter(r => r.style.display !== 'none');
+    const allRows = Array.from(document.querySelectorAll('.balance-row'));
+    const accountFilter = document.getElementById('ast-filter-account');
+    const assetFilter = document.getElementById('ast-filter-asset');
+    
+    const accountTerm = (accountFilter?.value || '').toLowerCase();
+    const assetTerm = (assetFilter?.value || '').toLowerCase();
+    
+    // Filter rows based on filter criteria, not display style
+    return allRows.filter(row => {
+        if (accountTerm || assetTerm) {
+            const account = row.dataset.account || '';
+            const asset = row.dataset.asset || '';
+            const accountCodeElement = row.querySelector('.account-format');
+            const accountCode = accountCodeElement ? accountCodeElement.textContent.trim().toLowerCase() : '';
+            const matchesAccount = !accountTerm || accountCode === accountTerm || account.includes(accountTerm);
+            const matchesAsset = !assetTerm || asset.includes(assetTerm);
+            return matchesAccount && matchesAsset;
+        }
+        return true; // No filters applied, show all
+    });
 }
 
 function astRenderPage() {
+    // Get visible rows (filtered, but not paginated)
     const visible = astGetVisibleRows();
     const total = visible.length;
     const totalPages = Math.max(1, Math.ceil(total / astPageSize));
     if (astCurrentPage > totalPages) astCurrentPage = totalPages;
+    if (astCurrentPage < 1) astCurrentPage = 1;
     const startIndex = (astCurrentPage - 1) * astPageSize;
     const endIndex = Math.min(startIndex + astPageSize, total);
 
+    // Hide all rows first
     const allRows = document.querySelectorAll('.balance-row');
-    allRows.forEach(r => { if (r) r.style.visibility = 'hidden'; });
+    allRows.forEach(r => { 
+        if (r) r.style.display = 'none';
+    });
+    
+    // Show only rows in current page range
     visible.forEach((row, idx) => {
         const inPage = idx >= startIndex && idx < endIndex;
-        row.style.visibility = inPage ? '' : 'hidden';
-        const indexCell = row.querySelector('.row-index');
-        if (indexCell) indexCell.textContent = inPage ? (idx + 1) : '';
+        if (inPage) {
+            row.style.display = '';
+            const indexCell = row.querySelector('.row-index');
+            if (indexCell) {
+                // Correct row number: sequential number starting from startIndex + 1
+                indexCell.textContent = idx + 1;
+            }
+        }
     });
 
     const showingStart = document.getElementById('ast-showing-start');
