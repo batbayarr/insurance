@@ -23,16 +23,21 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             git pull origin main
-            chmod +x deploy.sh || true
+            # Ensure deploy.sh exists and is executable
+            if [ ! -f "deploy.sh" ]; then
+              echo "ERROR: deploy.sh not found!"
+              exit 1
+            fi
+            chmod +x deploy.sh
+            ls -la deploy.sh
             # Check if venv exists, create if not
             if [ ! -d "venv" ]; then
+              echo "Creating virtual environment..."
               python3 -m venv venv
             fi
-            # Run deploy script with error handling
-            bash deploy.sh || {
-              echo "Deploy script failed, checking logs..."
-              exit 1
-            }
+            # Run deploy script with bash (doesn't require execute permission)
+            echo "Running deployment script..."
+            bash deploy.sh
       
       - name: Deployment Status
         if: success()
