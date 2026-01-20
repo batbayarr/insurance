@@ -19,10 +19,12 @@ jobs:
           key: ${{ secrets.VULTR_SSH_KEY }}
           script: |
             cd /var/www/insurance
+            git config --global --add safe.directory /var/www/insurance || true
             git fetch origin
             git reset --hard origin/main
             git pull origin main
-            ./deploy.sh
+            chmod +x deploy.sh
+            bash deploy.sh
       
       - name: Deployment Status
         if: success()
