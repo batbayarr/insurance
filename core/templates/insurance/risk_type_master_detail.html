@@ -1,0 +1,929 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Risk Type & Risk - Silicon-AI Accounting{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ЭРСДЛИЙН ТӨРӨЛ БА ЭРСДЭЛ</h1>            
+        </div>
+        {% if perms.core.add_ref_risk_type %}
+        <button id="btn-add-risk-type" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="text-xs">НЭМЭХ</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Master Grid (Risk Types) -->
+    <div id="risk-type-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-code" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <select id="filter-status" 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                                <option value="true">Идэвхтэй</option>
+                                <option value="false">Идэвхгүй</option>
+                            </select>
+                        </td>
+                        <td class="px-2 py-1">
+                            <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="risk-type-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Risk types will be dynamically loaded here -->
+                </tbody>
+            </table>
+        </div>
+        
+       <!-- Pagination -->
+       <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+           <div class="flex-1 flex justify-between sm:hidden">
+               <button id="prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Өмнөх
+               </button>
+               <button id="next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Дараа
+               </button>
+           </div>
+           <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+               <div>
+                   <p id="pagination-info" class="text-sm text-gray-700">
+                       Нийт <span id="total-count">0</span> бичлэгээс <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                   </p>
+               </div>
+               <div class="flex items-center space-x-4">
+                   <div class="flex items-center space-x-2">
+                       <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                       <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           <option value="10" selected>10</option>
+                           <option value="15">15</option>
+                           <option value="20">20</option>
+                           <option value="50">50</option>
+                       </select>
+                   </div>
+                   <div>
+                       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                           <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Previous</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                           <span id="page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                               <!-- Dynamic page buttons will be generated here -->
+                           </span>
+                           <button id="next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Next</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                       </nav>
+                   </div>
+               </div>
+           </div>
+       </div>
+    </div>
+
+    <!-- Detail Grid will be loaded here via AJAX -->
+    <div id="detail-grid-container">
+        <!-- Detail grid content will be dynamically loaded here -->
+    </div>
+
+</div>
+
+<!-- Risk Type Modal -->
+<div id="risk-type-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="risk-type-modal-title">ЭРСДЛИЙН ТӨРӨЛ НЭМЭХ</h3>
+            <button onclick="closeRiskTypeModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="risk-type-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="risk-type-id" name="risk_type_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="risk-type-code" name="risk_type_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="risk-type-name" name="risk_type_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="risk-type-is-active" name="risk_type_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeRiskTypeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Risk Modal -->
+<div id="risk-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="risk-modal-title">ЭРСДЭЛ НЭМЭХ</h3>
+            <button onclick="closeRiskModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="risk-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="risk-id" name="risk_id">
+            <input type="hidden" id="risk-type-id-hidden" name="risk_type_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="risk-code" name="risk_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="risk-name" name="risk_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Ангилал</label>
+                    <input type="text" id="risk-category-name" name="risk_category_name" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Тайлбар</label>
+                    <textarea id="risk-description" name="risk_description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="risk-is-core-risk" name="risk_is_core_risk" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Үндсэн эрсдэл</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="risk-is-active" name="risk_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeRiskModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Prevent script re-execution
+if (!window.riskTypeMasterDetailScriptLoaded) {
+    window.riskTypeMasterDetailScriptLoaded = true;
+
+// URL templates for dynamic URL generation
+const riskTypeUpdateUrlTemplate = '{% url "core:risk_type_update" 0 %}';
+const riskUpdateUrlTemplate = '{% url "core:risk_update" 0 %}';
+const riskTypeDeleteUrlTemplate = '{% url "core:risk_type_delete" 0 %}';
+const riskDeleteUrlTemplate = '{% url "core:risk_delete" 0 %}';
+const riskCreateUrl = '{% url "core:risk_create" %}';
+
+// Global variables
+let allRiskTypesData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+let selectedRiskTypeId = null;
+let currentRiskTypeRequest = null;
+let currentRiskRequest = null;
+let allRisksData = [];
+
+// Load risk types from API
+function loadRiskTypes() {
+    const tbody = document.getElementById('risk-type-tbody');
+    if (!tbody) return;
+    
+    // Cancel previous request if still in flight
+    if (currentRiskTypeRequest) {
+        currentRiskTypeRequest.abort();
+        currentRiskTypeRequest = null;
+    }
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    
+    // Create new AbortController for this request
+    currentRiskTypeRequest = new AbortController();
+    
+    // Build URL with pagination and filters
+    let url = `/core/api/risk-types/?page=${currentPage}&page_size=${pageSize}`;
+    
+    const filterCode = document.getElementById('filter-code')?.value.trim() || '';
+    const filterName = document.getElementById('filter-name')?.value.trim() || '';
+    const filterStatus = document.getElementById('filter-status')?.value || '';
+    
+    if (filterCode) url += `&code=${encodeURIComponent(filterCode)}`;
+    if (filterName) url += `&name=${encodeURIComponent(filterName)}`;
+    if (filterStatus) url += `&is_active=${filterStatus}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: currentRiskTypeRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentRiskTypeRequest = null;
+        
+        if (data.success) {
+            allRiskTypesData = data.results || [];
+            const totalCount = data.count || 0;
+            totalPages = Math.ceil(totalCount / pageSize);
+            
+            renderRiskTypesTable(allRiskTypesData);
+            updatePaginationInfo((currentPage - 1) * pageSize + 1, Math.min(currentPage * pageSize, totalCount), totalCount);
+            generatePaginationButtons();
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        currentRiskTypeRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error fetching risk types:', error);
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа: ' + error.message + '</td></tr>';
+        }
+    });
+}
+
+// Render risk types table
+function renderRiskTypesTable(riskTypes) {
+    const tbody = document.getElementById('risk-type-tbody');
+    if (!tbody) return;
+    
+    if (riskTypes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td></tr>';
+        return;
+    }
+    
+    const fragment = document.createDocumentFragment();
+    
+    riskTypes.forEach(riskType => {
+        const tr = document.createElement('tr');
+        tr.className = `risk-type-row cursor-pointer hover:bg-gray-50 ${selectedRiskTypeId == riskType.RiskTypeId ? 'bg-blue-50' : ''}`;
+        tr.setAttribute('data-risk-type-id', riskType.RiskTypeId);
+        
+        tr.innerHTML = `
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${riskType.RiskTypeCode || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${riskType.RiskTypeName || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span class="px-2 py-0.5 text-xs rounded-full ${riskType.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${riskType.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                </span>
+            </td>
+            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                <div class="flex items-center justify-center space-x-1">
+                    {% if perms.core.change_ref_risk_type %}
+                    <button onclick="event.stopPropagation(); editRiskType(${riskType.RiskTypeId})" 
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                    {% if perms.core.delete_ref_risk_type %}
+                    <button onclick="event.stopPropagation(); deleteRiskType(${riskType.RiskTypeId}, '${(riskType.RiskTypeName || '').replace(/'/g, "\\'")}')" 
+                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
+        `;
+        
+        // Add click handler for row
+        tr.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            selectRiskType(riskType.RiskTypeId);
+        });
+        
+        fragment.appendChild(tr);
+    });
+    
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+}
+
+// Select risk type and load risks
+function selectRiskType(riskTypeId) {
+    selectedRiskTypeId = riskTypeId;
+    
+    // Update URL without page refresh
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('selected_risk_type', riskTypeId);
+    window.history.pushState({}, '', currentUrl.toString());
+    
+    // Update row selection visual state
+    updateRowSelection(riskTypeId);
+    
+    // Load risks for this risk type
+    loadRisks(riskTypeId);
+}
+
+// Update row selection visual state
+function updateRowSelection(selectedId) {
+    const allRows = document.querySelectorAll('tbody tr[data-risk-type-id]');
+    allRows.forEach(row => {
+        if (row.getAttribute('data-risk-type-id') == selectedId) {
+            row.classList.add('bg-blue-50');
+        } else {
+            row.classList.remove('bg-blue-50');
+        }
+    });
+}
+
+// Load risks for selected risk type
+function loadRisks(riskTypeId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    // Cancel previous request if still in flight
+    if (currentRiskRequest) {
+        currentRiskRequest.abort();
+        currentRiskRequest = null;
+    }
+    
+    // Show loading state
+    showDetailLoadingState();
+    
+    // Create new AbortController for this request
+    currentRiskRequest = new AbortController();
+    
+    // Make AJAX request to load risks
+    fetch(`/core/api/risks/?risk_type_id=${riskTypeId}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+        signal: currentRiskRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentRiskRequest = null;
+        
+        if (data.success) {
+            allRisksData = data.results || [];
+            renderRiskDetailGrid(allRisksData, riskTypeId);
+        } else {
+            showDetailErrorState(data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        currentRiskRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error loading risks:', error);
+            showDetailErrorState(error.message);
+        }
+    });
+}
+
+// Render risk detail grid
+function renderRiskDetailGrid(risks, riskTypeId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    const riskTypeName = allRiskTypesData.find(rt => rt.RiskTypeId == riskTypeId)?.RiskTypeName || '';
+    
+    let html = `
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+            <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+                <div>
+                    <h2 class="text-sm lg:text-base font-medium text-gray-900">
+                        ЭРСДЭЛ - ${riskTypeName}
+                    </h2>
+                </div>
+                {% if perms.core.add_ref_risk %}
+                <button id="btn-add-risk" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span class="text-xs">НЭМЭХ</span>
+                </button>
+                {% endif %}
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ангилал</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үндсэн эрсдэл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="risk-tbody" class="bg-white divide-y divide-gray-200">
+    `;
+    
+    if (risks.length === 0) {
+        html += `
+                        <tr>
+                            <td colspan="6" class="px-2 py-4 text-center text-xs text-gray-500">Мэдээлэл олдсонгүй</td>
+                        </tr>
+        `;
+    } else {
+        risks.forEach(risk => {
+            html += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${risk.RiskCode || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${risk.RiskName || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${risk.CategoryName || '-'}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full ${risk.IsCoreRisk ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                                    ${risk.IsCoreRisk ? 'Тийм' : 'Үгүй'}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full ${risk.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${risk.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                                <div class="flex items-center justify-center space-x-1">
+                                    {% if perms.core.change_ref_risk %}
+                                    <button onclick="editRisk(${risk.RiskId})" 
+                                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                    {% if perms.core.delete_ref_risk %}
+                                    <button onclick="deleteRisk(${risk.RiskId}, '${(risk.RiskName || '').replace(/'/g, "\\'")}')" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+            `;
+        });
+    }
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    detailContainer.innerHTML = html;
+    
+    // Re-attach event listener for add risk button
+    const addRiskBtn = document.getElementById('btn-add-risk');
+    if (addRiskBtn) {
+        addRiskBtn.addEventListener('click', function() {
+            openRiskModal(true, riskTypeId);
+        });
+    }
+}
+
+// Show loading state for detail grid
+function showDetailLoadingState() {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Ачааллаж байна...</h3>
+                    <p class="mt-1 text-xs text-gray-500">Эрсдлийн мэдээллийг ачааллаж байна.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Show error state for detail grid
+function showDetailErrorState(errorMessage) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Алдаа гарлаа</h3>
+                    <p class="mt-1 text-xs text-gray-500">${errorMessage}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Update pagination info
+function updatePaginationInfo(start, end, total) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCount = document.getElementById('total-count');
+    
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : start;
+    if (showingEnd) showingEnd.textContent = end;
+    if (totalCount) totalCount.textContent = total;
+}
+
+// Generate pagination buttons
+function generatePaginationButtons() {
+    const pageInfo = document.getElementById('page-info');
+    if (!pageInfo) return;
+    
+    pageInfo.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${
+            i === currentPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changePage(i));
+        pageInfo.appendChild(button);
+    }
+}
+
+// Change page
+function changePage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    loadRiskTypes();
+}
+
+// Initialize pagination button listeners
+function initializePaginationListeners() {
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    const prevDesktopBtn = document.getElementById('prev-page-desktop');
+    const nextDesktopBtn = document.getElementById('next-page-desktop');
+    
+    if (prevBtn) prevBtn.onclick = () => changePage(currentPage - 1);
+    if (nextBtn) nextBtn.onclick = () => changePage(currentPage + 1);
+    if (prevDesktopBtn) prevDesktopBtn.onclick = () => changePage(currentPage - 1);
+    if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
+}
+
+// Debounce utility
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
+// Initialize filter listeners
+function initializeFilterListeners() {
+    const filterIds = ['filter-code', 'filter-name', 'filter-status'];
+    const debouncedFilter = debounce(() => {
+        currentPage = 1;
+        loadRiskTypes();
+    }, 300);
+    
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+            element.addEventListener(eventType, debouncedFilter);
+        }
+    });
+    
+    const clearBtn = document.getElementById('clear-filters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            filterIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.value = '';
+            });
+            currentPage = 1;
+            loadRiskTypes();
+        });
+    }
+}
+
+// Page size change handler
+function initializePageSizeListener() {
+    const pageSizeSelect = document.getElementById('page-size-select');
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            loadRiskTypes();
+        });
+    }
+}
+
+// Add Risk Type button
+document.getElementById('btn-add-risk-type')?.addEventListener('click', function() {
+    openRiskTypeModal(true);
+});
+
+function openRiskTypeModal(isCreate) {
+    const modal = document.getElementById('risk-type-modal');
+    const form = document.getElementById('risk-type-form');
+    const title = document.getElementById('risk-type-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'ЭРСДЛИЙН ТӨРӨЛ НЭМЭХ';
+        form.action = '{% url "core:risk_type_create" %}';
+        document.getElementById('risk-type-id').value = '';
+        form.reset();
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeRiskTypeModal() {
+    document.getElementById('risk-type-modal').classList.add('hidden');
+}
+
+function openRiskModal(isCreate, riskTypeId) {
+    const modal = document.getElementById('risk-modal');
+    const form = document.getElementById('risk-form');
+    const title = document.getElementById('risk-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'ЭРСДЭЛ НЭМЭХ';
+        form.action = riskCreateUrl;
+        document.getElementById('risk-id').value = '';
+        document.getElementById('risk-type-id-hidden').value = riskTypeId;
+        form.reset();
+        // Set default IsCoreRisk to checked
+        document.getElementById('risk-is-core-risk').checked = true;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+
+function closeRiskModal() {
+    document.getElementById('risk-modal').classList.add('hidden');
+}
+
+function editRiskType(id) {
+    fetch(`/core/api/risk-type/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('risk-type-modal-title').textContent = 'ЭРСДЛИЙН ТӨРӨЛ ЗАСАХ';
+            document.getElementById('risk-type-form').action = riskTypeUpdateUrlTemplate.replace('0', id);
+            document.getElementById('risk-type-id').value = data.RiskTypeId;
+            document.getElementById('risk-type-code').value = data.RiskTypeCode;
+            document.getElementById('risk-type-name').value = data.RiskTypeName;
+            document.getElementById('risk-type-is-active').checked = data.IsActive;
+            document.getElementById('risk-type-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function editRisk(id) {
+    fetch(`/core/api/risk/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('risk-modal-title').textContent = 'ЭРСДЭЛ ЗАСАХ';
+            document.getElementById('risk-form').action = riskUpdateUrlTemplate.replace('0', id);
+            document.getElementById('risk-id').value = data.RiskId;
+            document.getElementById('risk-code').value = data.RiskCode;
+            document.getElementById('risk-name').value = data.RiskName;
+            document.getElementById('risk-category-name').value = data.CategoryName || '';
+            document.getElementById('risk-description').value = data.Description || '';
+            document.getElementById('risk-is-active').checked = data.IsActive;
+            document.getElementById('risk-is-core-risk').checked = data.IsCoreRisk !== false; // Default to true if not set
+            document.getElementById('risk-type-id-hidden').value = data.RiskTypeId;
+            
+            document.getElementById('risk-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function deleteRiskType(id, name) {
+    if (confirm(`"${name}" эрсдлийн төрлийг устгах уу?`)) {
+        fetch(riskTypeDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                loadRiskTypes();
+                // Clear detail grid if deleted risk type was selected
+                if (selectedRiskTypeId == id) {
+                    document.getElementById('detail-grid-container').innerHTML = '';
+                    selectedRiskTypeId = null;
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+function deleteRisk(id, name) {
+    if (confirm(`"${name}" эрсдлийг устгах уу?`)) {
+        fetch(riskDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reload risks for current risk type
+                if (selectedRiskTypeId) {
+                    loadRisks(selectedRiskTypeId);
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+// Form submission handlers
+document.getElementById('risk-type-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('risk-type-form', function() {
+        closeRiskTypeModal();
+        loadRiskTypes();
+    });
+});
+
+document.getElementById('risk-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('risk-form', function() {
+        closeRiskModal();
+        if (selectedRiskTypeId) {
+            loadRisks(selectedRiskTypeId);
+        }
+    });
+});
+
+function submitForm(formId, successCallback) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const action = form.action;
+    
+    fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json().then(data => {
+                if (data.success !== false) {
+                    if (successCallback) successCallback();
+                } else {
+                    alert(data.error || 'Алдаа гарлаа');
+                }
+            }).catch(() => {
+                // If response is not JSON, assume success
+                if (successCallback) successCallback();
+            });
+        } else {
+            return response.json().then(data => {
+                alert(data.error || 'Алдаа гарлаа');
+            }).catch(() => {
+                alert('Серверийн алдаа гарлаа. Дахин оролдоно уу.');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Сүлжээний алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Check URL for selected risk type on page load
+function checkUrlForSelectedRiskType() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedId = urlParams.get('selected_risk_type');
+    if (selectedId) {
+        selectedRiskTypeId = parseInt(selectedId);
+    }
+}
+
+// Initialize everything when DOM is ready
+function initializeAll() {
+    checkUrlForSelectedRiskType();
+    initializeFilterListeners();
+    initializePaginationListeners();
+    initializePageSizeListener();
+    loadRiskTypes();
+    
+    // If risk type is selected in URL, load its risks after a short delay
+    if (selectedRiskTypeId) {
+        setTimeout(() => {
+            updateRowSelection(selectedRiskTypeId);
+            loadRisks(selectedRiskTypeId);
+        }, 500);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll);
+} else {
+    initializeAll();
+}
+
+} // End of execution guard
+</script>
+{% endblock %}
+

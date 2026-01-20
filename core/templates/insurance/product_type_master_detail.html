@@ -1,0 +1,915 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Product Type & Product - Silicon-AI Accounting{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">БҮТЭЭГДЭХҮҮНИЙ ТӨРӨЛ БА БҮТЭЭГДЭХҮҮН</h1>            
+        </div>
+        {% if perms.core.add_ref_product_type %}
+        <button id="btn-add-product-type" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="text-xs">НЭМЭХ</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Master Grid (Product Types) -->
+    <div id="product-type-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">БҮЛЭГ</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-code" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-group" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <select id="filter-status" 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                                <option value="true">Идэвхтэй</option>
+                                <option value="false">Идэвхгүй</option>
+                            </select>
+                        </td>
+                        <td class="px-2 py-1">
+                            <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="product-type-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Product types will be dynamically loaded here -->
+                </tbody>
+            </table>
+        </div>
+        
+       <!-- Pagination -->
+       <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+           <div class="flex-1 flex justify-between sm:hidden">
+               <button id="prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Өмнөх
+               </button>
+               <button id="next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Дараа
+               </button>
+           </div>
+           <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+               <div>
+                   <p id="pagination-info" class="text-sm text-gray-700">
+                       Нийт <span id="total-count">0</span> бичлэгээс <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                   </p>
+               </div>
+               <div class="flex items-center space-x-4">
+                   <div class="flex items-center space-x-2">
+                       <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                       <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           <option value="10" selected>10</option>
+                           <option value="15">15</option>
+                           <option value="20">20</option>
+                           <option value="50">50</option>
+                       </select>
+                   </div>
+                   <div>
+                       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                           <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Previous</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                           <span id="page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                               <!-- Dynamic page buttons will be generated here -->
+                           </span>
+                           <button id="next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Next</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                       </nav>
+                   </div>
+               </div>
+           </div>
+       </div>
+    </div>
+
+    <!-- Detail Grid will be loaded here via AJAX -->
+    <div id="detail-grid-container">
+        <!-- Detail grid content will be dynamically loaded here -->
+    </div>
+
+</div>
+
+<!-- Product Type Modal -->
+<div id="product-type-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="product-type-modal-title">БҮТЭЭГДЭХҮҮНИЙ ТӨРӨЛ НЭМЭХ</h3>
+            <button onclick="closeProductTypeModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="product-type-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="product-type-id" name="product_type_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Бүтээгдэхүүний бүлэг</label>
+                    <select id="product-group-id" name="product_group_id" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <option value="">Сонгох...</option>
+                        {% for group in product_groups %}
+                        <option value="{{ group.ProductGroupId }}">{{ group.ProductGroupCode }} - {{ group.ProductGroupName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="product-type-code" name="product_type_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="product-type-name" name="product_type_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="product-type-is-active" name="product_type_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeProductTypeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Product Modal -->
+<div id="product-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="product-modal-title">БҮТЭЭГДЭХҮҮН НЭМЭХ</h3>
+            <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="product-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="product-id" name="product_id">
+            <input type="hidden" id="product-type-id-hidden" name="product_type_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="product-code" name="product_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="product-name" name="product_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="product-is-active" name="product_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeProductModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Prevent script re-execution
+if (!window.productTypeMasterDetailScriptLoaded) {
+    window.productTypeMasterDetailScriptLoaded = true;
+
+// URL templates for dynamic URL generation
+const productTypeUpdateUrlTemplate = '{% url "core:product_type_update" 0 %}';
+const productUpdateUrlTemplate = '{% url "core:product_update" 0 %}';
+const productTypeDeleteUrlTemplate = '{% url "core:product_type_delete" 0 %}';
+const productDeleteUrlTemplate = '{% url "core:product_delete" 0 %}';
+const productCreateUrl = '{% url "core:product_create" %}';
+
+// Global variables
+let allProductTypesData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+let selectedProductTypeId = null;
+let currentProductTypeRequest = null;
+let currentProductRequest = null;
+
+// Load product types from API
+function loadProductTypes() {
+    const tbody = document.getElementById('product-type-tbody');
+    if (!tbody) return;
+    
+    // Cancel previous request if still in flight
+    if (currentProductTypeRequest) {
+        currentProductTypeRequest.abort();
+        currentProductTypeRequest = null;
+    }
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    
+    // Create new AbortController for this request
+    currentProductTypeRequest = new AbortController();
+    
+    // Build URL with pagination and filters
+    let url = `/core/api/product-types/?page=${currentPage}&page_size=${pageSize}`;
+    
+    const filterCode = document.getElementById('filter-code')?.value.trim() || '';
+    const filterName = document.getElementById('filter-name')?.value.trim() || '';
+    const filterGroup = document.getElementById('filter-group')?.value.trim() || '';
+    const filterStatus = document.getElementById('filter-status')?.value || '';
+    
+    if (filterCode) url += `&code=${encodeURIComponent(filterCode)}`;
+    if (filterName) url += `&name=${encodeURIComponent(filterName)}`;
+    if (filterGroup) url += `&group=${encodeURIComponent(filterGroup)}`;
+    if (filterStatus) url += `&is_active=${filterStatus}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: currentProductTypeRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentProductTypeRequest = null;
+        
+        if (data.success) {
+            allProductTypesData = data.results || [];
+            const totalCount = data.count || 0;
+            totalPages = Math.ceil(totalCount / pageSize);
+            
+            renderProductTypesTable(allProductTypesData);
+            updatePaginationInfo((currentPage - 1) * pageSize + 1, Math.min(currentPage * pageSize, totalCount), totalCount);
+            generatePaginationButtons();
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        currentProductTypeRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error fetching product types:', error);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа: ' + error.message + '</td></tr>';
+        }
+    });
+}
+
+// Render product types table
+function renderProductTypesTable(productTypes) {
+    const tbody = document.getElementById('product-type-tbody');
+    if (!tbody) return;
+    
+    if (productTypes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td></tr>';
+        return;
+    }
+    
+    const fragment = document.createDocumentFragment();
+    
+    productTypes.forEach(productType => {
+        const tr = document.createElement('tr');
+        tr.className = `product-type-row cursor-pointer hover:bg-gray-50 ${selectedProductTypeId == productType.ProductTypeId ? 'bg-blue-50' : ''}`;
+        tr.setAttribute('data-product-type-id', productType.ProductTypeId);
+        
+        tr.innerHTML = `
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${productType.ProductTypeCode || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${productType.ProductTypeName || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${productType.ProductGroupName || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span class="px-2 py-0.5 text-xs rounded-full ${productType.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${productType.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                </span>
+            </td>
+            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                <div class="flex items-center justify-center space-x-1">
+                    {% if perms.core.change_ref_product_type %}
+                    <button onclick="event.stopPropagation(); editProductType(${productType.ProductTypeId})" 
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                    {% if perms.core.delete_ref_product_type %}
+                    <button onclick="event.stopPropagation(); deleteProductType(${productType.ProductTypeId}, '${(productType.ProductTypeName || '').replace(/'/g, "\\'")}')" 
+                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
+        `;
+        
+        // Add click handler for row
+        tr.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            selectProductType(productType.ProductTypeId);
+        });
+        
+        fragment.appendChild(tr);
+    });
+    
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+}
+
+// Select product type and load products
+function selectProductType(productTypeId) {
+    selectedProductTypeId = productTypeId;
+    
+    // Update URL without page refresh
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('selected_product_type', productTypeId);
+    window.history.pushState({}, '', currentUrl.toString());
+    
+    // Update row selection visual state
+    updateRowSelection(productTypeId);
+    
+    // Load products for this product type
+    loadProducts(productTypeId);
+}
+
+// Update row selection visual state
+function updateRowSelection(selectedId) {
+    const allRows = document.querySelectorAll('tbody tr[data-product-type-id]');
+    allRows.forEach(row => {
+        if (row.getAttribute('data-product-type-id') == selectedId) {
+            row.classList.add('bg-blue-50');
+        } else {
+            row.classList.remove('bg-blue-50');
+        }
+    });
+}
+
+// Load products for selected product type
+function loadProducts(productTypeId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    // Cancel previous request if still in flight
+    if (currentProductRequest) {
+        currentProductRequest.abort();
+        currentProductRequest = null;
+    }
+    
+    // Show loading state
+    showDetailLoadingState();
+    
+    // Create new AbortController for this request
+    currentProductRequest = new AbortController();
+    
+    // Make AJAX request to load products
+    fetch(`/core/api/products/?product_type_id=${productTypeId}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+        signal: currentProductRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentProductRequest = null;
+        
+        if (data.success) {
+            renderProductDetailGrid(data.results || [], productTypeId);
+        } else {
+            showDetailErrorState(data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        currentProductRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error loading products:', error);
+            showDetailErrorState(error.message);
+        }
+    });
+}
+
+// Render product detail grid
+function renderProductDetailGrid(products, productTypeId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    const productTypeName = allProductTypesData.find(pt => pt.ProductTypeId == productTypeId)?.ProductTypeName || '';
+    
+    let html = `
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+            <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+                <div>
+                    <h2 class="text-sm lg:text-base font-medium text-gray-900">
+                        БҮТЭЭГДЭХҮҮН - ${productTypeName}
+                    </h2>
+                </div>
+                {% if perms.core.add_ref_product %}
+                <button id="btn-add-product" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span class="text-xs">НЭМЭХ</span>
+                </button>
+                {% endif %}
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-tbody" class="bg-white divide-y divide-gray-200">
+    `;
+    
+    if (products.length === 0) {
+        html += `
+                        <tr>
+                            <td colspan="4" class="px-2 py-4 text-center text-xs text-gray-500">Мэдээлэл олдсонгүй</td>
+                        </tr>
+        `;
+    } else {
+        products.forEach(product => {
+            html += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${product.ProductCode || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${product.ProductName || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full ${product.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${product.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                                <div class="flex items-center justify-center space-x-1">
+                                    {% if perms.core.change_ref_product %}
+                                    <button onclick="editProduct(${product.ProductId})" 
+                                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                    {% if perms.core.delete_ref_product %}
+                                    <button onclick="deleteProduct(${product.ProductId}, '${(product.ProductName || '').replace(/'/g, "\\'")}')" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+            `;
+        });
+    }
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    detailContainer.innerHTML = html;
+    
+    // Re-attach event listener for add product button
+    const addProductBtn = document.getElementById('btn-add-product');
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', function() {
+            openProductModal(true, productTypeId);
+        });
+    }
+}
+
+// Show loading state for detail grid
+function showDetailLoadingState() {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Ачааллаж байна...</h3>
+                    <p class="mt-1 text-xs text-gray-500">Бүтээгдэхүүний мэдээллийг ачааллаж байна.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Show error state for detail grid
+function showDetailErrorState(errorMessage) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Алдаа гарлаа</h3>
+                    <p class="mt-1 text-xs text-gray-500">${errorMessage}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Update pagination info
+function updatePaginationInfo(start, end, total) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCount = document.getElementById('total-count');
+    
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : start;
+    if (showingEnd) showingEnd.textContent = end;
+    if (totalCount) totalCount.textContent = total;
+}
+
+// Generate pagination buttons
+function generatePaginationButtons() {
+    const pageInfo = document.getElementById('page-info');
+    if (!pageInfo) return;
+    
+    pageInfo.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${
+            i === currentPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changePage(i));
+        pageInfo.appendChild(button);
+    }
+}
+
+// Change page
+function changePage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    loadProductTypes();
+}
+
+// Initialize pagination button listeners
+function initializePaginationListeners() {
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    const prevDesktopBtn = document.getElementById('prev-page-desktop');
+    const nextDesktopBtn = document.getElementById('next-page-desktop');
+    
+    if (prevBtn) prevBtn.onclick = () => changePage(currentPage - 1);
+    if (nextBtn) nextBtn.onclick = () => changePage(currentPage + 1);
+    if (prevDesktopBtn) prevDesktopBtn.onclick = () => changePage(currentPage - 1);
+    if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
+}
+
+// Debounce utility
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
+// Initialize filter listeners
+function initializeFilterListeners() {
+    const filterIds = ['filter-code', 'filter-name', 'filter-group', 'filter-status'];
+    const debouncedFilter = debounce(() => {
+        currentPage = 1;
+        loadProductTypes();
+    }, 300);
+    
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+            element.addEventListener(eventType, debouncedFilter);
+        }
+    });
+    
+    const clearBtn = document.getElementById('clear-filters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            filterIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.value = '';
+            });
+            currentPage = 1;
+            loadProductTypes();
+        });
+    }
+}
+
+// Page size change handler
+function initializePageSizeListener() {
+    const pageSizeSelect = document.getElementById('page-size-select');
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            loadProductTypes();
+        });
+    }
+}
+
+// Add Product Type button
+document.getElementById('btn-add-product-type')?.addEventListener('click', function() {
+    openProductTypeModal(true);
+});
+
+function openProductTypeModal(isCreate) {
+    const modal = document.getElementById('product-type-modal');
+    const form = document.getElementById('product-type-form');
+    const title = document.getElementById('product-type-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'БҮТЭЭГДЭХҮҮНИЙ ТӨРӨЛ НЭМЭХ';
+        form.action = '{% url "core:product_type_create" %}';
+        document.getElementById('product-type-id').value = '';
+        form.reset();
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeProductTypeModal() {
+    document.getElementById('product-type-modal').classList.add('hidden');
+}
+
+function openProductModal(isCreate, productTypeId) {
+    const modal = document.getElementById('product-modal');
+    const form = document.getElementById('product-form');
+    const title = document.getElementById('product-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'БҮТЭЭГДЭХҮҮН НЭМЭХ';
+        form.action = productCreateUrl;
+        document.getElementById('product-id').value = '';
+        document.getElementById('product-type-id-hidden').value = productTypeId;
+        form.reset();
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeProductModal() {
+    document.getElementById('product-modal').classList.add('hidden');
+}
+
+function editProductType(id) {
+    fetch(`/core/api/product-type/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('product-type-modal-title').textContent = 'БҮТЭЭГДЭХҮҮНИЙ ТӨРӨЛ ЗАСАХ';
+            document.getElementById('product-type-form').action = productTypeUpdateUrlTemplate.replace('0', id);
+            document.getElementById('product-type-id').value = data.ProductTypeId;
+            document.getElementById('product-group-id').value = data.ProductGroupId;
+            document.getElementById('product-type-code').value = data.ProductTypeCode;
+            document.getElementById('product-type-name').value = data.ProductTypeName;
+            document.getElementById('product-type-is-active').checked = data.IsActive;
+            document.getElementById('product-type-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function editProduct(id) {
+    fetch(`/core/api/product/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('product-modal-title').textContent = 'БҮТЭЭГДЭХҮҮН ЗАСАХ';
+            document.getElementById('product-form').action = productUpdateUrlTemplate.replace('0', id);
+            document.getElementById('product-id').value = data.ProductId;
+            document.getElementById('product-code').value = data.ProductCode;
+            document.getElementById('product-name').value = data.ProductName;
+            document.getElementById('product-is-active').checked = data.IsActive;
+            document.getElementById('product-type-id-hidden').value = data.ProductTypeId;
+            document.getElementById('product-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function deleteProductType(id, name) {
+    if (confirm(`"${name}" бүтээгдэхүүний төрлийг устгах уу?`)) {
+        fetch(productTypeDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                loadProductTypes();
+                // Clear detail grid if deleted product type was selected
+                if (selectedProductTypeId == id) {
+                    document.getElementById('detail-grid-container').innerHTML = '';
+                    selectedProductTypeId = null;
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+function deleteProduct(id, name) {
+    if (confirm(`"${name}" бүтээгдэхүүнийг устгах уу?`)) {
+        fetch(productDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reload products for current product type
+                if (selectedProductTypeId) {
+                    loadProducts(selectedProductTypeId);
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+// Form submission handlers
+document.getElementById('product-type-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('product-type-form', function() {
+        closeProductTypeModal();
+        loadProductTypes();
+    });
+});
+
+document.getElementById('product-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('product-form', function() {
+        closeProductModal();
+        if (selectedProductTypeId) {
+            loadProducts(selectedProductTypeId);
+        }
+    });
+});
+
+function submitForm(formId, successCallback) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const action = form.action;
+    
+    fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json().then(data => {
+                if (data.success !== false) {
+                    if (successCallback) successCallback();
+                } else {
+                    alert(data.error || 'Алдаа гарлаа');
+                }
+            }).catch(() => {
+                // If response is not JSON, assume success
+                if (successCallback) successCallback();
+            });
+        } else {
+            return response.json().then(data => {
+                alert(data.error || 'Алдаа гарлаа');
+            }).catch(() => {
+                alert('Серверийн алдаа гарлаа. Дахин оролдоно уу.');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Сүлжээний алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Check URL for selected product type on page load
+function checkUrlForSelectedProductType() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedId = urlParams.get('selected_product_type');
+    if (selectedId) {
+        selectedProductTypeId = parseInt(selectedId);
+    }
+}
+
+// Initialize everything when DOM is ready
+function initializeAll() {
+    checkUrlForSelectedProductType();
+    initializeFilterListeners();
+    initializePaginationListeners();
+    initializePageSizeListener();
+    loadProductTypes();
+    
+    // If product type is selected in URL, load its products after a short delay
+    if (selectedProductTypeId) {
+        setTimeout(() => {
+            updateRowSelection(selectedProductTypeId);
+            loadProducts(selectedProductTypeId);
+        }, 500);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll);
+} else {
+    initializeAll();
+}
+
+} // End of execution guard
+</script>
+{% endblock %}

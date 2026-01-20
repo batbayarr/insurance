@@ -7,7 +7,7 @@ def set_current_db(db_name: str) -> None:
     _thread_locals.db_name = db_name
 
 
-def get_current_db(default: str = 'silicon4') -> str:
+def get_current_db(default: str = 'insurance') -> str:
     return getattr(_thread_locals, 'db_name', default)
 
 

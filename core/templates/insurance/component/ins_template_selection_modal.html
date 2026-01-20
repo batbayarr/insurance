@@ -1,0 +1,425 @@
+<!-- Policy Template Selection Modal Component -->
+<div id="template-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-6xl min-w-[1200px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Гэрээний загвар сонгох</h3>                
+            </div>
+            <button onclick="closeTemplateSelectionModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Content: Integrated Table -->
+        <div class="p-4">
+            <!-- Integrated Table -->
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-900">Гэрээний загварын дэлгэрэнгүй</h4>
+                </div>
+                
+                <!-- Integrated Table Container -->
+                <div id="integrated-table-container" class="overflow-y-auto" style="max-height: 500px;">
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-sm">Уншиж байна...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <button onclick="closeTemplateSelectionModal()" 
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Цуцлах
+            </button>
+            <button id="select-template-btn" onclick="confirmTemplateSelection()" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Сонгох
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Template Selection Modal Functions
+let selectedTemplateId = null;
+let selectedTemplateName = null;
+let currentTemplatePage = 1;
+let templatePageSize = 10;
+let totalTemplatePages = 1;
+
+window.openTemplateSelectionModal = function() {
+    const modal = document.getElementById('template-selection-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        selectedTemplateId = null;
+        selectedTemplateName = null;
+        document.getElementById('select-template-btn').disabled = true;
+        loadIntegratedTable();
+    } else {
+        console.error('Template selection modal not found!');
+    }
+}
+
+window.closeTemplateSelectionModal = function() {
+    const modal = document.getElementById('template-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        selectedTemplateId = null;
+        selectedTemplateName = null;
+    }
+}
+
+window.selectTemplate = function(templateId, templateName, rowElement) {
+    selectedTemplateId = templateId;
+    selectedTemplateName = templateName;
+    
+    // Update button state
+    const selectBtn = document.getElementById('select-template-btn');
+    if (selectBtn) {
+        selectBtn.disabled = false;
+    }
+    
+    // Remove highlight from all rows
+    document.querySelectorAll('.integrated-row').forEach(row => {
+        row.classList.remove('bg-blue-100');
+    });
+    
+    // Highlight only the specific row that was clicked
+    if (rowElement) {
+        rowElement.classList.add('bg-blue-100');
+    } else {
+        // Fallback: if rowElement not provided, highlight first matching row
+        const firstRow = document.querySelector(`[data-template-id="${templateId}"]`);
+        if (firstRow) {
+            firstRow.classList.add('bg-blue-100');
+        }
+    }
+}
+
+window.confirmTemplateSelection = function() {
+    if (selectedTemplateId && selectedTemplateName) {
+        // Populate the form field
+        const hiddenInput = document.getElementById('policy_template_id');
+        const displayInput = document.getElementById('policy_template_id_display');
+        
+        if (hiddenInput) {
+            hiddenInput.value = selectedTemplateId;
+            // Trigger change event to notify other parts of the form
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        if (displayInput) {
+            displayInput.value = selectedTemplateName;
+        }
+        
+        closeTemplateSelectionModal();
+    } else {
+        alert('Загвар сонгоно уу');
+    }
+}
+
+window.selectAndConfirmTemplate = function(templateId, templateName, rowElement) {
+    // Select the template first (highlight the specific row)
+    selectTemplate(templateId, templateName, rowElement);
+    // Then immediately confirm the selection
+    confirmTemplateSelection();
+}
+
+window.loadIntegratedTable = function() {
+    const container = document.getElementById('integrated-table-container');
+    if (!container) {
+        console.error('Integrated table container not found!');
+        return;
+    }
+    
+    // Show loading
+    container.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Уншиж байна...</p></div>';
+    
+    // Load integrated data from Django Ninja endpoint (single optimized query)
+    fetch(`/api/insurance/policy/templates/integrated`, {
+        credentials: 'include',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(integratedData => {
+        // Django Ninja returns a list directly (not wrapped in success/results)
+        if (!integratedData || integratedData.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Загвар олдсонгүй</h3>
+                </div>
+            `;
+            return;
+        }
+        
+        // Build integrated table from flat list of rows
+        let tableHtml = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">#</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Загварын нэр</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бүтээгдэхүүний бүлэг</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бүтээгдэхүний төрөл</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бүтээгдэхүүн</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эрсдэлийн төрөл</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эрсдэл</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зүйлийн ангилал</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Даатгалын зүйл</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Комиссын %</th>
+                            <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                        </tr>
+                        <!-- Filter Row -->
+                        <tr class="bg-gray-100">
+                            <th class="px-3 py-2 border-r border-gray-200"></th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-template-name" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-product-group" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-product-type" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-product" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-risk-type" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-risk" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-item-type" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-item" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="integrated-table-tbody" class="bg-white divide-y divide-gray-200">
+        `;
+        
+        let rowIndex = 1;
+        integratedData.forEach((row) => {
+            const templateId = row.PolicyTemplateId;
+            const templateName = row.PolicyTemplateName || '';
+            const productGroupName = row.ProductGroupName || '-';
+            const productTypeName = row.ProductTypeName || '-';
+            const productName = row.ProductName || '-';
+            const riskTypeName = row.RiskTypeName || '-';
+            const riskName = row.RiskName || '-';
+            const itemTypeName = row.ItemTypeName || '-';
+            const itemName = row.ItemName || '-';
+            const commPercent = row.CommPercent !== null && row.CommPercent !== undefined ? parseFloat(row.CommPercent).toFixed(2) : '-';
+            
+            // Escape for data attributes
+            const escapedTemplateName = (templateName || '').toLowerCase();
+            const escapedProductGroup = (productGroupName || '').toLowerCase();
+            const escapedProductType = (productTypeName || '').toLowerCase();
+            const escapedProduct = (productName || '').toLowerCase();
+            const escapedRiskType = (riskTypeName || '').toLowerCase();
+            const escapedRisk = (riskName || '').toLowerCase();
+            const escapedItemType = (itemTypeName || '').toLowerCase();
+            const escapedItem = (itemName || '').toLowerCase();
+            
+            // Check if this is a template with no details (all fields are null/empty)
+            const hasDetails = productGroupName !== '-' || productTypeName !== '-' || productName !== '-' || 
+                              riskTypeName !== '-' || riskName !== '-' || itemTypeName !== '-' || itemName !== '-';
+            
+            if (hasDetails) {
+                tableHtml += `
+                    <tr class="integrated-row hover:bg-gray-50 cursor-pointer" 
+                        data-template-id="${templateId}"
+                        data-template-name="${escapedTemplateName}"
+                        data-product-group="${escapedProductGroup}"
+                        data-product-type="${escapedProductType}"
+                        data-product="${escapedProduct}"
+                        data-risk-type="${escapedRiskType}"
+                        data-risk="${escapedRisk}"
+                        data-item-type="${escapedItemType}"
+                        data-item="${escapedItem}"
+                        onclick="selectTemplate(${templateId}, '${templateName.replace(/'/g, "\\'")}', this)">
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200">${rowIndex++}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${templateName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${productGroupName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${productTypeName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${productName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${riskTypeName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${riskName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${itemTypeName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${itemName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${commPercent}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-center">
+                            <button onclick="event.stopPropagation(); const row = this.closest('tr'); selectAndConfirmTemplate(${templateId}, '${templateName.replace(/'/g, "\\'")}', row)" 
+                                    class="px-3 py-1 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                Сонгох
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Template with no details
+                tableHtml += `
+                    <tr class="integrated-row hover:bg-gray-50 cursor-pointer" 
+                        data-template-id="${templateId}"
+                        data-template-name="${escapedTemplateName}"
+                        onclick="selectTemplate(${templateId}, '${templateName.replace(/'/g, "\\'")}', this)">
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200">${rowIndex++}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${templateName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200" colspan="8">Дэлгэрэнгүй мэдээлэл байхгүй</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-center">
+                            <button onclick="event.stopPropagation(); const row = this.closest('tr'); selectAndConfirmTemplate(${templateId}, '${templateName.replace(/'/g, "\\'")}', row)" 
+                                    class="px-3 py-1 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                Сонгох
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+        
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = tableHtml;
+        
+        // Initialize filters after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeIntegratedFilters();
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error loading integrated table:', error);
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Алдаа гарлаа</h3>
+                <p class="mt-1 text-sm text-gray-500">Загварын мэдээллийг ачаалахад алдаа гарлаа.</p>
+                <button onclick="loadIntegratedTable()" class="mt-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Дахин оролдох
+                </button>
+            </div>
+        `;
+    });
+}
+
+// Initialize integrated table filters
+function initializeIntegratedFilters() {
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    const debouncedApplyFilters = debounce(applyIntegratedFilters, 300);
+    
+    // Add filter event listeners
+    const filters = [
+        'filter-template-name',
+        'filter-product-group',
+        'filter-product-type',
+        'filter-product',
+        'filter-risk-type',
+        'filter-risk',
+        'filter-item-type',
+        'filter-item'
+    ];
+    
+    filters.forEach(filterId => {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('input', debouncedApplyFilters);
+        }
+    });
+}
+
+// Apply integrated table filters
+function applyIntegratedFilters() {
+    const templateNameFilter = document.getElementById('filter-template-name')?.value.toLowerCase().trim() || '';
+    const productGroupFilter = document.getElementById('filter-product-group')?.value.toLowerCase().trim() || '';
+    const productTypeFilter = document.getElementById('filter-product-type')?.value.toLowerCase().trim() || '';
+    const productFilter = document.getElementById('filter-product')?.value.toLowerCase().trim() || '';
+    const riskTypeFilter = document.getElementById('filter-risk-type')?.value.toLowerCase().trim() || '';
+    const riskFilter = document.getElementById('filter-risk')?.value.toLowerCase().trim() || '';
+    const itemTypeFilter = document.getElementById('filter-item-type')?.value.toLowerCase().trim() || '';
+    const itemFilter = document.getElementById('filter-item')?.value.toLowerCase().trim() || '';
+    
+    const rows = document.querySelectorAll('.integrated-row');
+    
+    rows.forEach(row => {
+        const templateName = row.getAttribute('data-template-name') || '';
+        const productGroup = row.getAttribute('data-product-group') || '';
+        const productType = row.getAttribute('data-product-type') || '';
+        const product = row.getAttribute('data-product') || '';
+        const riskType = row.getAttribute('data-risk-type') || '';
+        const risk = row.getAttribute('data-risk') || '';
+        const itemType = row.getAttribute('data-item-type') || '';
+        const item = row.getAttribute('data-item') || '';
+        
+        let shouldShow = true;
+        
+        if (templateNameFilter && !templateName.includes(templateNameFilter)) shouldShow = false;
+        if (productGroupFilter && !productGroup.includes(productGroupFilter)) shouldShow = false;
+        if (productTypeFilter && !productType.includes(productTypeFilter)) shouldShow = false;
+        if (productFilter && !product.includes(productFilter)) shouldShow = false;
+        if (riskTypeFilter && !riskType.includes(riskTypeFilter)) shouldShow = false;
+        if (riskFilter && !risk.includes(riskFilter)) shouldShow = false;
+        if (itemTypeFilter && !itemType.includes(itemTypeFilter)) shouldShow = false;
+        if (itemFilter && !item.includes(itemFilter)) shouldShow = false;
+        
+        if (shouldShow) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+
+
+
+</script>
+

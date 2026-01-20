@@ -221,4 +221,114 @@ urlpatterns = [
     
     path('api/test/', views.test_api, name='test_api'),
 
+    # Insurance Product Type & Product (Master-Detail)
+    path('product-types/', views.product_type_master_detail, name='product_type_master_detail'),
+    path('product-types/create/', views.product_type_create, name='product_type_create'),
+    path('product-types/<int:pk>/update/', views.product_type_update, name='product_type_update'),
+    path('product-types/<int:pk>/delete/', views.product_type_delete, name='product_type_delete'),
+    path('products/create/', views.product_create, name='product_create'),
+    path('products/<int:pk>/update/', views.product_update, name='product_update'),
+    path('products/<int:pk>/delete/', views.product_delete, name='product_delete'),
+    
+    # API endpoints for product type and product
+    path('api/product-types/', views.api_product_types_list, name='api_product_types_list'),
+    path('api/product-type/<int:pk>/', views.api_product_type_detail, name='api_product_type_detail'),
+    path('api/products/', views.api_products_list, name='api_products_list'),
+    path('api/product/<int:pk>/', views.api_product_detail, name='api_product_detail'),
+    
+    # Insurance Risk Type & Risk (Master-Detail)
+    path('risk-types/', views.risk_type_master_detail, name='risk_type_master_detail'),
+    path('risk-types/create/', views.risk_type_create, name='risk_type_create'),
+    path('risk-types/<int:pk>/update/', views.risk_type_update, name='risk_type_update'),
+    path('risk-types/<int:pk>/delete/', views.risk_type_delete, name='risk_type_delete'),
+    path('risks/create/', views.risk_create, name='risk_create'),
+    path('risks/<int:pk>/update/', views.risk_update, name='risk_update'),
+    path('risks/<int:pk>/delete/', views.risk_delete, name='risk_delete'),
+    
+    # API endpoints for risk type and risk
+    path('api/risk-types/', views.api_risk_types_list, name='api_risk_types_list'),
+    path('api/risk-type/<int:pk>/', views.api_risk_type_detail, name='api_risk_type_detail'),
+    path('api/risks/', views.api_risks_list, name='api_risks_list'),
+    path('api/risk/<int:pk>/', views.api_risk_detail, name='api_risk_detail'),
+    
+    # Insurance Item & Item Question (Master-Detail)
+    path('items/', views.item_master_detail, name='item_master_detail'),
+    path('items/create/', views.item_create, name='item_create'),
+    path('items/<int:pk>/update/', views.item_update, name='item_update'),
+    path('items/<int:pk>/delete/', views.item_delete, name='item_delete'),
+    path('item-questions/create/', views.item_question_create, name='item_question_create'),
+    path('item-questions/<int:pk>/update/', views.item_question_update, name='item_question_update'),
+    path('item-questions/<int:pk>/delete/', views.item_question_delete, name='item_question_delete'),
+    
+    # API endpoints for item and item question
+    path('api/items/', views.api_items_list, name='api_items_list'),
+    path('api/item/<int:pk>/', views.api_item_detail, name='api_item_detail'),
+    path('api/item-questions/', views.api_item_questions_list, name='api_item_questions_list'),
+    path('api/item-question/<int:pk>/', views.api_item_question_detail, name='api_item_question_detail'),
+
+    # Insurance Policy Template & Detail (Master-Detail)
+    path('insurance-templates/', views.template_management, name='template_management'),
+    
+    # Insurance Policy List
+    path('policies/', views.policy_list, name='policy_list'),
+    path('policies/<int:policy_id>/update/', views.policy_update, name='policy_update'),
+    path('policies/<int:policy_id>/delete/', views.policy_delete, name='policy_delete'),
+    path('api/templates/upload-file/', views.api_template_upload_file, name='api_template_upload_file'),
+    path('policy-templates/create/', views.policy_template_create, name='policy_template_create'),
+    path('policy-templates/<int:pk>/update/', views.policy_template_update, name='policy_template_update'),
+    path('policy-templates/<int:pk>/delete/', views.policy_template_delete, name='policy_template_delete'),
+    # API endpoints for policy template
+    path('api/policy-template/<int:pk>/', views.api_policy_template_detail, name='api_policy_template_detail'),
+    path('api/policy-template/<int:template_id>/full-data/', views.api_policy_template_full_data, name='api_policy_template_full_data'),
+
+    # Insurance Policy
+    path('policies/create/', views.policy_create, name='policy_create'),
+    path('policies/<int:policy_id>/generate-word/', views.policy_generate_word, name='policy_generate_word'),
+    path('api/policy-item/<int:policy_main_product_item_id>/questions/', views.api_policy_item_questions, name='api_policy_item_questions'),
+    path('api/policy-item/<int:policy_main_product_item_id>/risks/', views.api_policy_item_risks, name='api_policy_item_risks'),
+    path('api/policy/<int:policy_id>/edit-data/', views.api_policy_edit_data, name='api_policy_edit_data'),
+    
+    # Insurance Item Type
+    path('item-types/', views.item_type_list, name='item_type_list'),
+    path('item-types/create/', views.item_type_create, name='item_type_create'),
+    path('item-types/<int:pk>/update/', views.item_type_update, name='item_type_update'),
+    path('item-types/<int:pk>/delete/', views.item_type_delete, name='item_type_delete'),
+    # API endpoints for item type
+    path('api/item-types/', views.api_item_types_list, name='api_item_types_list'),
+    path('api/item-type/<int:pk>/', views.api_item_type_detail, name='api_item_type_detail'),
+    
+    # Insurance Branch
+    path('branches/', views.branch_list, name='branch_list'),
+    path('branches/create/', views.branch_create, name='branch_create'),
+    path('branches/<int:pk>/update/', views.branch_update, name='branch_update'),
+    path('branches/<int:pk>/delete/', views.branch_delete, name='branch_delete'),
+    # API endpoints for branch
+    path('api/branches/', views.api_branches_list, name='api_branches_list'),
+    path('api/branch/<int:pk>/', views.api_branch_detail, name='api_branch_detail'),
+    
+    # Insurance Channel
+    path('channels/', views.channel_list, name='channel_list'),
+    path('channels/create/', views.channel_create, name='channel_create'),
+    path('channels/<int:pk>/update/', views.channel_update, name='channel_update'),
+    path('channels/<int:pk>/delete/', views.channel_delete, name='channel_delete'),
+    # API endpoints for channel
+    path('api/channels/', views.api_channels_list, name='api_channels_list'),
+    path('api/channel/<int:pk>/', views.api_channel_detail, name='api_channel_detail'),
+    # API endpoint for user branch and channel
+    path('api/user-branch-channel/', views.api_user_branch_channel, name='api_user_branch_channel'),
+    # API endpoint for branch users (for agent dropdown)
+    path('api/branch-users/', views.api_branch_users_list, name='api_branch_users_list'),
+    # API endpoint for currencies
+    path('api/currencies/', views.api_currencies_list, name='api_currencies_list'),
+    
+    # Template Design
+    path('template-designs/', views.template_design_list, name='template_design_list'),
+    path('template-designs/create/', views.template_design_create, name='template_design_create'),
+    path('template-designs/<int:pk>/update/', views.template_design_update, name='template_design_update'),
+    path('template-designs/<int:pk>/delete/', views.template_design_delete, name='template_design_delete'),
+    # API endpoints for template design
+    path('api/template-designs/', views.api_template_designs_list, name='api_template_designs_list'),
+    path('api/template-design/<int:pk>/', views.api_template_design_detail, name='api_template_design_detail'),
+    path('api/table-fields/<str:table_name>/', views.api_table_fields, name='api_table_fields'),
+
     ] 

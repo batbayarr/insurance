@@ -1,18 +1,18 @@
 [Unit]
-Description=Gunicorn daemon for Silicon4 Accounting Django Application
+Description=Gunicorn daemon for Insurance Django Application
 After=network.target
 
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/silicon4_accounting
-Environment="PATH=/var/www/silicon4_accounting/venv/bin"
-EnvironmentFile=/var/www/silicon4_accounting/.env
-ExecStart=/var/www/silicon4_accounting/venv/bin/gunicorn \
+WorkingDirectory=/var/www/insurance
+Environment="PATH=/var/www/insurance/venv/bin"
+EnvironmentFile=/var/www/insurance/.env
+ExecStart=/var/www/insurance/venv/bin/gunicorn \
           --workers 3 \
-          --bind unix:/var/www/silicon4_accounting/gunicorn.sock \
-          --access-logfile /var/www/silicon4_accounting/logs/gunicorn-access.log \
-          --error-logfile /var/www/silicon4_accounting/logs/gunicorn-error.log \
+          --bind unix:/var/www/insurance/gunicorn.sock \
+          --access-logfile /var/www/insurance/logs/gunicorn-access.log \
+          --error-logfile /var/www/insurance/logs/gunicorn-error.log \
           --log-level info \
           config.wsgi:application
 

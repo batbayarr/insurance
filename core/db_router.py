@@ -23,7 +23,14 @@ class MultiTenantRouter:
         return self._get_tenant_db()
     
     def allow_migrate(self, db, app_label, model_name=None, **hints):
-        """Only allow migrations on the default database (admin/seed database)."""
+        """
+        Route migrations to insurance database for core app, default for Django built-in apps.
+        This makes insurance the default migration database for the core application.
+        """
+        # For core app, only allow migrations on insurance database
+        if app_label == 'core':
+            return db == 'insurance'
+        # For Django built-in apps (admin, auth, contenttypes, sessions), use default
         return db == 'default'
     
     def _get_tenant_db(self):

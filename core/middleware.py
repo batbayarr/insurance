@@ -14,7 +14,7 @@ class DatabaseSelectionMiddleware:
     
     def __call__(self, request):
         # Get the selected database from session
-        selected_db = request.session.get('selected_database', 'silicon4')
+        selected_db = request.session.get('selected_database', 'insurance')
         company_code = request.session.get('company_code', '')
         
         # Set per-request DB context (thread-local)

@@ -1,0 +1,950 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Item & Item Question - Silicon-AI Accounting{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ДААТГАЛЫН ЗҮЙЛ БА АСУУЛТ</h1>            
+        </div>
+        {% if perms.core.add_ref_item %}
+        <button id="btn-add-item" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="text-xs">НЭМЭХ</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Master Grid (Items) -->
+    <div id="item-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-code" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-type" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <select id="filter-status" 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                                <option value="true">Идэвхтэй</option>
+                                <option value="false">Идэвхгүй</option>
+                            </select>
+                        </td>
+                        <td class="px-2 py-1">
+                            <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                Clear
+                            </button>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="item-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Items will be dynamically loaded here -->
+                </tbody>
+            </table>
+        </div>
+        
+       <!-- Pagination -->
+       <div class="bg-white px-4 py-1 flex items-center justify-between border-t border-gray-200 sm:px-6">
+           <div class="flex-1 flex justify-between sm:hidden">
+               <button id="prev-page-btn" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Өмнөх
+               </button>
+               <button id="next-page-btn" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                   Дараа
+               </button>
+           </div>
+           <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+               <div>
+                   <p id="pagination-info" class="text-sm text-gray-700">
+                       Нийт <span id="total-count">0</span> бичлэгээс <span id="showing-start">0</span> - <span id="showing-end">0</span> бичлэг харагдаж байна
+                   </p>
+               </div>
+               <div class="flex items-center space-x-4">
+                   <div class="flex items-center space-x-2">
+                       <label for="page-size-select" class="text-sm font-medium text-gray-700">Хуудасны хэмжээ:</label>
+                       <select id="page-size-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           <option value="10" selected>10</option>
+                           <option value="15">15</option>
+                           <option value="20">20</option>
+                           <option value="50">50</option>
+                       </select>
+                   </div>
+                   <div>
+                       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                           <button id="prev-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Previous</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                           <span id="page-info" class="relative inline-flex gap-2 items-center px-4 py-1 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                               <!-- Dynamic page buttons will be generated here -->
+                           </span>
+                           <button id="next-page-desktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                               <span class="sr-only">Next</span>
+                               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                   <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                               </svg>
+                           </button>
+                       </nav>
+                   </div>
+               </div>
+           </div>
+       </div>
+    </div>
+
+    <!-- Detail Grid will be loaded here via AJAX -->
+    <div id="detail-grid-container">
+        <!-- Detail grid content will be dynamically loaded here -->
+    </div>
+
+</div>
+
+<!-- Item Modal -->
+<div id="item-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="item-modal-title">ДААТГАЛЫН ЗҮЙЛ НЭМЭХ</h3>
+            <button onclick="closeItemModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="item-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="item-id" name="item_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Даатгалын зүйлийн төрөл</label>
+                    <select id="item-type-id" name="item_type_id" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <option value="">Сонгох...</option>
+                        {% for item_type in item_types %}
+                        <option value="{{ item_type.ItemTypeId }}">{{ item_type.ItemTypeCode }} - {{ item_type.ItemTypeName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="item-code" name="item_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="item-name" name="item_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="item-is-active" name="item_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeItemModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Item Question Modal -->
+<div id="item-question-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="item-question-modal-title">АСУУЛТ НЭМЭХ</h3>
+            <button onclick="closeItemQuestionModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="item-question-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="item-question-id" name="item_question_id">
+            <input type="hidden" id="item-id-hidden" name="item_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Код</label>
+                    <input type="text" id="item-question-code" name="item_question_code" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр</label>
+                    <input type="text" id="item-question-name" name="item_question_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Асуултын төрөл</label>
+                    <input type="text" id="item-question-type" name="item_question_type" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Талбарын төрөл</label>
+                    <input type="text" id="item-question-field-type" name="item_question_field_type" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Талбарын утга</label>
+                    <input type="text" id="item-question-field-value" name="item_question_field_value" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Дараалал</label>
+                    <input type="number" id="item-question-order" name="item_question_order" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Талбарын маск</label>
+                    <input type="text" id="item-question-field-mask" name="item_question_field_mask" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="item-question-is-active" name="item_question_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeItemQuestionModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Prevent script re-execution
+if (!window.itemQuestionMasterDetailScriptLoaded) {
+    window.itemQuestionMasterDetailScriptLoaded = true;
+
+// URL templates for dynamic URL generation
+const itemUpdateUrlTemplate = '{% url "core:item_update" 0 %}';
+const itemQuestionUpdateUrlTemplate = '{% url "core:item_question_update" 0 %}';
+const itemDeleteUrlTemplate = '{% url "core:item_delete" 0 %}';
+const itemQuestionDeleteUrlTemplate = '{% url "core:item_question_delete" 0 %}';
+const itemQuestionCreateUrl = '{% url "core:item_question_create" %}';
+
+// Global variables
+let allItemsData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+let selectedItemId = null;
+let currentItemRequest = null;
+let currentItemQuestionRequest = null;
+let allItemQuestionsData = [];
+
+// Load items from API
+function loadItems() {
+    const tbody = document.getElementById('item-tbody');
+    if (!tbody) return;
+    
+    // Cancel previous request if still in flight
+    if (currentItemRequest) {
+        currentItemRequest.abort();
+        currentItemRequest = null;
+    }
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    
+    // Create new AbortController for this request
+    currentItemRequest = new AbortController();
+    
+    // Build URL with pagination and filters
+    let url = `/core/api/items/?page=${currentPage}&page_size=${pageSize}`;
+    
+    const filterCode = document.getElementById('filter-code')?.value.trim() || '';
+    const filterName = document.getElementById('filter-name')?.value.trim() || '';
+    const filterType = document.getElementById('filter-type')?.value.trim() || '';
+    const filterStatus = document.getElementById('filter-status')?.value || '';
+    
+    if (filterCode) url += `&code=${encodeURIComponent(filterCode)}`;
+    if (filterName) url += `&name=${encodeURIComponent(filterName)}`;
+    if (filterType) url += `&type=${encodeURIComponent(filterType)}`;
+    if (filterStatus) url += `&is_active=${filterStatus}`;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: currentItemRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentItemRequest = null;
+        
+        if (data.success) {
+            allItemsData = data.results || [];
+            const totalCount = data.count || 0;
+            totalPages = Math.ceil(totalCount / pageSize);
+            
+            renderItemsTable(allItemsData);
+            updatePaginationInfo((currentPage - 1) * pageSize + 1, Math.min(currentPage * pageSize, totalCount), totalCount);
+            generatePaginationButtons();
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        currentItemRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error fetching items:', error);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-600">Сүлжээний алдаа гарлаа: ' + error.message + '</td></tr>';
+        }
+    });
+}
+
+// Render items table
+function renderItemsTable(items) {
+    const tbody = document.getElementById('item-tbody');
+    if (!tbody) return;
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td></tr>';
+        return;
+    }
+    
+    const fragment = document.createDocumentFragment();
+    
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = `item-row cursor-pointer hover:bg-gray-50 ${selectedItemId == item.ItemId ? 'bg-blue-50' : ''}`;
+        tr.setAttribute('data-item-id', item.ItemId);
+        
+        tr.innerHTML = `
+            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${item.ItemCode || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${item.ItemName || ''}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${item.ItemTypeName || '-'}</td>
+            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                <span class="px-2 py-0.5 text-xs rounded-full ${item.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${item.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                </span>
+            </td>
+            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                <div class="flex items-center justify-center space-x-1">
+                    {% if perms.core.change_ref_item %}
+                    <button onclick="event.stopPropagation(); editItem(${item.ItemId})" 
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                    {% if perms.core.delete_ref_item %}
+                    <button onclick="event.stopPropagation(); deleteItem(${item.ItemId}, '${(item.ItemName || '').replace(/'/g, "\\'")}')" 
+                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
+        `;
+        
+        // Add click handler for row
+        tr.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            selectItem(item.ItemId);
+        });
+        
+        fragment.appendChild(tr);
+    });
+    
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+}
+
+// Select item and load item questions
+function selectItem(itemId) {
+    selectedItemId = itemId;
+    
+    // Update URL without page refresh
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('selected_item', itemId);
+    window.history.pushState({}, '', currentUrl.toString());
+    
+    // Update row selection visual state
+    updateRowSelection(itemId);
+    
+    // Load item questions for this item
+    loadItemQuestions(itemId);
+}
+
+// Update row selection visual state
+function updateRowSelection(selectedId) {
+    const allRows = document.querySelectorAll('tbody tr[data-item-id]');
+    allRows.forEach(row => {
+        if (row.getAttribute('data-item-id') == selectedId) {
+            row.classList.add('bg-blue-50');
+        } else {
+            row.classList.remove('bg-blue-50');
+        }
+    });
+}
+
+// Load item questions for selected item
+function loadItemQuestions(itemId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    // Cancel previous request if still in flight
+    if (currentItemQuestionRequest) {
+        currentItemQuestionRequest.abort();
+        currentItemQuestionRequest = null;
+    }
+    
+    // Show loading state
+    showDetailLoadingState();
+    
+    // Create new AbortController for this request
+    currentItemQuestionRequest = new AbortController();
+    
+    // Make AJAX request to load item questions
+    fetch(`/core/api/item-questions/?item_id=${itemId}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+        signal: currentItemQuestionRequest.signal
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentItemQuestionRequest = null;
+        
+        if (data.success) {
+            allItemQuestionsData = data.results || [];
+            renderItemQuestionDetailGrid(allItemQuestionsData, itemId);
+        } else {
+            showDetailErrorState(data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        currentItemQuestionRequest = null;
+        if (error.name !== 'AbortError') {
+            console.error('Error loading item questions:', error);
+            showDetailErrorState(error.message);
+        }
+    });
+}
+
+// Render item question detail grid
+function renderItemQuestionDetailGrid(itemQuestions, itemId) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (!detailContainer) return;
+    
+    const itemName = allItemsData.find(i => i.ItemId == itemId)?.ItemName || '';
+    
+    let html = `
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+            <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+                <div>
+                    <h2 class="text-sm lg:text-base font-medium text-gray-900">
+                        АСУУЛТ - ${itemName}
+                    </h2>
+                </div>
+                {% if perms.core.add_ref_item_question %}
+                <button id="btn-add-item-question" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span class="text-xs">НЭМЭХ</span>
+                </button>
+                {% endif %}
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Асуултын төрөл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Талбарын төрөл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дараалал</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="item-question-tbody" class="bg-white divide-y divide-gray-200">
+    `;
+    
+    if (itemQuestions.length === 0) {
+        html += `
+                        <tr>
+                            <td colspan="7" class="px-2 py-4 text-center text-xs text-gray-500">Мэдээлэл олдсонгүй</td>
+                        </tr>
+        `;
+    } else {
+        itemQuestions.forEach(itemQuestion => {
+            html += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${itemQuestion.ItemQuestionCode || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${itemQuestion.ItemQuestionName || ''}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${itemQuestion.QuestionType || '-'}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${itemQuestion.FieldType || '-'}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${itemQuestion.Order || 0}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full ${itemQuestion.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${itemQuestion.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                                <div class="flex items-center justify-center space-x-1">
+                                    {% if perms.core.change_ref_item_question %}
+                                    <button onclick="editItemQuestion(${itemQuestion.ItemQuestionId})" 
+                                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                    {% if perms.core.delete_ref_item_question %}
+                                    <button onclick="deleteItemQuestion(${itemQuestion.ItemQuestionId}, '${(itemQuestion.ItemQuestionName || '').replace(/'/g, "\\'")}')" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+            `;
+        });
+    }
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    detailContainer.innerHTML = html;
+    
+    // Re-attach event listener for add item question button
+    const addItemQuestionBtn = document.getElementById('btn-add-item-question');
+    if (addItemQuestionBtn) {
+        addItemQuestionBtn.addEventListener('click', function() {
+            openItemQuestionModal(true, itemId);
+        });
+    }
+}
+
+// Show loading state for detail grid
+function showDetailLoadingState() {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Ачааллаж байна...</h3>
+                    <p class="mt-1 text-xs text-gray-500">Асуултын мэдээллийг ачааллаж байна.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Show error state for detail grid
+function showDetailErrorState(errorMessage) {
+    const detailContainer = document.getElementById('detail-grid-container');
+    if (detailContainer) {
+        detailContainer.innerHTML = `
+            <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0 mt-4">
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-xs font-medium text-gray-900">Алдаа гарлаа</h3>
+                    <p class="mt-1 text-xs text-gray-500">${errorMessage}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Update pagination info
+function updatePaginationInfo(start, end, total) {
+    const showingStart = document.getElementById('showing-start');
+    const showingEnd = document.getElementById('showing-end');
+    const totalCount = document.getElementById('total-count');
+    
+    if (showingStart) showingStart.textContent = total === 0 ? 0 : start;
+    if (showingEnd) showingEnd.textContent = end;
+    if (totalCount) totalCount.textContent = total;
+}
+
+// Generate pagination buttons
+function generatePaginationButtons() {
+    const pageInfo = document.getElementById('page-info');
+    if (!pageInfo) return;
+    
+    pageInfo.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `px-2 py-1 text-sm rounded-md ${
+            i === currentPage 
+                ? 'bg-blue-400 text-white hover:bg-blue-500' 
+                : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+        }`;
+        button.addEventListener('click', () => changePage(i));
+        pageInfo.appendChild(button);
+    }
+}
+
+// Change page
+function changePage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    loadItems();
+}
+
+// Initialize pagination button listeners
+function initializePaginationListeners() {
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    const prevDesktopBtn = document.getElementById('prev-page-desktop');
+    const nextDesktopBtn = document.getElementById('next-page-desktop');
+    
+    if (prevBtn) prevBtn.onclick = () => changePage(currentPage - 1);
+    if (nextBtn) nextBtn.onclick = () => changePage(currentPage + 1);
+    if (prevDesktopBtn) prevDesktopBtn.onclick = () => changePage(currentPage - 1);
+    if (nextDesktopBtn) nextDesktopBtn.onclick = () => changePage(currentPage + 1);
+}
+
+// Debounce utility
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
+// Initialize filter listeners
+function initializeFilterListeners() {
+    const filterIds = ['filter-code', 'filter-name', 'filter-type', 'filter-status'];
+    const debouncedFilter = debounce(() => {
+        currentPage = 1;
+        loadItems();
+    }, 300);
+    
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+            element.addEventListener(eventType, debouncedFilter);
+        }
+    });
+    
+    const clearBtn = document.getElementById('clear-filters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            filterIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.value = '';
+            });
+            currentPage = 1;
+            loadItems();
+        });
+    }
+}
+
+// Page size change handler
+function initializePageSizeListener() {
+    const pageSizeSelect = document.getElementById('page-size-select');
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            loadItems();
+        });
+    }
+}
+
+// Add Item button
+document.getElementById('btn-add-item')?.addEventListener('click', function() {
+    openItemModal(true);
+});
+
+function openItemModal(isCreate) {
+    const modal = document.getElementById('item-modal');
+    const form = document.getElementById('item-form');
+    const title = document.getElementById('item-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'ДААТГАЛЫН ЗҮЙЛ НЭМЭХ';
+        form.action = '{% url "core:item_create" %}';
+        document.getElementById('item-id').value = '';
+        form.reset();
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeItemModal() {
+    document.getElementById('item-modal').classList.add('hidden');
+}
+
+function openItemQuestionModal(isCreate, itemId) {
+    const modal = document.getElementById('item-question-modal');
+    const form = document.getElementById('item-question-form');
+    const title = document.getElementById('item-question-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'АСУУЛТ НЭМЭХ';
+        form.action = itemQuestionCreateUrl;
+        document.getElementById('item-question-id').value = '';
+        document.getElementById('item-id-hidden').value = itemId;
+        form.reset();
+        document.getElementById('item-question-order').value = '0';
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeItemQuestionModal() {
+    document.getElementById('item-question-modal').classList.add('hidden');
+}
+
+function editItem(id) {
+    fetch(`/core/api/item/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('item-modal-title').textContent = 'ДААТГАЛЫН ЗҮЙЛ ЗАСАХ';
+            document.getElementById('item-form').action = itemUpdateUrlTemplate.replace('0', id);
+            document.getElementById('item-id').value = data.ItemId;
+            document.getElementById('item-type-id').value = data.ItemTypeId;
+            document.getElementById('item-code').value = data.ItemCode;
+            document.getElementById('item-name').value = data.ItemName;
+            document.getElementById('item-is-active').checked = data.IsActive;
+            document.getElementById('item-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function editItemQuestion(id) {
+    fetch(`/core/api/item-question/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('item-question-modal-title').textContent = 'АСУУЛТ ЗАСАХ';
+            document.getElementById('item-question-form').action = itemQuestionUpdateUrlTemplate.replace('0', id);
+            document.getElementById('item-question-id').value = data.ItemQuestionId;
+            document.getElementById('item-question-code').value = data.ItemQuestionCode;
+            document.getElementById('item-question-name').value = data.ItemQuestionName;
+            document.getElementById('item-question-type').value = data.QuestionType || '';
+            document.getElementById('item-question-field-type').value = data.FieldType || '';
+            document.getElementById('item-question-field-value').value = data.FieldValue || '';
+            document.getElementById('item-question-order').value = data.Order || 0;
+            document.getElementById('item-question-field-mask').value = data.FieldMask || '';
+            document.getElementById('item-question-is-active').checked = data.IsActive;
+            document.getElementById('item-id-hidden').value = data.ItemId;
+            document.getElementById('item-question-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function deleteItem(id, name) {
+    if (confirm(`"${name}" даатгалын зүйлийг устгах уу?`)) {
+        fetch(itemDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                loadItems();
+                // Clear detail grid if deleted item was selected
+                if (selectedItemId == id) {
+                    document.getElementById('detail-grid-container').innerHTML = '';
+                    selectedItemId = null;
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+function deleteItemQuestion(id, name) {
+    if (confirm(`"${name}" асуултыг устгах уу?`)) {
+        fetch(itemQuestionDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reload item questions for current item
+                if (selectedItemId) {
+                    loadItemQuestions(selectedItemId);
+                }
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+// Form submission handlers
+document.getElementById('item-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('item-form', function() {
+        closeItemModal();
+        loadItems();
+    });
+});
+
+document.getElementById('item-question-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('item-question-form', function() {
+        closeItemQuestionModal();
+        if (selectedItemId) {
+            loadItemQuestions(selectedItemId);
+        }
+    });
+});
+
+function submitForm(formId, successCallback) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const action = form.action;
+    
+    fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json().then(data => {
+                if (data.success !== false) {
+                    if (successCallback) successCallback();
+                } else {
+                    alert(data.error || 'Алдаа гарлаа');
+                }
+            }).catch(() => {
+                // If response is not JSON, assume success
+                if (successCallback) successCallback();
+            });
+        } else {
+            return response.json().then(data => {
+                alert(data.error || 'Алдаа гарлаа');
+            }).catch(() => {
+                alert('Серверийн алдаа гарлаа. Дахин оролдоно уу.');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Сүлжээний алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Check URL for selected item on page load
+function checkUrlForSelectedItem() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedId = urlParams.get('selected_item');
+    if (selectedId) {
+        selectedItemId = parseInt(selectedId);
+    }
+}
+
+// Initialize everything when DOM is ready
+function initializeAll() {
+    checkUrlForSelectedItem();
+    initializeFilterListeners();
+    initializePaginationListeners();
+    initializePageSizeListener();
+    loadItems();
+    
+    // If item is selected in URL, load its questions after a short delay
+    if (selectedItemId) {
+        setTimeout(() => {
+            updateRowSelection(selectedItemId);
+            loadItemQuestions(selectedItemId);
+        }, 500);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll);
+} else {
+    initializeAll();
+}
+
+} // End of execution guard
+</script>
+{% endblock %}
+

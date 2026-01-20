@@ -7,7 +7,7 @@ class Ref_Account_Type(models.Model):
     """Account Type model for categorizing accounts"""
     AccountTypeId = models.SmallIntegerField(primary_key=True)
     AccountTypeCode = models.CharField(max_length=4, unique=True)
-    AccountTypeName = models.CharField(max_length=100, unique=True)    
+    AccountTypeName = models.CharField(max_length=150, unique=True)    
     IsActive = models.BooleanField(default=True)
     StBalanceId = models.ForeignKey(
         'St_Balance',
@@ -1335,3 +1335,906 @@ class St_CashFlow(models.Model):
  
     def __str__(self):
         return f"{self.StCashFlowCode} - {self.StCashFlowName}"         
+
+
+class Ref_Product_Group(models.Model):
+    """Product Group model for categorizing insurance products"""
+    ProductGroupId = models.AutoField(primary_key=True)
+    ProductGroupName = models.CharField(max_length=250)
+    ProductGroupCode = models.CharField(max_length=50)
+    IsActive = models.BooleanField(default=True)
+    DebitAccountId = models.ForeignKey(
+        Ref_Account,
+        on_delete=models.PROTECT,
+        db_column='DebitAccountId',
+        related_name='product_groups_debit',
+        null=True,
+        blank=True
+    )
+    CreditAccountId = models.ForeignKey(
+        Ref_Account,
+        on_delete=models.PROTECT,
+        db_column='CreditAccountId',
+        related_name='product_groups_credit',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        db_table = 'ins_ref_product_group'
+        verbose_name = 'Product Group'
+        verbose_name_plural = 'Product Groups'
+
+    def __str__(self):
+        return f"{self.ProductGroupCode} - {self.ProductGroupName}"
+
+
+class Ref_Product_Type(models.Model):
+    """Product Type model for categorizing insurance product types"""
+    ProductTypeId = models.AutoField(primary_key=True)
+    ProductTypeName = models.CharField(max_length=250)
+    ProductTypeCode = models.CharField(max_length=50)
+    ProductGroupId = models.ForeignKey(
+        Ref_Product_Group,
+        on_delete=models.PROTECT,
+        db_column='ProductGroupId',
+        related_name='product_types'
+    )
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_product_types',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_product_types',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_product_type'
+        verbose_name = 'Product Type'
+        verbose_name_plural = 'Product Types'
+
+    def __str__(self):
+        return f"{self.ProductTypeCode} - {self.ProductTypeName}"
+
+
+class Ref_Product(models.Model):
+    """Product model for insurance products"""
+    ProductId = models.AutoField(primary_key=True)
+    ProductName = models.CharField(max_length=150)
+    ProductCode = models.CharField(max_length=50)
+    ProductTypeId = models.ForeignKey(
+        Ref_Product_Type,
+        on_delete=models.PROTECT,
+        db_column='ProductTypeId',
+        related_name='products'
+    )
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_products',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_products',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_product'
+        verbose_name = 'Product'
+        verbose_name_plural = 'Products'
+
+    def __str__(self):
+        return f"{self.ProductCode} - {self.ProductName}"
+
+
+class Ref_Item_Type(models.Model):
+    """Item Type model for categorizing items with hierarchical structure"""
+    ItemTypeId = models.AutoField(primary_key=True)
+    ItemTypeName = models.CharField(max_length=250)
+    ItemTypeCode = models.CharField(max_length=50)
+    IsActive = models.BooleanField(default=True)
+    ParentId = models.ForeignKey(
+        'self',
+        on_delete=models.PROTECT,
+        db_column='ParentId',
+        related_name='child_item_types',
+        null=True,
+        blank=True
+    )
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_item_types',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_item_types',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_item_type'
+        verbose_name = 'Item Type'
+        verbose_name_plural = 'Item Types'
+
+    def __str__(self):
+        return f"{self.ItemTypeCode} - {self.ItemTypeName}"
+
+
+class Ref_Item(models.Model):
+    """Item model for insurance items"""
+    ItemId = models.AutoField(primary_key=True)
+    ItemName = models.CharField(max_length=500)
+    ItemCode = models.CharField(max_length=50)
+    ItemTypeId = models.ForeignKey(
+        Ref_Item_Type,
+        on_delete=models.PROTECT,
+        db_column='ItemTypeId',
+        related_name='items'
+    )
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_items',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_items',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_item'
+        verbose_name = 'Item'
+        verbose_name_plural = 'Items'
+
+    def __str__(self):
+        return f"{self.ItemCode} - {self.ItemName}"
+
+
+class Ref_Item_Question(models.Model):
+    """Item Question model for insurance item questions"""
+    ItemQuestionId = models.AutoField(primary_key=True)
+    ItemQuestionName = models.CharField(max_length=200)
+    ItemQuestionCode = models.CharField(max_length=50)
+    ItemId = models.ForeignKey(
+        Ref_Item,
+        on_delete=models.PROTECT,
+        db_column='ItemId',
+        related_name='item_questions'
+    )
+    QuestionType = models.CharField(max_length=100)
+    FieldType = models.CharField(max_length=100)
+    FieldValue = models.CharField(max_length=100, null=True, blank=True)
+    Order = models.IntegerField(db_column='Order')
+    FieldMask = models.CharField(max_length=500, null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_item_questions',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_item_questions',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_item_question'
+        verbose_name = 'Item Question'
+        verbose_name_plural = 'Item Questions'
+        ordering = ['Order', 'ItemQuestionCode']
+
+    def __str__(self):
+        return f"{self.ItemQuestionCode} - {self.ItemQuestionName}"
+
+
+class Ref_Risk_Type(models.Model):
+    """Risk Type model for categorizing insurance risks"""
+    RiskTypeId = models.AutoField(primary_key=True)
+    RiskTypeName = models.CharField(max_length=200)
+    RiskTypeCode = models.CharField(max_length=50)
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_risk_types',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_risk_types',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_risk_type'
+        verbose_name = 'Risk Type'
+        verbose_name_plural = 'Risk Types'
+
+    def __str__(self):
+        return f"{self.RiskTypeCode} - {self.RiskTypeName}"
+
+
+class Ref_Risk(models.Model):
+    """Risk model for insurance risks"""
+    RiskId = models.AutoField(primary_key=True)
+    RiskName = models.CharField(max_length=200)
+    RiskCode = models.CharField(max_length=50)
+    CategoryName = models.CharField(max_length=100, null=True, blank=True)
+    RiskTypeId = models.ForeignKey(
+        Ref_Risk_Type,
+        on_delete=models.PROTECT,
+        db_column='RiskTypeId',
+        related_name='risks'
+    )
+    IsActive = models.BooleanField(default=True)
+    IsCoreRisk = models.BooleanField(default=True)
+    Description = models.CharField(max_length=500, null=True, blank=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_risks',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_risks',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_risk'
+        verbose_name = 'Risk'
+        verbose_name_plural = 'Risks'
+
+    def __str__(self):
+        return f"{self.RiskCode} - {self.RiskName}"
+
+
+class Ref_Ins_Client(models.Model):
+    """Insurance Client model for managing insurance client information"""
+    InsClientId = models.AutoField(primary_key=True)
+    ClientId = models.ForeignKey(
+        RefClient,
+        on_delete=models.PROTECT,
+        db_column='ClientId',
+        related_name='ins_clients'
+    )
+    InsClientCode = models.CharField(max_length=50)
+    OrgName = models.CharField(max_length=100, null=True, blank=True)
+    OrgRegister = models.CharField(max_length=12, null=True, blank=True)
+    IsOrg = models.BooleanField(default=False)
+    DistrictId = models.IntegerField(null=True, blank=True)
+    IsPolitics = models.BooleanField(default=False)
+    IsInvestor = models.BooleanField(default=False)
+    FirstName = models.CharField(max_length=100, null=True, blank=True)
+    LastName = models.CharField(max_length=100, null=True, blank=True)
+    Phone1 = models.CharField(max_length=20, null=True, blank=True)
+    Phone2 = models.CharField(max_length=20, null=True, blank=True)
+    Email = models.CharField(max_length=100, null=True, blank=True)
+    DriverLicenceNo = models.CharField(max_length=50, null=True, blank=True)
+    EmergencyContact = models.CharField(max_length=150, null=True, blank=True)
+    Gender = models.CharField(max_length=50, null=True, blank=True)
+    NationalityId = models.IntegerField(null=True, blank=True)
+    PhotoPath = models.CharField(max_length=250, null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+    DriverLicentceYear = models.DateField(null=True, blank=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_ins_clients',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_ins_clients',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_client'
+        verbose_name = 'Insurance Client'
+        verbose_name_plural = 'Insurance Clients'
+
+    def __str__(self):
+        if self.OrgName:
+            return f"{self.InsClientCode} - {self.OrgName}"
+        elif self.FirstName and self.LastName:
+            return f"{self.InsClientCode} - {self.FirstName} {self.LastName}"
+        return f"{self.InsClientCode}"
+
+
+class Ref_Policy_Template(models.Model):
+    """Policy Template model for insurance policy templates"""
+    PolicyTemplateId = models.AutoField(primary_key=True)
+    PolicyTemplateName = models.CharField(max_length=200)
+    Description = models.CharField(max_length=200, null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+    FilePath = models.CharField(max_length=250, null=True, blank=True)
+    IsDelete = models.BooleanField(default=False)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_policy_templates',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_policy_templates',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_template'
+        verbose_name = 'Policy Template'
+        verbose_name_plural = 'Policy Templates'
+
+    def __str__(self):
+        return f"{self.PolicyTemplateName}"
+
+
+class Ref_Template_Account(models.Model):
+    """Template Account model for policy template accounting details"""
+    TemplateAccountId = models.AutoField(primary_key=True)
+    PolicyTemplateId = models.ForeignKey(
+        Ref_Policy_Template,
+        on_delete=models.PROTECT,
+        db_column='PolicyTemplateId',
+        related_name='template_accounts'
+    )
+    AccountId = models.ForeignKey(
+        Ref_Account,
+        on_delete=models.PROTECT,
+        db_column='AccountId',
+        related_name='template_accounts'
+    )
+    IsDebit = models.BooleanField()
+    CashFlowId = models.ForeignKey(
+        Ref_CashFlow,
+        on_delete=models.PROTECT,
+        db_column='CashFlowId',
+        related_name='template_accounts',
+        null=True,
+        blank=True
+    )
+    CalculationType = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'ins_ref_template_account'
+        verbose_name = 'Template Account'
+        verbose_name_plural = 'Template Accounts'
+
+    def __str__(self):
+        return f"{self.PolicyTemplateId.PolicyTemplateName} - {self.AccountId.AccountName} ({'Debit' if self.IsDebit else 'Credit'})"
+
+
+class Ref_Template_Product(models.Model):
+    """Template Product model linking templates to products"""
+    TemplateProductId = models.AutoField(primary_key=True)
+    TemplateId = models.ForeignKey(
+        Ref_Policy_Template,
+        on_delete=models.PROTECT,
+        db_column='TemplateId',
+        related_name='template_products'
+    )
+    ProductId = models.ForeignKey(
+        Ref_Product,
+        on_delete=models.PROTECT,
+        db_column='ProductId',
+        related_name='template_products'
+    )
+
+    class Meta:
+        db_table = 'ins_ref_template_product'
+        verbose_name = 'Template Product'
+        verbose_name_plural = 'Template Products'
+
+    def __str__(self):
+        return f"{self.TemplateId.PolicyTemplateName} - {self.ProductId.ProductName}"
+
+
+class Ref_Template_Product_Item(models.Model):
+    """Template Product Item model linking template products to items"""
+    TemplateProductItemId = models.AutoField(primary_key=True)
+    TemplateProductId = models.ForeignKey(
+        Ref_Template_Product,
+        on_delete=models.PROTECT,
+        db_column='TemplateProductId',
+        related_name='template_product_items'
+    )
+    ItemId = models.ForeignKey(
+        Ref_Item,
+        on_delete=models.PROTECT,
+        db_column='ItemId',
+        related_name='template_product_items'
+    )
+
+    class Meta:
+        db_table = 'ins_ref_template_product_item'
+        verbose_name = 'Template Product Item'
+        verbose_name_plural = 'Template Product Items'
+
+    def __str__(self):
+        return f"{self.TemplateProductId} - {self.ItemId.ItemName}"
+
+
+class Ref_Template_Product_Item_Risk(models.Model):
+    """Template Product Item Risk model linking template product items to risks with commission"""
+    TemplateProductItemRiskId = models.AutoField(primary_key=True)
+    TemplateProductItemId = models.ForeignKey(
+        Ref_Template_Product_Item,
+        on_delete=models.PROTECT,
+        db_column='TemplateProductItemId',
+        related_name='template_product_item_risks'
+    )
+    RiskId = models.ForeignKey(
+        Ref_Risk,
+        on_delete=models.PROTECT,
+        db_column='RiskId',
+        related_name='template_product_item_risks'
+    )
+    CommPercent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_ref_template_product_item_risk'
+        verbose_name = 'Template Product Item Risk'
+        verbose_name_plural = 'Template Product Item Risks'
+
+    def __str__(self):
+        return f"{self.TemplateProductItemId} - {self.RiskId.RiskName} ({self.CommPercent}%)"
+
+
+class Ref_Template_Design(models.Model):
+    """Template Design model for policy template field design configuration"""
+    DesignId = models.AutoField(primary_key=True)
+    PolicyTemplateId = models.ForeignKey(
+        Ref_Policy_Template,
+        on_delete=models.PROTECT,
+        db_column='PolicyTemplateId',
+        related_name='template_designs'
+    )
+    TableNameEng = models.CharField(max_length=60)
+    TableNameMon = models.CharField(max_length=60)
+    FieldNameEng = models.CharField(max_length=60)
+    FieldNameMon = models.CharField(max_length=60)
+    IsStatic = models.BooleanField(default=False)
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_template_designs',
+        db_column='CreatedBy'
+    )
+    CreatedDate = models.DateField(auto_now_add=True, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_ref_template_design'
+        verbose_name = 'Template Design'
+        verbose_name_plural = 'Template Designs'
+
+    def __str__(self):
+        return f"{self.PolicyTemplateId.PolicyTemplateName} - {self.TableNameEng}.{self.FieldNameEng}"
+
+
+class Ref_Branch(models.Model):
+    """Branch model for insurance branches"""
+    BranchId = models.AutoField(primary_key=True)
+    BranchCode = models.CharField(max_length=4)
+    BranchName = models.CharField(max_length=50)
+    DirectorName = models.CharField(max_length=15, null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_branches',
+        db_column='CreatedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'ins_ref_branch'
+        verbose_name = 'Branch'
+        verbose_name_plural = 'Branches'
+
+    def __str__(self):
+        return f"{self.BranchCode} - {self.BranchName}"
+
+
+class Ref_Channel(models.Model):
+    """Channel model for insurance channels"""
+    ChannelId = models.AutoField(primary_key=True)
+    ChannelName = models.CharField(max_length=50)
+    IsActive = models.BooleanField(default=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_channels',
+        db_column='CreatedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'ins_ref_channel'
+        verbose_name = 'Channel'
+        verbose_name_plural = 'Channels'
+
+    def __str__(self):
+        return f"{self.ChannelName}"
+
+
+class Ref_Branch_User(models.Model):
+    """Branch User model for managing user-branch-channel relationships"""
+    UserBranchId = models.AutoField(primary_key=True)
+    UserId = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        db_column='UserId',
+        related_name='branch_users'
+    )
+    ChannelId = models.ForeignKey(
+        Ref_Channel,
+        on_delete=models.PROTECT,
+        db_column='ChannelId',
+        related_name='branch_users'
+    )
+    BranchId = models.ForeignKey(
+        Ref_Branch,
+        on_delete=models.PROTECT,
+        db_column='BranchId',
+        related_name='branch_users'
+    )
+    IsActive = models.BooleanField(default=True)
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_ref_branch_user'
+        verbose_name = 'Branch User'
+        verbose_name_plural = 'Branch Users'
+
+    def __str__(self):
+        return f"{self.UserId.username} - {self.BranchId.BranchName} ({self.ChannelId.ChannelName})"
+
+
+class Policy_Main(models.Model):
+    """Policy Main model for insurance policies"""
+    PolicyId = models.AutoField(primary_key=True)
+    PolicyNo = models.CharField(max_length=25)
+    ClientId = models.ForeignKey(
+        RefClient,
+        on_delete=models.PROTECT,
+        db_column='ClientId',
+        related_name='policies'
+    )
+    AgentId = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        db_column='AgentId',
+        related_name='agent_policies'
+    )
+    PolicyTemplateId = models.ForeignKey(
+        Ref_Policy_Template,
+        on_delete=models.PROTECT,
+        db_column='PolicyTemplateId',
+        related_name='policies'
+    )
+    BeginDate = models.DateField()
+    EndDate = models.DateField()
+    CurrencyId = models.ForeignKey(
+        Ref_Currency,
+        on_delete=models.PROTECT,
+        db_column='CurrencyId',
+        related_name='policies'
+    )
+    CurrencyExchange = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    CurrencyAmount = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    AgentBranchId = models.ForeignKey(
+        Ref_Branch,
+        on_delete=models.PROTECT,
+        db_column='AgentBranchId',
+        related_name='policies'
+    )
+    AgentChannelId = models.ForeignKey(
+        Ref_Channel,
+        on_delete=models.PROTECT,
+        db_column='AgentChannelId',
+        related_name='policies'
+    )
+    DirectorName = models.CharField(max_length=15, null=True, blank=True)
+    IsActive = models.BooleanField(default=True)
+    IsLock = models.BooleanField(default=False)
+    IsPosted = models.BooleanField(default=False)
+    ApprovedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='approved_policies',
+        db_column='ApprovedBy',
+        null=True,
+        blank=True
+    )
+    Description = models.CharField(max_length=60, null=True, blank=True)
+    StatusId = models.SmallIntegerField(null=True, blank=True)
+    CreatedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='created_policies',
+        db_column='CreatedBy'
+    )
+    ModifiedBy = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='modified_policies',
+        db_column='ModifiedBy'
+    )
+    CreatedDate = models.DateTimeField(auto_now_add=True)
+    ModifiedDate = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ins_policy_main'
+        verbose_name = 'Policy'
+        verbose_name_plural = 'Policies'
+
+    def __str__(self):
+        return f"{self.PolicyNo}"
+
+
+class Policy_Main_Coinsurance(models.Model):
+    """Policy Coinsurance model for policy coinsured clients"""
+    PolicyCoInsuredId = models.AutoField(primary_key=True)
+    PolicyId = models.ForeignKey(
+        Policy_Main,
+        on_delete=models.PROTECT,
+        db_column='PolicyId',
+        related_name='coinsurance'
+    )
+    ClientId = models.ForeignKey(
+        RefClient,
+        on_delete=models.PROTECT,
+        db_column='ClientId',
+        related_name='coinsurance_policies'
+    )
+    Description = models.CharField(max_length=30, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_policy_main_coinsurance'
+        verbose_name = 'Policy Coinsurance'
+        verbose_name_plural = 'Policy Coinsurance'
+
+    def __str__(self):
+        return f"{self.PolicyId.PolicyNo} - {self.ClientId.ClientName}"
+
+
+class Policy_Main_Schedule(models.Model):
+    """Policy Payment Schedule model for policy payment schedules"""
+    PolicyPaymentScheduleId = models.AutoField(primary_key=True)
+    PolicyId = models.ForeignKey(
+        Policy_Main,
+        on_delete=models.PROTECT,
+        db_column='PolicyId',
+        related_name='payment_schedules'
+    )
+    DueDate = models.DateField()
+    Amount = models.DecimalField(max_digits=24, decimal_places=6)
+
+    class Meta:
+        db_table = 'ins_policy_main_schedule'
+        verbose_name = 'Policy Payment Schedule'
+        verbose_name_plural = 'Policy Payment Schedules'
+
+    def __str__(self):
+        return f"{self.PolicyId.PolicyNo} - {self.DueDate} - {self.Amount}"
+
+
+class Policy_Main_Files(models.Model):
+    """Policy Files model for policy attachments"""
+    PolicyAttachmentId = models.AutoField(primary_key=True)
+    PolicyId = models.ForeignKey(
+        Policy_Main,
+        on_delete=models.PROTECT,
+        db_column='PolicyId',
+        related_name='policy_files'
+    )
+    FileName = models.CharField(max_length=50)
+    FilePath = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'ins_policy_main_files'
+        verbose_name = 'Policy File'
+        verbose_name_plural = 'Policy Files'
+
+    def __str__(self):
+        return f"{self.PolicyId.PolicyNo} - {self.FileName}"
+
+
+class Policy_Main_Product(models.Model):
+    """Policy Product model linking policies to products"""
+    PolicyMainProductId = models.AutoField(primary_key=True)
+    PolicyMainId = models.ForeignKey(
+        Policy_Main,
+        on_delete=models.PROTECT,
+        db_column='PolicyMainId',
+        related_name='policy_products'
+    )
+    ProductId = models.ForeignKey(
+        Ref_Product,
+        on_delete=models.PROTECT,
+        db_column='ProductId',
+        related_name='policy_products'
+    )
+
+    class Meta:
+        db_table = 'ins_policy_main_product'
+        verbose_name = 'Policy Product'
+        verbose_name_plural = 'Policy Products'
+
+    def __str__(self):
+        return f"{self.PolicyMainId.PolicyNo} - {self.ProductId.ProductName if self.ProductId else 'N/A'}"
+
+
+class Policy_Main_Product_Item(models.Model):
+    """Policy Product Item model for policy product items with dates and valuation"""
+    PolicyMainProductItemId = models.AutoField(primary_key=True)
+    PolicyMainProductId = models.ForeignKey(
+        Policy_Main_Product,
+        on_delete=models.PROTECT,
+        db_column='PolicyMainProductId',
+        related_name='product_items'
+    )
+    ItemId = models.ForeignKey(
+        Ref_Item,
+        on_delete=models.PROTECT,
+        db_column='ItemId',
+        related_name='policy_product_items'
+    )
+    BeginDate = models.DateField(null=True, blank=True)
+    EndDate = models.DateField(null=True, blank=True)
+    Valuation = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    CommPercent = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True)
+    CommAmount = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_policy_main_product_item'
+        verbose_name = 'Policy Product Item'
+        verbose_name_plural = 'Policy Product Items'
+
+    def __str__(self):
+        return f"{self.PolicyMainProductId} - {self.ItemId.ItemName if self.ItemId else 'N/A'}"
+
+
+class Policy_Main_Product_Item_Risk(models.Model):
+    """Policy Product Item Risk model for policy product item risks"""
+    PolicyMainProductItemRiskId = models.AutoField(primary_key=True)
+    PolicyMainProductItemId = models.ForeignKey(
+        Policy_Main_Product_Item,
+        on_delete=models.PROTECT,
+        db_column='PolicyMainProductItemId',
+        related_name='item_risks'
+    )
+    RiskId = models.ForeignKey(
+        Ref_Risk,
+        on_delete=models.PROTECT,
+        db_column='RiskId',
+        related_name='policy_product_item_risks'
+    )
+    RiskPercent = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_policy_main_product_item_risk'
+        verbose_name = 'Policy Product Item Risk'
+        verbose_name_plural = 'Policy Product Item Risks'
+
+    def __str__(self):
+        return f"{self.PolicyMainProductItemId} - {self.RiskId.RiskName if self.RiskId else 'N/A'}"
+
+
+class Policy_Main_Product_Item_Question(models.Model):
+    """Policy Product Item Question model for policy product item questions with answers"""
+    PolicyMainProductItemQuestionId = models.AutoField(primary_key=True)
+    PolicyMainProductItemId = models.ForeignKey(
+        Policy_Main_Product_Item,
+        on_delete=models.PROTECT,
+        db_column='PolicyMainProductItemId',
+        related_name='item_questions'
+    )
+    ItemQuestionId = models.ForeignKey(
+        Ref_Item_Question,
+        on_delete=models.PROTECT,
+        db_column='ItemQuestionId',
+        related_name='policy_product_item_questions'
+    )
+    Answer = models.CharField(max_length=300, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ins_policy_main_product_item_question'
+        verbose_name = 'Policy Product Item Question'
+        verbose_name_plural = 'Policy Product Item Questions'
+
+    def __str__(self):
+        return f"{self.PolicyMainProductItemId} - {self.ItemQuestionId.ItemQuestionName if self.ItemQuestionId else 'N/A'}"

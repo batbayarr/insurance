@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from core.views import home, custom_login, custom_logout
+from core.api.router import api
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +28,10 @@ urlpatterns = [
     path('accounts/login/', custom_login, name='login'),
     path('accounts/logout/', custom_logout, name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
+    # Django Ninja API
+    path('api/', api.urls),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

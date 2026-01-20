@@ -111,6 +111,20 @@ DATABASES = {
         },
         'CONN_MAX_AGE': 0,  # Disable connection pooling to allow dynamic db switching
         'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
+    },
+    'insurance': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'insurance',  # Insurance database name
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+            'connect_timeout': 10,
+        },
+        'CONN_MAX_AGE': 0,  # Disable connection pooling to allow dynamic db switching
+        'CONN_HEALTH_CHECKS': True,  # Enable connection health checks
     }
 }
 
@@ -154,6 +168,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (for uploaded files and generated documents)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

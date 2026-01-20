@@ -1,0 +1,521 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Template Design - Silicon-AI Insurance{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">TEMPLATE DESIGN</h1>            
+        </div>
+        {% if perms.core.add_ref_template_design %}
+        <button id="btn-add-template-design" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="text-xs">НЭМЭХ</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Master Grid (Templates) -->
+    <div id="template-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-medium text-gray-700">ЗАГВАР (MASTER)</h2>
+        </div>
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Template Name</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Description</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                    </tr>
+                    <!-- Filter Row -->
+                    <tr class="bg-gray-100">
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-template-name" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1 border-r border-gray-200">
+                            <input type="text" id="filter-description" placeholder="Filter..." 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </td>
+                        <td class="px-2 py-1">
+                            <select id="filter-status" 
+                                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Бүгд</option>
+                                <option value="true">Идэвхтэй</option>
+                                <option value="false">Идэвхгүй</option>
+                            </select>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody id="template-tbody" class="bg-white divide-y divide-gray-200">
+                    {% for template in policy_templates %}
+                    <tr class="template-row cursor-pointer hover:bg-gray-50 {% if selected_template_id == template.PolicyTemplateId|stringformat:'s' %}bg-blue-50{% endif %}" 
+                        data-template-id="{{ template.PolicyTemplateId }}"
+                        onclick="selectTemplate({{ template.PolicyTemplateId }})">
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ template.PolicyTemplateName }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ template.Description|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900">
+                            <span class="px-2 py-0.5 text-xs rounded-full {% if template.IsActive %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if template.IsActive %}Идэвхтэй{% else %}Идэвхгүй{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Grid (Template Designs) -->
+    <div id="detail-grid-container" class="mt-4">
+        {% if selected_template %}
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-medium text-gray-700">TEMPLATE DESIGN (DETAIL) - {{ selected_template.PolicyTemplateName }}</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Table Name (Eng)</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Table Name (Mon)</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Field Name (Eng)</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Field Name (Mon)</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Static</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="template-design-tbody" class="bg-white divide-y divide-gray-200">
+                        {% for design in template_designs %}
+                        <tr class="template-design-row hover:bg-gray-50">
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ design.TableNameEng }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ design.TableNameMon }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ design.FieldNameEng }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ design.FieldNameMon }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full {% if design.IsStatic %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if design.IsStatic %}Yes{% else %}No{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                                <span class="px-2 py-0.5 text-xs rounded-full {% if design.IsActive %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if design.IsActive %}Идэвхтэй{% else %}Идэвхгүй{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                                <div class="flex items-center justify-center space-x-1">
+                                    {% if perms.core.change_ref_template_design %}
+                                    <button onclick="editTemplateDesign({{ design.DesignId }})" 
+                                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                    {% if perms.core.delete_ref_template_design %}
+                                    <button onclick="deleteTemplateDesign({{ design.DesignId }}, '{{ design.TableNameEng|escapejs }}')" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-500">Template design олдсонгүй. Template сонгоно уу.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-medium text-gray-700">TEMPLATE DESIGN (DETAIL)</h2>
+            </div>
+            <div class="px-4 py-8 text-center text-gray-500">
+                Template сонгоно уу
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Template Design Modal -->
+<div id="template-design-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="template-design-modal-title">TEMPLATE DESIGN НЭМЭХ</h3>
+            <button onclick="closeTemplateDesignModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="template-design-form" method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="template-design-id" name="template_design_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Policy Template *</label>
+                    <select id="policy-template-id" name="policy_template_id" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <option value="">Сонгох...</option>
+                        {% for template in policy_templates %}
+                        <option value="{{ template.PolicyTemplateId }}" {% if selected_template_id == template.PolicyTemplateId|stringformat:'s' %}selected{% endif %}>{{ template.PolicyTemplateName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Table Name (English) *</label>
+                    <select id="table-name-eng" name="table_name_eng" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <option value="">Сонгох...</option>
+                        <option value="ins_policy_main">ins_policy_main</option>
+                        <option value="ins_policy_main_product">ins_policy_main_product</option>
+                        <option value="ins_policy_main_product_item">ins_policy_main_product_item</option>
+                        <option value="ins_policy_main_product_item_risk">ins_policy_main_product_item_risk</option>
+                        <option value="ins_policy_main_product_item_question">ins_policy_main_product_item_question</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Table Name (Mongolian) *</label>
+                    <input type="text" id="table-name-mon" name="table_name_mon" maxlength="60" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Field Name (English) *</label>
+                    <select id="field-name-eng" name="field_name_eng" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" disabled>
+                        <option value="">Эхлээд Table Name сонгоно уу</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Field Name (Mongolian) *</label>
+                    <input type="text" id="field-name-mon" name="field_name_mon" maxlength="60" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="is-static" name="is_static" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Is Static</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="is-active" name="is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeTemplateDesignModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Prevent script re-execution
+if (!window.templateDesignMasterDetailScriptLoaded) {
+    window.templateDesignMasterDetailScriptLoaded = true;
+
+// URL templates for dynamic URL generation
+const templateDesignUpdateUrlTemplate = '{% url "core:template_design_update" 0 %}';
+const templateDesignDeleteUrlTemplate = '{% url "core:template_design_delete" 0 %}';
+const templateDesignCreateUrl = '{% url "core:template_design_create" %}';
+const templateDesignListUrl = '{% url "core:template_design_list" %}';
+
+// Global variables
+let selectedTemplateId = {% if selected_template_id %}{{ selected_template_id }}{% else %}null{% endif %};
+
+// Select template and reload page with selected template
+function selectTemplate(templateId) {
+    selectedTemplateId = templateId;
+    // Update URL and reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('selected_template', templateId);
+    window.location.href = url.toString();
+}
+
+// Filter templates
+function initializeTemplateFilters() {
+    const filterName = document.getElementById('filter-template-name');
+    const filterDesc = document.getElementById('filter-description');
+    const filterStatus = document.getElementById('filter-status');
+    
+    function applyFilters() {
+        const rows = document.querySelectorAll('.template-row');
+        const nameFilter = filterName?.value.toLowerCase() || '';
+        const descFilter = filterDesc?.value.toLowerCase() || '';
+        const statusFilter = filterStatus?.value || '';
+        
+        rows.forEach(row => {
+            const name = row.cells[0]?.textContent.toLowerCase() || '';
+            const desc = row.cells[1]?.textContent.toLowerCase() || '';
+            const statusCell = row.cells[2];
+            const isActive = statusCell?.textContent.includes('Идэвхтэй');
+            const statusMatch = !statusFilter || 
+                (statusFilter === 'true' && isActive) || 
+                (statusFilter === 'false' && !isActive);
+            
+            const nameMatch = !nameFilter || name.includes(nameFilter);
+            const descMatch = !descFilter || desc.includes(descFilter);
+            
+            row.style.display = (nameMatch && descMatch && statusMatch) ? '' : 'none';
+        });
+    }
+    
+    if (filterName) filterName.addEventListener('input', applyFilters);
+    if (filterDesc) filterDesc.addEventListener('input', applyFilters);
+    if (filterStatus) filterStatus.addEventListener('change', applyFilters);
+}
+
+// Add Template Design button
+document.getElementById('btn-add-template-design')?.addEventListener('click', function() {
+    if (!selectedTemplateId) {
+        alert('Эхлээд Template сонгоно уу');
+        return;
+    }
+    openTemplateDesignModal(true);
+});
+
+function openTemplateDesignModal(isCreate) {
+    const modal = document.getElementById('template-design-modal');
+    const form = document.getElementById('template-design-form');
+    const title = document.getElementById('template-design-modal-title');
+    
+    if (isCreate) {
+        title.textContent = 'TEMPLATE DESIGN НЭМЭХ';
+        form.action = templateDesignCreateUrl;
+        document.getElementById('template-design-id').value = '';
+        form.reset();
+        // Set selected template
+        if (selectedTemplateId) {
+            document.getElementById('policy-template-id').value = selectedTemplateId;
+        }
+        // Reset field dropdown
+        const fieldSelect = document.getElementById('field-name-eng');
+        fieldSelect.innerHTML = '<option value="">Эхлээд Table Name сонгоно уу</option>';
+        fieldSelect.disabled = true;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+// Load fields for selected table
+function loadTableFields(tableName) {
+    return new Promise((resolve, reject) => {
+        const fieldSelect = document.getElementById('field-name-eng');
+        if (!fieldSelect || !tableName) {
+            resolve();
+            return;
+        }
+        
+        // Show loading state
+        fieldSelect.innerHTML = '<option value="">Ачааллаж байна...</option>';
+        fieldSelect.disabled = true;
+        
+        fetch(`/core/api/table-fields/${tableName}/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.fields) {
+                fieldSelect.innerHTML = '<option value="">Сонгох...</option>';
+                data.fields.forEach(field => {
+                    const option = document.createElement('option');
+                    option.value = field;
+                    option.textContent = field;
+                    fieldSelect.appendChild(option);
+                });
+                fieldSelect.disabled = false;
+                resolve();
+            } else {
+                fieldSelect.innerHTML = '<option value="">Алдаа гарлаа</option>';
+                fieldSelect.disabled = true;
+                reject(new Error('Failed to load fields'));
+            }
+        })
+        .catch(error => {
+            console.error('Error loading table fields:', error);
+            fieldSelect.innerHTML = '<option value="">Алдаа гарлаа</option>';
+            fieldSelect.disabled = true;
+            reject(error);
+        });
+    });
+}
+
+// Initialize table name change listener
+function initializeTableFieldLoader() {
+    const tableSelect = document.getElementById('table-name-eng');
+    if (tableSelect) {
+        tableSelect.addEventListener('change', function() {
+            const selectedTable = this.value;
+            if (selectedTable) {
+                loadTableFields(selectedTable);
+            } else {
+                const fieldSelect = document.getElementById('field-name-eng');
+                fieldSelect.innerHTML = '<option value="">Эхлээд Table Name сонгоно уу</option>';
+                fieldSelect.disabled = true;
+            }
+        });
+    }
+}
+
+function closeTemplateDesignModal() {
+    document.getElementById('template-design-modal').classList.add('hidden');
+}
+
+function editTemplateDesign(id) {
+    fetch(`/core/api/template-design/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('template-design-modal-title').textContent = 'TEMPLATE DESIGN ЗАСАХ';
+            document.getElementById('template-design-form').action = templateDesignUpdateUrlTemplate.replace('0', id);
+            document.getElementById('template-design-id').value = data.DesignId;
+            document.getElementById('policy-template-id').value = data.PolicyTemplateId || '';
+            document.getElementById('table-name-mon').value = data.TableNameMon || '';
+            document.getElementById('field-name-mon').value = data.FieldNameMon || '';
+            document.getElementById('is-static').checked = data.IsStatic;
+            document.getElementById('is-active').checked = data.IsActive;
+            
+            // Set table name and load fields
+            const tableSelect = document.getElementById('table-name-eng');
+            const tableName = data.TableNameEng || '';
+            tableSelect.value = tableName;
+            
+            if (tableName) {
+                // Load fields for the selected table, then set the field value
+                loadTableFields(tableName).then(() => {
+                    // Wait a bit for fields to load, then set the field value
+                    setTimeout(() => {
+                        const fieldSelect = document.getElementById('field-name-eng');
+                        fieldSelect.value = data.FieldNameEng || '';
+                    }, 300);
+                });
+            } else {
+                const fieldSelect = document.getElementById('field-name-eng');
+                fieldSelect.innerHTML = '<option value="">Эхлээд Table Name сонгоно уу</option>';
+                fieldSelect.disabled = true;
+            }
+            
+            document.getElementById('template-design-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Мэдээлэл авахад алдаа гарлаа');
+        });
+}
+
+function deleteTemplateDesign(id, name) {
+    if (confirm(`"${name}" template design-ийг устгах уу?`)) {
+        fetch(templateDesignDeleteUrlTemplate.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reload page to refresh detail table
+                window.location.reload();
+            } else {
+                alert('Устгахад алдаа гарлаа');
+            }
+        });
+    }
+}
+
+// Form submission handler
+document.getElementById('template-design-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('template-design-form', function() {
+        closeTemplateDesignModal();
+        // Reload page to refresh detail table
+        window.location.reload();
+    });
+});
+
+function submitForm(formId, successCallback) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const action = form.action;
+    
+    fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json().then(data => {
+                if (data.success !== false) {
+                    if (successCallback) successCallback();
+                } else {
+                    alert(data.error || 'Алдаа гарлаа');
+                }
+            }).catch(() => {
+                // If response is not JSON, assume success
+                if (successCallback) successCallback();
+            });
+        } else {
+            return response.json().then(data => {
+                alert(data.error || 'Алдаа гарлаа');
+            }).catch(() => {
+                alert('Серверийн алдаа гарлаа. Дахин оролдоно уу.');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Сүлжээний алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Initialize everything when DOM is ready
+function initializeAll() {
+    initializeTemplateFilters();
+    initializeTableFieldLoader();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll);
+} else {
+    initializeAll();
+}
+
+} // End of execution guard
+</script>
+{% endblock %}

@@ -1,0 +1,362 @@
+<!-- Client Selection Modal Component -->
+<div id="client-selection-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-5xl min-w-[900px] shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Харилцагч сонгох</h3>                
+            </div>
+            <button onclick="closeClientSelectionModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Content: Client Table -->
+        <div class="p-4">
+            <!-- Client Table -->
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-900">Харилцагчийн жагсаалт</h4>
+                </div>
+                
+                <!-- Client Table Container -->
+                <div id="client-table-container" class="overflow-y-auto" style="max-height: 500px;">
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-sm">Уншиж байна...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <button onclick="closeClientSelectionModal()" 
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Цуцлах
+            </button>
+            <button id="select-client-btn" onclick="confirmClientSelection()" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Сонгох
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Client Selection Modal Functions
+let selectedClientId = null;
+let selectedClientCode = null;
+let selectedClientName = null;
+let currentClientPage = 1;
+let clientPageSize = 20;
+let totalClientPages = 1;
+let allClients = [];
+
+window.openClientSelectionModal = function() {
+    const modal = document.getElementById('client-selection-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        selectedClientId = null;
+        selectedClientCode = null;
+        selectedClientName = null;
+        document.getElementById('select-client-btn').disabled = true;
+        loadClientTable();
+    } else {
+        console.error('Client selection modal not found!');
+    }
+}
+
+window.closeClientSelectionModal = function() {
+    const modal = document.getElementById('client-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        selectedClientId = null;
+        selectedClientCode = null;
+        selectedClientName = null;
+    }
+}
+
+window.selectClient = function(clientId, clientCode, clientName, rowElement) {
+    selectedClientId = clientId;
+    selectedClientCode = clientCode;
+    selectedClientName = clientName;
+    
+    // Update button state
+    const selectBtn = document.getElementById('select-client-btn');
+    if (selectBtn) {
+        selectBtn.disabled = false;
+    }
+    
+    // Remove highlight from all rows
+    document.querySelectorAll('.client-row').forEach(row => {
+        row.classList.remove('bg-blue-100');
+    });
+    
+    // Highlight only the specific row that was clicked
+    if (rowElement) {
+        rowElement.classList.add('bg-blue-100');
+    } else {
+        // Fallback: if rowElement not provided, highlight first matching row
+        const firstRow = document.querySelector(`[data-client-id="${clientId}"]`);
+        if (firstRow) {
+            firstRow.classList.add('bg-blue-100');
+        }
+    }
+}
+
+window.confirmClientSelection = function() {
+    if (selectedClientId && selectedClientCode && selectedClientName) {
+        // Populate the form field
+        const hiddenInput = document.getElementById('client_id');
+        const displayInput = document.getElementById('client_id_display');
+        
+        if (hiddenInput) {
+            hiddenInput.value = selectedClientId;
+        }
+        
+        if (displayInput) {
+            displayInput.value = `${selectedClientCode} - ${selectedClientName}`;
+        }
+        
+        // Trigger change event on hidden input if it exists
+        if (hiddenInput) {
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        closeClientSelectionModal();
+    } else {
+        alert('Харилцагч сонгоно уу');
+    }
+}
+
+window.selectAndConfirmClient = function(clientId, clientCode, clientName, rowElement) {
+    // Select the client first (highlight the specific row)
+    selectClient(clientId, clientCode, clientName, rowElement);
+    // Then immediately confirm the selection
+    confirmClientSelection();
+}
+
+window.loadClientTable = function() {
+    const container = document.getElementById('client-table-container');
+    if (!container) {
+        console.error('Client table container not found!');
+        return;
+    }
+    
+    // Show loading
+    container.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Уншиж байна...</p></div>';
+    
+    // Load clients from API endpoint
+    fetch(`/core/api/clients/?page=1&page_size=1000`, {
+        credentials: 'include',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Handle the response structure
+        let clients = [];
+        if (data.clients && Array.isArray(data.clients)) {
+            clients = data.clients;
+        } else if (Array.isArray(data)) {
+            clients = data;
+        } else if (data.results && Array.isArray(data.results)) {
+            clients = data.results;
+        }
+        
+        if (!clients || clients.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Харилцагч олдсонгүй</h3>
+                </div>
+            `;
+            return;
+        }
+        
+        allClients = clients;
+        
+        // Build client table
+        let tableHtml = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">#</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Код</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төрөл</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Регистр</th>
+                            <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үйлдэл</th>
+                        </tr>
+                        <!-- Filter Row -->
+                        <tr class="bg-gray-100">
+                            <th class="px-3 py-2 border-r border-gray-200"></th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-client-code" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-client-name" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-client-type" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2 border-r border-gray-200">
+                                <input type="text" id="filter-client-register" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </th>
+                            <th class="px-3 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-table-tbody" class="bg-white divide-y divide-gray-200">
+        `;
+        
+        let rowIndex = 1;
+        clients.forEach((client) => {
+            const clientId = client.ClientId || client.client_id;
+            const clientCode = client.ClientCode || client.client_code || '';
+            const clientName = client.ClientName || client.client_name || '';
+            const clientType = (client.ClientTypeName || client.ClientType__ClientTypeName || client.client_type_name || '-');
+            const clientRegister = client.ClientRegister || client.client_register || '-';
+            
+            // Escape for data attributes
+            const escapedCode = (clientCode || '').toLowerCase();
+            const escapedName = (clientName || '').toLowerCase();
+            const escapedType = (clientType || '').toLowerCase();
+            const escapedRegister = (clientRegister || '').toLowerCase();
+            
+            tableHtml += `
+                <tr class="client-row hover:bg-gray-50 cursor-pointer" 
+                    data-client-id="${clientId}"
+                    data-client-code="${escapedCode}"
+                    data-client-name="${escapedName}"
+                    data-client-type="${escapedType}"
+                    data-client-register="${escapedRegister}"
+                    onclick="selectClient(${clientId}, '${clientCode.replace(/'/g, "\\'")}', '${clientName.replace(/'/g, "\\'")}', this)">
+                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200">${rowIndex++}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${clientCode}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${clientName}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${clientType}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 border-r border-gray-200">${clientRegister}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-center">
+                        <button onclick="event.stopPropagation(); const row = this.closest('tr'); selectAndConfirmClient(${clientId}, '${clientCode.replace(/'/g, "\\'")}', '${clientName.replace(/'/g, "\\'")}', row)" 
+                                class="px-3 py-1 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                            Сонгох
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = tableHtml;
+        
+        // Initialize filters after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeClientFilters();
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error loading client table:', error);
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Алдаа гарлаа</h3>
+                <p class="mt-1 text-sm text-gray-500">Харилцагчийн мэдээллийг ачаалахад алдаа гарлаа.</p>
+                <button onclick="loadClientTable()" class="mt-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Дахин оролдох
+                </button>
+            </div>
+        `;
+    });
+}
+
+// Initialize client table filters
+function initializeClientFilters() {
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    const debouncedApplyFilters = debounce(applyClientFilters, 300);
+    
+    // Add filter event listeners
+    const filters = [
+        'filter-client-code',
+        'filter-client-name',
+        'filter-client-type',
+        'filter-client-register'
+    ];
+    
+    filters.forEach(filterId => {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('input', debouncedApplyFilters);
+        }
+    });
+}
+
+// Apply client table filters
+function applyClientFilters() {
+    const codeFilter = document.getElementById('filter-client-code')?.value.toLowerCase().trim() || '';
+    const nameFilter = document.getElementById('filter-client-name')?.value.toLowerCase().trim() || '';
+    const typeFilter = document.getElementById('filter-client-type')?.value.toLowerCase().trim() || '';
+    const registerFilter = document.getElementById('filter-client-register')?.value.toLowerCase().trim() || '';
+    
+    const rows = document.querySelectorAll('.client-row');
+    
+    rows.forEach(row => {
+        const code = row.getAttribute('data-client-code') || '';
+        const name = row.getAttribute('data-client-name') || '';
+        const type = row.getAttribute('data-client-type') || '';
+        const register = row.getAttribute('data-client-register') || '';
+        
+        let shouldShow = true;
+        
+        if (codeFilter && !code.includes(codeFilter)) shouldShow = false;
+        if (nameFilter && !name.includes(nameFilter)) shouldShow = false;
+        if (typeFilter && !type.includes(typeFilter)) shouldShow = false;
+        if (registerFilter && !register.includes(registerFilter)) shouldShow = false;
+        
+        if (shouldShow) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+</script>
+

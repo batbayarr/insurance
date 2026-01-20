@@ -1,0 +1,1358 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Template Management - Silicon-AI Insurance{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ЗАГВАРЫН МОДУЛЬ</h1>            
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-open-selection-modal" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs">+ СОНГОЛТ НЭМЭХ</span>
+            </button>
+            {% if perms.core.add_ref_policy_template %}
+            <button id="btn-add-template" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs">+ ЗАГВАР НЭМЭХ</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: Master-Detail Tables -->
+    <div class="p-3 lg:p-6 space-y-6">
+        <!-- Master Table: Templates -->
+        <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-medium text-gray-900">ЗАГВАР</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Нэр</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Тайлбар</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-20">Үйлдэл</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="filter-name" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <input type="text" id="filter-description" placeholder="Хайх..." 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                                <select id="filter-status" 
+                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Бүгд</option>
+                                    <option value="true">Идэвхтэй</option>
+                                    <option value="false">Идэвхгүй</option>
+                                </select>
+                            </td>
+                            <td class="px-2 py-1">
+                                <button id="clear-filters" class="w-full px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:ring-1 focus:ring-blue-500">
+                                    Цэвэрлэх
+                                </button>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody id="template-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Templates will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add Button Between Tables -->
+        <div class="flex justify-end py-3" style="min-height: 40px; width: 100%;">
+            <button id="btn-add-detail" onclick="openSelectionModal()" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important; background-color: rgb(37, 99, 235) !important; color: rgb(255, 255, 255) !important; padding: 0.25rem 0.5rem !important; border-radius: 0.375rem !important;" class="inline-flex items-center px-2 py-1 lg:px-3 lg:py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 lg:mr-1.5 h-3 w-3 lg:h-4 lg:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: rgb(255, 255, 255) !important;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span class="text-xs" style="color: rgb(255, 255, 255) !important;">+ НЭМЭХ</span>
+            </button>
+        </div>
+
+        <!-- Detail Table: Combined View -->
+        <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-medium text-gray-900">ДЭЛГЭРЭНГҮЙ</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Бүтээгдэхүүн</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Зүйл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Эрсдэл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Комиссын %</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase w-20">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-tbody" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-sm text-gray-500">Загвар сонгоно уу</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Selection Modal -->
+<div id="selection-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-7xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">БҮТЭЭГДЭХҮҮН, ЗҮЙЛ, ЭРСДЭЛ СОНГОХ</h3>
+            <button onclick="closeSelectionModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="mt-4">
+            <div class="flex flex-row gap-4 mb-4" style="display: flex; flex-wrap: nowrap;">
+                <!-- Product Table -->
+                <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden flex-1" style="min-width: 0;">
+                    <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <h3 class="text-sm font-medium text-gray-900">БҮТЭЭГДЭХҮҮН</h3>
+                    </div>
+                    <div class="overflow-x-auto" style="max-height: 400px;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Код</th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Нэр</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-selection-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Item Table -->
+                <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden flex-1" style="min-width: 0;">
+                    <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <h3 class="text-sm font-medium text-gray-900">ЗҮЙЛ</h3>
+                    </div>
+                    <div class="overflow-x-auto" style="max-height: 400px;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Код</th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Нэр</th>
+                                </tr>
+                            </thead>
+                            <tbody id="item-selection-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Risk Table -->
+                <div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden flex-1" style="min-width: 0;">
+                    <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <h3 class="text-sm font-medium text-gray-900">ЭРСДЭЛ</h3>
+                    </div>
+                    <div class="overflow-x-auto" style="max-height: 400px;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Код</th>
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Нэр</th>
+                                </tr>
+                            </thead>
+                            <tbody id="risk-selection-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Risks will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3 border-t pt-4">
+            <button type="button" onclick="closeSelectionModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Цуцлах
+            </button>
+            <button id="btn-save-selections-modal" disabled onclick="saveSelections()" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                ХАДГАЛАХ
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Template Modal -->
+<div id="template-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900" id="template-modal-title">ЗАГВАР НЭМЭХ</h3>
+            <button onclick="closeTemplateModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="template-form" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="template-id" name="template_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Нэр *</label>
+                    <input type="text" id="template-name" name="template_name" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Тайлбар</label>
+                    <textarea id="template-description" name="template_description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Файлын зам</label>
+                    <div class="mt-1 flex space-x-2">
+                        <input type="text" id="template-file-path" name="template_file_path" readonly class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50">
+                        <input type="file" id="template-file-input" accept=".docx,.doc" class="hidden">
+                        <button type="button" onclick="document.getElementById('template-file-input').click()" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-medium hover:bg-gray-700 whitespace-nowrap">
+                            Файл сонгох
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Зөвхөн .docx эсвэл .doc файлууд</p>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="template-is-active" name="template_is_active" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Идэвхтэй</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeTemplateModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div id="edit-product-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">БҮТЭЭГДЭХҮҮН ЗАСАХ</h3>
+            <button onclick="closeEditProductModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="edit-product-form" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="edit-product-id" name="product_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Бүтээгдэхүүний нэр</label>
+                    <input type="text" id="edit-product-name" name="product_name" readonly class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Бүтээгдэхүүний код</label>
+                    <input type="text" id="edit-product-code" name="product_code" readonly class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeEditProductModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Хаах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div id="edit-item-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">ЗҮЙЛ ЗАСАХ</h3>
+            <button onclick="closeEditItemModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="edit-item-form" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="edit-item-id" name="item_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Зүйлийн нэр</label>
+                    <input type="text" id="edit-item-name" name="item_name" readonly class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Зүйлийн код</label>
+                    <input type="text" id="edit-item-code" name="item_code" readonly class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeEditItemModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Хаах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Risk Modal (for editing commission percent) -->
+<div id="edit-risk-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">ЭРСДЭЛ ЗАСАХ</h3>
+            <button onclick="closeEditRiskModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="edit-risk-form" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" id="edit-risk-id" name="risk_id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Комиссын хувь (%)</label>
+                    <input type="number" id="edit-risk-comm-percent" name="comm_percent" step="0.01" min="0" max="100" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeEditRiskModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Цуцлах
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    Хадгалах
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Prevent script re-execution
+if (!window.templateManagementScriptLoaded) {
+    window.templateManagementScriptLoaded = true;
+
+// API Base URL
+const API_BASE = '/api/insurance/template';
+
+// Global state
+let templatesData = [];
+let selectedTemplateId = null;
+let selectedProducts = new Set();
+let selectedItems = new Set();
+let selectedRisks = new Set();
+let allProducts = [];
+let allItems = [];
+let allRisks = [];
+let combinedDetails = [];
+// No filtering needed - products, items, and risks are all independent
+
+// Load reference data for selection tables
+function loadReferenceData() {
+    // Load Products
+    fetch('/core/api/products/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text.substring(0, 200)}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            allProducts = data.results || [];
+            renderProductSelection();
+        } else {
+            console.error('Error loading products:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading products:', error);
+    });
+
+    // Load Items
+    fetch('/core/api/items/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text.substring(0, 200)}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            allItems = data.results || [];
+            renderItemSelection();
+        } else {
+            console.error('Error loading items:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading items:', error);
+    });
+
+    // Load Risks
+    fetch('/core/api/risks/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text.substring(0, 200)}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            allRisks = data.results || [];
+            renderRiskSelection();
+        } else {
+            console.error('Error loading risks:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading risks:', error);
+    });
+}
+
+// Render Product Selection Table
+function renderProductSelection() {
+    const tbody = document.getElementById('product-selection-tbody');
+    if (!tbody) return;
+    
+    if (allProducts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-sm text-gray-500">Бүтээгдэхүүн байхгүй</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    allProducts.forEach(product => {
+        const isSelected = selectedProducts.has(product.ProductId);
+        html += `
+            <tr class="product-selection-row hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}" 
+                onclick="toggleProductSelection(${product.ProductId})">
+                <td class="px-2 py-1">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                           onclick="event.stopPropagation(); toggleProductSelection(${product.ProductId})"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(product.ProductCode || '')}</td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(product.ProductName || '')}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    updateSaveButton();
+}
+
+// Render Item Selection Table
+function renderItemSelection() {
+    const tbody = document.getElementById('item-selection-tbody');
+    if (!tbody) return;
+    
+    if (allItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-sm text-gray-500">Зүйл байхгүй</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    allItems.forEach(item => {
+        const isSelected = selectedItems.has(item.ItemId);
+        html += `
+            <tr class="item-selection-row hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}" 
+                onclick="toggleItemSelection(${item.ItemId})">
+                <td class="px-2 py-1">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                           onclick="event.stopPropagation(); toggleItemSelection(${item.ItemId})"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(item.ItemCode || '')}</td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(item.ItemName || '')}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    updateSaveButton();
+}
+
+// Render Risk Selection Table
+function renderRiskSelection() {
+    const tbody = document.getElementById('risk-selection-tbody');
+    if (!tbody) return;
+    
+    if (allRisks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-sm text-gray-500">Эрсдэл байхгүй</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    allRisks.forEach(risk => {
+        const isSelected = selectedRisks.has(risk.RiskId);
+        html += `
+            <tr class="risk-selection-row hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}" 
+                onclick="toggleRiskSelection(${risk.RiskId})">
+                <td class="px-2 py-1">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                           onclick="event.stopPropagation(); toggleRiskSelection(${risk.RiskId})"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(risk.RiskCode || '')}</td>
+                <td class="px-2 py-1 text-xs text-gray-900">${escapeHtml(risk.RiskName || '')}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    updateSaveButton();
+}
+
+// Toggle selection functions
+function toggleProductSelection(productId) {
+    if (selectedProducts.has(productId)) {
+        selectedProducts.delete(productId);
+    } else {
+        selectedProducts.add(productId);
+    }
+    renderProductSelection();
+}
+
+function toggleItemSelection(itemId) {
+    if (selectedItems.has(itemId)) {
+        selectedItems.delete(itemId);
+    } else {
+        selectedItems.add(itemId);
+    }
+    renderItemSelection();
+}
+
+function toggleRiskSelection(riskId) {
+    if (selectedRisks.has(riskId)) {
+        selectedRisks.delete(riskId);
+    } else {
+        selectedRisks.add(riskId);
+    }
+    renderRiskSelection();
+}
+
+// Update Save button state
+function updateSaveButton() {
+    const btn = document.getElementById('btn-save-selections-modal');
+    if (!btn) return;
+    
+    const hasSelection = selectedProducts.size > 0 && selectedItems.size > 0 && selectedRisks.size > 0;
+    const hasTemplate = selectedTemplateId !== null;
+    
+    btn.disabled = !(hasSelection && hasTemplate);
+}
+
+// Open/Close Selection Modal
+function openSelectionModal() {
+    if (!selectedTemplateId) {
+        alert('Эхлээд загвар сонгоно уу');
+        return;
+    }
+    document.getElementById('selection-modal').classList.remove('hidden');
+    // Load reference data if not already loaded
+    if (allProducts.length === 0 || allItems.length === 0 || allRisks.length === 0) {
+        loadReferenceData();
+    }
+}
+
+function closeSelectionModal() {
+    document.getElementById('selection-modal').classList.add('hidden');
+}
+
+// Open/Close Product Edit Modal
+function openEditProductModal(productId, productName, productCode) {
+    if (!productId) return;
+    document.getElementById('edit-product-id').value = productId;
+    document.getElementById('edit-product-name').value = productName || '';
+    document.getElementById('edit-product-code').value = productCode || '';
+    document.getElementById('edit-product-modal').classList.remove('hidden');
+}
+
+function closeEditProductModal() {
+    document.getElementById('edit-product-modal').classList.add('hidden');
+}
+
+// Open/Close Item Edit Modal
+function openEditItemModal(itemId, itemName, itemCode) {
+    if (!itemId) return;
+    document.getElementById('edit-item-id').value = itemId;
+    document.getElementById('edit-item-name').value = itemName || '';
+    document.getElementById('edit-item-code').value = itemCode || '';
+    document.getElementById('edit-item-modal').classList.remove('hidden');
+}
+
+function closeEditItemModal() {
+    document.getElementById('edit-item-modal').classList.add('hidden');
+}
+
+// Open Risk Edit Modal from detail table
+function openEditRiskModalFromDetail(templateProductItemRiskId, riskId, riskName, commPercent) {
+    if (!templateProductItemRiskId || templateProductItemRiskId === 'null' || templateProductItemRiskId === null) return;
+    editRiskCommission(templateProductItemRiskId, commPercent);
+}
+
+// Make functions global
+window.openSelectionModal = openSelectionModal;
+window.closeSelectionModal = closeSelectionModal;
+window.openEditProductModal = openEditProductModal;
+window.closeEditProductModal = closeEditProductModal;
+window.openEditItemModal = openEditItemModal;
+window.closeEditItemModal = closeEditItemModal;
+window.openEditRiskModalFromDetail = openEditRiskModalFromDetail;
+
+// Load templates
+function loadTemplates() {
+    const tbody = document.getElementById('template-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-sm text-gray-600">Ачааллаж байна...</p></td></tr>';
+    
+    fetch(`${API_BASE}/templates`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        templatesData = data;
+        renderTemplates();
+    })
+    .catch(error => {
+        console.error('Error loading templates:', error);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-600">Алдаа гарлаа: ' + error.message + '</td></tr>';
+    });
+}
+
+// Render templates
+function renderTemplates() {
+    const tbody = document.getElementById('template-tbody');
+    if (!tbody) return;
+    
+    const filterName = document.getElementById('filter-name')?.value.trim().toLowerCase() || '';
+    const filterDescription = document.getElementById('filter-description')?.value.trim().toLowerCase() || '';
+    const filterStatus = document.getElementById('filter-status')?.value || '';
+    
+    let html = '';
+    const filtered = templatesData.filter(template => {
+        if (filterName && !template.PolicyTemplateName.toLowerCase().includes(filterName)) return false;
+        if (filterDescription && (!template.Description || !template.Description.toLowerCase().includes(filterDescription))) return false;
+        if (filterStatus && String(template.IsActive) !== filterStatus) return false;
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        html = '<tr><td colspan="4" class="text-center py-8 text-sm text-gray-500">Илэрц олдсонгүй</td></tr>';
+    } else {
+        filtered.forEach(template => {
+            const isSelected = selectedTemplateId === template.PolicyTemplateId;
+            html += `
+                <tr class="template-row hover:bg-gray-50 ${isSelected ? 'bg-blue-100 border-l-4 border-blue-600' : ''}" 
+                    onclick="selectTemplate(${template.PolicyTemplateId})" 
+                    data-template-id="${template.PolicyTemplateId}">
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 font-medium">${escapeHtml(template.PolicyTemplateName)}</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">${escapeHtml(template.Description || '-')}</td>
+                    <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">
+                        <span class="px-2 py-0.5 text-xs rounded-full ${template.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${template.IsActive ? 'Идэвхтэй' : 'Идэвхгүй'}
+                        </span>
+                    </td>
+                    <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium" onclick="event.stopPropagation()">
+                        <div class="flex items-center justify-center space-x-1">
+                            {% if perms.core.change_ref_policy_template %}
+                            <button onclick="editTemplate(${template.PolicyTemplateId})" 
+                                    class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                            {% if perms.core.delete_ref_policy_template %}
+                            <button onclick="deleteTemplate(${template.PolicyTemplateId}, '${escapeJs(template.PolicyTemplateName)}')" 
+                                    class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    tbody.innerHTML = html;
+}
+
+// Select template
+function selectTemplate(templateId) {
+    selectedTemplateId = templateId;
+    renderTemplates();
+    loadCombinedDetails();
+    updateSaveButton();
+    updateAddDetailButton();
+}
+
+function updateAddDetailButton() {
+    const btn = document.getElementById('btn-add-detail');
+    if (btn) {
+        // Ensure button is always visible with explicit styles
+        btn.style.display = 'inline-flex';
+        btn.style.visibility = 'visible';
+        btn.style.backgroundColor = 'rgb(37, 99, 235)'; // blue-600
+        btn.style.color = 'rgb(255, 255, 255)';
+        btn.disabled = !selectedTemplateId;
+        if (!selectedTemplateId) {
+            btn.style.opacity = '0.5';
+            btn.classList.add('cursor-not-allowed');
+            btn.classList.remove('hover:bg-blue-700');
+        } else {
+            btn.style.opacity = '1';
+            btn.classList.remove('cursor-not-allowed');
+            btn.classList.add('hover:bg-blue-700');
+        }
+        // Ensure SVG and span are visible
+        const svg = btn.querySelector('svg');
+        const span = btn.querySelector('span');
+        if (svg) svg.style.color = 'rgb(255, 255, 255)';
+        if (span) span.style.color = 'rgb(255, 255, 255)';
+    }
+}
+
+// Load combined details
+function loadCombinedDetails() {
+    if (!selectedTemplateId) {
+        document.getElementById('detail-tbody').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-sm text-gray-500">Загвар сонгоно уу</td></tr>';
+        return;
+    }
+    
+    const tbody = document.getElementById('detail-tbody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></td></tr>';
+    
+    fetch(`${API_BASE}/templates/${selectedTemplateId}/combined-details`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        combinedDetails = data;
+        renderCombinedDetails();
+    })
+    .catch(error => {
+        console.error('Error loading combined details:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-600">Алдаа гарлаа</td></tr>';
+    });
+}
+
+// Render combined details
+function renderCombinedDetails() {
+    const tbody = document.getElementById('detail-tbody');
+    if (!tbody) return;
+    
+    if (combinedDetails.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-sm text-gray-500">Дэлгэрэнгүй мэдээлэл байхгүй</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    combinedDetails.forEach(detail => {
+        const productName = detail.ProductName || detail.ProductCode || '-';
+        const itemName = detail.ItemName || detail.ItemCode || '-';
+        const riskName = detail.RiskName || detail.RiskCode || '-';
+        const productId = detail.ProductId || null;
+        const itemId = detail.ItemId || null;
+        const riskId = detail.RiskId || null;
+        
+        html += `
+            <tr class="hover:bg-gray-50">
+                <td class="px-2 py-1 text-xs text-gray-900 ${productId ? 'cursor-pointer hover:bg-blue-50' : ''}" 
+                    ${productId ? `onclick="openEditProductModal(${productId}, '${escapeJs(productName)}', '${escapeJs(detail.ProductCode || '')}')"` : ''}>
+                    ${escapeHtml(productName)}
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900 ${itemId ? 'cursor-pointer hover:bg-blue-50' : ''}" 
+                    ${itemId ? `onclick="openEditItemModal(${itemId}, '${escapeJs(itemName)}', '${escapeJs(detail.ItemCode || '')}')"` : ''}>
+                    ${detail.ItemName ? escapeHtml(itemName) : '-'}
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900 ${detail.TemplateProductItemRiskId ? 'cursor-pointer hover:bg-blue-50' : ''}" 
+                    ${detail.TemplateProductItemRiskId ? `onclick="openEditRiskModalFromDetail(${detail.TemplateProductItemRiskId}, ${riskId || 'null'}, '${escapeJs(riskName)}', ${detail.CommPercent !== null && detail.CommPercent !== undefined ? detail.CommPercent : 'null'})"` : ''}>
+                    ${detail.RiskName ? escapeHtml(riskName) : '-'}
+                </td>
+                <td class="px-2 py-1 text-xs text-gray-900">${detail.CommPercent !== null && detail.CommPercent !== undefined ? detail.CommPercent + '%' : '-'}</td>
+                <td class="px-2 py-1 whitespace-nowrap text-center text-xs font-medium">
+                    <div class="flex items-center justify-center space-x-1">
+                        ${detail.TemplateProductItemRiskId ? `
+                            {% if perms.core.change_ref_template_product_item_risk %}
+                            <button onclick="editRiskCommission(${detail.TemplateProductItemRiskId}, ${detail.CommPercent || 'null'})" 
+                                    class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="Засах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                            {% if perms.core.delete_ref_template_product_item_risk %}
+                            <button onclick="deleteDetailRecord('risk', ${detail.TemplateProductItemRiskId}, '${escapeJs(detail.RiskName || '')}')" 
+                                    class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        ` : detail.TemplateProductItemId ? `
+                            {% if perms.core.delete_ref_template_product_item %}
+                            <button onclick="deleteDetailRecord('item', ${detail.TemplateProductItemId}, '${escapeJs(detail.ItemName || '')}')" 
+                                    class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        ` : `
+                            {% if perms.core.delete_ref_template_product %}
+                            <button onclick="deleteDetailRecord('product', ${detail.TemplateProductId}, '${escapeJs(detail.ProductName || '')}')" 
+                                    class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Устгах">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Save selections
+function saveSelections() {
+    if (!selectedTemplateId) {
+        alert('Эхлээд загвар сонгоно уу');
+        return;
+    }
+    
+    if (selectedProducts.size === 0 || selectedItems.size === 0 || selectedRisks.size === 0) {
+        alert('Бүтээгдэхүүн, зүйл, эрсдэл сонгоно уу');
+        return;
+    }
+    
+    const btn = document.getElementById('btn-save-selections-modal');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>';
+    
+    const productIds = Array.from(selectedProducts);
+    const itemIds = Array.from(selectedItems);
+    const riskIds = Array.from(selectedRisks);
+    
+    // Process each product
+    const promises = [];
+    
+    productIds.forEach(productId => {
+        // Check if template product exists, if not create it
+        promises.push(
+            fetch(`${API_BASE}/templates/${selectedTemplateId}/products`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(existingProducts => {
+                let templateProduct = existingProducts.find(p => p.ProductId === productId);
+                
+                if (!templateProduct) {
+                    // Create template product
+                    return fetch(`${API_BASE}/templates/${selectedTemplateId}/products`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        },
+                        body: JSON.stringify({ ProductId: productId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.TemplateProductId) {
+                            return data.TemplateProductId;
+                        } else {
+                            throw new Error(data.error || 'Failed to create template product');
+                        }
+                    });
+                } else {
+                    return templateProduct.TemplateProductId;
+                }
+            })
+            .then(templateProductId => {
+                // For each item
+                const itemPromises = [];
+                itemIds.forEach(itemId => {
+                    itemPromises.push(
+                        fetch(`${API_BASE}/products/${templateProductId}/items`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(existingItems => {
+                            let templateItem = existingItems.find(i => i.ItemId === itemId);
+                            
+                            if (!templateItem) {
+                                // Create template product item
+                                return fetch(`${API_BASE}/products/${templateProductId}/items`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                    },
+                                    body: JSON.stringify({ ItemId: itemId })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.TemplateProductItemId) {
+                                        return data.TemplateProductItemId;
+                                    } else {
+                                        throw new Error(data.error || 'Failed to create template product item');
+                                    }
+                                });
+                            } else {
+                                return templateItem.TemplateProductItemId;
+                            }
+                        })
+                        .then(templateItemId => {
+                            // For each risk
+                            const riskPromises = [];
+                            riskIds.forEach(riskId => {
+                                riskPromises.push(
+                                    fetch(`${API_BASE}/items/${templateItemId}/risks`, {
+                                        method: 'GET',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(existingRisks => {
+                                        let templateRisk = existingRisks.find(r => r.RiskId === riskId);
+                                        
+                                        if (!templateRisk) {
+                                            // Create template product item risk
+                                            return fetch(`${API_BASE}/items/${templateItemId}/risks`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'X-Requested-With': 'XMLHttpRequest',
+                                                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                                },
+                                                body: JSON.stringify({ RiskId: riskId, CommPercent: null })
+                                            })
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                if (data.TemplateProductItemRiskId) {
+                                                    return data;
+                                                } else {
+                                                    throw new Error(data.error || 'Failed to create template product item risk');
+                                                }
+                                            });
+                                        } else {
+                                            return templateRisk;
+                                        }
+                                    })
+                                );
+                            });
+                            return Promise.all(riskPromises);
+                        })
+                    );
+                });
+                return Promise.all(itemPromises);
+            })
+        );
+    });
+    
+    Promise.all(promises)
+        .then(() => {
+            // Refresh detail table
+            loadCombinedDetails();
+            // Clear selections
+            selectedProducts.clear();
+            selectedItems.clear();
+            selectedRisks.clear();
+            renderProductSelection();
+            renderItemSelection();
+            renderRiskSelection();
+            updateSaveButton();
+            btn.innerHTML = 'ХАДГАЛАХ';
+            btn.disabled = false;
+            // Close modal after successful save
+            closeSelectionModal();
+            alert('Амжилттай хадгаллаа');
+        })
+        .catch(error => {
+            console.error('Error saving selections:', error);
+            alert('Алдаа гарлаа: ' + error.message);
+            btn.innerHTML = 'ХАДГАЛАХ';
+            btn.disabled = false;
+            updateSaveButton();
+        });
+}
+
+// Template CRUD
+function addTemplate() {
+    document.getElementById('template-modal-title').textContent = 'ЗАГВАР НЭМЭХ';
+    document.getElementById('template-form').reset();
+    document.getElementById('template-id').value = '';
+    document.getElementById('template-modal').classList.remove('hidden');
+}
+
+function editTemplate(templateId) {
+    const template = templatesData.find(t => t.PolicyTemplateId === templateId);
+    if (!template) return;
+    
+    document.getElementById('template-modal-title').textContent = 'ЗАГВАР ЗАСАХ';
+    document.getElementById('template-id').value = template.PolicyTemplateId;
+    document.getElementById('template-name').value = template.PolicyTemplateName;
+    document.getElementById('template-description').value = template.Description || '';
+    document.getElementById('template-file-path').value = template.FilePath || '';
+    document.getElementById('template-file-path').disabled = false;
+    document.getElementById('template-is-active').checked = template.IsActive;
+    // Reset file input
+    document.getElementById('template-file-input').value = '';
+    document.getElementById('template-modal').classList.remove('hidden');
+}
+
+function deleteTemplate(templateId, name) {
+    if (!confirm(`"${name}" загварыг устгах уу?`)) return;
+    
+    fetch(`${API_BASE}/templates/${templateId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            if (selectedTemplateId === templateId) {
+                selectedTemplateId = null;
+            }
+            loadTemplates();
+            loadCombinedDetails();
+        } else {
+            alert('Алдаа: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+    });
+}
+
+function closeTemplateModal() {
+    document.getElementById('template-modal').classList.add('hidden');
+    // Reset file input
+    document.getElementById('template-file-input').value = '';
+}
+
+// Handle file selection
+document.getElementById('template-file-input')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Validate file type
+        const fileName = file.name.toLowerCase();
+        const isValidExtension = fileName.endsWith('.docx') || fileName.endsWith('.doc');
+        
+        if (!isValidExtension) {
+            alert('Зөвхөн .docx эсвэл .doc файлууд зөвшөөрөгдөнө.');
+            e.target.value = '';
+            return;
+        }
+        
+        // Upload file
+        uploadTemplateFile(file);
+    }
+});
+
+// Upload template file
+function uploadTemplateFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Show loading state
+    const filePathInput = document.getElementById('template-file-path');
+    const originalValue = filePathInput.value;
+    filePathInput.value = 'Файл хадгалж байна...';
+    filePathInput.disabled = true;
+    
+    fetch('/core/api/templates/upload-file/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.file_path) {
+            filePathInput.value = data.file_path;
+            filePathInput.disabled = false;
+        } else {
+            alert('Алдаа: ' + (data.error || 'Файл хадгалахад алдаа гарлаа'));
+            filePathInput.value = originalValue;
+            filePathInput.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+        filePathInput.value = originalValue;
+        filePathInput.disabled = false;
+    });
+}
+
+// Detail record deletion
+function deleteDetailRecord(type, id, name) {
+    if (!confirm(`"${name}" бичлэгийг устгах уу?`)) return;
+    
+    let url = '';
+    if (type === 'risk') {
+        url = `${API_BASE}/risks/${id}`;
+    } else if (type === 'item') {
+        url = `${API_BASE}/items/${id}`;
+    } else if (type === 'product') {
+        url = `${API_BASE}/products/${id}`;
+    }
+    
+    fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            loadCombinedDetails();
+        } else {
+            alert('Алдаа: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Edit risk commission
+function editRiskCommission(riskId, currentCommPercent) {
+    document.getElementById('edit-risk-id').value = riskId;
+    document.getElementById('edit-risk-comm-percent').value = currentCommPercent || '';
+    document.getElementById('edit-risk-modal').classList.remove('hidden');
+}
+
+function closeEditRiskModal() {
+    document.getElementById('edit-risk-modal').classList.add('hidden');
+}
+
+// Make editRiskCommission global
+window.editRiskCommission = editRiskCommission;
+window.closeEditRiskModal = closeEditRiskModal;
+
+// Form submissions
+document.getElementById('template-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = {
+        PolicyTemplateName: document.getElementById('template-name').value,
+        Description: document.getElementById('template-description').value || null,
+        FilePath: document.getElementById('template-file-path').value || null,
+        IsActive: document.getElementById('template-is-active').checked
+    };
+    
+    const templateId = document.getElementById('template-id').value;
+    const url = templateId ? `${API_BASE}/templates/${templateId}` : `${API_BASE}/templates`;
+    const method = templateId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.PolicyTemplateId || data.message) {
+            closeTemplateModal();
+            loadTemplates();
+        } else {
+            alert('Алдаа: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+    });
+});
+
+document.getElementById('edit-risk-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const riskId = document.getElementById('edit-risk-id').value;
+    const commPercent = parseFloat(document.getElementById('edit-risk-comm-percent').value) || null;
+    const formData = { CommPercent: commPercent };
+    
+    fetch(`${API_BASE}/risks/${riskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.TemplateProductItemRiskId || data.message) {
+            closeEditRiskModal();
+            loadCombinedDetails();
+        } else {
+            alert('Алдаа: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+    });
+});
+
+// Filter handlers
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
+const debouncedRender = debounce(() => renderTemplates(), 300);
+
+document.getElementById('filter-name')?.addEventListener('input', debouncedRender);
+document.getElementById('filter-description')?.addEventListener('input', debouncedRender);
+document.getElementById('filter-status')?.addEventListener('change', debouncedRender);
+document.getElementById('clear-filters')?.addEventListener('click', function() {
+    document.getElementById('filter-name').value = '';
+    document.getElementById('filter-description').value = '';
+    document.getElementById('filter-status').value = '';
+    renderTemplates();
+});
+
+// Open selection modal button
+document.getElementById('btn-open-selection-modal')?.addEventListener('click', openSelectionModal);
+
+// Add template button
+document.getElementById('btn-add-template')?.addEventListener('click', addTemplate);
+
+// Utility functions
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function escapeJs(text) {
+    if (!text) return '';
+    return String(text).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        loadReferenceData();
+        loadTemplates();
+        updateAddDetailButton();
+    });
+} else {
+    loadReferenceData();
+    loadTemplates();
+    updateAddDetailButton();
+}
+
+} // End of execution guard
+</script>
+{% endblock %}
+

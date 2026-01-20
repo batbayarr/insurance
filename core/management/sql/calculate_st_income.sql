@@ -1,72 +1,114 @@
--- PostgreSQL St_Income Calculation Function
--- This function calculates and updates EndBalance in st_income table
--- Parameters: begindate DATE, enddate DATE
--- Groups accounts by StIncomeId and updates st_income table
--- Only processes cash_document where DocumentTypeId = 14 (closing entries)
--- Filters out AccountTypeId = 102
-
--- Drop the function if it exists
-DROP FUNCTION IF EXISTS public.calculate_st_income(date, date);
-
 CREATE OR REPLACE FUNCTION public.calculate_st_income(
-    begindate DATE,
-    enddate DATE
+    begindate date,
+    enddate date
 )
-RETURNS TABLE (
-    "StIncomeId" SMALLINT,
-    "StIncome" VARCHAR(30),
-    "StIncomeName" VARCHAR(150),
-    "EndBalance" NUMERIC(24,6),
-    "Order" SMALLINT
-) AS $$
+RETURNS TABLE(
+    "StIncomeId" smallint,
+    "StIncome" character varying,
+    "StIncomeName" character varying,
+    "EndBalance" numeric,
+    "Order" smallint
+)
+LANGUAGE plpgsql
+VOLATILE
+AS $BODY$
 BEGIN
-    -- First, reset all EndBalance to 0
-    UPDATE st_income SET "EndBalance" = 0;
-    
-    -- Update st_income table with calculated balances
-    WITH 
-    -- 1. Calculate sum of DebitAmount and CreditAmount by AccountTypeId
-    -- From cash_document_detail where DocumentTypeId = 14 and date range
-    -- Filter AccountTypeId <> 102
+    -- 1. Reset EndBalance
+    UPDATE st_income si
+    SET "EndBalance" = 0;
+
+    -- 2. Calculate balances from cash documents
+    WITH
     account_type_totals AS (
-        SELECT 
+        SELECT
             ra."AccountTypeId",
             COALESCE(SUM(cdd."DebitAmount"), 0) AS total_debit,
             COALESCE(SUM(cdd."CreditAmount"), 0) AS total_credit
         FROM cash_document_detail cdd
-        INNER JOIN cash_document cd ON cdd."DocumentId" = cd."DocumentId"
-        INNER JOIN ref_account ra ON cdd."AccountId" = ra."AccountId"
+        INNER JOIN cash_document cd
+            ON cdd."DocumentId" = cd."DocumentId"
+        INNER JOIN ref_account ra
+            ON cdd."AccountId" = ra."AccountId"
         WHERE cd."DocumentTypeId" = 14
-            AND cd."DocumentDate" >= begindate
-            AND cd."DocumentDate" <= enddate
-            AND cd."IsDelete" = false
-            AND ra."AccountTypeId" <> 102
-            AND ra."IsDelete" = false
+          AND cd."DocumentDate" >= begindate
+          AND cd."DocumentDate" <= enddate
+          AND cd."IsDelete" = false
+          AND ra."AccountTypeId" <> 102
+          AND ra."IsDelete" = false
         GROUP BY ra."AccountTypeId"
     ),
-    
-    -- 2. Join with ref_account_type to get StIncomeId
-    -- Calculate EndBalance = sum(DebitAmount) + sum(CreditAmount)
     income_totals AS (
-        SELECT 
+        SELECT
             rat."StIncomeId",
-            COALESCE(SUM(att.total_debit + att.total_credit), 0) AS end_balance
+            SUM(att.total_debit + att.total_credit) AS end_balance
         FROM account_type_totals att
-        INNER JOIN ref_account_type rat ON att."AccountTypeId" = rat."AccountTypeId"
+        INNER JOIN ref_account_type rat
+            ON att."AccountTypeId" = rat."AccountTypeId"
         WHERE rat."StIncomeId" IS NOT NULL
         GROUP BY rat."StIncomeId"
     )
-    
-    -- Update st_income table with calculated EndBalance
     UPDATE st_income si
-    SET 
-        "EndBalance" = COALESCE(it.end_balance, 0)
+    SET "EndBalance" = COALESCE(it.end_balance, 0)
     FROM income_totals it
     WHERE si."StIncomeId" = it."StIncomeId";
-    
-    -- Return all st_income records ordered by Order and StIncome
+
+    -- 3. Calculated rows
+
+    -- StIncomeId = 3
+    UPDATE st_income si
+    SET "EndBalance" =
+        COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" IN (1)), 0)
+      - COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" IN (2)), 0)
+    WHERE si."StIncomeId" = 3;
+
+    -- StIncomeId = 18
+    UPDATE st_income si
+    SET "EndBalance" =
+        COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" IN (3,4,5,6,7,8,13,14)), 0)
+      - COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" IN (9,10,11,12,15,16,17)), 0)
+    WHERE si."StIncomeId" = 18;
+
+    -- StIncomeId = 20
+    UPDATE st_income si
+    SET "EndBalance" =
+        COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" = 18), 0)
+      - COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" = 19), 0)
+    WHERE si."StIncomeId" = 20;
+
+    -- StIncomeId = 22
+    UPDATE st_income si
+    SET "EndBalance" =
+        COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" = 18), 0)
+      - COALESCE(
+            (SELECT SUM(si2."EndBalance")
+             FROM st_income si2
+             WHERE si2."StIncomeId" = 19), 0)
+    WHERE si."StIncomeId" = 22;
+
+    -- 4. Return result
     RETURN QUERY
-    SELECT 
+    SELECT
         si."StIncomeId",
         si."StIncome",
         si."StIncomeName",
@@ -74,10 +116,9 @@ BEGIN
         si."Order"
     FROM st_income si
     ORDER BY si."Order", si."StIncome";
-    
+
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$BODY$;
 
--- Example usage:
--- SELECT calculate_st_income('2025-01-01', '2025-12-31');
-
+ALTER FUNCTION public.calculate_st_income(date, date)
+OWNER TO postgres;

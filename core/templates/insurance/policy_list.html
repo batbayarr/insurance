@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Policy List - Silicon-AI Insurance{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-0">
+    <div class="flex justify-between items-center px-3 py-2 lg:px-6 bg-white border-b border-gray-200">
+        <div>
+            <h1 class="text-base lg:text-lg xl:text-xl font-medium text-gray-900">ДААТГАЛЫН ГЭРЭЭНИЙ ЖАГСААЛТ</h1>            
+        </div>
+    </div>
+
+    <!-- Master Grid (Policies) -->
+    <div id="policy-container" 
+         class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">        
+        <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-medium text-gray-700">ГЭРЭЭ (MASTER)</h2>
+        </div>
+        <!-- Table with horizontal scroll for large datasets -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">№</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Харилцагч</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Загвар</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхлэх</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дуусах</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Валют</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Ханш</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дүн</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Салбар</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Суваг</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Тайлбар</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Төлөв</th>
+                        <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үүсгэсэн</th>
+                        <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-32">Үйлдэл</th>
+                    </tr>
+                </thead>
+                <tbody id="policy-tbody" class="bg-white divide-y divide-gray-200">
+                    {% for policy in policies %}
+                    <tr class="policy-row cursor-pointer hover:bg-gray-50 {% if selected_policy_id == policy.PolicyId|stringformat:'s' %}bg-blue-50{% endif %}" 
+                        data-policy-id="{{ policy.PolicyId }}"
+                        onclick="handleRowClick(event, {{ policy.PolicyId }})">
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.PolicyNo }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.ClientId.ClientName|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.PolicyTemplateId.PolicyTemplateName|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.BeginDate|date:"Y-m-d" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.EndDate|date:"Y-m-d" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.CurrencyId.Currency_name|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">{{ policy.CurrencyExchange|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">{{ policy.CurrencyAmount|default:"-"|floatformat:2 }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.AgentBranchId.BranchName|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.AgentChannelId.ChannelName|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.Description|default:"-"|truncatechars:30 }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.StatusId|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ policy.CreatedBy.username|default:"-" }}</td>
+                        <td class="px-2 py-1 text-xs text-gray-900">
+                            <div class="flex items-center justify-center space-x-1" onclick="event.stopPropagation();">
+                                {% if perms.core.change_policy_main %}
+                                <button onclick="editPolicy({{ policy.PolicyId }})" 
+                                        class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors" 
+                                        title="Засах">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                                {% if perms.core.delete_policy_main %}
+                                <button onclick="deletePolicy({{ policy.PolicyId }}, '{{ policy.PolicyNo }}')" 
+                                        class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors" 
+                                        title="Устгах">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                                {% if perms.core.view_policy_main %}
+                                <button onclick="printPolicyWord({{ policy.PolicyId }})" 
+                                        class="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors" 
+                                        title="ГЭРЭЭ ХЭВЛЭХ">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="14" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Grid (Product/Item/Risk) -->
+    <div id="detail-grid-container" class="mt-4">
+        {% if selected_policy %}
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-medium text-gray-700">БҮТЭЭГДЭХҮҮН / ЗҮЙЛ (DETAIL) - {{ selected_policy.PolicyNo }}</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бүтээгдэхүүний бүлэг</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Бүтээгдэхүүн</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Зүйл</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Эхлэх огноо</th>
+                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Дуусах огноо</th>
+                            <th class="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Үнэлгээ</th>
+                            <th class="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Шимтгэл(%)</th>
+                            <th class="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Хураамж</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-32">Үйлдэл</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-tbody" class="bg-white divide-y divide-gray-200">
+                        {% for detail in detail_data %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ detail.ProductGroup }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ detail.ProductName }}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{{ detail.ItemName }}{% if detail.ItemCode %} ({{ detail.ItemCode }}){% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{% if detail.BeginDate %}{{ detail.BeginDate|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200">{% if detail.EndDate %}{{ detail.EndDate|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">{% if detail.Valuation %}{{ detail.Valuation|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">{% if detail.CommPercent %}{{ detail.CommPercent|floatformat:3 }}{% else %}-{% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900 border-r border-gray-200 text-right">{% if detail.CommAmount %}{{ detail.CommAmount|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td class="px-2 py-1 text-xs text-gray-900">
+                                <div class="flex items-center justify-center space-x-1">
+                                    <button onclick="showItemQuestions({{ detail.PolicyMainProductItemId }})" 
+                                            class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors" 
+                                            title="Асуулт хариулт">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                    <button onclick="showItemRisks({{ detail.PolicyMainProductItemId }})" 
+                                            class="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors" 
+                                            title="Эрсдэл">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-8 text-gray-500">Мэдээлэл олдсонгүй</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if detail_data %}
+                    <tfoot class="bg-gray-100">
+                        <tr>
+                            <td colspan="5" class="px-2 py-1 text-xs font-medium text-gray-700 border-r border-gray-200 text-right">НИЙТ:</td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border-r border-gray-200 text-right">{{ total_valuation|floatformat:2 }}</td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border-r border-gray-200"></td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border-r border-gray-200 text-right">{{ total_comm_amount|floatformat:2 }}</td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700"></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white shadow overflow-hidden rounded-lg border border-gray-200 mx-0">
+            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-medium text-gray-700">БҮТЭЭГДЭХҮҮН / ЗҮЙЛ (DETAIL)</h2>
+            </div>
+            <div class="px-3 py-8 text-center text-gray-500">
+                Гэрээ сонгоно уу
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Questions Modal -->
+<div id="questions-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">АСУУЛТ БА ХАРИУЛТ</h3>
+                <button onclick="closeQuestionsModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Асуулт</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Хариулт</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questions-modal-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Questions will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeQuestionsModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                    Хаах
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Risks Modal -->
+<div id="risks-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">ЭРСДЭЛ</h3>
+                <button onclick="closeRisksModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Эрсдэлийн код</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Эрсдэлийн нэр</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Эрсдэлийн хувь (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="risks-modal-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Risks will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeRisksModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                    Хаах
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle row click - only select if not clicking on buttons
+function handleRowClick(event, policyId) {
+    // Don't trigger selection if clicking on action buttons or their containers
+    if (event.target.closest('button') || 
+        event.target.closest('svg') || 
+        event.target.closest('div[onclick]') ||
+        event.target.tagName === 'BUTTON' ||
+        event.target.tagName === 'SVG' ||
+        event.target.tagName === 'PATH') {
+        return;
+    }
+    selectPolicy(policyId);
+}
+
+function selectPolicy(policyId) {
+    // Update URL with selected policy ID
+    const url = new URL(window.location.href);
+    url.searchParams.set('policy_id', policyId);
+    window.location.href = url.toString();
+}
+
+// Edit policy - redirect to edit page or open modal
+function editPolicy(policyId) {
+    // For now, redirect to create page with policy ID
+    // In the future, you can create a dedicated edit page
+    window.location.href = `/core/policies/create/?edit=${policyId}`;
+}
+
+// Delete policy
+function deletePolicy(policyId, policyNo) {
+    if (!confirm(`"${policyNo}" гэрээг устгах уу? Энэ үйлдлийг буцаах боломжгүй.`)) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/core/policies/${policyId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Алдаа гарлаа');
+            });
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            // Remove the row from table
+            const row = document.querySelector(`tr[data-policy-id="${policyId}"]`);
+            if (row) {
+                row.remove();
+            }
+            
+            // If deleted policy was selected, clear selection
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('policy_id') == policyId) {
+                url.searchParams.delete('policy_id');
+                window.location.href = url.toString();
+            } else {
+                // Show success message
+                showMessage('Гэрээ амжилттай устгагдлаа.', 'success');
+            }
+        } else {
+            alert('Алдаа: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Алдаа гарлаа: ' + error.message);
+    });
+}
+
+// Print Word document
+function printPolicyWord(policyId) {
+    // Use simple approach: create a link and click it
+    const downloadLink = document.createElement('a');
+    downloadLink.href = `/core/policies/${policyId}/generate-word/`;
+    downloadLink.target = '_blank';
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    
+    // Trigger download
+    downloadLink.click();
+    
+    // Clean up after a short delay
+    setTimeout(() => {
+        if (downloadLink && downloadLink.parentNode) {
+            downloadLink.remove();
+        }
+    }, 1000);
+    
+    // Show success message
+    showMessage('Word Document үүсгэж байна. Шинэ цонхонд нээгдэх эсвэл татагдана.', 'info');
+}
+
+// Show message helper
+function showMessage(message, type) {
+    const colors = {
+        'success': 'bg-green-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500',
+        'warning': 'bg-yellow-500'
+    };
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `fixed top-4 right-4 ${colors[type] || colors.info} text-white px-4 py-2 rounded-md shadow-lg z-50`;
+    msgDiv.textContent = message;
+    document.body.appendChild(msgDiv);
+    
+    setTimeout(() => {
+        if (msgDiv && msgDiv.parentNode) {
+            msgDiv.remove();
+        }
+    }, 5000);
+}
+
+// Show item questions
+function showItemQuestions(policyMainProductItemId) {
+    const modal = document.getElementById('questions-modal');
+    const tbody = document.getElementById('questions-modal-body');
+    
+    if (!modal || !tbody) return;
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-gray-500">Ачаалж байна...</td></tr>';
+    modal.classList.remove('hidden');
+    
+    // Fetch questions
+    fetch(`/core/api/policy-item/${policyMainProductItemId}/questions/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.questions) {
+            if (data.questions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-gray-500">Асуулт байхгүй</td></tr>';
+            } else {
+                tbody.innerHTML = data.questions.map(q => `
+                    <tr>
+                        <td class="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">${escapeHtml(q.questionName)}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900">${escapeHtml(q.answer)}</td>
+                    </tr>
+                `).join('');
+            }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-red-500">Алдаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-red-500">Алдаа гарлаа: ' + error.message + '</td></tr>';
+    });
+}
+
+// Close questions modal
+function closeQuestionsModal() {
+    const modal = document.getElementById('questions-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Show item risks
+function showItemRisks(policyMainProductItemId) {
+    const modal = document.getElementById('risks-modal');
+    const tbody = document.getElementById('risks-modal-body');
+    
+    if (!modal || !tbody) return;
+    
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Ачаалж байна...</td></tr>';
+    modal.classList.remove('hidden');
+    
+    // Fetch risks
+    fetch(`/core/api/policy-item/${policyMainProductItemId}/risks/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.risks) {
+            if (data.risks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Эрсдэл байхгүй</td></tr>';
+            } else {
+                tbody.innerHTML = data.risks.map(r => `
+                    <tr>
+                        <td class="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">${escapeHtml(r.riskCode)}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">${escapeHtml(r.riskName)}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${r.riskPercent !== null && r.riskPercent !== undefined ? r.riskPercent.toFixed(3) : '-'}</td>
+                    </tr>
+                `).join('');
+            }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-red-500">Алдаа: ' + (data.error || 'Unknown error') + '</td></tr>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-red-500">Алдаа гарлаа: ' + error.message + '</td></tr>';
+    });
+}
+
+// Close risks modal
+function closeRisksModal() {
+    const modal = document.getElementById('risks-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Escape HTML helper
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+

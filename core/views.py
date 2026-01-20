@@ -16,7 +16,8 @@ import json
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow
+from django.conf import settings
+from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow, Ref_Product_Group, Ref_Product_Type, Ref_Product, Ref_Risk_Type, Ref_Risk, Ref_Item_Type, Ref_Item, Ref_Item_Question, Ref_Policy_Template, Ref_Template_Product, Ref_Template_Product_Item, Ref_Template_Product_Item_Risk, Ref_Template_Account, Ref_Template_Design, Ref_Branch, Ref_Channel, Ref_Branch_User, Ref_Ins_Client, Policy_Main, Policy_Main_Product, Policy_Main_Product_Item, Policy_Main_Product_Item_Risk, Policy_Main_Product_Item_Question, Policy_Main_Files, Policy_Main_Schedule
 
 logger = logging.getLogger(__name__)
 from django.db import connection, connections, transaction
@@ -10623,3 +10624,3341 @@ def template_detail_delete(request, pk):
     
     messages.success(request, 'Template detail deleted successfully.')
     return redirect('core:template_master_detail')
+
+
+# ==================== INSURANCE PRODUCT TYPE & PRODUCT VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_product_type', raise_exception=True)
+def product_type_master_detail(request):
+    """Master-detail view for product types (master) and products (detail)"""
+    selected_product_type_id = request.GET.get('selected_product_type')
+    selected_product_type = None
+    products = []
+    
+    # Get all product types
+    product_types = Ref_Product_Type.objects.select_related('ProductGroupId', 'CreatedBy', 'ModifiedBy').all().order_by('ProductTypeCode')
+    
+    # Get selected product type and its products
+    if selected_product_type_id:
+        try:
+            selected_product_type = Ref_Product_Type.objects.select_related('ProductGroupId').get(ProductTypeId=selected_product_type_id)
+            products = Ref_Product.objects.filter(
+                ProductTypeId=selected_product_type
+            ).select_related('ProductTypeId', 'CreatedBy', 'ModifiedBy').order_by('ProductCode')
+        except Ref_Product_Type.DoesNotExist:
+            selected_product_type = None
+    
+    # Get product groups for dropdown
+    product_groups = Ref_Product_Group.objects.filter(IsActive=True).order_by('ProductGroupCode')
+    
+    context = {
+        'product_types': product_types,
+        'products': products,
+        'selected_product_type': selected_product_type,
+        'selected_product_type_id': selected_product_type_id,
+        'product_groups': product_groups,
+    }
+    
+    return render(request, 'insurance/product_type_master_detail.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_product_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def product_type_create(request):
+    """Create a new product type"""
+    if request.method == 'POST':
+        try:
+            product_group_id = request.POST.get('product_group_id')
+            product_type_code = request.POST.get('product_type_code')
+            product_type_name = request.POST.get('product_type_name')
+            is_active = request.POST.get('product_type_is_active') == 'on'
+            
+            product_group = get_object_or_404(Ref_Product_Group, ProductGroupId=product_group_id)
+            
+            product_type = Ref_Product_Type.objects.create(
+                ProductGroupId=product_group,
+                ProductTypeCode=product_type_code,
+                ProductTypeName=product_type_name,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Бүтээгдэхүний төрөл амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Бүтээгдэхүний төрөл амжилттай нэмэгдлээ.')
+            return redirect('core:product_type_master_detail')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:product_type_master_detail')
+    
+    return redirect('core:product_type_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_product_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def product_type_update(request, pk):
+    """Update an existing product type"""
+    product_type = get_object_or_404(Ref_Product_Type, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            product_group_id = request.POST.get('product_group_id')
+            product_type_code = request.POST.get('product_type_code')
+            product_type_name = request.POST.get('product_type_name')
+            is_active = request.POST.get('product_type_is_active') == 'on'
+            
+            product_group = get_object_or_404(Ref_Product_Group, ProductGroupId=product_group_id)
+            
+            product_type.ProductGroupId = product_group
+            product_type.ProductTypeCode = product_type_code
+            product_type.ProductTypeName = product_type_name
+            product_type.IsActive = is_active
+            product_type.ModifiedBy = request.user
+            product_type.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Бүтээгдэхүний төрөл амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Бүтээгдэхүний төрөл амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:product_type_master_detail?selected_product_type={pk}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(f'core:product_type_master_detail?selected_product_type={pk}')
+    
+    return redirect('core:product_type_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_product_type', raise_exception=True)
+@require_http_methods(["POST"])
+def product_type_delete(request, pk):
+    """Delete a product type"""
+    product_type = get_object_or_404(Ref_Product_Type, pk=pk)
+    
+    try:
+        # Check if there are products using this type
+        products_count = Ref_Product.objects.filter(ProductTypeId=product_type).count()
+        if products_count > 0:
+            messages.error(request, f'Энэ төрөлд {products_count} бүтээгдэхүүн байна. Устгах боломжгүй.')
+            return redirect('core:product_type_master_detail')
+        
+        product_type.delete()
+        messages.success(request, 'Бүтээгдэхүний төрөл амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ бүтээгдэхүний төрөл ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:product_type_master_detail')
+
+
+@login_required
+@permission_required('core.add_ref_product', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def product_create(request):
+    """Create a new product"""
+    if request.method == 'POST':
+        try:
+            product_type_id = request.POST.get('product_type_id')
+            product_code = request.POST.get('product_code')
+            product_name = request.POST.get('product_name')
+            is_active = request.POST.get('product_is_active') == 'on'
+            
+            product_type = get_object_or_404(Ref_Product_Type, ProductTypeId=product_type_id)
+            
+            product = Ref_Product.objects.create(
+                ProductTypeId=product_type,
+                ProductCode=product_code,
+                ProductName=product_name,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Бүтээгдэхүүн амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Бүтээгдэхүүн амжилттай нэмэгдлээ.')
+            return redirect(f'core:product_type_master_detail?selected_product_type={product_type_id}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:product_type_master_detail')
+    
+    return redirect('core:product_type_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_product', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def product_update(request, pk):
+    """Update an existing product"""
+    product = get_object_or_404(Ref_Product, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            product_code = request.POST.get('product_code')
+            product_name = request.POST.get('product_name')
+            is_active = request.POST.get('product_is_active') == 'on'
+            
+            product.ProductCode = product_code
+            product.ProductName = product_name
+            product.IsActive = is_active
+            product.ModifiedBy = request.user
+            product.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Бүтээгдэхүүн амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Бүтээгдэхүүн амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:product_type_master_detail?selected_product_type={product.ProductTypeId.ProductTypeId}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(f'core:product_type_master_detail?selected_product_type={product.ProductTypeId.ProductTypeId}')
+    
+    return redirect('core:product_type_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_product', raise_exception=True)
+@require_http_methods(["POST"])
+def product_delete(request, pk):
+    """Delete a product"""
+    product = get_object_or_404(Ref_Product, pk=pk)
+    product_type_id = product.ProductTypeId.ProductTypeId
+    
+    try:
+        product.delete()
+        messages.success(request, 'Бүтээгдэхүүн амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ бүтээгдэхүүн ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect(f'core:product_type_master_detail?selected_product_type={product_type_id}')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_product_type_detail(request, pk):
+    """API endpoint to get product type details"""
+    try:
+        product_type = Ref_Product_Type.objects.select_related('ProductGroupId').get(ProductTypeId=pk)
+        return JsonResponse({
+            'ProductTypeId': product_type.ProductTypeId,
+            'ProductGroupId': product_type.ProductGroupId.ProductGroupId,
+            'ProductTypeCode': product_type.ProductTypeCode,
+            'ProductTypeName': product_type.ProductTypeName,
+            'IsActive': product_type.IsActive,
+        })
+    except Ref_Product_Type.DoesNotExist:
+        return JsonResponse({'error': 'Product type not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_product_detail(request, pk):
+    """API endpoint to get product details"""
+    try:
+        product = Ref_Product.objects.select_related('ProductTypeId').get(ProductId=pk)
+        return JsonResponse({
+            'ProductId': product.ProductId,
+            'ProductTypeId': product.ProductTypeId.ProductTypeId,
+            'ProductCode': product.ProductCode,
+            'ProductName': product.ProductName,
+            'IsActive': product.IsActive,
+        })
+    except Ref_Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_product_types_list(request):
+    """API endpoint to get paginated list of product types with filters"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '').strip()
+        name_filter = request.GET.get('name', '').strip()
+        group_filter = request.GET.get('group', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Product_Type.objects.select_related('ProductGroupId').all()
+        
+        if code_filter:
+            query = query.filter(ProductTypeCode__icontains=code_filter)
+        if name_filter:
+            query = query.filter(ProductTypeName__icontains=name_filter)
+        if group_filter:
+            query = query.filter(ProductGroupId__ProductGroupName__icontains=group_filter)
+        if is_active_filter:
+            is_active_bool = is_active_filter.lower() == 'true'
+            query = query.filter(IsActive=is_active_bool)
+        
+        # Order by code
+        query = query.order_by('ProductTypeCode')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            product_types_page = paginator.page(page)
+        except PageNotAnInteger:
+            product_types_page = paginator.page(1)
+        except EmptyPage:
+            product_types_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        product_types_data = []
+        for pt in product_types_page:
+            product_types_data.append({
+                'ProductTypeId': pt.ProductTypeId,
+                'ProductTypeCode': pt.ProductTypeCode,
+                'ProductTypeName': pt.ProductTypeName,
+                'ProductGroupName': pt.ProductGroupId.ProductGroupName if pt.ProductGroupId else '',
+                'IsActive': pt.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': product_types_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_product_types_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_products_list(request):
+    """API endpoint to get list of products, optionally filtered by product type"""
+    try:
+        product_type_id = request.GET.get('product_type_id')
+        
+        # Build query
+        query = Ref_Product.objects.select_related('ProductTypeId').all()
+        
+        if product_type_id:
+            query = query.filter(ProductTypeId=product_type_id)
+        
+        # Order by code
+        query = query.order_by('ProductCode')
+        
+        # Serialize data
+        products_data = []
+        for product in query:
+            products_data.append({
+                'ProductId': product.ProductId,
+                'ProductCode': product.ProductCode,
+                'ProductName': product.ProductName,
+                'ProductTypeId': product.ProductTypeId.ProductTypeId if product.ProductTypeId else None,
+                'IsActive': product.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': products_data,
+            'count': len(products_data),
+        })
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f'Error in api_products_list: {str(e)}\n{error_trace}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'detail': error_trace if settings.DEBUG else None
+        }, status=500)
+
+
+# ==================== INSURANCE RISK TYPE & RISK VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_risk_type', raise_exception=True)
+def risk_type_master_detail(request):
+    """Master-detail view for risk types (master) and risks (detail)"""
+    selected_risk_type_id = request.GET.get('selected_risk_type')
+    selected_risk_type = None
+    risks = []
+    
+    # Get all risk types
+    risk_types = Ref_Risk_Type.objects.select_related('CreatedBy', 'ModifiedBy').all().order_by('RiskTypeCode')
+    
+    # Get selected risk type and its risks
+    if selected_risk_type_id:
+        try:
+            selected_risk_type = Ref_Risk_Type.objects.get(RiskTypeId=selected_risk_type_id)
+            risks = Ref_Risk.objects.filter(
+                RiskTypeId=selected_risk_type
+            ).select_related('RiskTypeId', 'CreatedBy', 'ModifiedBy').order_by('RiskCode')
+        except Ref_Risk_Type.DoesNotExist:
+            selected_risk_type = None
+    
+    context = {
+        'risk_types': risk_types,
+        'risks': risks,
+        'selected_risk_type': selected_risk_type,
+        'selected_risk_type_id': selected_risk_type_id,
+    }
+    
+    return render(request, 'insurance/risk_type_master_detail.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_risk_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def risk_type_create(request):
+    """Create a new risk type"""
+    if request.method == 'POST':
+        try:
+            risk_type_code = request.POST.get('risk_type_code')
+            risk_type_name = request.POST.get('risk_type_name')
+            is_active = request.POST.get('risk_type_is_active') == 'on'
+            
+            risk_type = Ref_Risk_Type.objects.create(
+                RiskTypeCode=risk_type_code,
+                RiskTypeName=risk_type_name,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            messages.success(request, 'Эрсдлийн төрөл амжилттай нэмэгдлээ.')
+            return redirect('core:risk_type_master_detail')
+        except Exception as e:
+            messages.error(request, f'Алдаа: {str(e)}')
+            return redirect('core:risk_type_master_detail')
+    
+    return redirect('core:risk_type_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_risk_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def risk_type_update(request, pk):
+    """Update an existing risk type"""
+    risk_type = get_object_or_404(Ref_Risk_Type, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            risk_type_code = request.POST.get('risk_type_code')
+            risk_type_name = request.POST.get('risk_type_name')
+            is_active = request.POST.get('risk_type_is_active') == 'on'
+            
+            risk_type.RiskTypeCode = risk_type_code
+            risk_type.RiskTypeName = risk_type_name
+            risk_type.IsActive = is_active
+            risk_type.ModifiedBy = request.user
+            risk_type.save()
+            
+            messages.success(request, 'Эрсдлийн төрөл амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:risk_type_master_detail?selected_risk_type={pk}')
+        except Exception as e:
+            messages.error(request, f'Алдаа: {str(e)}')
+            return redirect(f'core:risk_type_master_detail?selected_risk_type={pk}')
+    
+    return redirect('core:risk_type_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_risk_type', raise_exception=True)
+@require_http_methods(["POST"])
+def risk_type_delete(request, pk):
+    """Delete a risk type"""
+    risk_type = get_object_or_404(Ref_Risk_Type, pk=pk)
+    
+    try:
+        # Check if there are risks using this type
+        risks_count = Ref_Risk.objects.filter(RiskTypeId=risk_type).count()
+        if risks_count > 0:
+            messages.error(request, f'Энэ төрөлд {risks_count} эрсдэл байна. Устгах боломжгүй.')
+            return redirect('core:risk_type_master_detail')
+        
+        risk_type.delete()
+        messages.success(request, 'Эрсдлийн төрөл амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ эрсдлийн төрөл ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:risk_type_master_detail')
+
+
+@login_required
+@permission_required('core.add_ref_risk', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def risk_create(request):
+    """Create a new risk"""
+    if request.method == 'POST':
+        try:
+            risk_type_id = request.POST.get('risk_type_id')
+            risk_code = request.POST.get('risk_code')
+            risk_name = request.POST.get('risk_name')
+            category_name = request.POST.get('risk_category_name', '').strip()
+            description = request.POST.get('risk_description', '').strip()
+            is_active = request.POST.get('risk_is_active') == 'on'
+            is_core_risk = request.POST.get('risk_is_core_risk') == 'on'
+            
+            risk_type = get_object_or_404(Ref_Risk_Type, RiskTypeId=risk_type_id)
+            
+            risk = Ref_Risk.objects.create(
+                RiskTypeId=risk_type,
+                RiskCode=risk_code,
+                RiskName=risk_name,
+                CategoryName=category_name if category_name else None,
+                Description=description if description else None,
+                IsActive=is_active,
+                IsCoreRisk=is_core_risk,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Эрсдэл амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Эрсдэл амжилттай нэмэгдлээ.')
+            return redirect(f'core:risk_type_master_detail?selected_risk_type={risk_type_id}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:risk_type_master_detail')
+    
+    return redirect('core:risk_type_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_risk', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def risk_update(request, pk):
+    """Update an existing risk"""
+    risk = get_object_or_404(Ref_Risk, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            risk_code = request.POST.get('risk_code')
+            risk_name = request.POST.get('risk_name')
+            category_name = request.POST.get('risk_category_name', '').strip()
+            description = request.POST.get('risk_description', '').strip()
+            is_active = request.POST.get('risk_is_active') == 'on'
+            is_core_risk = request.POST.get('risk_is_core_risk') == 'on'
+            
+            risk.RiskCode = risk_code
+            risk.RiskName = risk_name
+            risk.CategoryName = category_name if category_name else None
+            risk.Description = description if description else None
+            risk.IsActive = is_active
+            risk.IsCoreRisk = is_core_risk
+            risk.ModifiedBy = request.user
+            
+            risk.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Эрсдэл амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Эрсдэл амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:risk_type_master_detail?selected_risk_type={risk.RiskTypeId.RiskTypeId}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(f'core:risk_type_master_detail?selected_risk_type={risk.RiskTypeId.RiskTypeId}')
+    
+    return redirect('core:risk_type_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_risk', raise_exception=True)
+@require_http_methods(["POST"])
+def risk_delete(request, pk):
+    """Delete a risk"""
+    risk = get_object_or_404(Ref_Risk, pk=pk)
+    risk_type_id = risk.RiskTypeId.RiskTypeId
+    
+    try:
+        risk.delete()
+        messages.success(request, 'Эрсдэл амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ эрсдэл ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect(f'core:risk_type_master_detail?selected_risk_type={risk_type_id}')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_risk_type_detail(request, pk):
+    """API endpoint to get risk type details"""
+    try:
+        risk_type = Ref_Risk_Type.objects.get(RiskTypeId=pk)
+        return JsonResponse({
+            'RiskTypeId': risk_type.RiskTypeId,
+            'RiskTypeCode': risk_type.RiskTypeCode,
+            'RiskTypeName': risk_type.RiskTypeName,
+            'IsActive': risk_type.IsActive,
+        })
+    except Ref_Risk_Type.DoesNotExist:
+        return JsonResponse({'error': 'Risk type not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_risk_detail(request, pk):
+    """API endpoint to get risk details"""
+    try:
+        risk = Ref_Risk.objects.select_related('RiskTypeId').get(RiskId=pk)
+        return JsonResponse({
+            'RiskId': risk.RiskId,
+            'RiskTypeId': risk.RiskTypeId.RiskTypeId,
+            'RiskCode': risk.RiskCode,
+            'RiskName': risk.RiskName,
+            'CategoryName': risk.CategoryName or '',
+            'Description': risk.Description or '',
+            'IsActive': risk.IsActive,
+            'IsCoreRisk': risk.IsCoreRisk,
+        })
+    except Ref_Risk.DoesNotExist:
+        return JsonResponse({'error': 'Risk not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_risk_types_list(request):
+    """API endpoint to get paginated list of risk types with filters"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '').strip()
+        name_filter = request.GET.get('name', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Risk_Type.objects.all()
+        
+        if code_filter:
+            query = query.filter(RiskTypeCode__icontains=code_filter)
+        if name_filter:
+            query = query.filter(RiskTypeName__icontains=name_filter)
+        if is_active_filter:
+            is_active_bool = is_active_filter.lower() == 'true'
+            query = query.filter(IsActive=is_active_bool)
+        
+        # Order by code
+        query = query.order_by('RiskTypeCode')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            risk_types_page = paginator.page(page)
+        except PageNotAnInteger:
+            risk_types_page = paginator.page(1)
+        except EmptyPage:
+            risk_types_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        risk_types_data = []
+        for rt in risk_types_page:
+            risk_types_data.append({
+                'RiskTypeId': rt.RiskTypeId,
+                'RiskTypeCode': rt.RiskTypeCode,
+                'RiskTypeName': rt.RiskTypeName,
+                'IsActive': rt.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': risk_types_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_risk_types_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_risks_list(request):
+    """API endpoint to get list of risks, optionally filtered by risk type"""
+    try:
+        risk_type_id = request.GET.get('risk_type_id')
+        
+        # Build query
+        query = Ref_Risk.objects.select_related('RiskTypeId').all()
+        
+        if risk_type_id:
+            query = query.filter(RiskTypeId=risk_type_id)
+        
+        # Order by code
+        query = query.order_by('RiskCode')
+        
+        # Serialize data
+        risks_data = []
+        for risk in query:
+            risks_data.append({
+                'RiskId': risk.RiskId,
+                'RiskCode': risk.RiskCode,
+                'RiskName': risk.RiskName,
+                'CategoryName': risk.CategoryName or '',
+                'RiskTypeId': risk.RiskTypeId.RiskTypeId if risk.RiskTypeId else None,
+                'Description': risk.Description or '',
+                'IsActive': risk.IsActive,
+                'IsCoreRisk': risk.IsCoreRisk,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': risks_data,
+            'count': len(risks_data),
+        })
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f'Error in api_risks_list: {str(e)}\n{error_trace}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'detail': error_trace if settings.DEBUG else None
+        }, status=500)
+
+
+# ==================== INSURANCE ITEM & ITEM QUESTION VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_item', raise_exception=True)
+def item_master_detail(request):
+    """Master-detail view for items (master) and item questions (detail)"""
+    selected_item_id = request.GET.get('selected_item')
+    selected_item = None
+    item_questions = []
+    
+    # Get all items
+    items = Ref_Item.objects.select_related('ItemTypeId', 'CreatedBy', 'ModifiedBy').all().order_by('ItemCode')
+    
+    # Get selected item and its questions
+    if selected_item_id:
+        try:
+            selected_item = Ref_Item.objects.select_related('ItemTypeId').get(ItemId=selected_item_id)
+            item_questions = Ref_Item_Question.objects.filter(
+                ItemId=selected_item
+            ).select_related('ItemId', 'CreatedBy', 'ModifiedBy').order_by('Order', 'ItemQuestionCode')
+        except Ref_Item.DoesNotExist:
+            selected_item = None
+    
+    # Get item types for dropdown
+    item_types = Ref_Item_Type.objects.filter(IsActive=True).order_by('ItemTypeCode')
+    
+    context = {
+        'items': items,
+        'item_questions': item_questions,
+        'selected_item': selected_item,
+        'selected_item_id': selected_item_id,
+        'item_types': item_types,
+    }
+    
+    return render(request, 'insurance/item_question_master_detail.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_item', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_create(request):
+    """Create a new item"""
+    if request.method == 'POST':
+        try:
+            item_type_id = request.POST.get('item_type_id')
+            item_code = request.POST.get('item_code')
+            item_name = request.POST.get('item_name')
+            is_active = request.POST.get('item_is_active') == 'on'
+            
+            item_type = get_object_or_404(Ref_Item_Type, ItemTypeId=item_type_id)
+            
+            item = Ref_Item.objects.create(
+                ItemTypeId=item_type,
+                ItemCode=item_code,
+                ItemName=item_name,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын зүйл амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын зүйл амжилттай нэмэгдлээ.')
+            return redirect('core:item_master_detail')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:item_master_detail')
+    
+    return redirect('core:item_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_item', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_update(request, pk):
+    """Update an existing item"""
+    item = get_object_or_404(Ref_Item, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            item_type_id = request.POST.get('item_type_id')
+            item_code = request.POST.get('item_code')
+            item_name = request.POST.get('item_name')
+            is_active = request.POST.get('item_is_active') == 'on'
+            
+            item_type = get_object_or_404(Ref_Item_Type, ItemTypeId=item_type_id)
+            
+            item.ItemTypeId = item_type
+            item.ItemCode = item_code
+            item.ItemName = item_name
+            item.IsActive = is_active
+            item.ModifiedBy = request.user
+            item.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын зүйл амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын зүйл амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:item_master_detail?selected_item={pk}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(f'core:item_master_detail?selected_item={pk}')
+    
+    return redirect('core:item_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_item', raise_exception=True)
+@require_http_methods(["POST"])
+def item_delete(request, pk):
+    """Delete an item"""
+    item = get_object_or_404(Ref_Item, pk=pk)
+    
+    try:
+        # Check if there are item questions using this item
+        questions_count = Ref_Item_Question.objects.filter(ItemId=item).count()
+        if questions_count > 0:
+            messages.error(request, f'Энэ зүйлд {questions_count} асуулт байна. Устгах боломжгүй.')
+            return redirect('core:item_master_detail')
+        
+        item.delete()
+        messages.success(request, 'Даатгалын зүйл амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ даатгалын зүйл ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:item_master_detail')
+
+
+@login_required
+@permission_required('core.add_ref_item_question', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_question_create(request):
+    """Create a new item question"""
+    if request.method == 'POST':
+        try:
+            item_id = request.POST.get('item_id')
+            item_question_code = request.POST.get('item_question_code')
+            item_question_name = request.POST.get('item_question_name')
+            question_type = request.POST.get('item_question_type', '').strip()
+            field_type = request.POST.get('item_question_field_type', '').strip()
+            field_value = request.POST.get('item_question_field_value', '').strip()
+            order = int(request.POST.get('item_question_order', 0) or 0)
+            field_mask = request.POST.get('item_question_field_mask', '').strip()
+            is_active = request.POST.get('item_question_is_active') == 'on'
+            
+            item = get_object_or_404(Ref_Item, ItemId=item_id)
+            
+            item_question = Ref_Item_Question.objects.create(
+                ItemId=item,
+                ItemQuestionCode=item_question_code,
+                ItemQuestionName=item_question_name,
+                QuestionType=question_type,
+                FieldType=field_type,
+                FieldValue=field_value if field_value else None,
+                Order=order,
+                FieldMask=field_mask if field_mask else None,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Асуулт амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Асуулт амжилттай нэмэгдлээ.')
+            return redirect(f'core:item_master_detail?selected_item={item_id}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:item_master_detail')
+    
+    return redirect('core:item_master_detail')
+
+
+@login_required
+@permission_required('core.change_ref_item_question', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_question_update(request, pk):
+    """Update an existing item question"""
+    item_question = get_object_or_404(Ref_Item_Question, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            item_question_code = request.POST.get('item_question_code')
+            item_question_name = request.POST.get('item_question_name')
+            question_type = request.POST.get('item_question_type', '').strip()
+            field_type = request.POST.get('item_question_field_type', '').strip()
+            field_value = request.POST.get('item_question_field_value', '').strip()
+            order = int(request.POST.get('item_question_order', 0) or 0)
+            field_mask = request.POST.get('item_question_field_mask', '').strip()
+            is_active = request.POST.get('item_question_is_active') == 'on'
+            
+            item_question.ItemQuestionCode = item_question_code
+            item_question.ItemQuestionName = item_question_name
+            item_question.QuestionType = question_type
+            item_question.FieldType = field_type
+            item_question.FieldValue = field_value if field_value else None
+            item_question.Order = order
+            item_question.FieldMask = field_mask if field_mask else None
+            item_question.IsActive = is_active
+            item_question.ModifiedBy = request.user
+            item_question.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Асуулт амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Асуулт амжилттай шинэчлэгдлээ.')
+            return redirect(f'core:item_master_detail?selected_item={item_question.ItemId.ItemId}')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(f'core:item_master_detail?selected_item={item_question.ItemId.ItemId}')
+    
+    return redirect('core:item_master_detail')
+
+
+@login_required
+@permission_required('core.delete_ref_item_question', raise_exception=True)
+@require_http_methods(["POST"])
+def item_question_delete(request, pk):
+    """Delete an item question"""
+    item_question = get_object_or_404(Ref_Item_Question, pk=pk)
+    item_id = item_question.ItemId.ItemId
+    
+    try:
+        item_question.delete()
+        messages.success(request, 'Асуулт амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ асуулт ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect(f'core:item_master_detail?selected_item={item_id}')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_item_detail(request, pk):
+    """API endpoint to get item details"""
+    try:
+        item = Ref_Item.objects.select_related('ItemTypeId').get(ItemId=pk)
+        return JsonResponse({
+            'ItemId': item.ItemId,
+            'ItemTypeId': item.ItemTypeId.ItemTypeId,
+            'ItemCode': item.ItemCode,
+            'ItemName': item.ItemName,
+            'IsActive': item.IsActive,
+        })
+    except Ref_Item.DoesNotExist:
+        return JsonResponse({'error': 'Item not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_item_question_detail(request, pk):
+    """API endpoint to get item question details"""
+    try:
+        item_question = Ref_Item_Question.objects.select_related('ItemId').get(ItemQuestionId=pk)
+        return JsonResponse({
+            'ItemQuestionId': item_question.ItemQuestionId,
+            'ItemId': item_question.ItemId.ItemId,
+            'ItemQuestionCode': item_question.ItemQuestionCode,
+            'ItemQuestionName': item_question.ItemQuestionName,
+            'QuestionType': item_question.QuestionType or '',
+            'FieldType': item_question.FieldType or '',
+            'FieldValue': item_question.FieldValue or '',
+            'Order': item_question.Order or 0,
+            'FieldMask': item_question.FieldMask or '',
+            'IsActive': item_question.IsActive,
+        })
+    except Ref_Item_Question.DoesNotExist:
+        return JsonResponse({'error': 'Item question not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_items_list(request):
+    """API endpoint to get paginated list of items with filters"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '').strip()
+        name_filter = request.GET.get('name', '').strip()
+        type_filter = request.GET.get('type', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Item.objects.select_related('ItemTypeId').all()
+        
+        if code_filter:
+            query = query.filter(ItemCode__icontains=code_filter)
+        if name_filter:
+            query = query.filter(ItemName__icontains=name_filter)
+        if type_filter:
+            query = query.filter(ItemTypeId__ItemTypeName__icontains=type_filter)
+        if is_active_filter:
+            is_active_bool = is_active_filter.lower() == 'true'
+            query = query.filter(IsActive=is_active_bool)
+        
+        # Order by code
+        query = query.order_by('ItemCode')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            items_page = paginator.page(page)
+        except PageNotAnInteger:
+            items_page = paginator.page(1)
+        except EmptyPage:
+            items_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        items_data = []
+        for item in items_page:
+            items_data.append({
+                'ItemId': item.ItemId,
+                'ItemCode': item.ItemCode,
+                'ItemName': item.ItemName,
+                'ItemTypeId': item.ItemTypeId.ItemTypeId if item.ItemTypeId else None,
+                'ItemTypeName': item.ItemTypeId.ItemTypeName if item.ItemTypeId else '',
+                'IsActive': item.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': items_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f'Error in api_items_list: {str(e)}\n{error_trace}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'detail': error_trace if settings.DEBUG else None
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_item_questions_list(request):
+    """API endpoint to get list of item questions, optionally filtered by item"""
+    try:
+        item_id = request.GET.get('item_id')
+        
+        # Build query
+        query = Ref_Item_Question.objects.select_related('ItemId').all()
+        
+        if item_id:
+            query = query.filter(ItemId=item_id)
+        
+        # Order by order and code
+        query = query.order_by('Order', 'ItemQuestionCode')
+        
+        # Serialize data
+        item_questions_data = []
+        for item_question in query:
+            item_questions_data.append({
+                'ItemQuestionId': item_question.ItemQuestionId,
+                'ItemId': item_question.ItemId.ItemId if item_question.ItemId else None,
+                'ItemQuestionCode': item_question.ItemQuestionCode,
+                'ItemQuestionName': item_question.ItemQuestionName,
+                'QuestionType': item_question.QuestionType or '',
+                'FieldType': item_question.FieldType or '',
+                'FieldValue': item_question.FieldValue or '',
+                'Order': item_question.Order or 0,
+                'FieldMask': item_question.FieldMask or '',
+                'IsActive': item_question.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': item_questions_data,
+            'count': len(item_questions_data),
+        })
+    except Exception as e:
+        logger.error(f'Error in api_item_questions_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== INSURANCE POLICY TEMPLATE & DETAIL VIEWS ====================
+
+@login_required
+@permission_required('core.add_ref_policy_template', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def policy_template_create(request):
+    """Create a new policy template"""
+    if request.method == 'POST':
+        try:
+            policy_template_name = request.POST.get('policy_template_name')
+            description = request.POST.get('policy_template_description', '').strip()
+            file_path = request.POST.get('policy_template_file_path', '').strip()
+            is_active = request.POST.get('policy_template_is_active') == 'on'
+            
+            policy_template = Ref_Policy_Template.objects.create(
+                PolicyTemplateName=policy_template_name,
+                Description=description if description else None,
+                FilePath=file_path if file_path else None,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын загвар амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын загвар амжилттай нэмэгдлээ.')
+            return redirect('home')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('home')
+    
+    return redirect('home')
+
+
+@login_required
+@permission_required('core.change_ref_policy_template', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def policy_template_update(request, pk):
+    """Update an existing policy template"""
+    policy_template = get_object_or_404(Ref_Policy_Template, pk=pk, IsDelete=False)
+    
+    if request.method == 'POST':
+        try:
+            policy_template_name = request.POST.get('policy_template_name')
+            description = request.POST.get('policy_template_description', '').strip()
+            file_path = request.POST.get('policy_template_file_path', '').strip()
+            is_active = request.POST.get('policy_template_is_active') == 'on'
+            
+            policy_template.PolicyTemplateName = policy_template_name
+            policy_template.Description = description if description else None
+            policy_template.FilePath = file_path if file_path else None
+            policy_template.IsActive = is_active
+            policy_template.ModifiedBy = request.user
+            policy_template.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын загвар амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын загвар амжилттай шинэчлэгдлээ.')
+            return redirect('home')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('home')
+    
+    return redirect('home')
+
+
+@login_required
+@permission_required('core.delete_ref_policy_template', raise_exception=True)
+@require_http_methods(["POST"])
+def policy_template_delete(request, pk):
+    """Delete a policy template"""
+    policy_template = get_object_or_404(Ref_Policy_Template, pk=pk)
+    
+    try:
+        # Soft delete
+        policy_template.IsDelete = True
+        policy_template.ModifiedBy = request.user
+        policy_template.save()
+        messages.success(request, 'Даатгалын загвар амжилттай устгагдлаа.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('home')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_policy_template_detail(request, pk):
+    """API endpoint to get policy template details"""
+    try:
+        policy_template = Ref_Policy_Template.objects.get(PolicyTemplateId=pk, IsDelete=False)
+        return JsonResponse({
+            'PolicyTemplateId': policy_template.PolicyTemplateId,
+            'PolicyTemplateName': policy_template.PolicyTemplateName,
+            'Description': policy_template.Description or '',
+            'FilePath': policy_template.FilePath or '',
+            'IsActive': policy_template.IsActive,
+        })
+    except Ref_Policy_Template.DoesNotExist:
+        return JsonResponse({'error': 'Policy template not found'}, status=404)
+
+
+@login_required
+@permission_required('core.add_policy_main', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def policy_create(request):
+    """Display the policy creation form or handle form submission"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            policy_no = request.POST.get('policy_no', '').strip()
+            client_id = request.POST.get('client_id', '').strip()
+            agent_id = request.POST.get('agent_id', '').strip()
+            policy_template_id = request.POST.get('policy_template_id', '').strip()
+            begin_date = request.POST.get('begin_date', '').strip()
+            end_date = request.POST.get('end_date', '').strip()
+            currency_id = request.POST.get('currency_id', '').strip()
+            currency_exchange = request.POST.get('currency_exchange', '0').strip()
+            agent_branch_id = request.POST.get('agent_branch_id', '').strip()
+            agent_channel_id = request.POST.get('agent_channel_id', '').strip()
+            director_name = request.POST.get('director_name', '').strip()
+            description = request.POST.get('description', '').strip()
+            is_active = request.POST.get('is_active') == 'on'
+            has_coinsurance = request.POST.get('has_coinsurance') == 'on'
+            
+            # Validate required fields
+            if not all([policy_no, client_id, agent_id, policy_template_id, begin_date, end_date, currency_id, agent_branch_id, agent_channel_id]):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Бүх шаардлагатай талбаруудыг бөглөнө үү'
+                }, status=400)
+            
+            # Create Policy_Main
+            from datetime import datetime
+            policy = Policy_Main.objects.create(
+                PolicyNo=policy_no,
+                ClientId_id=int(client_id),
+                AgentId_id=int(agent_id),
+                PolicyTemplateId_id=int(policy_template_id),
+                BeginDate=datetime.strptime(begin_date, '%Y-%m-%d').date(),
+                EndDate=datetime.strptime(end_date, '%Y-%m-%d').date(),
+                CurrencyId_id=int(currency_id),
+                CurrencyExchange=Decimal(currency_exchange) if currency_exchange else Decimal('0'),
+                AgentBranchId_id=int(agent_branch_id),
+                AgentChannelId_id=int(agent_channel_id),
+                DirectorName=director_name[:15] if director_name else None,
+                Description=description[:60] if description else None,
+                IsActive=is_active,
+                IsLock=False,
+                IsPosted=False,
+                ApprovedBy=None,  # Can be set later when approved
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            # Handle policy products data
+            policy_products_data = request.POST.get('policy_products_data', '[]')
+            try:
+                products_data = json.loads(policy_products_data)
+                
+                for product_data in products_data:
+                    # Create Policy_Main_Product
+                    policy_product = Policy_Main_Product.objects.create(
+                        PolicyMainId=policy,
+                        ProductId_id=product_data['productId']
+                    )
+                    
+                    # Create Policy_Main_Product_Item for each item
+                    for item_data in product_data['items']:
+                        # Parse date fields
+                        begin_date = None
+                        end_date = None
+                        if item_data.get('beginDate'):
+                            try:
+                                # Handle date format (YYYY-MM-DD) or datetime format (YYYY-MM-DDTHH:MM)
+                                begin_date_str = item_data['beginDate']
+                                if 'T' in begin_date_str:
+                                    # Extract date part from datetime string
+                                    begin_date_str = begin_date_str.split('T')[0]
+                                begin_date = datetime.strptime(begin_date_str, '%Y-%m-%d').date()
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f'Error parsing beginDate: {e}')
+                        
+                        if item_data.get('endDate'):
+                            try:
+                                # Handle date format (YYYY-MM-DD) or datetime format (YYYY-MM-DDTHH:MM)
+                                end_date_str = item_data['endDate']
+                                if 'T' in end_date_str:
+                                    # Extract date part from datetime string
+                                    end_date_str = end_date_str.split('T')[0]
+                                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f'Error parsing endDate: {e}')
+                        
+                        policy_product_item = Policy_Main_Product_Item.objects.create(
+                            PolicyMainProductId=policy_product,
+                            ItemId_id=item_data['itemId'],
+                            CommPercent=Decimal(item_data['commPercent']) if item_data.get('commPercent') else None,
+                            BeginDate=begin_date,
+                            EndDate=end_date,
+                            Valuation=Decimal(item_data['valuation']) if item_data.get('valuation') else None,
+                            CommAmount=Decimal(item_data['commAmount']) if item_data.get('commAmount') else None
+                        )
+                        
+                        # Create Policy_Main_Product_Item_Risk for each risk
+                        for risk_data in item_data.get('risks', []):
+                            if risk_data.get('riskId'):
+                                Policy_Main_Product_Item_Risk.objects.create(
+                                    PolicyMainProductItemId=policy_product_item,
+                                    RiskId_id=risk_data['riskId'],
+                                    RiskPercent=Decimal(risk_data['riskPercent']) if risk_data.get('riskPercent') else None
+                                )
+                        
+                        # Create Policy_Main_Product_Item_Question for each question
+                        for question_data in item_data.get('questions', []):
+                            if question_data.get('itemQuestionId'):
+                                Policy_Main_Product_Item_Question.objects.create(
+                                    PolicyMainProductItemId=policy_product_item,
+                                    ItemQuestionId_id=question_data['itemQuestionId'],
+                                    Answer=question_data.get('answer', '')[:300] if question_data.get('answer') else None
+                                )
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error(f'Error parsing policy products data: {str(e)}')
+                # Continue even if products data is invalid
+            
+            # Handle payment schedule data (Step 3)
+            payment_schedule_data = request.POST.get('payment_schedule_data', '[]')
+            try:
+                schedule_list = json.loads(payment_schedule_data)
+                for schedule_data in schedule_list:
+                    if schedule_data.get('date') and schedule_data.get('amount'):
+                        from datetime import datetime as dt
+                        due_date = dt.strptime(schedule_data['date'], '%Y-%m-%d').date()
+                        amount = Decimal(schedule_data['amount']) if schedule_data.get('amount') else Decimal('0')
+                        Policy_Main_Schedule.objects.create(
+                            PolicyId=policy,
+                            DueDate=due_date,
+                            Amount=amount
+                        )
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error(f'Error parsing payment schedule data: {str(e)}')
+                # Continue even if schedule data is invalid
+            
+            # Handle files data
+            files_data = request.POST.get('files_data', '[]')
+            try:
+                files_list = json.loads(files_data)
+                for file_data in files_list:
+                    if file_data.get('fileName') and file_data.get('filePath'):
+                        Policy_Main_Files.objects.create(
+                            PolicyId=policy,
+                            FileName=file_data['fileName'][:50],
+                            FilePath=file_data['filePath'][:100]
+                        )
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f'Error parsing files data: {str(e)}')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Гэрээ амжилттай үүсгэгдлээ.',
+                    'policy_id': policy.PolicyId
+                })
+            
+            messages.success(request, 'Гэрээ амжилттай үүсгэгдлээ.')
+            return redirect('core:policy_create')
+        except Exception as e:
+            logger.error(f'Error creating policy: {str(e)}')
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': error_message
+                }, status=500)
+            messages.error(request, error_message)
+            return render(request, 'insurance/policy.html')
+    
+    # GET request - display form
+    edit_policy_id = request.GET.get('edit')
+    edit_policy = None
+    if edit_policy_id:
+        try:
+            edit_policy = Policy_Main.objects.get(PolicyId=edit_policy_id)
+        except Policy_Main.DoesNotExist:
+            edit_policy = None
+    
+    context = {
+        'edit_policy_id': edit_policy_id,
+        'edit_policy': edit_policy
+    }
+    return render(request, 'insurance/policy.html', context)
+
+
+@login_required
+@permission_required('core.view_ref_policy_template', raise_exception=True)
+def template_management(request):
+    """Display the template management interface with selection tables"""
+    return render(request, 'insurance/template.html')
+
+
+@login_required
+@permission_required('core.view_policy_main', raise_exception=True)
+def policy_list(request):
+    """
+    Display policy list with master-detail tables
+    Master: Policy information
+    Detail: Product/Item information for selected policy (from ins_policy_main_product_item)
+    """
+    from django.db.models import Q, Prefetch
+    
+    # Get selected policy ID from request
+    selected_policy_id = request.GET.get('policy_id')
+    selected_policy = None
+    detail_data = []
+    
+    # Get all policies with related data
+    policies = Policy_Main.objects.select_related(
+        'ClientId', 'PolicyTemplateId', 'CurrencyId', 
+        'AgentBranchId', 'AgentChannelId', 'CreatedBy'
+    ).prefetch_related(
+        Prefetch(
+            'policy_products',
+            queryset=Policy_Main_Product.objects.select_related(
+                'ProductId__ProductTypeId__ProductGroupId'
+            ).prefetch_related(
+                Prefetch(
+                    'product_items',
+                    queryset=Policy_Main_Product_Item.objects.select_related(
+                        'ItemId'
+                    )
+                )
+            )
+        )
+    ).order_by('-CreatedDate')
+    
+    # If a policy is selected, get its detail data
+    total_valuation = Decimal('0')
+    total_comm_amount = Decimal('0')
+    
+    if selected_policy_id:
+        try:
+            selected_policy = policies.get(PolicyId=selected_policy_id)
+            
+            # Build detail data - only product items, no risks
+            for policy_product in selected_policy.policy_products.all():
+                product = policy_product.ProductId
+                product_group = product.ProductTypeId.ProductGroupId if product and product.ProductTypeId else None
+                
+                for product_item in policy_product.product_items.all():
+                    item = product_item.ItemId
+                    valuation = product_item.Valuation or Decimal('0')
+                    comm_amount = product_item.CommAmount or Decimal('0')
+                    
+                    total_valuation += valuation
+                    total_comm_amount += comm_amount
+                    
+                    detail_data.append({
+                        'PolicyMainProductItemId': product_item.PolicyMainProductItemId,
+                        'ProductGroup': product_group.ProductGroupName if product_group else '-',
+                        'ProductName': product.ProductName if product else '-',
+                        'ItemName': item.ItemName if item else '-',
+                        'ItemCode': item.ItemCode if item else '-',
+                        'BeginDate': product_item.BeginDate,
+                        'EndDate': product_item.EndDate,
+                        'Valuation': product_item.Valuation,
+                        'CommPercent': product_item.CommPercent,
+                        'CommAmount': product_item.CommAmount
+                    })
+        except Policy_Main.DoesNotExist:
+            selected_policy = None
+    
+    context = {
+        'policies': policies,
+        'selected_policy': selected_policy,
+        'selected_policy_id': selected_policy_id,
+        'detail_data': detail_data,
+        'total_valuation': total_valuation,
+        'total_comm_amount': total_comm_amount
+    }
+    
+    return render(request, 'insurance/policy_list.html', context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_policy_item_questions(request, policy_main_product_item_id):
+    """Get questions and answers for a policy product item"""
+    try:
+        from core.models import Policy_Main_Product_Item_Question
+        
+        questions = Policy_Main_Product_Item_Question.objects.filter(
+            PolicyMainProductItemId=policy_main_product_item_id
+        ).select_related('ItemQuestionId').order_by('ItemQuestionId__Order')
+        
+        questions_data = []
+        for question in questions:
+            questions_data.append({
+                'questionName': question.ItemQuestionId.ItemQuestionName if question.ItemQuestionId else '-',
+                'answer': question.Answer or '-'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'questions': questions_data
+        })
+    except Exception as e:
+        logger.error(f'Error fetching item questions: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_policy_item_risks(request, policy_main_product_item_id):
+    """Get risks for a policy product item"""
+    try:
+        from core.models import Policy_Main_Product_Item_Risk
+        
+        risks = Policy_Main_Product_Item_Risk.objects.filter(
+            PolicyMainProductItemId=policy_main_product_item_id
+        ).select_related('RiskId').order_by('RiskId__RiskCode')
+        
+        risks_data = []
+        for risk in risks:
+            risks_data.append({
+                'riskCode': risk.RiskId.RiskCode if risk.RiskId else '-',
+                'riskName': risk.RiskId.RiskName if risk.RiskId else '-',
+                'riskPercent': float(risk.RiskPercent) if risk.RiskPercent else None
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'risks': risks_data
+        })
+    except Exception as e:
+        logger.error(f'Error fetching item risks: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_policy_edit_data(request, policy_id):
+    """Get full policy data for editing"""
+    try:
+        policy = get_object_or_404(Policy_Main, PolicyId=policy_id)
+        
+        # Get client and template display info
+        client_display = ''
+        if policy.ClientId:
+            client_display = f"{policy.ClientId.ClientCode or ''} - {policy.ClientId.ClientName or ''}".strip(' -')
+        
+        template_display = ''
+        if policy.PolicyTemplateId:
+            template_display = policy.PolicyTemplateId.PolicyTemplateName or ''
+        
+        # Basic policy data
+        policy_data = {
+            'policyId': policy.PolicyId,
+            'policyNo': policy.PolicyNo,
+            'clientId': policy.ClientId_id,
+            'clientDisplay': client_display,
+            'agentId': policy.AgentId_id,
+            'policyTemplateId': policy.PolicyTemplateId_id,
+            'policyTemplateDisplay': template_display,
+            'beginDate': policy.BeginDate.strftime('%Y-%m-%d') if policy.BeginDate else None,
+            'endDate': policy.EndDate.strftime('%Y-%m-%d') if policy.EndDate else None,
+            'currencyId': policy.CurrencyId_id,
+            'currencyExchange': float(policy.CurrencyExchange) if policy.CurrencyExchange else 0,
+            'currencyAmount': float(policy.CurrencyAmount) if policy.CurrencyAmount else 0,
+            'agentBranchId': policy.AgentBranchId_id,
+            'agentChannelId': policy.AgentChannelId_id,
+            'directorName': policy.DirectorName or '',
+            'description': policy.Description or '',
+            'isActive': policy.IsActive,
+            'hasCoinsurance': False  # TODO: Add coinsurance support if needed
+        }
+        
+        # Products with items, risks, and questions
+        products_data = []
+        for policy_product in policy.policy_products.all().select_related('ProductId__ProductTypeId__ProductGroupId'):
+            product = policy_product.ProductId
+            if not product:
+                continue
+                
+            product_group = None
+            if product.ProductTypeId and product.ProductTypeId.ProductGroupId:
+                product_group = product.ProductTypeId.ProductGroupId
+            
+            items_data = []
+            for product_item in policy_product.product_items.all().select_related('ItemId'):
+                item = product_item.ItemId
+                if not item:
+                    continue
+                
+                # Get risks for this item
+                risks_data = []
+                for item_risk in product_item.item_risks.all().select_related('RiskId'):
+                    if item_risk.RiskId:
+                        risks_data.append({
+                            'riskId': item_risk.RiskId.RiskId,
+                            'riskName': item_risk.RiskId.RiskName or '',
+                            'riskCode': item_risk.RiskId.RiskCode or '',
+                            'riskPercent': float(item_risk.RiskPercent) if item_risk.RiskPercent else None,
+                            'isCoreRisk': item_risk.RiskId.IsCoreRisk if hasattr(item_risk.RiskId, 'IsCoreRisk') else True,
+                            'isSelected': True
+                        })
+                
+                # Get questions for this item
+                questions_data = []
+                for item_question in product_item.item_questions.all().select_related('ItemQuestionId'):
+                    if item_question.ItemQuestionId:
+                        questions_data.append({
+                            'itemQuestionId': item_question.ItemQuestionId.ItemQuestionId,
+                            'itemQuestionName': item_question.ItemQuestionId.ItemQuestionName or '',
+                            'answer': item_question.Answer or ''
+                        })
+                
+                items_data.append({
+                    'itemId': item.ItemId,
+                    'itemName': item.ItemName or '',
+                    'itemCode': item.ItemCode or '',
+                    'beginDate': product_item.BeginDate.strftime('%Y-%m-%d') if product_item.BeginDate else '',
+                    'endDate': product_item.EndDate.strftime('%Y-%m-%d') if product_item.EndDate else '',
+                    'valuation': float(product_item.Valuation) if product_item.Valuation else None,
+                    'commPercent': float(product_item.CommPercent) if product_item.CommPercent else None,
+                    'commAmount': float(product_item.CommAmount) if product_item.CommAmount else None,
+                    'risks': risks_data,
+                    'questions': questions_data
+                })
+            
+            products_data.append({
+                'productId': product.ProductId,
+                'productName': product.ProductName or '',
+                'productCode': getattr(product, 'ProductCode', '') or '',
+                'productGroupName': product_group.ProductGroupName if product_group else '',
+                'items': items_data
+            })
+        
+        # Payment schedules
+        schedules_data = []
+        for schedule in policy.payment_schedules.all():
+            schedules_data.append({
+                'date': schedule.DueDate.strftime('%Y-%m-%d') if schedule.DueDate else '',
+                'amount': float(schedule.Amount) if schedule.Amount else 0
+            })
+        
+        # Files
+        files_data = []
+        for file in policy.policy_files.all():
+            files_data.append({
+                'fileName': file.FileName or '',
+                'filePath': file.FilePath or ''
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'policy': policy_data,
+            'products': products_data,
+            'schedules': schedules_data,
+            'files': files_data
+        })
+    except Exception as e:
+        logger.error(f'Error fetching policy edit data: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@permission_required('core.change_policy_main', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def policy_update(request, policy_id):
+    """
+    Update an existing policy
+    For now, redirects to create page with edit parameter
+    In the future, can be expanded to a full edit view
+    """
+    policy = get_object_or_404(Policy_Main, PolicyId=policy_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            policy_no = request.POST.get('policy_no', '').strip()
+            client_id = request.POST.get('client_id', '').strip()
+            agent_id = request.POST.get('agent_id', '').strip()
+            policy_template_id = request.POST.get('policy_template_id', '').strip()
+            begin_date = request.POST.get('begin_date', '').strip()
+            end_date = request.POST.get('end_date', '').strip()
+            currency_id = request.POST.get('currency_id', '').strip()
+            currency_exchange = request.POST.get('currency_exchange', '0').strip()
+            currency_amount = request.POST.get('currency_amount', '0').strip()
+            agent_branch_id = request.POST.get('agent_branch_id', '').strip()
+            agent_channel_id = request.POST.get('agent_channel_id', '').strip()
+            director_name = request.POST.get('director_name', '').strip()
+            description = request.POST.get('description', '').strip()
+            is_active = request.POST.get('is_active') == 'on'
+            
+            # Update policy
+            from datetime import datetime
+            policy.PolicyNo = policy_no
+            policy.ClientId_id = int(client_id) if client_id else None
+            policy.AgentId_id = int(agent_id) if agent_id else None
+            policy.PolicyTemplateId_id = int(policy_template_id) if policy_template_id else None
+            policy.BeginDate = datetime.strptime(begin_date, '%Y-%m-%d').date() if begin_date else None
+            policy.EndDate = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
+            policy.CurrencyId_id = int(currency_id) if currency_id else None
+            policy.CurrencyExchange = Decimal(currency_exchange) if currency_exchange else Decimal('0')
+            policy.CurrencyAmount = Decimal(currency_amount) if currency_amount else Decimal('0')
+            policy.AgentBranchId_id = int(agent_branch_id) if agent_branch_id else None
+            policy.AgentChannelId_id = int(agent_channel_id) if agent_channel_id else None
+            policy.DirectorName = director_name[:15] if director_name else None
+            policy.Description = description[:60] if description else None
+            policy.IsActive = is_active
+            policy.ModifiedBy = request.user
+            policy.save()
+            
+            # Handle policy products data - delete existing and create new
+            # Delete in reverse order due to PROTECT foreign keys
+            # Get all items first
+            all_items = Policy_Main_Product_Item.objects.filter(
+                PolicyMainProductId__PolicyMainId=policy
+            )
+            
+            # Delete all risks and questions for all items
+            Policy_Main_Product_Item_Risk.objects.filter(
+                PolicyMainProductItemId__in=all_items
+            ).delete()
+            Policy_Main_Product_Item_Question.objects.filter(
+                PolicyMainProductItemId__in=all_items
+            ).delete()
+            
+            # Delete all items
+            all_items.delete()
+            
+            # Finally delete products
+            policy.policy_products.all().delete()
+            
+            policy_products_data = request.POST.get('policy_products_data', '[]')
+            try:
+                products_data = json.loads(policy_products_data)
+                
+                for product_data in products_data:
+                    # Create Policy_Main_Product
+                    policy_product = Policy_Main_Product.objects.create(
+                        PolicyMainId=policy,
+                        ProductId_id=product_data['productId']
+                    )
+                    
+                    # Create Policy_Main_Product_Item for each item
+                    for item_data in product_data['items']:
+                        # Parse date fields
+                        begin_date = None
+                        end_date = None
+                        if item_data.get('beginDate'):
+                            try:
+                                begin_date_str = item_data['beginDate']
+                                if 'T' in begin_date_str:
+                                    begin_date_str = begin_date_str.split('T')[0]
+                                begin_date = datetime.strptime(begin_date_str, '%Y-%m-%d').date()
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f'Error parsing beginDate: {e}')
+                        
+                        if item_data.get('endDate'):
+                            try:
+                                end_date_str = item_data['endDate']
+                                if 'T' in end_date_str:
+                                    end_date_str = end_date_str.split('T')[0]
+                                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f'Error parsing endDate: {e}')
+                        
+                        policy_product_item = Policy_Main_Product_Item.objects.create(
+                            PolicyMainProductId=policy_product,
+                            ItemId_id=item_data['itemId'],
+                            CommPercent=Decimal(item_data['commPercent']) if item_data.get('commPercent') else None,
+                            BeginDate=begin_date,
+                            EndDate=end_date,
+                            Valuation=Decimal(item_data['valuation']) if item_data.get('valuation') else None,
+                            CommAmount=Decimal(item_data['commAmount']) if item_data.get('commAmount') else None
+                        )
+                        
+                        # Create Policy_Main_Product_Item_Risk for each risk
+                        for risk_data in item_data.get('risks', []):
+                            if risk_data.get('riskId') and risk_data.get('isSelected'):
+                                Policy_Main_Product_Item_Risk.objects.create(
+                                    PolicyMainProductItemId=policy_product_item,
+                                    RiskId_id=risk_data['riskId'],
+                                    RiskPercent=Decimal(risk_data['riskPercent']) if risk_data.get('riskPercent') else None
+                                )
+                        
+                        # Create Policy_Main_Product_Item_Question for each question
+                        for question_data in item_data.get('questions', []):
+                            if question_data.get('itemQuestionId'):
+                                Policy_Main_Product_Item_Question.objects.create(
+                                    PolicyMainProductItemId=policy_product_item,
+                                    ItemQuestionId_id=question_data['itemQuestionId'],
+                                    Answer=question_data.get('answer', '')[:300] if question_data.get('answer') else None
+                                )
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error(f'Error parsing policy products data: {str(e)}')
+                # Continue even if products data is invalid
+            
+            # Handle payment schedule data - delete existing and create new
+            policy.payment_schedules.all().delete()
+            payment_schedule_data = request.POST.get('payment_schedule_data', '[]')
+            try:
+                schedule_list = json.loads(payment_schedule_data)
+                for schedule_data in schedule_list:
+                    if schedule_data.get('date') and schedule_data.get('amount'):
+                        from datetime import datetime as dt
+                        due_date = dt.strptime(schedule_data['date'], '%Y-%m-%d').date()
+                        amount = Decimal(schedule_data['amount']) if schedule_data.get('amount') else Decimal('0')
+                        Policy_Main_Schedule.objects.create(
+                            PolicyId=policy,
+                            DueDate=due_date,
+                            Amount=amount
+                        )
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error(f'Error parsing payment schedule data: {str(e)}')
+                # Continue even if schedule data is invalid
+            
+            # Handle files data - delete existing and create new
+            policy.policy_files.all().delete()
+            files_data = request.POST.get('files_data', '[]')
+            try:
+                files_list = json.loads(files_data)
+                for file_data in files_list:
+                    if file_data.get('fileName') and file_data.get('filePath'):
+                        Policy_Main_Files.objects.create(
+                            PolicyId=policy,
+                            FileName=file_data['fileName'][:50],
+                            FilePath=file_data['filePath'][:100]
+                        )
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f'Error parsing files data: {str(e)}')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Гэрээ амжилттай шинэчлэгдлээ.',
+                    'policy_id': policy.PolicyId
+                })
+            
+            messages.success(request, 'Гэрээ амжилттай шинэчлэгдлээ.')
+            return redirect('core:policy_list')
+        except Exception as e:
+            logger.error(f'Error updating policy: {str(e)}')
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': error_message
+                }, status=500)
+            messages.error(request, error_message)
+            return redirect('core:policy_list')
+    
+    # GET request - redirect to create page with edit parameter
+    return redirect(f'/core/policies/create/?edit={policy_id}')
+
+
+@login_required
+@permission_required('core.delete_policy_main', raise_exception=True)
+@require_http_methods(["POST"])
+def policy_delete(request, policy_id):
+    """
+    Delete a policy
+    """
+    policy = get_object_or_404(Policy_Main, PolicyId=policy_id)
+    
+    try:
+        # Check if policy can be deleted (e.g., not locked or posted)
+        if policy.IsLock:
+            error_msg = 'Түгжигдсэн гэрээг устгах боломжгүй.'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=400)
+            messages.error(request, error_msg)
+            return redirect('core:policy_list')
+        
+        if policy.IsPosted:
+            error_msg = 'Бичигдсэн гэрээг устгах боломжгүй.'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=400)
+            messages.error(request, error_msg)
+            return redirect('core:policy_list')
+        
+        # Delete the policy
+        policy.delete()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': 'Гэрээ амжилттай устгагдлаа.'
+            })
+        
+        messages.success(request, 'Гэрээ амжилттай устгагдлаа.')
+        return redirect('core:policy_list')
+        
+    except Exception as e:
+        logger.error(f'Error deleting policy: {str(e)}')
+        error_message = f'Алдаа: {str(e)}'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_message
+            }, status=500)
+        messages.error(request, error_message)
+        return redirect('core:policy_list')
+
+
+@login_required
+@permission_required('core.change_ref_policy_template', raise_exception=True)
+@require_http_methods(["POST"])
+def api_template_upload_file(request):
+    """
+    Upload Word template file for policy templates
+    """
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({
+                'success': False,
+                'error': 'Файл олдсонгүй'
+            }, status=400)
+        
+        uploaded_file = request.FILES['file']
+        
+        # Validate file type
+        file_name = uploaded_file.name.lower()
+        if not (file_name.endswith('.docx') or file_name.endswith('.doc')):
+            return JsonResponse({
+                'success': False,
+                'error': 'Зөвхөн .docx эсвэл .doc файлууд зөвшөөрөгдөнө'
+            }, status=400)
+        
+        # Validate file size (max 10MB)
+        if uploaded_file.size > 10 * 1024 * 1024:
+            return JsonResponse({
+                'success': False,
+                'error': 'Файлын хэмжээ 10MB-аас их байна'
+            }, status=400)
+        
+        # Create directory if it doesn't exist
+        import os
+        from django.conf import settings
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'templates', 'word_templates')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename to avoid conflicts
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        file_extension = os.path.splitext(uploaded_file.name)[1]
+        safe_filename = f"template_{timestamp}{file_extension}"
+        
+        # Save file
+        file_path = os.path.join(upload_dir, safe_filename)
+        with open(file_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+        
+        # Return relative path from MEDIA_ROOT
+        relative_path = os.path.join('templates', 'word_templates', safe_filename)
+        
+        return JsonResponse({
+            'success': True,
+            'file_path': relative_path,
+            'file_name': uploaded_file.name
+        })
+        
+    except Exception as e:
+        logger.error(f'Error uploading template file: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Файл хадгалахад алдаа гарлаа: {str(e)}'
+        }, status=500)
+
+
+# ==================== INSURANCE ITEM TYPE VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_item_type', raise_exception=True)
+def item_type_list(request):
+    """List view for Item Types"""
+    # Get all item types for parent dropdown
+    item_types = Ref_Item_Type.objects.filter(IsActive=True).order_by('ItemTypeCode')
+    
+    context = {
+        'item_types': item_types,
+    }
+    
+    return render(request, 'insurance/item_type_list.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_item_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_type_create(request):
+    """Create a new item type"""
+    if request.method == 'POST':
+        try:
+            parent_id = request.POST.get('parent_id', '').strip()
+            item_type_code = request.POST.get('item_type_code')
+            item_type_name = request.POST.get('item_type_name')
+            is_active = request.POST.get('item_type_is_active') == 'on'
+            
+            parent = None
+            if parent_id:
+                parent = get_object_or_404(Ref_Item_Type, ItemTypeId=parent_id)
+            
+            item_type = Ref_Item_Type.objects.create(
+                ParentId=parent,
+                ItemTypeCode=item_type_code,
+                ItemTypeName=item_type_name,
+                IsActive=is_active,
+                CreatedBy=request.user,
+                ModifiedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын зүйлийн төрөл амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын зүйлийн төрөл амжилттай нэмэгдлээ.')
+            return redirect('core:item_type_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:item_type_list')
+    
+    return redirect('core:item_type_list')
+
+
+@login_required
+@permission_required('core.change_ref_item_type', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def item_type_update(request, pk):
+    """Update an existing item type"""
+    item_type = get_object_or_404(Ref_Item_Type, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            parent_id = request.POST.get('parent_id', '').strip()
+            item_type_code = request.POST.get('item_type_code')
+            item_type_name = request.POST.get('item_type_name')
+            is_active = request.POST.get('item_type_is_active') == 'on'
+            
+            # Prevent setting itself as parent
+            if parent_id and int(parent_id) == item_type.ItemTypeId:
+                raise ValueError('Эцэг төрөл нь өөрөө байж болохгүй')
+            
+            parent = None
+            if parent_id:
+                parent = get_object_or_404(Ref_Item_Type, ItemTypeId=parent_id)
+            
+            item_type.ParentId = parent
+            item_type.ItemTypeCode = item_type_code
+            item_type.ItemTypeName = item_type_name
+            item_type.IsActive = is_active
+            item_type.ModifiedBy = request.user
+            item_type.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Даатгалын зүйлийн төрөл амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Даатгалын зүйлийн төрөл амжилттай шинэчлэгдлээ.')
+            return redirect('core:item_type_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:item_type_list')
+    
+    return redirect('core:item_type_list')
+
+
+@login_required
+@permission_required('core.delete_ref_item_type', raise_exception=True)
+@require_http_methods(["POST"])
+def item_type_delete(request, pk):
+    """Delete an item type"""
+    item_type = get_object_or_404(Ref_Item_Type, pk=pk)
+    
+    try:
+        # Check if there are child item types
+        child_count = Ref_Item_Type.objects.filter(ParentId=item_type).count()
+        if child_count > 0:
+            messages.error(request, f'Энэ төрөлд {child_count} дэд төрөл байна. Устгах боломжгүй.')
+            return redirect('core:item_type_list')
+        
+        # Check if there are items using this type
+        items_count = Ref_Item.objects.filter(ItemTypeId=item_type).count()
+        if items_count > 0:
+            messages.error(request, f'Энэ төрөлд {items_count} даатгалын зүйл байна. Устгах боломжгүй.')
+            return redirect('core:item_type_list')
+        
+        item_type.delete()
+        messages.success(request, 'Даатгалын зүйлийн төрөл амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ төрөл ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:item_type_list')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_item_type_detail(request, pk):
+    """API endpoint to get item type details"""
+    try:
+        item_type = Ref_Item_Type.objects.select_related('ParentId').get(ItemTypeId=pk)
+        return JsonResponse({
+            'ItemTypeId': item_type.ItemTypeId,
+            'ItemTypeCode': item_type.ItemTypeCode,
+            'ItemTypeName': item_type.ItemTypeName,
+            'ParentId': item_type.ParentId.ItemTypeId if item_type.ParentId else None,
+            'IsActive': item_type.IsActive,
+        })
+    except Ref_Item_Type.DoesNotExist:
+        return JsonResponse({'error': 'Item type not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_item_types_list(request):
+    """API endpoint to get paginated list of item types with filters"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '').strip()
+        name_filter = request.GET.get('name', '').strip()
+        parent_filter = request.GET.get('parent', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Item_Type.objects.select_related('ParentId').all()
+        
+        if code_filter:
+            query = query.filter(ItemTypeCode__icontains=code_filter)
+        if name_filter:
+            query = query.filter(ItemTypeName__icontains=name_filter)
+        if parent_filter:
+            query = query.filter(ParentId__ItemTypeName__icontains=parent_filter)
+        if is_active_filter:
+            is_active_bool = is_active_filter.lower() == 'true'
+            query = query.filter(IsActive=is_active_bool)
+        
+        # Order by code
+        query = query.order_by('ItemTypeCode')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            item_types_page = paginator.page(page)
+        except PageNotAnInteger:
+            item_types_page = paginator.page(1)
+        except EmptyPage:
+            item_types_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        item_types_data = []
+        for it in item_types_page:
+            item_types_data.append({
+                'ItemTypeId': it.ItemTypeId,
+                'ItemTypeCode': it.ItemTypeCode,
+                'ItemTypeName': it.ItemTypeName,
+                'ParentId': it.ParentId.ItemTypeId if it.ParentId else None,
+                'ParentName': it.ParentId.ItemTypeName if it.ParentId else None,
+                'IsActive': it.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': item_types_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_item_types_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== INSURANCE BRANCH VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_branch', raise_exception=True)
+def branch_list(request):
+    """List view for Branches"""
+    branches = Ref_Branch.objects.select_related('CreatedBy').all().order_by('BranchCode')
+    
+    context = {
+        'branches': branches,
+    }
+    
+    return render(request, 'insurance/branch_list.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_branch', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def branch_create(request):
+    """Create a new branch"""
+    if request.method == 'POST':
+        try:
+            branch_code = request.POST.get('branch_code')
+            branch_name = request.POST.get('branch_name')
+            director_name = request.POST.get('director_name', '').strip()
+            is_active = request.POST.get('branch_is_active') == 'on'
+            
+            branch = Ref_Branch.objects.create(
+                BranchCode=branch_code,
+                BranchName=branch_name,
+                DirectorName=director_name if director_name else None,
+                IsActive=is_active,
+                CreatedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Салбар амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Салбар амжилттай нэмэгдлээ.')
+            return redirect('core:branch_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:branch_list')
+    
+    return redirect('core:branch_list')
+
+
+@login_required
+@permission_required('core.change_ref_branch', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def branch_update(request, pk):
+    """Update an existing branch"""
+    branch = get_object_or_404(Ref_Branch, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            branch_code = request.POST.get('branch_code')
+            branch_name = request.POST.get('branch_name')
+            director_name = request.POST.get('director_name', '').strip()
+            is_active = request.POST.get('branch_is_active') == 'on'
+            
+            branch.BranchCode = branch_code
+            branch.BranchName = branch_name
+            branch.DirectorName = director_name if director_name else None
+            branch.IsActive = is_active
+            branch.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Салбар амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Салбар амжилттай шинэчлэгдлээ.')
+            return redirect('core:branch_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:branch_list')
+    
+    return redirect('core:branch_list')
+
+
+@login_required
+@permission_required('core.delete_ref_branch', raise_exception=True)
+@require_http_methods(["POST"])
+def branch_delete(request, pk):
+    """Delete a branch"""
+    branch = get_object_or_404(Ref_Branch, pk=pk)
+    
+    try:
+        branch.delete()
+        messages.success(request, 'Салбар амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ салбар ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:branch_list')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_branch_detail(request, pk):
+    """API endpoint to get branch details"""
+    try:
+        branch = Ref_Branch.objects.get(BranchId=pk)
+        return JsonResponse({
+            'BranchId': branch.BranchId,
+            'BranchCode': branch.BranchCode,
+            'BranchName': branch.BranchName,
+            'DirectorName': branch.DirectorName,
+            'IsActive': branch.IsActive,
+        })
+    except Ref_Branch.DoesNotExist:
+        return JsonResponse({'error': 'Branch not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_branches_list(request):
+    """API endpoint to get paginated list of branches with filters"""
+    try:
+        # Get filter parameters
+        code_filter = request.GET.get('code', '').strip()
+        name_filter = request.GET.get('name', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Branch.objects.select_related('CreatedBy').all()
+        
+        if code_filter:
+            query = query.filter(BranchCode__icontains=code_filter)
+        if name_filter:
+            query = query.filter(BranchName__icontains=name_filter)
+        if is_active_filter:
+            query = query.filter(IsActive=is_active_filter.lower() == 'true')
+        
+        query = query.order_by('BranchCode')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            branches_page = paginator.page(page)
+        except PageNotAnInteger:
+            branches_page = paginator.page(1)
+        except EmptyPage:
+            branches_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        branches_data = []
+        for branch in branches_page:
+            branches_data.append({
+                'BranchId': branch.BranchId,
+                'BranchCode': branch.BranchCode,
+                'BranchName': branch.BranchName,
+                'DirectorName': branch.DirectorName,
+                'IsActive': branch.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': branches_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_branches_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== INSURANCE CHANNEL VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_channel', raise_exception=True)
+def channel_list(request):
+    """List view for Channels"""
+    channels = Ref_Channel.objects.select_related('CreatedBy').all().order_by('ChannelName')
+    
+    context = {
+        'channels': channels,
+    }
+    
+    return render(request, 'insurance/channel_list.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_channel', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def channel_create(request):
+    """Create a new channel"""
+    if request.method == 'POST':
+        try:
+            channel_name = request.POST.get('channel_name')
+            is_active = request.POST.get('channel_is_active') == 'on'
+            
+            channel = Ref_Channel.objects.create(
+                ChannelName=channel_name,
+                IsActive=is_active,
+                CreatedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Суваг амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Суваг амжилттай нэмэгдлээ.')
+            return redirect('core:channel_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:channel_list')
+    
+    return redirect('core:channel_list')
+
+
+@login_required
+@permission_required('core.change_ref_channel', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def channel_update(request, pk):
+    """Update an existing channel"""
+    channel = get_object_or_404(Ref_Channel, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            channel_name = request.POST.get('channel_name')
+            is_active = request.POST.get('channel_is_active') == 'on'
+            
+            channel.ChannelName = channel_name
+            channel.IsActive = is_active
+            channel.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Суваг амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Суваг амжилттай шинэчлэгдлээ.')
+            return redirect('core:channel_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:channel_list')
+    
+    return redirect('core:channel_list')
+
+
+@login_required
+@permission_required('core.delete_ref_channel', raise_exception=True)
+@require_http_methods(["POST"])
+def channel_delete(request, pk):
+    """Delete a channel"""
+    channel = get_object_or_404(Ref_Channel, pk=pk)
+    
+    try:
+        channel.delete()
+        messages.success(request, 'Суваг амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ суваг ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:channel_list')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_channel_detail(request, pk):
+    """API endpoint to get channel details"""
+    try:
+        channel = Ref_Channel.objects.get(ChannelId=pk)
+        return JsonResponse({
+            'ChannelId': channel.ChannelId,
+            'ChannelName': channel.ChannelName,
+            'IsActive': channel.IsActive,
+        })
+    except Ref_Channel.DoesNotExist:
+        return JsonResponse({'error': 'Channel not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_channels_list(request):
+    """API endpoint to get paginated list of channels with filters"""
+    try:
+        # Get filter parameters
+        name_filter = request.GET.get('name', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Channel.objects.select_related('CreatedBy').all()
+        
+        if name_filter:
+            query = query.filter(ChannelName__icontains=name_filter)
+        if is_active_filter:
+            query = query.filter(IsActive=is_active_filter.lower() == 'true')
+        
+        query = query.order_by('ChannelName')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            channels_page = paginator.page(page)
+        except PageNotAnInteger:
+            channels_page = paginator.page(1)
+        except EmptyPage:
+            channels_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        channels_data = []
+        for channel in channels_page:
+            channels_data.append({
+                'ChannelId': channel.ChannelId,
+                'ChannelName': channel.ChannelName,
+                'IsActive': channel.IsActive,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': channels_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_channels_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_user_branch_channel(request):
+    """API endpoint to get branch, channel, and agent (User) for the current user"""
+    try:
+        # Get the current user's active branch and channel
+        user_branch = Ref_Branch_User.objects.filter(
+            UserId=request.user,
+            IsActive=True
+        ).select_related('BranchId', 'ChannelId').first()
+        
+        if not user_branch:
+            return JsonResponse({
+                'success': False,
+                'error': 'User branch and channel not found'
+            }, status=404)
+        
+        # Get the UserId from Ref_Branch_User (this is the logged-in user)
+        # AgentId is FK to User, so use this UserId as the default agent
+        branch_user_id = user_branch.UserId
+        
+        response_data = {
+            'success': True,
+            'branch': {
+                'BranchId': user_branch.BranchId.BranchId,
+                'BranchCode': user_branch.BranchId.BranchCode,
+                'BranchName': user_branch.BranchId.BranchName,
+            },
+            'channel': {
+                'ChannelId': user_branch.ChannelId.ChannelId,
+                'ChannelName': user_branch.ChannelId.ChannelName,
+            },
+            'username': branch_user_id.username,
+            'user_id': branch_user_id.id  # Add user ID for frontend matching
+        }
+        
+        # AgentId is a ForeignKey to User (auth_user), not RefClient
+        # Return the UserId from Ref_Branch_User as the default agent
+        response_data['agent'] = {
+            'UserId': branch_user_id.id,
+            'username': branch_user_id.username,
+        }
+        
+        return JsonResponse(response_data)
+    except Exception as e:
+        logger.error(f'Error in api_user_branch_channel: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_branch_users_list(request):
+    """API endpoint to get list of users from Ref_Branch_User for AgentId dropdown (AgentId is FK to User)"""
+    try:
+        # Get all active branch users
+        branch_users = Ref_Branch_User.objects.filter(
+            IsActive=True
+        ).select_related('UserId', 'BranchId', 'ChannelId').order_by('UserId__username')
+        
+        users_data = []
+        for branch_user in branch_users:
+            user = branch_user.UserId
+            users_data.append({
+                'UserId': user.id,
+                'username': user.username,
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'email': user.email or '',
+                'branch': {
+                    'BranchId': branch_user.BranchId.BranchId,
+                    'BranchCode': branch_user.BranchId.BranchCode,
+                    'BranchName': branch_user.BranchId.BranchName,
+                },
+                'channel': {
+                    'ChannelId': branch_user.ChannelId.ChannelId,
+                    'ChannelName': branch_user.ChannelId.ChannelName,
+                }
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'users': users_data
+        })
+    except Exception as e:
+        logger.error(f'Error in api_branch_users_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_currencies_list(request):
+    """API endpoint to get list of active currencies"""
+    try:
+        # Get all active currencies
+        currencies = Ref_Currency.objects.filter(IsActive=True).order_by('CurrencyId')
+        
+        currencies_data = []
+        for currency in currencies:
+            currencies_data.append({
+                'CurrencyId': currency.CurrencyId,
+                'CurrencyName': currency.Currency_name,
+                'DefaultValue': float(currency.DefaultValue) if currency.DefaultValue else 1.0,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'currencies': currencies_data,
+            'count': len(currencies_data)
+        })
+    except Exception as e:
+        logger.error(f'Error in api_currencies_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_policy_template_full_data(request, template_id):
+    """API endpoint to get full hierarchical template data (products, items, risks, questions)"""
+    try:
+        # Get the template
+        template = Ref_Policy_Template.objects.filter(
+            PolicyTemplateId=template_id,
+            IsDelete=False
+        ).first()
+        
+        if not template:
+            return JsonResponse({
+                'success': False,
+                'error': 'Policy template not found'
+            }, status=404)
+        
+        # Get template products with related data
+        template_products = Ref_Template_Product.objects.filter(
+            TemplateId=template_id
+        ).select_related('ProductId').prefetch_related(
+            'template_product_items__ItemId',
+            'template_product_items__template_product_item_risks__RiskId',
+            'template_product_items__ItemId__item_questions'
+        )
+        
+        products_data = []
+        for template_product in template_products:
+            # Get items for this product
+            template_items = Ref_Template_Product_Item.objects.filter(
+                TemplateProductId=template_product.TemplateProductId
+            ).select_related('ItemId').prefetch_related(
+                'template_product_item_risks__RiskId',
+                'ItemId__item_questions'
+            )
+            
+            items_data = []
+            for template_item in template_items:
+                # Get risks for this item
+                risks_data = []
+                template_risks = Ref_Template_Product_Item_Risk.objects.filter(
+                    TemplateProductItemId=template_item.TemplateProductItemId
+                ).select_related('RiskId')
+                
+                for template_risk in template_risks:
+                    risks_data.append({
+                        'riskId': template_risk.RiskId.RiskId,
+                        'riskName': template_risk.RiskId.RiskName,
+                        'riskCode': template_risk.RiskId.RiskCode,
+                        'commPercent': float(template_risk.CommPercent) if template_risk.CommPercent else None,
+                        'isCoreRisk': template_risk.RiskId.IsCoreRisk if template_risk.RiskId else True,
+                    })
+                
+                # Get all questions for this item (from Ref_Item_Question via ItemId)
+                questions_data = []
+                item_questions = Ref_Item_Question.objects.filter(
+                    ItemId=template_item.ItemId.ItemId,
+                    IsActive=True
+                ).order_by('Order')
+                
+                for item_question in item_questions:
+                    questions_data.append({
+                        'itemQuestionId': item_question.ItemQuestionId,
+                        'itemQuestionName': item_question.ItemQuestionName,
+                        'itemQuestionCode': item_question.ItemQuestionCode,
+                        'questionType': item_question.QuestionType,
+                        'fieldType': item_question.FieldType,
+                        'fieldValue': item_question.FieldValue or '',
+                        'order': item_question.Order,
+                        'fieldMask': item_question.FieldMask or '',
+                    })
+                
+                items_data.append({
+                    'itemId': template_item.ItemId.ItemId,
+                    'itemName': template_item.ItemId.ItemName,
+                    'itemCode': template_item.ItemId.ItemCode,
+                    'risks': risks_data,
+                    'questions': questions_data,
+                })
+            
+            products_data.append({
+                'productId': template_product.ProductId.ProductId,
+                'productName': template_product.ProductId.ProductName,
+                'productCode': template_product.ProductId.ProductCode,
+                'items': items_data,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'template': {
+                'policyTemplateId': template.PolicyTemplateId,
+                'policyTemplateName': template.PolicyTemplateName,
+                'description': template.Description or '',
+            },
+            'products': products_data
+        })
+    except Exception as e:
+        logger.error(f'Error in api_policy_template_full_data: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== TEMPLATE DESIGN VIEWS ====================
+
+@login_required
+@permission_required('core.view_ref_template_design', raise_exception=True)
+def template_design_list(request):
+    """Master-detail view for templates (master) and template designs (detail)"""
+    selected_template_id = request.GET.get('selected_template')
+    selected_template = None
+    template_designs = []
+    
+    # Get all policy templates (master)
+    policy_templates = Ref_Policy_Template.objects.filter(IsDelete=False).order_by('PolicyTemplateName')
+    
+    # Get selected template and its designs
+    if selected_template_id:
+        try:
+            selected_template = Ref_Policy_Template.objects.get(PolicyTemplateId=selected_template_id)
+            template_designs = Ref_Template_Design.objects.filter(
+                PolicyTemplateId=selected_template
+            ).select_related('PolicyTemplateId', 'CreatedBy').order_by('TableNameEng', 'FieldNameEng')
+        except Ref_Policy_Template.DoesNotExist:
+            selected_template = None
+    
+    context = {
+        'policy_templates': policy_templates,
+        'template_designs': template_designs,
+        'selected_template': selected_template,
+        'selected_template_id': selected_template_id,
+    }
+    
+    return render(request, 'insurance/template_design.html', context)
+
+
+@login_required
+@permission_required('core.add_ref_template_design', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def template_design_create(request):
+    """Create a new template design"""
+    if request.method == 'POST':
+        try:
+            policy_template_id = request.POST.get('policy_template_id', '').strip()
+            table_name_eng = request.POST.get('table_name_eng', '').strip()
+            table_name_mon = request.POST.get('table_name_mon', '').strip()
+            field_name_eng = request.POST.get('field_name_eng', '').strip()
+            field_name_mon = request.POST.get('field_name_mon', '').strip()
+            is_static = request.POST.get('is_static') == 'on'
+            is_active = request.POST.get('is_active') == 'on'
+            
+            if not all([policy_template_id, table_name_eng, table_name_mon, field_name_eng, field_name_mon]):
+                error_message = 'Бүх шаардлагатай талбаруудыг бөглөнө үү'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': error_message}, status=400)
+                messages.error(request, error_message)
+                return redirect('core:template_design_list')
+            
+            policy_template = get_object_or_404(Ref_Policy_Template, PolicyTemplateId=policy_template_id)
+            
+            template_design = Ref_Template_Design.objects.create(
+                PolicyTemplateId=policy_template,
+                TableNameEng=table_name_eng[:60],
+                TableNameMon=table_name_mon[:60],
+                FieldNameEng=field_name_eng[:60],
+                FieldNameMon=field_name_mon[:60],
+                IsStatic=is_static,
+                IsActive=is_active,
+                CreatedBy=request.user
+            )
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Template design амжилттай нэмэгдлээ.'})
+            
+            messages.success(request, 'Template design амжилттай нэмэгдлээ.')
+            return redirect('core:template_design_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:template_design_list')
+    
+    return redirect('core:template_design_list')
+
+
+@login_required
+@permission_required('core.change_ref_template_design', raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def template_design_update(request, pk):
+    """Update an existing template design"""
+    template_design = get_object_or_404(Ref_Template_Design, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            policy_template_id = request.POST.get('policy_template_id', '').strip()
+            table_name_eng = request.POST.get('table_name_eng', '').strip()
+            table_name_mon = request.POST.get('table_name_mon', '').strip()
+            field_name_eng = request.POST.get('field_name_eng', '').strip()
+            field_name_mon = request.POST.get('field_name_mon', '').strip()
+            is_static = request.POST.get('is_static') == 'on'
+            is_active = request.POST.get('is_active') == 'on'
+            
+            if not all([policy_template_id, table_name_eng, table_name_mon, field_name_eng, field_name_mon]):
+                error_message = 'Бүх шаардлагатай талбаруудыг бөглөнө үү'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': error_message}, status=400)
+                messages.error(request, error_message)
+                return redirect('core:template_design_list')
+            
+            policy_template = get_object_or_404(Ref_Policy_Template, PolicyTemplateId=policy_template_id)
+            
+            template_design.PolicyTemplateId = policy_template
+            template_design.TableNameEng = table_name_eng[:60]
+            template_design.TableNameMon = table_name_mon[:60]
+            template_design.FieldNameEng = field_name_eng[:60]
+            template_design.FieldNameMon = field_name_mon[:60]
+            template_design.IsStatic = is_static
+            template_design.IsActive = is_active
+            template_design.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Template design амжилттай шинэчлэгдлээ.'})
+            
+            messages.success(request, 'Template design амжилттай шинэчлэгдлээ.')
+            return redirect('core:template_design_list')
+        except Exception as e:
+            error_message = f'Алдаа: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect('core:template_design_list')
+    
+    return redirect('core:template_design_list')
+
+
+@login_required
+@permission_required('core.delete_ref_template_design', raise_exception=True)
+@require_http_methods(["POST"])
+def template_design_delete(request, pk):
+    """Delete a template design"""
+    template_design = get_object_or_404(Ref_Template_Design, pk=pk)
+    
+    try:
+        template_design.delete()
+        messages.success(request, 'Template design амжилттай устгагдлаа.')
+    except ProtectedError:
+        messages.error(request, 'Энэ template design ашиглагдаж байна. Устгах боломжгүй.')
+    except Exception as e:
+        messages.error(request, f'Алдаа: {str(e)}')
+    
+    return redirect('core:template_design_list')
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_template_design_detail(request, pk):
+    """API endpoint to get template design details"""
+    try:
+        template_design = Ref_Template_Design.objects.select_related('PolicyTemplateId', 'CreatedBy').get(DesignId=pk)
+        return JsonResponse({
+            'DesignId': template_design.DesignId,
+            'PolicyTemplateId': template_design.PolicyTemplateId.PolicyTemplateId,
+            'PolicyTemplateName': template_design.PolicyTemplateId.PolicyTemplateName,
+            'TableNameEng': template_design.TableNameEng,
+            'TableNameMon': template_design.TableNameMon,
+            'FieldNameEng': template_design.FieldNameEng,
+            'FieldNameMon': template_design.FieldNameMon,
+            'IsStatic': template_design.IsStatic,
+            'IsActive': template_design.IsActive,
+        })
+    except Ref_Template_Design.DoesNotExist:
+        return JsonResponse({'error': 'Template design not found'}, status=404)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_template_designs_list(request):
+    """API endpoint to get paginated list of template designs with filters"""
+    try:
+        # Get filter parameters
+        template_filter = request.GET.get('template', '').strip()
+        table_eng_filter = request.GET.get('table_eng', '').strip()
+        field_eng_filter = request.GET.get('field_eng', '').strip()
+        is_active_filter = request.GET.get('is_active', '').strip()
+        
+        # Get pagination parameters
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        
+        # Build query
+        query = Ref_Template_Design.objects.select_related('PolicyTemplateId', 'CreatedBy').all()
+        
+        if template_filter:
+            query = query.filter(PolicyTemplateId__PolicyTemplateName__icontains=template_filter)
+        if table_eng_filter:
+            query = query.filter(TableNameEng__icontains=table_eng_filter)
+        if field_eng_filter:
+            query = query.filter(FieldNameEng__icontains=field_eng_filter)
+        if is_active_filter:
+            is_active_bool = is_active_filter.lower() == 'true'
+            query = query.filter(IsActive=is_active_bool)
+        
+        # Order by template name, then table name, then field name
+        query = query.order_by('PolicyTemplateId__PolicyTemplateName', 'TableNameEng', 'FieldNameEng')
+        
+        # Paginate
+        paginator = Paginator(query, page_size)
+        try:
+            designs_page = paginator.page(page)
+        except PageNotAnInteger:
+            designs_page = paginator.page(1)
+        except EmptyPage:
+            designs_page = paginator.page(paginator.num_pages)
+        
+        # Serialize data
+        designs_data = []
+        for design in designs_page:
+            designs_data.append({
+                'DesignId': design.DesignId,
+                'PolicyTemplateId': design.PolicyTemplateId.PolicyTemplateId,
+                'PolicyTemplateName': design.PolicyTemplateId.PolicyTemplateName,
+                'TableNameEng': design.TableNameEng,
+                'TableNameMon': design.TableNameMon,
+                'FieldNameEng': design.FieldNameEng,
+                'FieldNameMon': design.FieldNameMon,
+                'IsStatic': design.IsStatic,
+                'IsActive': design.IsActive,
+                'CreatedDate': design.CreatedDate.strftime('%Y-%m-%d') if design.CreatedDate else None,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': designs_data,
+            'count': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'num_pages': paginator.num_pages,
+        })
+    except Exception as e:
+        logger.error(f'Error in api_template_designs_list: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_table_fields(request, table_name):
+    """API endpoint to get fields/columns for a given table name"""
+    try:
+        # Define table to model mapping with their field names
+        table_fields_map = {
+            'ins_policy_main': [
+                'PolicyId', 'PolicyNo', 'ClientId', 'AgentId', 'PolicyTemplateId', 
+                'BeginDate', 'EndDate', 'CurrencyId', 'CurrencyExchange', 
+                'AgentBranchId', 'AgentChannelId', 'DirectorName', 'Description', 
+                'IsActive', 'IsLock', 'IsPosted', 'ApprovedBy', 'CreatedBy', 
+                'ModifiedBy', 'CreatedDate', 'ModifiedDate'
+            ],
+            'ins_policy_main_product': [
+                'PolicyMainProductId', 'PolicyMainId', 'ProductId'
+            ],
+            'ins_policy_main_product_item': [
+                'PolicyMainProductItemId', 'PolicyMainProductId', 'ItemId', 
+                'BeginDate', 'EndDate', 'Valuation', 'CommPercent', 'CommAmount'
+            ],
+            'ins_policy_main_product_item_risk': [
+                'PolicyMainProductItemRiskId', 'PolicyMainProductItemId', 
+                'RiskId', 'RiskPercent'
+            ],
+            'ins_policy_main_product_item_question': [
+                'PolicyMainProductItemQuestionId', 'PolicyMainProductItemId', 
+                'ItemQuestionId', 'Answer'
+            ],
+        }
+        
+        if table_name not in table_fields_map:
+            return JsonResponse({
+                'success': False,
+                'error': f'Table {table_name} not found'
+            }, status=404)
+        
+        fields = table_fields_map[table_name]
+        
+        return JsonResponse({
+            'success': True,
+            'table_name': table_name,
+            'fields': fields
+        })
+    except Exception as e:
+        logger.error(f'Error in api_table_fields: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@permission_required('core.view_policy_main', raise_exception=True)
+@require_http_methods(["GET"])
+def policy_generate_word(request, policy_id):
+    """
+    Generate and download Word document for a policy based on template design
+    """
+    try:
+        from core.word_generator import generate_policy_word_document
+        from django.http import FileResponse, HttpResponse
+        import os
+        
+        # Generate Word document (with timeout protection in the generator itself)
+        doc_path = generate_policy_word_document(policy_id)
+        
+        if not doc_path or not os.path.exists(doc_path):
+            # Return error page with message
+            error_message = 'Word document үүсгэхэд алдаа гарлаа. Template файл олдсонгүй эсвэл тохируулга дутуу байна.'
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Алдаа</title>
+                <meta charset="utf-8">
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        background-color: #f3f4f6;
+                    }}
+                    .error-container {{
+                        background: white;
+                        padding: 2rem;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        text-align: center;
+                        max-width: 500px;
+                    }}
+                    .error-icon {{
+                        color: #ef4444;
+                        font-size: 3rem;
+                        margin-bottom: 1rem;
+                    }}
+                    .error-message {{
+                        color: #1f2937;
+                        font-size: 1.1rem;
+                        margin-bottom: 1.5rem;
+                    }}
+                    .error-details {{
+                        color: #6b7280;
+                        font-size: 0.9rem;
+                        margin-bottom: 1.5rem;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">{error_message}</div>
+                    <div class="error-details">
+                        <p>Дараах зүйлсийг шалгана уу:</p>
+                        <ul style="text-align: left; display: inline-block;">
+                            <li>Гэрээний загварт Word template файл тохируулсан эсэх</li>
+                            <li>Template файл зөв байршилд байгаа эсэх</li>
+                            <li>Template Design тохируулга хийгдсэн эсэх</li>
+                        </ul>
+                    </div>
+                    <button onclick="window.close()" style="padding: 0.5rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Хаах
+                    </button>
+                </div>
+            </body>
+            </html>
+            """
+            return HttpResponse(html_content, content_type='text/html; charset=utf-8')
+        
+        # Return file as download
+        # Use 'attachment' to force download (user can then open in Word)
+        file_handle = open(doc_path, 'rb')
+        response = FileResponse(
+            file_handle,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        filename = os.path.basename(doc_path)
+        
+        # Use 'attachment' to force download - user can open in Word after download
+        # Ensure filename is properly encoded
+        try:
+            from urllib.parse import quote
+            encoded_filename = quote(filename.encode('utf-8'))
+            response['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8\'\'{encoded_filename}'
+        except:
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Add headers
+        response['X-Content-Type-Options'] = 'nosniff'
+        response['Content-Length'] = os.path.getsize(doc_path)
+        
+        return response
+        
+    except Policy_Main.DoesNotExist:
+        error_message = 'Гэрээ олдсонгүй.'
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Алдаа</title>
+            <meta charset="utf-8">
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                    background-color: #f3f4f6;
+                }}
+                .error-container {{
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    text-align: center;
+                }}
+                .error-icon {{
+                    color: #ef4444;
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                }}
+                .error-message {{
+                    color: #1f2937;
+                    font-size: 1.1rem;
+                    margin-bottom: 1.5rem;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <div class="error-icon">⚠️</div>
+                <div class="error-message">{error_message}</div>
+                <button onclick="window.close()" style="padding: 0.5rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Хаах
+                </button>
+            </div>
+        </body>
+        </html>
+        """
+        return HttpResponse(html_content, content_type='text/html; charset=utf-8')
+    except Exception as e:
+        logger.error(f'Error in policy_generate_word: {str(e)}', exc_info=True)
+        error_message = f'Алдаа гарлаа: {str(e)}'
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Алдаа</title>
+            <meta charset="utf-8">
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                    background-color: #f3f4f6;
+                }}
+                .error-container {{
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    text-align: center;
+                    max-width: 600px;
+                }}
+                .error-icon {{
+                    color: #ef4444;
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                }}
+                .error-message {{
+                    color: #1f2937;
+                    font-size: 1.1rem;
+                    margin-bottom: 1.5rem;
+                }}
+                .error-details {{
+                    color: #6b7280;
+                    font-size: 0.9rem;
+                    margin-bottom: 1.5rem;
+                    text-align: left;
+                    background: #f9fafb;
+                    padding: 1rem;
+                    border-radius: 4px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <div class="error-icon">⚠️</div>
+                <div class="error-message">{error_message}</div>
+                <div class="error-details">
+                    <strong>Дэлгэрэнгүй:</strong><br>
+                    {str(e)}
+                </div>
+                <button onclick="window.close()" style="padding: 0.5rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Хаах
+                </button>
+            </div>
+        </body>
+        </html>
+        """
+        return HttpResponse(html_content, content_type='text/html; charset=utf-8')

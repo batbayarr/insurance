@@ -17,36 +17,6 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <!-- Force cash-assets menu to be visible -->
-    <style>
-        #menu-content-cash-assets {
-            display: block !important;
-            visibility: visible !important;
-        }
-        
-        #menu-content-cash-assets.hidden {
-            display: block !important;
-            visibility: visible !important;
-        }
-        
-        #menu-content-cash-assets a {
-            display: flex !important;
-            align-items: center !important;
-            visibility: visible !important;
-            flex-direction: row !important;
-            white-space: nowrap !important;
-        }
-        
-        #menu-content-cash-assets a svg {
-            flex-shrink: 0 !important;
-            margin-right: 12px !important;
-        }
-        
-        #menu-content-cash-assets a span {
-            white-space: nowrap !important;
-            flex-shrink: 0 !important;
-        }
-    </style>
     
     <!-- Custom Table Styles - Now using direct Tailwind CSS classes -->
     
@@ -111,11 +81,10 @@
             }
             
             // Initialize menu sections from localStorage or default to expanded
-            const menuSections = ['beginning-balance', 'cash-assets', 'inventory', 'fixed-assets', 'reference', 'reports', 'system-config', 'administration'];
+            const menuSections = ['beginning-balance', 'cash-assets', 'inventory', 'fixed-assets', 'reference', 'insurance-reference', 'policy', 'claim', 'reports', 'system-config', 'administration'];
             
             menuSections.forEach(section => {
-                // Force cash-assets section to be expanded by default
-                const isExpanded = section === 'cash-assets' ? true : localStorage.getItem(`menu_${section}`) !== 'collapsed';
+                const isExpanded = localStorage.getItem(`menu_${section}`) !== 'collapsed';
                 const sectionElement = document.getElementById(`menu-section-${section}`);
                 const contentElement = document.getElementById(`menu-content-${section}`);
                 const chevronElement = document.getElementById(`chevron-${section}`);
@@ -125,47 +94,11 @@
                         contentElement.classList.add('hidden');
                         chevronElement.classList.add('rotate-180');
                     } else {
-                        // Ensure the section is visible and properly styled
                         contentElement.classList.remove('hidden');
                         chevronElement.classList.remove('rotate-180');
                     }
                 }
             });
-            
-            // Force cash-assets section to be visible (additional safety)
-            setTimeout(function() {
-                const cashAssetsContent = document.getElementById('menu-content-cash-assets');
-                const cashAssetsChevron = document.getElementById('chevron-cash-assets');
-                if (cashAssetsContent && cashAssetsChevron) {
-                    cashAssetsContent.classList.remove('hidden');
-                    cashAssetsChevron.classList.remove('rotate-180');
-                }
-                
-                // Debug: Log menu items to see what's happening
-                const allMenuItems = document.querySelectorAll('#menu-content-cash-assets a');
-                console.log('Found', allMenuItems.length, 'menu items in cash-assets section');
-                allMenuItems.forEach((item, index) => {
-                    console.log(`Menu item ${index}:`, item.textContent.trim());
-                    // Make sure all menu items are visible
-                    item.style.display = 'block';
-                    item.style.visibility = 'visible';
-                });
-                
-                // Force the cash-assets section to be visible
-                const cashAssetsSection = document.getElementById('menu-section-cash-assets');
-                if (cashAssetsSection) {
-                    cashAssetsSection.style.display = 'block';
-                    cashAssetsSection.style.visibility = 'visible';
-                }
-                
-                // Ensure the menu content is visible and not hidden
-                const menuContent = document.getElementById('menu-content-cash-assets');
-                if (menuContent) {
-                    menuContent.style.display = 'block';
-                    menuContent.style.visibility = 'visible';
-                    menuContent.classList.remove('hidden');
-                }
-            }, 100);
         });
 
         function toggleMenuSection(sectionId) {
@@ -303,7 +236,7 @@
                             </svg>
                         </button>
                         
-                        <div id="menu-content-cash-assets" class="space-y-1 ml-4" style="display: block !important; visibility: visible !important;">
+                        <div id="menu-content-cash-assets" class="space-y-1 ml-4">
                             <a href="{% url 'core:cashdocument_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if request.resolver_match.url_name == 'cashdocument_master_detail' %}bg-gray-100 text-accounting-blue{% endif %}">
                                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -440,10 +373,145 @@
                         </div>
                     </div>
 
+                    <!-- Insurance Reference Section -->
+                    <div id="menu-section-insurance-reference" class="space-y-1">
+                        <button onclick="toggleMenuSection('insurance-reference')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                            <span>ДААТГАЛЫН ЛАВЛАХ</span>
+                            <svg id="chevron-insurance-reference" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div id="menu-content-insurance-reference" class="space-y-1 ml-4 hidden">
+                                                        
+                            {% if perms.core.view_ref_product_type %}
+                            <a href="{% url 'core:product_type_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'product-types' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                БҮТЭЭГДЭХҮҮН
+                            </a>
+                            {% endif %}
+                            
+                                                       
+                            {% if perms.core.view_ref_item_type %}
+                            <a href="{% url 'core:item_type_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'item-types' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                ЗҮЙЛИЙН АНГИЛАЛ
+                            </a>
+                            {% endif %}
+                            
+                            {% if perms.core.view_ref_item %}
+                            <a href="{% url 'core:item_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'items' in request.path and 'item-questions' not in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                ДААТГАЛЫН ЗҮЙЛ
+                            </a>
+                            {% endif %}
+                            
+                            {% if perms.core.view_ref_risk_type %}
+                            <a href="{% url 'core:risk_type_master_detail' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'risk-types' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                ЭРСДЭЛ
+                            </a>
+                            {% endif %}
+                                                        
+                            
+                            {% if perms.core.view_ref_ins_client %}
+                            <a href="#" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                ДААТГАЛЫН ХАРИЛЦАГЧ
+                            </a>
+                            {% endif %}
+                            
+                            
+                        </div>
+                    </div>
 
+                    <!-- Template Module Section -->
+                    <div id="menu-section-template-module" class="space-y-1">
+                        <button onclick="toggleMenuSection('template-module')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                            <span>ЗАГВАРЫН МОДУЛЬ</span>
+                            <svg id="chevron-template-module" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div id="menu-content-template-module" class="space-y-1 ml-4 hidden">
+                            {% if perms.core.view_ref_policy_template %}
+                            <a href="{% url 'core:template_management' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'insurance-templates/' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                ЗАГВАРЫН УДИРДЛАГА
+                            </a>
+                            {% endif %}
+                            
+                            {% if perms.core.view_ref_template_design %}
+                            <a href="{% url 'core:template_design_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'template-designs' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                WORD-файл
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
 
+                    <!-- Insurance Policy Section -->
+                    <div id="menu-section-policy" class="space-y-1">
+                        <button onclick="toggleMenuSection('policy')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                            <span>ДААТГАЛЫН ГЭРЭЭ</span>
+                            <svg id="chevron-policy" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div id="menu-content-policy" class="space-y-1 ml-4">
+                            {% if perms.core.add_policy_main %}
+                            <a href="{% url 'core:policy_create' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'policy' in request.path and 'create' in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                БАЙГУУЛАХ
+                            </a>
+                            {% endif %}
+                            {% if perms.core.view_policy_main %}
+                            <a href="{% url 'core:policy_list' %}" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200 {% if 'policies' in request.path and 'create' not in request.path %}bg-gray-100 text-accounting-blue{% endif %}">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                ЖАГСААЛТ
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
 
-
+                    <!-- Claim Section -->
+                    <div id="menu-section-claim" class="space-y-1">
+                        <button onclick="toggleMenuSection('claim')" class="w-full flex items-center justify-between px-2 py-0.5 text-xs font-normal text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-md transition-colors duration-200">
+                            <span>НӨХӨН ТӨЛБӨР</span>
+                            <svg id="chevron-claim" class="h-4 w-4 transform transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div id="menu-content-claim" class="space-y-1 ml-4">
+                            <a href="#" class="flex items-center px-2 py-0.5 text-xs font-normal text-gray-700 rounded-md hover:bg-gray-100 hover:text-accounting-blue transition-colors duration-200">
+                                <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                НӨХӨН ТӨЛБӨР
+                            </a>
+                        </div>
+                    </div>
 
                     <!-- Reports Section -->
                     <div id="menu-section-reports" class="space-y-1">
