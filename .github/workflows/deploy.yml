@@ -23,8 +23,16 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             git pull origin main
-            chmod +x deploy.sh
-            bash deploy.sh
+            chmod +x deploy.sh || true
+            # Check if venv exists, create if not
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+            # Run deploy script with error handling
+            bash deploy.sh || {
+              echo "Deploy script failed, checking logs..."
+              exit 1
+            }
       
       - name: Deployment Status
         if: success()
