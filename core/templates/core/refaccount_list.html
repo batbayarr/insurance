@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Chart of Accounts - Silicon-AI Accounting{% endblock %}
 
@@ -209,8 +210,24 @@
                             {% endif %}
                         </nav>
                     </div>
+                    {% if not is_modal %}
+                    <div class="flex items-center">
+                        <button id="print-account-list" 
+                                class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                            ХЭВЛЭХ
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
+        </div>
+        {% elif not is_modal %}
+        <!-- Print button when no pagination (single page) -->
+        <div class="bg-white px-4 py-1 flex items-center justify-end border-t border-gray-200 sm:px-6">
+            <button id="print-account-list" 
+                    class="border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 whitespace-nowrap py-2 px-3 text-sm rounded-md">
+                ХЭВЛЭХ
+            </button>
         </div>
         {% endif %}
         {% else %}
@@ -252,6 +269,9 @@
 
 <!-- Include Message Modal Component -->
 {% include 'core/components/message_modal.html' %}
+
+<!-- Include Print Script -->
+<script src="{% static 'js/print-account-list.js' %}"></script>
 {% endif %}
 
 <script>
@@ -362,7 +382,82 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = currentUrl.toString();
         });
     }
+    
+    // Print button event listener
+    const printButton = document.getElementById('print-account-list');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrintAccountList);
+    }
 });
+
+// Print handler function for account list
+async function handlePrintAccountList() {
+    // Get current filter parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFilter = urlParams.get('code') || '';
+    const nameFilter = urlParams.get('name') || '';
+    const typeFilter = urlParams.get('type') || '';
+    const statusFilter = urlParams.get('status') || '';
+    
+    // Build API URL with current filters
+    let apiUrl = '{% url "core:api_accounts_json" %}';
+    const apiParams = new URLSearchParams();
+    if (codeFilter) apiParams.append('code', codeFilter);
+    if (nameFilter) apiParams.append('name', nameFilter);
+    if (typeFilter) apiParams.append('type', typeFilter);
+    if (statusFilter) apiParams.append('status', statusFilter);
+    
+    if (apiParams.toString()) {
+        apiUrl += '?' + apiParams.toString();
+    }
+    
+    try {
+        // Fetch all accounts from API (respects current filters)
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        
+        if (!data.success || !data.accounts || data.accounts.length === 0) {
+            alert('Хэвлэх мэдээлэл алга байна.');
+            return;
+        }
+        
+        // Transform API data to print format
+        const accountData = data.accounts.map(account => ({
+            AccountCode: account.AccountCode || '',
+            AccountName: account.AccountName || '',
+            AccountType: account.AccountTypeName || '-',
+            Currency: account.CurrencyName || '-',
+            Status: account.IsDelete ? 'Inactive' : 'Active'
+        }));
+        
+        // Get column headers from table (or use defaults)
+        const table = document.querySelector('#account-list-container table');
+        let headers = ['ДАНСНЫ КОД', 'ДАНСНЫ НЭР', 'ДАНСНЫ ТӨРӨЛ', 'ВАЛЮТ', 'ТӨЛӨВ'];
+        
+        if (table) {
+            const tableHeaders = Array.from(table.querySelectorAll('thead tr:first-child th'))
+                .slice(0, 5) // Exclude the last column (Actions)
+                .map(th => th.textContent.trim());
+            if (tableHeaders.length === 5) {
+                headers = tableHeaders;
+            }
+        }
+        
+        // Use the print-account-list.js function
+        if (typeof window.printAccountListTable === 'function') {
+            window.printAccountListTable({
+                title: 'ДАНСНЫ ЖАГСААЛТ',
+                allData: accountData,
+                columnHeaders: headers
+            });
+        } else {
+            alert('Хэвлэх систем ачаалагдаагүй байна. Хуудсыг дахин ачаална уу.');
+        }
+    } catch (error) {
+        console.error('Error fetching accounts for print:', error);
+        alert('Хэвлэх мэдээлэл авахад алдаа гарлаа. Дахин оролдоно уу.');
+    }
+}
 </script>
 
 {% endblock %}
