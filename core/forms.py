@@ -1,6 +1,6 @@
 from django import forms
 from django.db.models import Q
-from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, Ref_Inventory_Type, Ref_Measurement, RefInventory, Ref_Document_Type, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Ref_Client_Bank, RefAsset, Ref_Asset_Type, Ref_Asset_Card, Inv_Beginning_Balance, Ast_Document, Ast_Document_Item, Ast_Document_Detail, Ref_Asset_Depreciation_Account, Ref_Template, Ref_Template_Detail, Ref_CashFlow
+from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Currency, Ref_Inventory_Type, Ref_Measurement, RefInventory, Ref_Document_Type, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Ref_Client_Bank, RefAsset, Ref_Asset_Type, Ref_Asset_Card, Inv_Beginning_Balance, Ast_Document, Ast_Document_Item, Ast_Document_Detail, Ref_Asset_Depreciation_Account, Ref_Template, Ref_Template_Detail, Ref_CashFlow, Ref_Ins_Client
 
 
 class ClientBankIdSelect(forms.Select):
@@ -259,6 +259,129 @@ class RefClientForm(forms.ModelForm):
             'ClientRegister': 'Client Register',
             'IsVat': 'Is VAT',
             'IsDelete': 'Deleted'
+        }
+
+
+class RefInsClientForm(forms.ModelForm):
+    """Form for creating and editing insurance clients"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Configure ClientId field with active clients
+        self.fields['ClientId'].queryset = RefClient.objects.filter(IsDelete=False).order_by('ClientName')
+        self.fields['ClientId'].empty_label = "Харилцагч сонгох"
+        
+        # Set field requirements
+        self.fields['ClientId'].required = True
+        self.fields['InsClientCode'].required = True
+        
+        # Configure widgets
+        self.fields['IsOrg'].widget.attrs.update({
+            'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded',
+            'onchange': 'toggleOrgFields()'
+        })
+        self.fields['IsPolitics'].widget.attrs.update({
+            'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
+        })
+        self.fields['IsInvestor'].widget.attrs.update({
+            'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
+        })
+        self.fields['IsActive'].widget.attrs.update({
+            'class': 'h-4 w-4 text-accounting-blue focus:ring-accounting-blue border-gray-200 rounded'
+        })
+    
+    def clean_InsClientCode(self):
+        """Custom validation for InsClientCode"""
+        ins_client_code = self.cleaned_data.get('InsClientCode')
+        
+        if not ins_client_code:
+            raise forms.ValidationError('Даатгуулагчийн код шаардлагатай.')
+        
+        # Remove whitespace and convert to uppercase
+        ins_client_code = ins_client_code.strip().upper()
+        
+        # Check uniqueness (exclude current instance if editing)
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            if Ref_Ins_Client.objects.filter(InsClientCode=ins_client_code).exclude(pk=instance.pk).exists():
+                raise forms.ValidationError('Энэ кодтой даатгуулагч аль хэдийн байна.')
+        else:
+            if Ref_Ins_Client.objects.filter(InsClientCode=ins_client_code).exists():
+                raise forms.ValidationError('Энэ кодтой даатгуулагч аль хэдийн байна.')
+        
+        return ins_client_code
+    
+    class Meta:
+        model = Ref_Ins_Client
+        fields = [
+            'ClientId', 'InsClientCode', 'OrgName', 'OrgRegister', 'IsOrg', 
+            'DistrictId', 'IsPolitics', 'IsInvestor', 'FirstName', 'LastName', 
+            'Phone1', 'Phone2', 'Email', 'DriverLicenceNo', 'EmergencyContact', 
+            'Gender', 'NationalityId', 'PhotoPath', 'IsActive', 'DriverLicentceYear'
+        ]
+        widgets = {
+            'ClientId': forms.Select(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1'
+            }),
+            'InsClientCode': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '50'
+            }),
+            'OrgName': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '100'
+            }),
+            'OrgRegister': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '12'
+            }),
+            'DistrictId': forms.NumberInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1'
+            }),
+            'FirstName': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '100'
+            }),
+            'LastName': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '100'
+            }),
+            'Phone1': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '20'
+            }),
+            'Phone2': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '20'
+            }),
+            'Email': forms.EmailInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '100'
+            }),
+            'DriverLicenceNo': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '50'
+            }),
+            'EmergencyContact': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '150'
+            }),
+            'Gender': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '50'
+            }),
+            'NationalityId': forms.NumberInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1'
+            }),
+            'PhotoPath': forms.TextInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'maxlength': '250'
+            }),
+            'DriverLicentceYear': forms.DateInput(attrs={
+                'class': 'w-full rounded border border-gray-300 focus:border-accounting-blue focus:ring-accounting-blue text-xs px-2 py-1',
+                'type': 'date'
+            })
         }
 
 

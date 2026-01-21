@@ -21,7 +21,7 @@ from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref
 
 logger = logging.getLogger(__name__)
 from django.db import connection, connections, transaction
-from .forms import Ref_AccountForm, RefClientForm, Ref_Client_BankForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm
+from .forms import Ref_AccountForm, RefClientForm, Ref_Client_BankForm, RefInventoryForm, CashDocumentForm, InvDocumentForm, RefAssetForm, Ref_Asset_CardForm, InvBeginningBalanceForm, AstDocumentForm, Ref_Asset_Depreciation_AccountForm, Ref_TemplateForm, Ref_Template_DetailForm, RefInsClientForm
 from .utils import get_available_databases, set_database, check_dep_expense_after_date
 from .thread_local import get_current_db
 from .error_handling import (
@@ -892,6 +892,152 @@ def refclient_delete(request, pk):
     
     # GET request without modal parameter - redirect to list
     return redirect('core:refclient_list')
+
+
+@login_required
+@permission_required('core.view_ref_ins_client', raise_exception=True)
+def refinsclient_list(request):
+    """List all insurance clients with pagination and inline filtering"""
+    ins_clients_list = Ref_Ins_Client.objects.select_related('ClientId').all()
+    
+    # Apply filters
+    code_filter = request.GET.get('code', '')
+    name_filter = request.GET.get('name', '')
+    org_filter = request.GET.get('org', '')
+    status_filter = request.GET.get('status', '')
+    
+    if code_filter:
+        ins_clients_list = ins_clients_list.filter(InsClientCode__icontains=code_filter)
+    if name_filter:
+        ins_clients_list = ins_clients_list.filter(
+            Q(FirstName__icontains=name_filter) | 
+            Q(LastName__icontains=name_filter) | 
+            Q(OrgName__icontains=name_filter)
+        )
+    if org_filter:
+        ins_clients_list = ins_clients_list.filter(OrgName__icontains=org_filter)
+    if status_filter:
+        if status_filter == 'active':
+            ins_clients_list = ins_clients_list.filter(IsActive=True)
+        elif status_filter == 'inactive':
+            ins_clients_list = ins_clients_list.filter(IsActive=False)
+    
+    ins_clients_list = ins_clients_list.order_by('InsClientCode')
+    
+    # Get page size from request, default to 15
+    page_size = request.GET.get('page_size', '15')
+    try:
+        page_size = int(page_size)
+        if page_size not in [10, 15, 20, 25, 50]:
+            page_size = 15
+    except (ValueError, TypeError):
+        page_size = 15
+    
+    # Pagination
+    paginator = Paginator(ins_clients_list, page_size)
+    page = request.GET.get('page')
+    
+    try:
+        ins_clients = paginator.page(page)
+    except PageNotAnInteger:
+        ins_clients = paginator.page(1)
+    except EmptyPage:
+        ins_clients = paginator.page(paginator.num_pages)
+    
+    return render(request, 'core/refinsclient_list.html', {
+        'ins_clients': ins_clients,
+        'paginator': paginator,
+        'page_size': page_size,
+        'filters': {
+            'code': code_filter,
+            'name': name_filter,
+            'org': org_filter,
+            'status': status_filter,
+        }
+    })
+
+
+@login_required
+@permission_required('core.add_ref_ins_client', raise_exception=True)
+def refinsclient_create(request):
+    """Create new insurance client"""
+    if request.method == 'POST':
+        form = RefInsClientForm(request.POST)
+        if form.is_valid():
+            ins_client = form.save(commit=False)
+            ins_client.CreatedBy = request.user
+            ins_client.save()
+            return redirect('core:refinsclient_list')
+    else:
+        form = RefInsClientForm()
+    
+    return render(request, 'core/refinsclient_form.html', {
+        'form': form,
+        'title': 'Даатгуулагч нэмэх',
+    })
+
+
+@login_required
+@permission_required('core.change_ref_ins_client', raise_exception=True)
+def refinsclient_update(request, pk):
+    """Update existing insurance client"""
+    ins_client = get_object_or_404(Ref_Ins_Client, pk=pk)
+    if request.method == 'POST':
+        form = RefInsClientForm(request.POST, instance=ins_client)
+        if form.is_valid():
+            ins_client = form.save(commit=False)
+            ins_client.ModifiedBy = request.user
+            ins_client.save()
+            return redirect('core:refinsclient_list')
+    else:
+        form = RefInsClientForm(instance=ins_client)
+    
+    return render(request, 'core/refinsclient_form.html', {
+        'form': form,
+        'title': 'Даатгуулагчийн мэдээлэл шинэчлэх',
+        'ins_client': ins_client,
+    })
+
+
+@login_required
+@permission_required('core.delete_ref_ins_client', raise_exception=True)
+def refinsclient_delete(request, pk):
+    """Delete insurance client"""
+    ins_client = get_object_or_404(Ref_Ins_Client, pk=pk)
+    
+    # Check if this is a modal request
+    if request.GET.get('modal'):
+        display_name = ins_client.OrgName or f"{ins_client.FirstName} {ins_client.LastName}".strip() or ins_client.InsClientCode
+        return render(request, 'core/components/delete_modal.html', {
+            'item_name': display_name,
+            'delete_url': reverse('core:refinsclient_delete', args=[pk])
+        })
+    
+    # Handle API request (JSON)
+    if request.method == 'POST' and request.headers.get('Content-Type') == 'application/json':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            display_name = ins_client.OrgName or f"{ins_client.FirstName} {ins_client.LastName}".strip() or ins_client.InsClientCode
+            
+            # Soft delete by setting IsActive to False
+            ins_client.IsActive = False
+            ins_client.ModifiedBy = request.user
+            ins_client.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Даатгуулагч "{display_name}" амжилттай устгалаа.'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Алдаа гарлаа: {str(e)}'
+            })
+    
+    # GET request without modal parameter - redirect to list
+    return redirect('core:refinsclient_list')
 
 
 @login_required

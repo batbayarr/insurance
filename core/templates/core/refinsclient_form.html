@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Silicon-AI Accounting{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+            <p class="text-gray-600">{% if ins_client %}Даатгуулагчийн мэдээлэл шинэчлэх{% else %}Шинэ даатгуулагч нэмэх{% endif %}</p>
+        </div>
+        <a href="{% url 'core:refinsclient_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Жагсаалт руу буцах
+        </a>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <form method="post" class="p-4" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="rounded-md bg-red-50 p-3 mb-3">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Илгээлтэд алдаа гарлаа</h3>
+                        <div class="mt-1 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full border-collapse border border-gray-300">
+                    <tbody>
+                        <!-- Basic Information Row -->
+                        <tr class="bg-gray-50">
+                            <td colspan="4" class="px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300">Үндсэн мэдээлэл</td>
+                        </tr>
+                        <tr>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300 w-32">
+                                Харилцагч <span class="text-red-500">*</span>
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.ClientId }}
+                                {% if form.ClientId.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.ClientId.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300 w-32">
+                                Даатгуулагчийн код <span class="text-red-500">*</span>
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.InsClientCode }}
+                                {% if form.InsClientCode.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.InsClientCode.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Байгууллага
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                <div class="flex items-center">
+                                    {{ form.IsOrg }}
+                                    <label for="{{ form.IsOrg.id_for_label }}" class="ml-1 text-xs text-gray-700">Тийм</label>
+                                </div>
+                                {% if form.IsOrg.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.IsOrg.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Идэвхтэй
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                <div class="flex items-center">
+                                    {{ form.IsActive }}
+                                    <label for="{{ form.IsActive.id_for_label }}" class="ml-1 text-xs text-gray-700">Тийм</label>
+                                </div>
+                                {% if form.IsActive.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.IsActive.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Organization Information Row -->
+                        <tr class="bg-gray-50" id="org-fields">
+                            <td colspan="4" class="px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300">Байгууллагын мэдээлэл</td>
+                        </tr>
+                        <tr id="org-row-1">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Байгууллагын нэр
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.OrgName }}
+                                {% if form.OrgName.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.OrgName.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Регистрийн дугаар
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.OrgRegister }}
+                                {% if form.OrgRegister.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.OrgRegister.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="org-row-2">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Улс төрийн намын гишүүн
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                <div class="flex items-center">
+                                    {{ form.IsPolitics }}
+                                    <label for="{{ form.IsPolitics.id_for_label }}" class="ml-1 text-xs text-gray-700">Тийм</label>
+                                </div>
+                                {% if form.IsPolitics.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.IsPolitics.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Хөрөнгө оруулагч
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                <div class="flex items-center">
+                                    {{ form.IsInvestor }}
+                                    <label for="{{ form.IsInvestor.id_for_label }}" class="ml-1 text-xs text-gray-700">Тийм</label>
+                                </div>
+                                {% if form.IsInvestor.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.IsInvestor.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="org-row-3">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Дүүрэг/Сум
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300" colspan="3">
+                                {{ form.DistrictId }}
+                                {% if form.DistrictId.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.DistrictId.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Personal Information Row -->
+                        <tr class="bg-gray-50" id="personal-fields">
+                            <td colspan="4" class="px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300">Хувийн мэдээлэл</td>
+                        </tr>
+                        <tr id="personal-row-1">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Нэр
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.FirstName }}
+                                {% if form.FirstName.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.FirstName.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Овог
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.LastName }}
+                                {% if form.LastName.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.LastName.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="personal-row-2">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Хүйс
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.Gender }}
+                                {% if form.Gender.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.Gender.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Улсын ID
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.NationalityId }}
+                                {% if form.NationalityId.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.NationalityId.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="personal-row-3">
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Зурагны зам
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300" colspan="3">
+                                {{ form.PhotoPath }}
+                                {% if form.PhotoPath.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.PhotoPath.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Contact Information Row -->
+                        <tr class="bg-gray-50">
+                            <td colspan="4" class="px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300">Холбоо барих мэдээлэл</td>
+                        </tr>
+                        <tr>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Утас 1
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.Phone1 }}
+                                {% if form.Phone1.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.Phone1.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Утас 2
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.Phone2 }}
+                                {% if form.Phone2.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.Phone2.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Имэйл
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.Email }}
+                                {% if form.Email.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.Email.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Яаралтай холбоо барих
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.EmergencyContact }}
+                                {% if form.EmergencyContact.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.EmergencyContact.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Driver Information Row -->
+                        <tr class="bg-gray-50">
+                            <td colspan="4" class="px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300">Жолооны мэдээлэл</td>
+                        </tr>
+                        <tr>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Жолооны үнэмлэхийн дугаар
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.DriverLicenceNo }}
+                                {% if form.DriverLicenceNo.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.DriverLicenceNo.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300">
+                                Жолооны үнэмлэхийн огноо
+                            </td>
+                            <td class="px-2 py-1 border border-gray-300">
+                                {{ form.DriverLicentceYear }}
+                                {% if form.DriverLicentceYear.errors %}
+                                <div class="text-xs text-red-600 mt-0.5">
+                                    {% for error in form.DriverLicentceYear.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-3 border-t border-gray-200 mt-3">
+                <a href="{% url 'core:refinsclient_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    Цуцлах
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-accounting-blue text-white text-sm font-medium rounded-md hover:bg-accounting-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accounting-blue">
+                    {% if ins_client %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Хадгалах
+                    {% else %}
+                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Нэмэх
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Include Message Modal Component -->
+{% include 'core/components/message_modal.html' %}
+
+<script>
+function toggleOrgFields() {
+    const isOrg = document.getElementById('{{ form.IsOrg.id_for_label }}').checked;
+    const orgRows = ['org-row-1', 'org-row-2', 'org-row-3'];
+    const personalRows = ['personal-row-1', 'personal-row-2', 'personal-row-3'];
+    const orgHeader = document.getElementById('org-fields');
+    const personalHeader = document.getElementById('personal-fields');
+    
+    orgRows.forEach(rowId => {
+        const row = document.getElementById(rowId);
+        if (row) row.style.display = isOrg ? 'table-row' : 'table-row';
+    });
+    
+    personalRows.forEach(rowId => {
+        const row = document.getElementById(rowId);
+        if (row) row.style.display = isOrg ? 'none' : 'table-row';
+    });
+    
+    if (personalHeader) {
+        personalHeader.style.display = isOrg ? 'none' : 'table-row';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleOrgFields();
+    
+    // Auto-focus on the first input field
+    const firstInput = document.querySelector('input[type="text"], select');
+    if (firstInput) {
+        firstInput.focus();
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"]');
+    
+    if (form && submitButton) {
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Боловсруулж байна...';
+        });
+    }
+});
+</script>
+
+{% endblock %}
+

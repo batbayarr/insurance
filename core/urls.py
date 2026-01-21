@@ -16,6 +16,12 @@ urlpatterns = [
     path('refclients/<int:pk>/update/', views.refclient_update, name='refclient_update'),
     path('refclients/<int:pk>/delete/', views.refclient_delete, name='refclient_delete'),
     
+    # Insurance Clients
+    path('refinsclients/', views.refinsclient_list, name='refinsclient_list'),
+    path('refinsclients/create/', views.refinsclient_create, name='refinsclient_create'),
+    path('refinsclients/<int:pk>/update/', views.refinsclient_update, name='refinsclient_update'),
+    path('refinsclients/<int:pk>/delete/', views.refinsclient_delete, name='refinsclient_delete'),
+    
     # Client Banks
     path('client-bank-list/<int:client_id>/', views.client_bank_list, name='client_bank_list'),
     path('client-bank/create/', views.client_bank_create, name='client_bank_create'),
