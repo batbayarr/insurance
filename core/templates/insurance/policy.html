@@ -379,12 +379,23 @@
                         <div id="step-4" class="step-content hidden">
                             <div class="mb-6">
                                 <h2 class="text-lg font-semibold text-gray-900">Хавсралт</h2>
-                                <p class="text-sm text-gray-600">Хавсралтын нэр, Хавсралтын зам</p>
+                                
                             </div>
 
                             <div class="space-y-4">
-                                <div id="files-list" class="space-y-4">
-                                    <!-- Files will be added here dynamically -->
+                                <div class="overflow-x-auto border border-gray-200 rounded-md">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Файлын нэр</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Файлын зам</th>
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Үйлдэл</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="files-list" class="bg-white divide-y divide-gray-200">
+                                            <!-- Files will be added here dynamically -->
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <button type="button" id="add-file" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
                                     + Хавсралт нэмэх
@@ -780,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button type="button" 
                             onclick="openAddItemModal()" 
                             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
-                        + НЭМЭХ
+                        НЭМЭХ
                     </button>
                 </div>
                 <div class="text-center py-8 text-gray-500">
@@ -796,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" 
                         onclick="openAddItemModal()" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
-                    + НЭМЭХ
+                    НЭМЭХ
                 </button>
             </div>
             <div class="overflow-x-auto">
@@ -2605,31 +2616,34 @@ document.addEventListener('DOMContentLoaded', function() {
     if (addFileBtn) {
         addFileBtn.addEventListener('click', function() {
             const index = filesData.length;
-            const html = `
-                <div class="border rounded p-3 file-item" data-index="${index}">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Файлын нэр</label>
-                            <input type="text" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="50">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Файлын зам</label>
-                            <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="100">
-                        </div>
-                    </div>
-                    <button type="button" class="remove-file mt-2 text-red-600 text-sm">Устгах</button>
-                </div>
+            const row = document.createElement('tr');
+            row.className = 'file-item hover:bg-gray-50';
+            row.setAttribute('data-index', index);
+            row.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <input type="file" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" data-index="${index}">
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" maxlength="100" readonly>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <button type="button" class="remove-file text-red-600 hover:text-red-800 text-sm" data-index="${index}">
+                        Устгах
+                    </button>
+                </td>
             `;
             const filesList = document.getElementById('files-list');
             if (filesList) {
-                filesList.insertAdjacentHTML('beforeend', html);
+                filesList.appendChild(row);
                 
-                const newItem = filesList.lastElementChild;
-                const removeBtn = newItem.querySelector('.remove-file');
+                const removeBtn = row.querySelector('.remove-file');
                 if (removeBtn) {
                     removeBtn.addEventListener('click', function() {
-                        newItem.remove();
+                        const rowIndex = parseInt(this.getAttribute('data-index'));
+                        filesData.splice(rowIndex, 1);
+                        row.remove();
                         updateFilesData();
+                        reindexFileItems();
                     });
                 }
                 
@@ -2639,22 +2653,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     filePath: ''
                 });
                 
-                // Add input listeners to update filesData
-                const fileNameInput = newItem.querySelector('.file-name');
-                const filePathInput = newItem.querySelector('.file-path');
+                // Add file selection listener to update filesData
+                const fileNameInput = row.querySelector('.file-name');
+                const filePathInput = row.querySelector('.file-path');
                 
                 if (fileNameInput) {
-                    fileNameInput.addEventListener('input', function() {
-                        if (filesData[index]) {
-                            filesData[index].fileName = this.value;
-                        }
-                    });
-                }
-                
-                if (filePathInput) {
-                    filePathInput.addEventListener('input', function() {
-                        if (filesData[index]) {
-                            filesData[index].filePath = this.value;
+                    fileNameInput.addEventListener('change', function() {
+                        const file = this.files[0];
+                        if (file) {
+                            const fileName = file.name;
+                            const filePath = file.name; // Use file name as path, or could use file.path if available
+                            
+                            // Update the readonly path field
+                            if (filePathInput) {
+                                filePathInput.value = filePath;
+                            }
+                            
+                            // Update filesData
+                            if (filesData[index]) {
+                                filesData[index].fileName = fileName;
+                                filesData[index].filePath = filePath;
+                            }
                         }
                     });
                 }
@@ -2665,11 +2684,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update files data
     function updateFilesData() {
         filesData = [];
-        document.querySelectorAll('.file-item').forEach((item, idx) => {
+        document.querySelectorAll('#files-list .file-item').forEach((item, idx) => {
             const fileNameInput = item.querySelector('.file-name');
             const filePathInput = item.querySelector('.file-path');
+            
+            // For file inputs, get the file name from the selected file or the readonly path field
+            let fileName = '';
+            if (fileNameInput && fileNameInput.files && fileNameInput.files.length > 0) {
+                fileName = fileNameInput.files[0].name;
+            } else if (filePathInput) {
+                // Fallback to path field if file input doesn't have a file selected
+                fileName = filePathInput.value;
+            }
+            
             filesData.push({
-                fileName: fileNameInput ? fileNameInput.value : '',
+                fileName: fileName,
                 filePath: filePathInput ? filePathInput.value : ''
             });
         });
@@ -2677,9 +2706,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Re-index file items after removal
     function reindexFileItems() {
-        const fileItems = document.querySelectorAll('.file-item');
+        const fileItems = document.querySelectorAll('#files-list .file-item');
         fileItems.forEach((item, newIndex) => {
             item.setAttribute('data-index', newIndex);
+            const fileNameInput = item.querySelector('.file-name');
+            const filePathInput = item.querySelector('.file-path');
+            const removeBtn = item.querySelector('.remove-file');
+            if (fileNameInput) fileNameInput.setAttribute('data-index', newIndex);
+            if (removeBtn) removeBtn.setAttribute('data-index', newIndex);
         });
     }
     
@@ -2693,51 +2727,56 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Restore from data array
         filesData.forEach((file, index) => {
-            const html = `
-                <div class="border rounded p-3 file-item" data-index="${index}">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Файлын нэр</label>
-                            <input type="text" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="50" value="${escapeHtml(file.fileName)}">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Файлын зам</label>
-                            <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="100" value="${escapeHtml(file.filePath)}">
-                        </div>
-                    </div>
-                    <button type="button" class="remove-file mt-2 text-red-600 text-sm">Устгах</button>
-                </div>
+            const row = document.createElement('tr');
+            row.className = 'file-item hover:bg-gray-50';
+            row.setAttribute('data-index', index);
+            row.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <input type="file" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" data-index="${index}">
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" maxlength="100" value="${escapeHtml(file.filePath)}" readonly>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <button type="button" class="remove-file text-red-600 hover:text-red-800 text-sm" data-index="${index}">
+                        Устгах
+                    </button>
+                </td>
             `;
-            filesList.insertAdjacentHTML('beforeend', html);
+            filesList.appendChild(row);
             
-            const newItem = filesList.lastElementChild;
-            const removeBtn = newItem.querySelector('.remove-file');
+            const removeBtn = row.querySelector('.remove-file');
             if (removeBtn) {
                 removeBtn.addEventListener('click', function() {
-                    newItem.remove();
-                    // Re-read from DOM to ensure consistency
+                    const rowIndex = parseInt(this.getAttribute('data-index'));
+                    filesData.splice(rowIndex, 1);
+                    row.remove();
                     updateFilesData();
-                    // Re-index remaining items
                     reindexFileItems();
                 });
             }
             
-            // Add input listeners to update filesData
-            const fileNameInput = newItem.querySelector('.file-name');
-            const filePathInput = newItem.querySelector('.file-path');
+            // Add file selection listener to update filesData
+            const fileNameInput = row.querySelector('.file-name');
+            const filePathInput = row.querySelector('.file-path');
             
             if (fileNameInput) {
-                fileNameInput.addEventListener('input', function() {
-                    if (filesData[index]) {
-                        filesData[index].fileName = this.value;
-                    }
-                });
-            }
-            
-            if (filePathInput) {
-                filePathInput.addEventListener('input', function() {
-                    if (filesData[index]) {
-                        filesData[index].filePath = this.value;
+                fileNameInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        const fileName = file.name;
+                        const filePath = file.name; // Use file name as path, or could use file.path if available
+                        
+                        // Update the readonly path field
+                        if (filePathInput) {
+                            filePathInput.value = filePath;
+                        }
+                        
+                        // Update filesData
+                        if (filesData[index]) {
+                            filesData[index].fileName = fileName;
+                            filesData[index].filePath = filePath;
+                        }
                     }
                 });
             }
@@ -3573,21 +3612,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (filesList) {
                         filesList.innerHTML = '';
                         files.forEach((file, index) => {
-                            const row = document.createElement('div');
-                            row.className = 'border rounded p-3 file-item';
+                            const row = document.createElement('tr');
+                            row.className = 'file-item hover:bg-gray-50';
                             row.setAttribute('data-index', index);
                             row.innerHTML = `
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Файлын нэр</label>
-                                        <input type="text" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="50" value="${escapeHtml(file.fileName)}">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Файлын зам</label>
-                                        <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="100" value="${escapeHtml(file.filePath)}">
-                                    </div>
-                                </div>
-                                <button type="button" class="remove-file mt-2 text-red-600 text-sm">Устгах</button>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <input type="file" class="file-name w-full px-3 py-2 border border-gray-300 rounded-md" data-index="${index}">
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <input type="text" class="file-path w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" maxlength="100" value="${escapeHtml(file.filePath)}" readonly>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <button type="button" class="remove-file text-red-600 hover:text-red-800 text-sm" data-index="${index}">
+                                        Устгах
+                                    </button>
+                                </td>
                             `;
                             filesList.appendChild(row);
                             
@@ -3597,26 +3636,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             const removeBtn = row.querySelector('.remove-file');
                             
                             if (fileNameInput) {
-                                fileNameInput.addEventListener('input', function() {
-                                    if (filesData[index]) {
-                                        filesData[index].fileName = this.value;
-                                    }
-                                });
-                            }
-                            
-                            if (filePathInput) {
-                                filePathInput.addEventListener('input', function() {
-                                    if (filesData[index]) {
-                                        filesData[index].filePath = this.value;
+                                fileNameInput.addEventListener('change', function() {
+                                    const file = this.files[0];
+                                    if (file) {
+                                        const fileName = file.name;
+                                        const filePath = file.name; // Use file name as path, or could use file.path if available
+                                        
+                                        // Update the readonly path field
+                                        if (filePathInput) {
+                                            filePathInput.value = filePath;
+                                        }
+                                        
+                                        // Update filesData
+                                        if (filesData[index]) {
+                                            filesData[index].fileName = fileName;
+                                            filesData[index].filePath = filePath;
+                                        }
                                     }
                                 });
                             }
                             
                             if (removeBtn) {
                                 removeBtn.addEventListener('click', function() {
-                                    filesData.splice(index, 1);
+                                    const rowIndex = parseInt(this.getAttribute('data-index'));
+                                    filesData.splice(rowIndex, 1);
                                     row.remove();
                                     updateFilesData();
+                                    reindexFileItems();
                                 });
                             }
                         });

@@ -12262,12 +12262,16 @@ def policy_create(request):
             try:
                 files_list = json.loads(files_data)
                 for file_data in files_list:
-                    if file_data.get('fileName') and file_data.get('filePath'):
+                    fileName = (file_data.get('fileName') or '').strip()
+                    filePath = (file_data.get('filePath') or '').strip()
+                    if fileName or filePath:  # Save if at least one field has data
                         Policy_Main_Files.objects.create(
                             PolicyId=policy,
-                            FileName=file_data['fileName'][:50],
-                            FilePath=file_data['filePath'][:100]
+                            FileName=fileName[:50] if fileName else '',
+                            FilePath=filePath[:100] if filePath else ''
                         )
+                    else:
+                        logger.warning(f'Skipping file entry - both fileName and filePath are empty')
             except (json.JSONDecodeError, KeyError) as e:
                 logger.error(f'Error parsing files data: {str(e)}')
             
@@ -12747,12 +12751,16 @@ def policy_update(request, policy_id):
             try:
                 files_list = json.loads(files_data)
                 for file_data in files_list:
-                    if file_data.get('fileName') and file_data.get('filePath'):
+                    fileName = (file_data.get('fileName') or '').strip()
+                    filePath = (file_data.get('filePath') or '').strip()
+                    if fileName or filePath:  # Save if at least one field has data
                         Policy_Main_Files.objects.create(
                             PolicyId=policy,
-                            FileName=file_data['fileName'][:50],
-                            FilePath=file_data['filePath'][:100]
+                            FileName=fileName[:50] if fileName else '',
+                            FilePath=filePath[:100] if filePath else ''
                         )
+                    else:
+                        logger.warning(f'Skipping file entry - both fileName and filePath are empty')
             except (json.JSONDecodeError, KeyError) as e:
                 logger.error(f'Error parsing files data: {str(e)}')
             
