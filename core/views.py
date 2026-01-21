@@ -17,7 +17,7 @@ import logging
 from decimal import Decimal
 from django.utils import timezone
 from django.conf import settings
-from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow, Ref_Product_Group, Ref_Product_Type, Ref_Product, Ref_Risk_Type, Ref_Risk, Ref_Item_Type, Ref_Item, Ref_Item_Question, Ref_Policy_Template, Ref_Template_Product, Ref_Template_Product_Item, Ref_Template_Product_Item_Risk, Ref_Template_Account, Ref_Template_Design, Ref_Branch, Ref_Channel, Ref_Branch_User, Ref_Ins_Client, Policy_Main, Policy_Main_Product, Policy_Main_Product_Item, Policy_Main_Product_Item_Risk, Policy_Main_Product_Item_Question, Policy_Main_Files, Policy_Main_Schedule
+from .models import Ref_Account_Type, Ref_Account, RefClientType, RefClient, Ref_Client_Bank, Ref_Currency, RefInventory, Ref_Document_Type, Ref_Document_Counter, Ref_CashFlow, Ref_Contract, Ref_Warehouse, Cash_Document, Cash_DocumentDetail, Inv_Document, Inv_Document_Item, Inv_Document_Detail, Ref_Asset_Type, RefAsset, Ref_Asset_Card, CashBeginningBalance, Inv_Beginning_Balance, Ast_Beginning_Balance, Ast_Document, Ast_Document_Detail, Ast_Document_Item, Ref_Asset_Depreciation_Account, Ref_Period, Ref_Template, Ref_Template_Detail, AstDepreciationExpense, St_Balance, St_Income, St_CashFlow, Ref_Product_Group, Ref_Product_Type, Ref_Product, Ref_Risk_Type, Ref_Risk, Ref_Item_Type, Ref_Item, Ref_Item_Question, Ref_Policy_Template, Ref_Template_Product, Ref_Template_Product_Item, Ref_Template_Product_Item_Risk, Ref_Template_Account, Ref_Template_Design, Ref_Branch, Ref_Channel, Ref_Branch_User, Ref_Ins_Client, Policy_Main, Policy_Main_Product, Policy_Main_Product_Item, Policy_Main_Product_Item_Risk, Policy_Main_Product_Item_Question, Policy_Main_Files, Policy_Main_Schedule, Policy_Main_Coinsurance
 
 logger = logging.getLogger(__name__)
 from django.db import connection, connections, transaction
@@ -10889,20 +10889,49 @@ def product_type_update(request, pk):
 @permission_required('core.delete_ref_product_type', raise_exception=True)
 @require_http_methods(["POST"])
 def product_type_delete(request, pk):
-    """Delete a product type"""
+    """Delete a product type with cascade deletion of related products"""
     product_type = get_object_or_404(Ref_Product_Type, pk=pk)
     
     try:
-        # Check if there are products using this type
-        products_count = Ref_Product.objects.filter(ProductTypeId=product_type).count()
-        if products_count > 0:
-            messages.error(request, f'Энэ төрөлд {products_count} бүтээгдэхүүн байна. Устгах боломжгүй.')
-            return redirect('core:product_type_master_detail')
-        
-        product_type.delete()
-        messages.success(request, 'Бүтээгдэхүний төрөл амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ бүтээгдэхүний төрөл ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            # Get all products of this type
+            products = Ref_Product.objects.filter(ProductTypeId=product_type)
+            
+            # Delete each product (which will handle its own cascade via product_delete logic)
+            for product in products:
+                # Delete related policy product items
+                policy_product_items = Policy_Main_Product_Item.objects.filter(
+                    PolicyMainProductId__ProductId=product
+                )
+                for item in policy_product_items:
+                    Policy_Main_Product_Item_Question.objects.filter(
+                        PolicyMainProductItemId=item
+                    ).delete()
+                    Policy_Main_Product_Item_Risk.objects.filter(
+                        PolicyMainProductItemId=item
+                    ).delete()
+                policy_product_items.delete()
+                
+                # Delete policy products
+                Policy_Main_Product.objects.filter(ProductId=product).delete()
+                
+                # Delete template product items
+                template_products = Ref_Template_Product.objects.filter(ProductId=product)
+                for tp in template_products:
+                    template_items = Ref_Template_Product_Item.objects.filter(TemplateProductId=tp)
+                    for ti in template_items:
+                        Ref_Template_Product_Item_Risk.objects.filter(
+                            TemplateProductItemId=ti
+                        ).delete()
+                    template_items.delete()
+                template_products.delete()
+                
+                # Delete the product
+                product.delete()
+            
+            # Now delete the product type
+            product_type.delete()
+            messages.success(request, 'Бүтээгдэхүний төрөл амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
@@ -10985,15 +11014,46 @@ def product_update(request, pk):
 @permission_required('core.delete_ref_product', raise_exception=True)
 @require_http_methods(["POST"])
 def product_delete(request, pk):
-    """Delete a product"""
+    """Delete a product with cascade deletion of related records"""
     product = get_object_or_404(Ref_Product, pk=pk)
     product_type_id = product.ProductTypeId.ProductTypeId
     
     try:
-        product.delete()
-        messages.success(request, 'Бүтээгдэхүүн амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ бүтээгдэхүүн ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            # Delete Policy_Main_Product_Item_Question (via PolicyMainProductItemId -> PolicyMainProductId -> ProductId)
+            policy_product_items = Policy_Main_Product_Item.objects.filter(
+                PolicyMainProductId__ProductId=product
+            )
+            for item in policy_product_items:
+                Policy_Main_Product_Item_Question.objects.filter(
+                    PolicyMainProductItemId=item
+                ).delete()
+                Policy_Main_Product_Item_Risk.objects.filter(
+                    PolicyMainProductItemId=item
+                ).delete()
+            
+            # Delete Policy_Main_Product_Item
+            policy_product_items.delete()
+            
+            # Delete Policy_Main_Product
+            Policy_Main_Product.objects.filter(ProductId=product).delete()
+            
+            # Delete Ref_Template_Product_Item_Risk (via TemplateProductItemId -> TemplateProductId -> ProductId)
+            template_products = Ref_Template_Product.objects.filter(ProductId=product)
+            for tp in template_products:
+                template_items = Ref_Template_Product_Item.objects.filter(TemplateProductId=tp)
+                for ti in template_items:
+                    Ref_Template_Product_Item_Risk.objects.filter(
+                        TemplateProductItemId=ti
+                    ).delete()
+                template_items.delete()
+            
+            # Delete Ref_Template_Product
+            template_products.delete()
+            
+            # Finally delete the product
+            product.delete()
+            messages.success(request, 'Бүтээгдэхүүн амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
@@ -11237,20 +11297,28 @@ def risk_type_update(request, pk):
 @permission_required('core.delete_ref_risk_type', raise_exception=True)
 @require_http_methods(["POST"])
 def risk_type_delete(request, pk):
-    """Delete a risk type"""
+    """Delete a risk type with cascade deletion of related risks"""
     risk_type = get_object_or_404(Ref_Risk_Type, pk=pk)
     
     try:
-        # Check if there are risks using this type
-        risks_count = Ref_Risk.objects.filter(RiskTypeId=risk_type).count()
-        if risks_count > 0:
-            messages.error(request, f'Энэ төрөлд {risks_count} эрсдэл байна. Устгах боломжгүй.')
-            return redirect('core:risk_type_master_detail')
-        
-        risk_type.delete()
-        messages.success(request, 'Эрсдлийн төрөл амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ эрсдлийн төрөл ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            # Get all risks of this type
+            risks = Ref_Risk.objects.filter(RiskTypeId=risk_type)
+            
+            # Delete each risk (which will handle its own cascade via risk_delete logic)
+            for risk in risks:
+                # Delete Policy_Main_Product_Item_Risk
+                Policy_Main_Product_Item_Risk.objects.filter(RiskId=risk).delete()
+                
+                # Delete Ref_Template_Product_Item_Risk
+                Ref_Template_Product_Item_Risk.objects.filter(RiskId=risk).delete()
+                
+                # Delete the risk
+                risk.delete()
+            
+            # Now delete the risk type
+            risk_type.delete()
+            messages.success(request, 'Эрсдлийн төрөл амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
@@ -11346,15 +11414,21 @@ def risk_update(request, pk):
 @permission_required('core.delete_ref_risk', raise_exception=True)
 @require_http_methods(["POST"])
 def risk_delete(request, pk):
-    """Delete a risk"""
+    """Delete a risk with cascade deletion of related records"""
     risk = get_object_or_404(Ref_Risk, pk=pk)
     risk_type_id = risk.RiskTypeId.RiskTypeId
     
     try:
-        risk.delete()
-        messages.success(request, 'Эрсдэл амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ эрсдэл ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            # Delete Policy_Main_Product_Item_Risk
+            Policy_Main_Product_Item_Risk.objects.filter(RiskId=risk).delete()
+            
+            # Delete Ref_Template_Product_Item_Risk
+            Ref_Template_Product_Item_Risk.objects.filter(RiskId=risk).delete()
+            
+            # Finally delete Ref_Risk
+            risk.delete()
+            messages.success(request, 'Эрсдэл амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
@@ -11623,20 +11697,43 @@ def item_update(request, pk):
 @permission_required('core.delete_ref_item', raise_exception=True)
 @require_http_methods(["POST"])
 def item_delete(request, pk):
-    """Delete an item"""
+    """Delete an item with cascade deletion of related records"""
     item = get_object_or_404(Ref_Item, pk=pk)
     
     try:
-        # Check if there are item questions using this item
-        questions_count = Ref_Item_Question.objects.filter(ItemId=item).count()
-        if questions_count > 0:
-            messages.error(request, f'Энэ зүйлд {questions_count} асуулт байна. Устгах боломжгүй.')
-            return redirect('core:item_master_detail')
-        
-        item.delete()
-        messages.success(request, 'Даатгалын зүйл амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ даатгалын зүйл ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            # Delete Policy_Main_Product_Item_Question (references ItemQuestionId which references ItemId)
+            policy_items = Policy_Main_Product_Item.objects.filter(ItemId=item)
+            for policy_item in policy_items:
+                Policy_Main_Product_Item_Question.objects.filter(
+                    PolicyMainProductItemId=policy_item
+                ).delete()
+                Policy_Main_Product_Item_Risk.objects.filter(
+                    PolicyMainProductItemId=policy_item
+                ).delete()
+            
+            # Delete Policy_Main_Product_Item_Risk (via PolicyMainProductItemId)
+            # (Already deleted above)
+            
+            # Delete Policy_Main_Product_Item
+            policy_items.delete()
+            
+            # Delete Ref_Template_Product_Item_Risk (via TemplateProductItemId -> ItemId)
+            template_items = Ref_Template_Product_Item.objects.filter(ItemId=item)
+            for ti in template_items:
+                Ref_Template_Product_Item_Risk.objects.filter(
+                    TemplateProductItemId=ti
+                ).delete()
+            
+            # Delete Ref_Template_Product_Item
+            template_items.delete()
+            
+            # Delete Ref_Item_Question
+            Ref_Item_Question.objects.filter(ItemId=item).delete()
+            
+            # Finally delete Ref_Item
+            item.delete()
+            messages.success(request, 'Даатгалын зүйл амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
@@ -12688,43 +12785,53 @@ def policy_update(request, policy_id):
 @require_http_methods(["POST"])
 def policy_delete(request, policy_id):
     """
-    Delete a policy
+    Delete a policy with cascade deletion of all related records
     """
     policy = get_object_or_404(Policy_Main, PolicyId=policy_id)
     
     try:
-        # Check if policy can be deleted (e.g., not locked or posted)
-        if policy.IsLock:
-            error_msg = 'Түгжигдсэн гэрээг устгах боломжгүй.'
+        with transaction.atomic():
+            # Delete Policy_Main_Product_Item_Question (deepest level)
+            policy_product_items = Policy_Main_Product_Item.objects.filter(
+                PolicyMainProductId__PolicyMainId=policy
+            )
+            for item in policy_product_items:
+                Policy_Main_Product_Item_Question.objects.filter(
+                    PolicyMainProductItemId=item
+                ).delete()
+            
+            # Delete Policy_Main_Product_Item_Risk
+            for item in policy_product_items:
+                Policy_Main_Product_Item_Risk.objects.filter(
+                    PolicyMainProductItemId=item
+                ).delete()
+            
+            # Delete Policy_Main_Product_Item
+            policy_product_items.delete()
+            
+            # Delete Policy_Main_Product
+            Policy_Main_Product.objects.filter(PolicyMainId=policy).delete()
+            
+            # Delete Policy_Main_Files
+            Policy_Main_Files.objects.filter(PolicyId=policy).delete()
+            
+            # Delete Policy_Main_Schedule
+            Policy_Main_Schedule.objects.filter(PolicyId=policy).delete()
+            
+            # Delete Policy_Main_Coinsurance
+            Policy_Main_Coinsurance.objects.filter(PolicyId=policy).delete()
+            
+            # Finally delete Policy_Main
+            policy.delete()
+            
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
-                    'success': False,
-                    'error': error_msg
-                }, status=400)
-            messages.error(request, error_msg)
+                    'success': True,
+                    'message': 'Гэрээ амжилттай устгагдлаа.'
+                })
+            
+            messages.success(request, 'Гэрээ амжилттай устгагдлаа.')
             return redirect('core:policy_list')
-        
-        if policy.IsPosted:
-            error_msg = 'Бичигдсэн гэрээг устгах боломжгүй.'
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': error_msg
-                }, status=400)
-            messages.error(request, error_msg)
-            return redirect('core:policy_list')
-        
-        # Delete the policy
-        policy.delete()
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'message': 'Гэрээ амжилттай устгагдлаа.'
-            })
-        
-        messages.success(request, 'Гэрээ амжилттай устгагдлаа.')
-        return redirect('core:policy_list')
         
     except Exception as e:
         logger.error(f'Error deleting policy: {str(e)}')
@@ -12908,26 +13015,53 @@ def item_type_update(request, pk):
 @permission_required('core.delete_ref_item_type', raise_exception=True)
 @require_http_methods(["POST"])
 def item_type_delete(request, pk):
-    """Delete an item type"""
+    """Delete an item type with recursive cascade deletion of child types and items"""
     item_type = get_object_or_404(Ref_Item_Type, pk=pk)
     
+    def delete_item_type_recursive(item_type_obj):
+        """Recursively delete child item types and their items"""
+        # Get all child item types
+        child_types = Ref_Item_Type.objects.filter(ParentId=item_type_obj)
+        
+        # Recursively delete each child type
+        for child_type in child_types:
+            delete_item_type_recursive(child_type)
+        
+        # Delete all items of this type (using same cascade logic as item_delete)
+        items = Ref_Item.objects.filter(ItemTypeId=item_type_obj)
+        for item in items:
+            # Delete Policy_Main_Product_Item_Question
+            policy_items = Policy_Main_Product_Item.objects.filter(ItemId=item)
+            for policy_item in policy_items:
+                Policy_Main_Product_Item_Question.objects.filter(
+                    PolicyMainProductItemId=policy_item
+                ).delete()
+                Policy_Main_Product_Item_Risk.objects.filter(
+                    PolicyMainProductItemId=policy_item
+                ).delete()
+            policy_items.delete()
+            
+            # Delete Ref_Template_Product_Item_Risk and Ref_Template_Product_Item
+            template_items = Ref_Template_Product_Item.objects.filter(ItemId=item)
+            for ti in template_items:
+                Ref_Template_Product_Item_Risk.objects.filter(
+                    TemplateProductItemId=ti
+                ).delete()
+            template_items.delete()
+            
+            # Delete Ref_Item_Question
+            Ref_Item_Question.objects.filter(ItemId=item).delete()
+            
+            # Delete the item
+            item.delete()
+        
+        # Delete the item type itself
+        item_type_obj.delete()
+    
     try:
-        # Check if there are child item types
-        child_count = Ref_Item_Type.objects.filter(ParentId=item_type).count()
-        if child_count > 0:
-            messages.error(request, f'Энэ төрөлд {child_count} дэд төрөл байна. Устгах боломжгүй.')
-            return redirect('core:item_type_list')
-        
-        # Check if there are items using this type
-        items_count = Ref_Item.objects.filter(ItemTypeId=item_type).count()
-        if items_count > 0:
-            messages.error(request, f'Энэ төрөлд {items_count} даатгалын зүйл байна. Устгах боломжгүй.')
-            return redirect('core:item_type_list')
-        
-        item_type.delete()
-        messages.success(request, 'Даатгалын зүйлийн төрөл амжилттай устгагдлаа.')
-    except ProtectedError:
-        messages.error(request, 'Энэ төрөл ашиглагдаж байна. Устгах боломжгүй.')
+        with transaction.atomic():
+            delete_item_type_recursive(item_type)
+            messages.success(request, 'Даатгалын зүйлийн төрөл амжилттай устгагдлаа.')
     except Exception as e:
         messages.error(request, f'Алдаа: {str(e)}')
     
